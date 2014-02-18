@@ -1,0 +1,18 @@
+syntax: glob
+*.pyc
+.emacs.bak/
+*.png
+*.eqn
+output/
+config.local.mk
+BROWSE
+TAGS
+
+
+syntax: regexp
+^output/
+^objs/
+^bin/
+^testBin/
+^extern/
+^lib/
