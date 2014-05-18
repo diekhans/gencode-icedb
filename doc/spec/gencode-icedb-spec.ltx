@@ -1,4 +1,5 @@
 \documentclass[pdftex,11pt]{article}
+\usepackage{hyperref}
 \usepackage{amsmath}
 \usepackage[pdftex]{graphicx}
 \usepackage{multirow, multicol}
@@ -17,8 +18,71 @@
 
 \title{GENCODE Independently Collected Evidence Database (ICEDB)}
 \date{\today}
-\author{Mark Diekhans $<$markd@soe.ucsc.edu$>$}
+\author{Mark Diekhans \href{mailto:markd@soe.ucsc.edu}{$<$markd@soe.ucsc.edu$>$}}
 
 \begin{document}
 \maketitle
+
+\section{Goals}
+The goal of the Transcription Support Level (TSL) mechanism created for
+GENCODE was to provide a simple, independent metric to answer the question
+{\em how well supported is this annotation as transcribe in human.?}  
+
+A short coming of the TSL approach was the inability to ask more detailed
+questions about why something has a given level of support.  The goal of this
+project is to address this shortcoming by building a database mapping evidence
+to GENCODE annotations.  \todo{more}
+
+\section{Data model}
+single vs multi-exon transcripts
+special cases
+fuzzy ends and NAGNAG
+
+Objects defined by GENCODE annotations:
+\begin{tightitemize}
+\item exon - includes NAGNAG annotations
+\item intron - includes splice sites and NAGNAG annotations
+\item transcript - linking introns and exons
+\item gene - group transcripts
+\item CDS - CDS regions of exons
+\end{tightitemize}
+
+
+Evidence mapped to GENCODE features:
+\begin{tightitemize}
+\item GenBank mRNA alignments
+\item GenBank EST alignments to multi-exon genes
+\item GenBank EST densities (wiggles) for single-exon genes
+\item RNA-Seq gene models
+\item protein spectra mapped to CDS
+\end{tightitemize}
+
+
+
+
+\section{Data sources}
+\begin{tightitemize}
+\item Human mRNAs:
+\item Human ESTs:
+\item RNA-Seq gene models:
+\end{tightitemize}
+
+\section{Build process}
+
+\iffalse
+- md5 for versions
+ORM:
+  - hybernate hannes - more active
+  - open jpa
+- lowtech ORM
+   - spring DAO - 
+http://stackoverflow.com/questions/296587/light-weight-alternative-to-hibernate
+http://stackoverflow.com/questions/9665036/alternatives-to-hibernate
+http://ormlite.com/
+http://sourceforge.net/projects/sormula/
+
+how to detect:
+  ENST00000359597.4 (TP53)
+  ENST00000413465.2 (TP53)
+\fi
 \end{document}
