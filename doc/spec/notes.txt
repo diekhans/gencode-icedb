@@ -3,3 +3,13 @@
    APPRIS
    Domains
 
+- STAR alignSJ.out.tab
+  - chromosome
+  - first base of the intron (1-based)
+  - last base of the intron (1-based)
+  - strand (0: undefined, 1: +, 2: -)
+  - intron motif: 0: non-canonical; 1: GT/AG, 2: CT/AC, 3: GC/AG, 4: CT/GC, 5: AT/AC, 6: GT/AT
+  - 0: unannotated, 1: annotated (only if splice junctions database is used)
+  - number of uniquely mapping reads crossing the junction
+  - number of multi-mapping reads crossing the junction
+  - maximum spliced alignment overhang
