@@ -1,0 +1,31 @@
+
+gencode annotation tables:
+
+* 
+
+gene:
+  - gene id version
+  - biotype
+  - annotation method
+
+transcript:
+  - transcript id version
+  - annotation version
+  - biotype
+  - annotation method
+  - gene id
+  - strand
+
+exon:
+  - exonid 
+  - seqid
+  - location
+  - strand
+  * how to handle annotations, differing annotations, overlap
+  * translational frame shifts
+
+intron:
+  - location
+  - splice sites
+    nagnag flag (0,+3,-3)
+
