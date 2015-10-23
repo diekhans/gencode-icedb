@@ -13,3 +13,8 @@
   - number of uniquely mapping reads crossing the junction
   - number of multi-mapping reads crossing the junction
   - maximum spliced alignment overhang
+
+
+- CIRM data might have longer reads:
+  /hive/groups/cirm/pilot/labs/kriegstein/fastqFiles
+  /hive/groups/cirm/submit/quake/quakeBrainGeo1
