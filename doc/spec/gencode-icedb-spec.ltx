@@ -2,7 +2,7 @@
 \usepackage{hyperref}
 \usepackage{amsmath}
 \usepackage[pdftex]{graphicx}
-\usepackage{multirow, multicol}
+\usepackage{color}
 
 
 % tight itemized list
@@ -47,25 +47,46 @@ Objects defined by GENCODE annotations:
 \item CDS - CDS regions of exons
 \end{tightitemize}
 
-
 Evidence mapped to GENCODE features:
 \begin{tightitemize}
 \item GenBank mRNA alignments
 \item GenBank EST alignments to multi-exon genes
 \item GenBank EST densities (wiggles) for single-exon genes
-\item RNA-Seq gene models
+\item RNA-Seq 
 \item protein spectra mapped to CDS
 \end{tightitemize}
 
 
 
-
-\section{Data sources}
+\section{Evidence sources}
 \begin{tightitemize}
 \item Human mRNAs:
 \item Human ESTs:
-\item RNA-Seq gene models:
+\item RNA-Seq
 \end{tightitemize}
+
+\subsection{RNA-Seq evidence}
+
+RNA-Seq mappings are analyzed to score support for introns (exon-pairs) in
+GENCODE annotations.  In order to produce consistent mappings and analysis, 
+selected RNA-Seq data is remapped to the genome using the GENCODE set as 
+the target set.  The STAR \cite{Dobin25102012} mapper is use, which
+has excellent speed and maintaining accuracy.
+
+SJ.out.tab contains high confidence collapsed splice junctions in tab-delimited format. The columns have the following meaning:
+column 1: column 2: column 3: column 4: column 5:
+column 6:
+column 7:
+column 8:
+chromosome
+first base of the intron (1-based)
+last base of the intron (1-based)
+strand (0: undefined, 1: +, 2: -)
+intron motif: 0: non-canonical; 1: GT/AG, 2: CT/AC, 3: GC/AG, 4: CT/GC, 5: AT/AC, 6: GT/AT
+0: unannotated, 1: annotated (only if splice junctions database is used) number of uniquely mapping reads crossing the junction
+number of multi-mapping reads crossing the junction
+maximum spliced alignment overhang
+column 9:
 
 \section{Build process}
 
@@ -75,6 +96,7 @@ ORM:
   - hybernate hannes - more active
   - open jpa
 - lowtech ORM
+
    - spring DAO - 
 http://stackoverflow.com/questions/296587/light-weight-alternative-to-hibernate
 http://stackoverflow.com/questions/9665036/alternatives-to-hibernate
@@ -85,4 +107,7 @@ how to detect:
   ENST00000359597.4 (TP53)
   ENST00000413465.2 (TP53)
 \fi
+\bibliographystyle{plain}
+\bibliography{spec}
+
 \end{document}

@@ -17,8 +17,10 @@ ltxmode =\\nonstopmode\\input
 
 output/%.pdf: %.ltx ${depends}
 	@mkdir -p $(dir $@)
-	pdflatex ${ltxopts} ${ltxmode} $< </dev/null || (rm -f $@; false)
-	pdflatex ${ltxopts} ${ltxmode} $< </dev/null || (rm -f $@; false)
+	pdflatex ${ltxopts} -jobname $*.tmp ${ltxmode} $< </dev/null || (rm -f $@; false)
+	bibtex output/$*.tmp </dev/null || (rm -f $@; false)
+	pdflatex ${ltxopts} -jobname $*.tmp ${ltxmode} $< </dev/null || (rm -f $@; false)
+	pdflatex ${ltxopts} -jobname $*.tmp ${ltxmode} $< </dev/null || (rm -f $@; false)
 
 output/%.pdf: drawings/%.svg
 	@mkdir -p $(dir $@)

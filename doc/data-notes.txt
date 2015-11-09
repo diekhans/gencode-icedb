@@ -1,0 +1,20 @@
+
+2015-06-15
+  -  Sanger protemics pipeline presented by James Wright
+    http://www.sanger.ac.uk/resources/technologies/proteomicspectrometry
+
+2015-11-09:
+ GTEx -  	Illumina 	HiSeq 2000  76bp, paired-end run
+ BodyMap 2.0    Illumina 	HiSeq 2000  16 human tissue
+
+https://www.illumina.com/informatics/research/sequencing-data-analysis-management/sequencing-data-library.html
+
+    From: Jennifer Harrow <jla1@sanger.ac.uk>
+    This sounds fine , I would recommend using RNAseq illumina pair-end from Matthias Uhlens group from 32 tissues as probably more extensive than Body Map.
+
+    For mouse you could include Kaessmann data 76bp pair-end 
+
+    http://www.ebi.ac.uk/arrayexpress/experiments/E-GEOD-30352/
+    http://www.ebi.ac.uk/arrayexpress/experiments/E-MTAB-2836/
+
+    and encode mouse data 75bp pair-end from wold/gingeras and snyder lab would be fine 
