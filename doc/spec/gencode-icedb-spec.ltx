@@ -73,20 +73,13 @@ selected RNA-Seq data is remapped to the genome using the GENCODE set as
 the target set.  The STAR \cite{Dobin25102012} mapper is use, which
 has excellent speed and maintaining accuracy.
 
-SJ.out.tab contains high confidence collapsed splice junctions in tab-delimited format. The columns have the following meaning:
-column 1: column 2: column 3: column 4: column 5:
-column 6:
-column 7:
-column 8:
-chromosome
-first base of the intron (1-based)
-last base of the intron (1-based)
-strand (0: undefined, 1: +, 2: -)
-intron motif: 0: non-canonical; 1: GT/AG, 2: CT/AC, 3: GC/AG, 4: CT/GC, 5: AT/AC, 6: GT/AT
-0: unannotated, 1: annotated (only if splice junctions database is used) number of uniquely mapping reads crossing the junction
-number of multi-mapping reads crossing the junction
-maximum spliced alignment overhang
-column 9:
+Due to lack of good support for mapping reads to alt-loci sequence, only the
+primary assembly, including unlocalized sequence, is current evaluated.
+
+The remapped alignments are discarded, only the splice junction output is
+kept.  The results are filter to drop splice junction support small {\it
+  maximum spliced alignment overhang}.
+
 
 \section{Build process}
 
