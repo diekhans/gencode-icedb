@@ -3,6 +3,7 @@
 import sys
 import os
 import argparse
+from shutil import copyfile
 sys.path.insert(0, os.path.expanduser("~markd/compbio/code/pycbio"))
 from pycbio.sys import fileOps
 from pycbio.sys import procOps
@@ -22,25 +23,29 @@ def parseArgs():
                         this must not exist; Log.out is also saved in this directory""")
     parser.add_argument('readsFile',
                         help="""input reads in SAM or BAM format""")
-    parser.add_argument('outPrefix',
-                        help="""output file prefix name""")
+    parser.add_argument('sjOut',
+                        help="""splice junction output file """)
     return parser.parse_args()
 
 
 def starSpliceJunctionMap(opts):
-    tmpDir = fileOps.tmpFileGet(prefix="star", tmpDir=opts.tmpDir)
-    if opts.outPrefix.find('/') >= 0:
-        fileOps.ensureFileDir(opts.outPrefix)
+    starTmpDir = fileOps.tmpFileGet(prefix="star", tmpDir=opts.tmpDir)
+    # holds output files before filtering
+    outputTmpDir = fileOps.tmpFileGet(prefix="starout", tmpDir=opts.tmpDir)
+    sjTmpOut = os.path.join(outputTmpDir, "SJ.out.tab")
+    fileOps.ensureDir(outputTmpDir)
     cmd0 = ["samtools", "bam2fq", opts.readsFile]
     cmd1 = ["STAR",
-           "--runMode", "alignReads",
-           "--runThreadN", opts.numThreads,
-           "--outSAMmode", "None",
-           "--genomeDir", opts.genomeDir,
-           "--readFilesIn", "/dev/stdin",
-           "--outTmpDir", tmpDir,
-           "--outFileNamePrefix", opts.outPrefix]
+            "--runMode", "alignReads",
+            "--runThreadN", opts.numThreads,
+            "--outSAMmode", "None",
+            "--genomeDir", opts.genomeDir,
+            "--readFilesIn", "/dev/stdin",
+            "--outTmpDir", starTmpDir,
+            "--outFileNamePrefix", outputTmpDir+"/"]
     procOps.runProc((cmd0, cmd1), stderr=DataReader)
+    copyfile(sjTmpOut, opts.sjOut)
+    fileOps.rmTree(outputTmpDir)
 
 
 starSpliceJunctionMap(parseArgs())

@@ -19,13 +19,13 @@ output/smallGenomeTest.done:
 	touch output/smallGenomeTest.done
 
 smallMapSamTest: mkdirs output/smallGenomeTest.done
-	nice ${starSpliceJunctionMap} --numThreads=${numThreads} --tmpDir=output output/smallGenomeTest.genome input/small-rnaseq.sam output/$@/$@
-	diff expected/smallMapSamTestSJ.out.tab output/smallMapSamTest/smallMapSamTestSJ.out.tab
+	nice ${starSpliceJunctionMap} --numThreads=${numThreads} --tmpDir=output output/smallGenomeTest.genome input/small-rnaseq.sam output/smallMapSamTestSJ.out.tab
+	diff expected/smallMapSamTestSJ.out.tab output/smallMapSamTestSJ.out.tab
 
 smallMapBamTest: mkdirs output/smallGenomeTest.done
 	samtools view -hb input/small-rnaseq.sam > output/$@.bam
-	nice ${starSpliceJunctionMap} --numThreads=${numThreads} --tmpDir=output output/smallGenomeTest.genome output/$@.bam output/$@/$@
-	diff expected/smallMapSamTestSJ.out.tab output/smallMapBamTest/smallMapBamTestSJ.out.tab
+	nice ${starSpliceJunctionMap} --numThreads=${numThreads} --tmpDir=output output/smallGenomeTest.genome output/$@.bam output/smallMapBamTestSJ.out.tab
+	diff expected/smallMapSamTestSJ.out.tab output/smallMapBamTestSJ.out.tab
 
 
 mkdirs:
