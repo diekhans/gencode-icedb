@@ -15,8 +15,8 @@ smallGenomeTest: mkdirs
 	touch output/$@.done
 
 smallMapSamTest: mkdirs output/smallGenomeTest.done
-	nice ${starSpliceJunctionMap} --numThreads=${numThreads} --tmpDir=output output/smallGenomeTest.genome input/small-rnaseq.sam output/$@/$@.out
-
+	nice ${starSpliceJunctionMap} --numThreads=${numThreads} --tmpDir=output output/smallGenomeTest.genome input/small-rnaseq.sam output/$@/$@
+	diff expected/smallMapSamTest.outSJ.tab expected/smallMapSamTest.outSJ.tab
 
 
 mkdirs:
