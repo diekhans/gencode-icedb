@@ -29,14 +29,14 @@ def parseArgs():
 
 
 def starGenerateGenome(opts):
-    tmpDir = fileOps.tmpFileGet(prefix="star", tmpDir=opts.tmpDir)
+    starTmpDir = fileOps.tmpFileGet(prefix="star", tmpDir=opts.tmpDir)
     fileOps.ensureDir(opts.genomeDir)
     cmd = ["STAR",
            "--genomeFastaFiles", opts.genomeFa,
            "--runMode", "genomeGenerate",
            "--runThreadN", opts.numThreads,
            "--genomeDir", opts.genomeDir,
-           "--outTmpDir", tmpDir,
+           "--outTmpDir", starTmpDir,
            "--sjdbGTFfile", opts.annotationGtf,
            "--sjdbOverhang", opts.readLength-1,
            "--outFileNamePrefix", opts.genomeDir + "/"]
