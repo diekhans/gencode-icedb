@@ -15,6 +15,6 @@
   - maximum spliced alignment overhang
 
 
-- CIRM data might have longer reads:
+- some CIRM data might have longer reads:
   /hive/groups/cirm/pilot/labs/kriegstein/fastqFiles
   /hive/groups/cirm/submit/quake/quakeBrainGeo1

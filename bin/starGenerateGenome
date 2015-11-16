@@ -1,0 +1,46 @@
+#!/bin/env python
+
+import sys
+import os
+import argparse
+sys.path.insert(0, os.path.expanduser("~markd/compbio/code/pycbio"))
+from pycbio.sys import fileOps
+from pycbio.sys import procOps
+from pycbio.sys.pipeline import DataReader
+
+
+def parseArgs():
+    desc = """Create STAR genome index for a given read size and annotation set"""
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument('--numThreads', type=int,
+                        help="number of threads to use")
+    parser.add_argument('--tmpDir',
+                        help="""temporary directory to use; a directory with a unique name is created under here and removed after.  Defaults to value of TMPDIR""")
+    parser.add_argument('genomeFa',
+                        help="genome FASTA file")
+    parser.add_argument('annotationGtf',
+                        help="GTF of annotations to define splice junctions")
+    parser.add_argument('readLength', type=int,
+                        help="length of reads that will be mapped; used to calculate splice junction overhang")
+    parser.add_argument('genomeDir',
+                        help="""directory to contain all the generated files;
+                        this must not exist; Log.out is also saved in this directory""")
+    return parser.parse_args()
+
+
+def starGenerateGenome(opts):
+    tmpDir = fileOps.tmpFileGet(prefix="star", tmpDir=opts.tmpDir)
+    fileOps.ensureDir(opts.genomeDir)
+    cmd = ["STAR",
+           "--genomeFastaFiles", opts.genomeFa,
+           "--runMode", "genomeGenerate",
+           "--runThreadN", opts.numThreads,
+           "--genomeDir", opts.genomeDir,
+           "--outTmpDir", tmpDir,
+           "--sjdbGTFfile", opts.annotationGtf,
+           "--sjdbOverhang", opts.readLength-1,
+           "--outFileNamePrefix", opts.genomeDir + "/"]
+    procOps.runProc(cmd, stderr=DataReader)
+
+
+starGenerateGenome(parseArgs())
