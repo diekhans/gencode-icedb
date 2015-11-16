@@ -2,21 +2,30 @@
 starGenerateGenome = ../bin/starGenerateGenome
 starSpliceJunctionMap = ../bin/starSpliceJunctionMap
 
+.SECONDARY:
+
 numThreads=2
 test: smallTests
 
 # tests with tiny region chr22:19175560-19178840 and reads from
 # wgEncodeCaltechRnaSeqGm12878R1x75dAlignsRep1V2.bam
-smallTests: smallGenomeTest smallMapSamTest
+smallTests: smallMapSamTest smallMapBamTest
 
-smallGenomeTest: mkdirs
+# since generate genome take so long, run only once between make clean
+output/smallGenomeTest.done: 
 	rm -rf output/$@.genome
-	nice ${starGenerateGenome} --numThreads=${numThreads} --tmpDir=output input/small-chr22.fa input/small-gencode.gtf 75 output/$@.genome
-	touch output/$@.done
+	@mkdir -p output
+	nice ${starGenerateGenome} --numThreads=${numThreads} --tmpDir=output input/small-chr22.fa input/small-gencode.gtf 75 output/smallGenomeTest.genome
+	touch output/smallGenomeTest.done
 
 smallMapSamTest: mkdirs output/smallGenomeTest.done
 	nice ${starSpliceJunctionMap} --numThreads=${numThreads} --tmpDir=output output/smallGenomeTest.genome input/small-rnaseq.sam output/$@/$@
-	diff expected/smallMapSamTest.outSJ.tab expected/smallMapSamTest.outSJ.tab
+	diff expected/smallMapSamTestSJ.out.tab output/smallMapSamTest/smallMapSamTestSJ.out.tab
+
+smallMapBamTest: mkdirs output/smallGenomeTest.done
+	samtools view -hb input/small-rnaseq.sam > output/$@.bam
+	nice ${starSpliceJunctionMap} --numThreads=${numThreads} --tmpDir=output output/smallGenomeTest.genome output/$@.bam output/$@/$@
+	diff expected/smallMapSamTestSJ.out.tab output/smallMapBamTest/smallMapBamTestSJ.out.tab
 
 
 mkdirs:
