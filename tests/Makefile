@@ -1,11 +1,12 @@
 
 starGenerateGenome = ../bin/starGenerateGenome
 starSpliceJunctionMap = ../bin/starSpliceJunctionMap
+faUcscToGencode = ../bin/faUcscToGencode
 
 .SECONDARY:
 
 numThreads=2
-test: smallTests
+test: smallTests faTests
 
 # tests with tiny region chr22:19175560-19178840 and reads from
 # wgEncodeCaltechRnaSeqGm12878R1x75dAlignsRep1V2.bam
@@ -27,6 +28,12 @@ smallMapBamTest: mkdirs output/smallGenomeTest.done
 	nice ${starSpliceJunctionMap} --numThreads=${numThreads} --tmpDir=output output/smallGenomeTest.genome output/$@.bam output/smallMapBamTestSJ.out.tab
 	diff expected/smallMapSamTestSJ.out.tab output/smallMapBamTestSJ.out.tab
 
+# tests of creating genome fasta with genomes names
+faTests: ucscGencodeFaTest
+
+ucscGencodeFaTest: mkdirs
+	${faUcscToGencode} input/ucscGenome.fa input/ucsc2GencodeNames.tsv output/$@.fa
+	diff expected/$@.fa output/$@.fa
 
 mkdirs:
 	@mkdir -p output

@@ -1,4 +1,5 @@
 ROOT = .
+include ${ROOT}/config.mk
 
 all:
 	(cd src && ${MAKE})
