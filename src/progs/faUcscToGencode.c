@@ -36,23 +36,27 @@ static struct hash* loadNameMap(char* nameMapTsv) {
 }
 
 /* process on fasta record, outputting or skipping */
-static void processRecord(struct hash* nameMap, struct dnaSeq* dnaSeq, FILE* outFh) {
-    char* gencodeName = hashFindVal(nameMap, dnaSeq->name);
+static void processRecord(struct hash* nameMap, DNA* dna, int dnaSize, char* name, FILE* outFh) {
+    char* gencodeName = hashFindVal(nameMap, name);
     if (gencodeName != NULL) {
-        faWriteNext(outFh, gencodeName, dnaSeq->dna, dnaSeq->size);
+        faWriteNext(outFh, gencodeName, dna, dnaSize);
     }
 }
 
 static void faUcscToGencode(char* ucscFa, char* nameMapTsv, char* gencodeFa) {
     struct hash* nameMap = loadNameMap(nameMapTsv);
-    FILE* inFh = mustOpen(ucscFa, "r");
+    struct lineFile* inFh = lineFileOpen(ucscFa, TRUE);
     FILE* outFh = mustOpen(gencodeFa, "w");
 
-    struct dnaSeq* dnaSeq;
-    while (faReadMixedNext(inFh, TRUE, NULL, TRUE, NULL, &dnaSeq)) {
-        processRecord(nameMap, dnaSeq, outFh);
+    // must use faFastReadNext to avoid fseek
+    DNA* dna = NULL;
+    int dnaSize = 0;
+    char* name = NULL;
+    while (faMixedSpeedReadNext(inFh, &dna, &dnaSize, &name)) {
+        processRecord(nameMap, dna, dnaSize, name, outFh);
     }
-    carefulClose(&inFh);
+    faFreeFastBuf();
+    lineFileClose(&inFh);
     carefulClose(&outFh);
 }
 

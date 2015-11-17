@@ -22,11 +22,19 @@ def parseArgs():
                         help="""directory to contain all the generated files;
                         this must not exist; Log.out is also saved in this directory""")
     parser.add_argument('readsFile',
-                        help="""input reads in SAM or BAM format""")
+                        help="""input reads in SAM, BAM or Fastq format, which maybe compressed""")
     parser.add_argument('sjOut',
                         help="""splice junction output file """)
     return parser.parse_args()
 
+def getReadsCommands(opts):
+    # FIXME: add better checking
+    if opts.readsFile.endswith(".gz"):
+        return ['zcat', opts.readsFile]
+    elif opts.readsFile.endswith(".bz2"):
+        return ['bzcat', opts.readsFile]
+    else:
+       return ["samtools", "bam2fq", opts.readsFile]
 
 def starSpliceJunctionMap(opts):
     starTmpDir = fileOps.tmpFileGet(prefix="star", tmpDir=opts.tmpDir)
@@ -34,16 +42,15 @@ def starSpliceJunctionMap(opts):
     outputTmpDir = fileOps.tmpFileGet(prefix="starout", tmpDir=opts.tmpDir)
     sjTmpOut = os.path.join(outputTmpDir, "SJ.out.tab")
     fileOps.ensureDir(outputTmpDir)
-    cmd0 = ["samtools", "bam2fq", opts.readsFile]
-    cmd1 = ["STAR",
-            "--runMode", "alignReads",
-            "--runThreadN", opts.numThreads,
-            "--outSAMmode", "None",
-            "--genomeDir", opts.genomeDir,
-            "--readFilesIn", "/dev/stdin",
-            "--outTmpDir", starTmpDir,
-            "--outFileNamePrefix", outputTmpDir+"/"]
-    procOps.runProc((cmd0, cmd1), stderr=DataReader)
+    cmd = ["STAR",
+           "--runMode", "alignReads",
+           "--runThreadN", opts.numThreads,
+           "--outSAMmode", "None",
+           "--genomeDir", opts.genomeDir,
+           "--readFilesIn", "/dev/stdin",
+           "--outTmpDir", starTmpDir,
+           "--outFileNamePrefix", outputTmpDir+"/"]
+    procOps.runProc((getReadsCommands(opts), cmd), stderr=DataReader)
     copyfile(sjTmpOut, opts.sjOut)
     fileOps.rmTree(outputTmpDir)
 
