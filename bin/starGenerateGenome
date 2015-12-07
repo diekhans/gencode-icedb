@@ -4,16 +4,19 @@ import sys
 import os
 import argparse
 sys.path.insert(0, os.path.expanduser("~markd/compbio/code/pycbio"))
+myBinDir = os.path.normpath(os.path.dirname(sys.argv[0]))
+sys.path.append(myBinDir + "/../lib")
 from pycbio.sys import fileOps
-from pycbio.sys import procOps
-from pycbio.sys.pipeline import DataReader
+from gencode_icedb import pipelineOps
 
-
+verbose = False
 def parseArgs():
     desc = """Create STAR genome index for a given read size and annotation set"""
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('--numThreads', type=int,
                         help="number of threads to use")
+    parser.add_argument('--verbose', action="store_true", default=False,
+                        help="write verbose output")
     parser.add_argument('--tmpDir',
                         help="""temporary directory to use; a directory with a unique name is created under here and removed after.  Defaults to value of TMPDIR""")
     parser.add_argument('genomeFa',
@@ -25,7 +28,9 @@ def parseArgs():
     parser.add_argument('genomeDir',
                         help="""directory to contain all the generated files;
                         this must not exist; Log.out is also saved in this directory""")
-    return parser.parse_args()
+    opts = parser.parse_args()
+    verbose = opts.verbose
+    return opts
 
 
 def starGenerateGenome(opts):
@@ -40,7 +45,6 @@ def starGenerateGenome(opts):
            "--sjdbGTFfile", opts.annotationGtf,
            "--sjdbOverhang", opts.readLength-1,
            "--outFileNamePrefix", opts.genomeDir + "/"]
-    procOps.runProc(cmd, stderr=DataReader)
-
+    pipelineOps.runCmd(cmd, verbose=verbose)
 
 starGenerateGenome(parseArgs())

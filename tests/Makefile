@@ -2,11 +2,12 @@
 starGenerateGenome = ../bin/starGenerateGenome
 starSpliceJunctionMap = ../bin/starSpliceJunctionMap
 faUcscToGencode = ../bin/faUcscToGencode
+estimateReadLength = ../bin/estimateReadLength
 
 .SECONDARY:
 
 numThreads=2
-test: smallTests faTests
+test: smallTests readLenTests faTests
 
 # tests with tiny region chr22:19175560-19178840 and reads from
 # wgEncodeCaltechRnaSeqGm12878R1x75dAlignsRep1V2.bam
@@ -27,6 +28,17 @@ smallMapBamTest: mkdirs output/smallGenomeTest.done
 	samtools view -hb input/small-rnaseq.sam > output/$@.bam
 	nice ${starSpliceJunctionMap} --numThreads=${numThreads} --tmpDir=output output/smallGenomeTest.genome output/$@.bam output/smallMapBamTestSJ.out.tab
 	diff expected/smallMapSamTestSJ.out.tab output/smallMapBamTestSJ.out.tab
+
+# rest obtaining average read lengths
+readLenTests: readLenAllTest readLenSomeTest
+
+readLenAllTest: mkdirs
+	${estimateReadLength} input/small-rnaseq.sam output/$@.avelen
+	diff expected/$@.avelen output/$@.avelen
+
+readLenSomeTest: mkdirs
+	${estimateReadLength} --sampleSize=5 input/small-rnaseq.sam > output/$@.avelen
+	diff expected/$@.avelen output/$@.avelen
 
 # tests of creating genome fasta with genomes names
 faTests: ucscGencodeFaTest

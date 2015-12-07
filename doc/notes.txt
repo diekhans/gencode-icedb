@@ -1,0 +1,6 @@
+
+# estimating read length of fastq
+
+awk 'NR%4 == 2 {lengths[length($0)]++} END {for (l in lengths) {print l, lengths[l]}}' file.fastq
+
+~/compbio/gencode/projs/icedb/work/star/star-play/data/

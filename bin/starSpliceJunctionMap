@@ -5,17 +5,20 @@ import os
 import argparse
 from shutil import copyfile
 sys.path.insert(0, os.path.expanduser("~markd/compbio/code/pycbio"))
+myBinDir = os.path.normpath(os.path.dirname(sys.argv[0]))
+sys.path.append(myBinDir + "/../lib")
 from pycbio.sys import fileOps
-from pycbio.sys import procOps
-from pycbio.sys.pipeline import DataReader
+from gencode_icedb import readsOps, pipelineOps
 
-
+verbose = False
 def parseArgs():
     desc = """Map reads to a genome with annotations and save splice junction mapping
     information,"""
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('--numThreads', type=int,
                         help="number of threads to use")
+    parser.add_argument('--verbose', action="store_true", default=False,
+                        help="write verbose output")
     parser.add_argument('--tmpDir',
                         help="""temporary directory to use; a directory with a unique name is created under here and removed after.  Defaults to value of TMPDIR""")
     parser.add_argument('genomeDir',
@@ -25,16 +28,9 @@ def parseArgs():
                         help="""input reads in SAM, BAM or Fastq format, which maybe compressed""")
     parser.add_argument('sjOut',
                         help="""splice junction output file """)
-    return parser.parse_args()
-
-def getReadsCommands(opts):
-    # FIXME: add better checking
-    if opts.readsFile.endswith(".gz"):
-        return ['zcat', opts.readsFile]
-    elif opts.readsFile.endswith(".bz2"):
-        return ['bzcat', opts.readsFile]
-    else:
-       return ["samtools", "bam2fq", opts.readsFile]
+    opts = parser.parse_args()
+    verbose = opts.verbose
+    return opts
 
 def starSpliceJunctionMap(opts):
     starTmpDir = fileOps.tmpFileGet(prefix="star", tmpDir=opts.tmpDir)
@@ -50,9 +46,9 @@ def starSpliceJunctionMap(opts):
            "--readFilesIn", "/dev/stdin",
            "--outTmpDir", starTmpDir,
            "--outFileNamePrefix", outputTmpDir+"/"]
-    procOps.runProc((getReadsCommands(opts), cmd), stderr=DataReader)
+    pipelineOps.runCmd((readsOps.getReadsCatCommand(opts.readsFile), cmd),
+                       verbose=verbose)
     copyfile(sjTmpOut, opts.sjOut)
     fileOps.rmTree(outputTmpDir)
-
 
 starSpliceJunctionMap(parseArgs())
