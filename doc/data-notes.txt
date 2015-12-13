@@ -10,7 +10,9 @@
 https://www.illumina.com/informatics/research/sequencing-data-analysis-management/sequencing-data-library.html
 
     From: Jennifer Harrow <jla1@sanger.ac.uk>
-    This sounds fine , I would recommend using RNAseq illumina pair-end from Matthias Uhlens group from 32 tissues as probably more extensive than Body Map.
+    This sounds fine , I would recommend using RNAseq illumina pair-end from
+    Matthias Uhlens group from 32 tissues as probably more extensive than Body
+    Map.
 
     For mouse you could include Kaessmann data 76bp pair-end 
 
@@ -18,3 +20,6 @@ https://www.illumina.com/informatics/research/sequencing-data-analysis-managemen
     http://www.ebi.ac.uk/arrayexpress/experiments/E-MTAB-2836/
 
     and encode mouse data 75bp pair-end from wold/gingeras and snyder lab would be fine 
+
+2015-12-08:
+  Jose's pacbio data
