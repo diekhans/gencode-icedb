@@ -1,0 +1,63 @@
+#!/usr/bin/env python
+
+import sys
+import os
+import argparse
+import datetime
+sys.path.insert(0, os.path.expanduser("~markd/compbio/code/pycbio"))
+myBinDir = os.path.normpath(os.path.dirname(sys.argv[0]))
+sys.path.append(myBinDir + "/../lib")
+from gencode_icedb.rnaSeqData import setDatabase, RnaSeqData
+from gencode_icedb import pipelineOps
+from peewee import SqliteDatabase
+
+verbose = False
+def parseArgs():
+    desc = """Register an RNA-Seq data (reads) in an IceDb control database.
+,"""
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument('--verbose', action="store_true", default=False,
+                        help="write verbose output")
+    parser.add_argument('--dataRootDir',
+                        help="""data root directory""")
+    parser.add_argument('--readsFileUrl',
+                        help="""URL where files was obtained; for recording only""")
+    parser.add_argument('--description',
+                        help="""description of RNA-Seq data""")
+    parser.add_argument('name',
+                        help="""unique name of data set""")
+    parser.add_argument('--tissue',
+                        help="""description of tissue(s) that were used""")
+    parser.add_argument('organism',
+                        help="""scientific name of organism""")
+    parser.add_argument('readsFile',
+                        help="""input reads file SAM, BAM or Fastq format, which maybe compressed""")
+    parser.add_argument('database',
+                        help="""Sqlite3 database""")
+    opts = parser.parse_args()
+    verbose = opts.verbose
+    return opts
+
+def getReadLength(readsPath):
+    return int(pipelineOps.callCmd([os.path.join(myBinDir, "estimateReadLength"), readsPath, "/dev/stdout"]))
+
+def rnaSeqRunRegister(opts):
+    database = SqliteDatabase(opts.database)
+    setDatabase(database)
+    if not RnaSeqData.table_exists():
+         RnaSeqData.create_table()
+    rec = RnaSeqData(
+        name=opts.name,
+        created=datetime.datetime.utcnow(),
+        organism=opts.organism,
+        readsfileurl=opts.readsFileUrl,
+        readsfile=opts.readsFile,
+        readlength=getReadLength(os.path.join(opts.dataRootDir, opts.readsFile)),
+        description=opts.description,
+        tissue=opts.tissue)
+    rec.save()
+    # FIXME: database.close()
+
+opts = parseArgs()
+rnaSeqRunRegister(opts)
+

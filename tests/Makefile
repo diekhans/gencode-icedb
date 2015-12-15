@@ -3,6 +3,7 @@ starGenerateGenome = ../bin/starGenerateGenome
 starSpliceJunctionMap = ../bin/starSpliceJunctionMap
 faUcscToGencode = ../bin/faUcscToGencode
 estimateReadLength = ../bin/estimateReadLength
+rnaSeqDataRegister = ../bin/rnaSeqDataRegister
 
 .SECONDARY:
 
@@ -46,6 +47,23 @@ faTests: ucscGencodeFaTest
 ucscGencodeFaTest: mkdirs
 	${faUcscToGencode} input/ucscGenome.fa input/ucsc2GencodeNames.tsv output/$@.fa
 	diff expected/$@.fa output/$@.fa
+
+rnaSeqDataRegisterTest: mkdirs
+	@rm -f output/$@.db
+	samtools view -hb input/small-rnaseq.sam > output/$@.bam
+	${rnaSeqDataRegister} --dataRootDir=. \
+		--readsFileUrl="http://fred.org/data/input/small-rnaseq.sam" \
+		--description="small RNA-Seq" \
+		--tissue="micro brain" \
+		small1A "human" input/small-rnaseq.sam output/$@.db
+	${rnaSeqDataRegister} --dataRootDir=. \
+		--readsFileUrl="http://fred.org/data/input/smallish-rnaseq.bam" \
+		--description="not so small RNA-Seq" \
+		--tissue="macro brain" \
+		small1B "human" output/$@.bam output/$@.db
+	echo 'select * from rnaseqdata;' | sqlite3 -bail output/$@.db > output/$@.tsv
+	cut -f 1-2,4- output/$@.tsv >output/$@.notime.tsv
+	diff expected/$@.notime.tsv output/$@.notime.tsv
 
 mkdirs:
 	@mkdir -p output

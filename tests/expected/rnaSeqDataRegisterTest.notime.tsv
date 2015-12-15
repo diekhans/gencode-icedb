@@ -1,0 +1,2 @@
+1	small1A	human	http://fred.org/data/input/small-rnaseq.sam	input/small-rnaseq.sam	75	small RNA-Seq	micro brain
+2	small1B	human	http://fred.org/data/input/smallish-rnaseq.bam	output/rnaSeqDataRegisterTest.bam	75	not so small RNA-Seq	macro brain
