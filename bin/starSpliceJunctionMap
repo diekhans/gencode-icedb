@@ -26,11 +26,35 @@ def parseArgs():
                         this must not exist; Log.out is also saved in this directory""")
     parser.add_argument('readsFile',
                         help="""input reads in SAM, BAM or Fastq format, which maybe compressed""")
+    parser.add_argument('--readsFile2',
+                        help="""second reads file, used when read pairs are
+                        split into two fastq files.  Both reads must be fastq
+                        files if used.""")
     parser.add_argument('sjOut',
                         help="""splice junction output file """)
     opts = parser.parse_args()
     verbose = opts.verbose
+    if opts.readsFile2 is not None:
+        if not (readsOps.isFastq(opts.readsFile) and readsOps.isFastq(opts.readsFile2)):
+            parser.error("both reads files must be fastq if --readsFile2 is specified")
     return opts
+
+def starCmd(numThreads, genomeDir, readsFile, readsFile2,
+            decompressCmd, starTmpDir, outputTmpDir):
+    "construct command line to run STAR"
+    cmd = ["STAR",
+           "--runMode", "alignReads",
+           "--runThreadN", numThreads,
+           "--outSAMmode", "None",
+           "--genomeDir", genomeDir,
+           "--outTmpDir", starTmpDir,
+           "--outFileNamePrefix", outputTmpDir+"/",
+           "--readFilesIn", readsFile]
+    if readsFile2 is not None:
+        cmd.append(readsFile2)
+    if decompressCmd is not None:
+        cmd.extend(["--readFilesCommand", decompressCmd])
+    return cmd
 
 def starSpliceJunctionMap(opts):
     starTmpDir = fileOps.tmpFileGet(prefix="star", tmpDir=opts.tmpDir)
@@ -38,16 +62,21 @@ def starSpliceJunctionMap(opts):
     outputTmpDir = fileOps.tmpFileGet(prefix="starout", tmpDir=opts.tmpDir)
     sjTmpOut = os.path.join(outputTmpDir, "SJ.out.tab")
     fileOps.ensureDir(outputTmpDir)
-    cmd = ["STAR",
-           "--runMode", "alignReads",
-           "--runThreadN", opts.numThreads,
-           "--outSAMmode", "None",
-           "--genomeDir", opts.genomeDir,
-           "--readFilesIn", "/dev/stdin",
-           "--outTmpDir", starTmpDir,
-           "--outFileNamePrefix", outputTmpDir+"/"]
-    pipelineOps.runCmd((readsOps.getReadsCatCommand(opts.readsFile), cmd),
-                       verbose=verbose)
+
+    # Input depends on if one or two files are specified.  with one file, we
+    # pipe it and can read from SAM/BAM.  With two, we need parallel fastq
+    # files for paired-end reads.
+    cmds = []
+    if opts.readsFile2 == None:
+        cmds.append(readsOps.getReadsCatCommand(opts.readsFile))
+        readsFile = "/dev/stdin"
+        decompressCmd = None
+    else:
+        readsFile = opts.readsFile
+        decompressCmd = fileOps.decompressCmd(readsFile, None)
+    cmds.append(starCmd(opts.numThreads, opts.genomeDir, readsFile, opts.readsFile2,
+                        decompressCmd, starTmpDir, outputTmpDir))
+    pipelineOps.runCmd(cmds, verbose=verbose)
     copyfile(sjTmpOut, opts.sjOut)
     fileOps.rmTree(outputTmpDir)
 

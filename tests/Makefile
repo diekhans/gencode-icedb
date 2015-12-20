@@ -13,23 +13,33 @@ test: smallTests readLenTests faTests
 
 # small test data:
 
-smallTests: smallMapSamTest smallMapBamTest
+smallTests: smallMapSamTest smallMapBamTest smallMapPairFastqTest
 
 # since generate genome take so long, run only once between make clean
 output/smallGenomeTest.done: 
-	rm -rf output/$@.genome
+	rm -rf output/smallGenomeTest.genome
 	@mkdir -p output
 	nice ${starGenerateGenome} --numThreads=${numThreads} --tmpDir=output input/small-chr22.fa input/small-gencode.gtf 75 output/smallGenomeTest.genome
-	touch output/smallGenomeTest.done
+	touch $@
+
+# split test reads file into a pair of paried read fastq files
+output/smallFastqPair.done:
+	@mkdir -p output
+	samtools sort -n --output-fmt sam input/small-rnaseq.sam  |samtools fastq -1 output/smallFastqPair_1.fastq -2 output/smallFastqPair_2.fastq -s output/smallFastqPair_0.fastq /dev/stdin
+	touch $@
 
 smallMapSamTest: mkdirs output/smallGenomeTest.done
-	nice ${starSpliceJunctionMap} --numThreads=${numThreads} --tmpDir=output output/smallGenomeTest.genome input/small-rnaseq.sam output/smallMapSamTestSJ.out.tab
-	diff expected/smallMapSamTestSJ.out.tab output/smallMapSamTestSJ.out.tab
+	nice ${starSpliceJunctionMap} --numThreads=${numThreads} --tmpDir=output output/smallGenomeTest.genome input/small-rnaseq.sam output/$@SJ.out.tab
+	diff expected/$@SJ.out.tab output/$@SJ.out.tab
 
 smallMapBamTest: mkdirs output/smallGenomeTest.done
 	samtools view -hb input/small-rnaseq.sam > output/$@.bam
-	nice ${starSpliceJunctionMap} --numThreads=${numThreads} --tmpDir=output output/smallGenomeTest.genome output/$@.bam output/smallMapBamTestSJ.out.tab
-	diff expected/smallMapSamTestSJ.out.tab output/smallMapBamTestSJ.out.tab
+	nice ${starSpliceJunctionMap} --numThreads=${numThreads} --tmpDir=output output/smallGenomeTest.genome output/$@.bam output/$@SJ.out.tab
+	diff expected/smallMapSamTestSJ.out.tab output/$@SJ.out.tab
+
+smallMapPairFastqTest: mkdirs output/smallGenomeTest.done output/smallFastqPair.done
+	nice ${starSpliceJunctionMap} --numThreads=${numThreads} --tmpDir=output output/smallGenomeTest.genome output/smallFastqPair_1.fastq --readsFile2=output/smallFastqPair_2.fastq output/$@SJ.out.tab
+	diff expected/$@SJ.out.tab output/$@SJ.out.tab
 
 # rest obtaining average read lengths
 readLenTests: readLenAllTest readLenSomeTest
