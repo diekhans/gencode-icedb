@@ -10,8 +10,9 @@ rnaSeqDataRegister = ../bin/rnaSeqDataRegister
 numThreads=2
 test: smallTests readLenTests faTests
 
-# tests with tiny region chr22:19175560-19178840 and reads from
-# wgEncodeCaltechRnaSeqGm12878R1x75dAlignsRep1V2.bam
+
+# small test data:
+
 smallTests: smallMapSamTest smallMapBamTest
 
 # since generate genome take so long, run only once between make clean

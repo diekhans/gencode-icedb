@@ -23,3 +23,14 @@ https://www.illumina.com/informatics/research/sequencing-data-analysis-managemen
 
 2015-12-08:
   Jose's pacbio data
+
+2015-12-19:
+  Matthias Uhlen data
+  http://www.proteinatlas.org/about/download
+
+  human tissues:
+        http://www.proteinatlas.org/download/rna_tissue.csv.zip
+        http://www.ebi.ac.uk/arrayexpress/experiments/E-MTAB-2836/
+  human cell lines:
+        http://www.proteinatlas.org/download/rna_celline.csv.zip
+        http://www.ncbi.nlm.nih.gov/bioproject/PRJNA183192

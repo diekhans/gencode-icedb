@@ -29,7 +29,7 @@ def parseArgs():
     parser.add_argument('--tissue',
                         help="""description of tissue(s) that were used""")
     parser.add_argument('organism',
-                        help="""scientific name of organism""")
+                        help="""scientific name of organism, with underscores for spaces""")
     parser.add_argument('readsFile',
                         help="""input reads file SAM, BAM or Fastq format, which maybe compressed""")
     parser.add_argument('database',
@@ -56,7 +56,6 @@ def rnaSeqRunRegister(opts):
         description=opts.description,
         tissue=opts.tissue)
     rec.save()
-    # FIXME: database.close()
 
 opts = parseArgs()
 rnaSeqRunRegister(opts)
