@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.expanduser("~markd/compbio/code/pycbio"))
 myBinDir = os.path.normpath(os.path.dirname(sys.argv[0]))
 sys.path.append(myBinDir + "/../lib")
 from pycbio.sys import fileOps
-from gencode_icedb import pipelineOps
+from gencode_icedb import dataOps, pipelineOps
 
 verbose = False
 def parseArgs():
@@ -32,19 +32,25 @@ def parseArgs():
     verbose = opts.verbose
     return opts
 
+def starCmd(genomeFa, numThreads, genomeDir, annotationGtf, readLength, starTmpDir):
+    return ["STAR",
+            "--genomeFastaFiles", genomeFa,
+            "--runMode", "genomeGenerate",
+            "--runThreadN", numThreads,
+            "--genomeDir", genomeDir,
+            "--outTmpDir", starTmpDir,
+            "--sjdbGTFfile", annotationGtf,
+            "--sjdbOverhang", readLength-1,
+            "--outFileNamePrefix", genomeDir + "/"]
 
 def starGenerateGenome(opts):
     starTmpDir = fileOps.tmpFileGet(prefix="star", tmpDir=opts.tmpDir)
     fileOps.ensureDir(opts.genomeDir)
-    cmd = ["STAR",
-           "--genomeFastaFiles", opts.genomeFa,
-           "--runMode", "genomeGenerate",
-           "--runThreadN", opts.numThreads,
-           "--genomeDir", opts.genomeDir,
-           "--outTmpDir", starTmpDir,
-           "--sjdbGTFfile", opts.annotationGtf,
-           "--sjdbOverhang", opts.readLength-1,
-           "--outFileNamePrefix", opts.genomeDir + "/"]
+    genomeFa = dataOps.TmpUncompress(opts.genomeFa, opts.tmpDir)
+    annotationGtf = dataOps.TmpUncompress(opts.annotationGtf, opts.tmpDir)
+    cmd = starCmd(genomeFa.path, opts.numThreads, opts.genomeDir, annotationGtf.path, opts.readLength, starTmpDir)
     pipelineOps.runCmd(cmd, verbose=verbose)
+    genomeFa.finish()
+    annotationGtf.finish()
 
 starGenerateGenome(parseArgs())

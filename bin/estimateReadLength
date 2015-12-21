@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.expanduser("~markd/compbio/code/pycbio"))
 myBinDir = os.path.normpath(os.path.dirname(sys.argv[0]))
 sys.path.append(myBinDir + "/../lib")
 from pycbio.sys import fileOps
-from gencode_icedb import readsOps, pipelineOps
+from gencode_icedb import dataOps, pipelineOps
 
 verbose = False
 def parseArgs():
@@ -22,7 +22,7 @@ def parseArgs():
                         help="write verbose output")
     parser.add_argument('readsFile',
                         help="""input reads in SAM, BAM or Fastq format, which maybe compressed""")
-    parser.add_argument('outfile', default="/dev/stdout", nargs='?',
+    parser.add_argument('outfile', default=None, nargs='?',
                         help="""write length to this file, defaults to stdout""")
     opts = parser.parse_args()
     if opts.sampleSize <= 0:
@@ -31,7 +31,7 @@ def parseArgs():
     return opts
 
 def fastqReader(readsFile):
-    return pipelineOps.openPipeline(readsOps.getReadsCatCommand(readsFile), verbose=verbose)
+    return pipelineOps.openPipeline(dataOps.getReadsCatCommand(readsFile), verbose=verbose)
 
 def fastqReadSeq(fqfh):
     """read one  fastq sequence or None on EOF"""
@@ -64,6 +64,9 @@ def collectReadLens(readsFile, sampleSize):
     fqfh.close()
     return (readCnt, totalLen)
 
+def writeReadLen(fh, aveLen):
+    fh.write(str(aveLen)+'\n')
+
 def estimateReadLength(opts):
     readCnt, totalLen = collectReadLens(opts.readsFile, opts.sampleSize)
     if readCnt == 0:
@@ -71,7 +74,10 @@ def estimateReadLength(opts):
     aveLen = totalLen / readCnt
     if aveLen == 0:
         raise Exception("aver length of 0 from " + opts.readsFile)
-    with open(opts.outfile, "w") as fh:
-        fh.write(str(aveLen)+'\n')
+    if opts.outfile == None:
+        writeReadLen(sys.stdout, aveLen)
+    else:
+        with open(opts.outfile, "w") as fh:
+            writeReadLen(fh, aveLen)
 
 estimateReadLength(parseArgs())

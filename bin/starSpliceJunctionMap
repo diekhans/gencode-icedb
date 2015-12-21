@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.expanduser("~markd/compbio/code/pycbio"))
 myBinDir = os.path.normpath(os.path.dirname(sys.argv[0]))
 sys.path.append(myBinDir + "/../lib")
 from pycbio.sys import fileOps
-from gencode_icedb import readsOps, pipelineOps
+from gencode_icedb import dataOps, pipelineOps
 
 verbose = False
 def parseArgs():
@@ -35,7 +35,7 @@ def parseArgs():
     opts = parser.parse_args()
     verbose = opts.verbose
     if opts.readsFile2 is not None:
-        if not (readsOps.isFastq(opts.readsFile) and readsOps.isFastq(opts.readsFile2)):
+        if not (dataOps.isFastq(opts.readsFile) and dataOps.isFastq(opts.readsFile2)):
             parser.error("both reads files must be fastq if --readsFile2 is specified")
     return opts
 
@@ -68,7 +68,7 @@ def starSpliceJunctionMap(opts):
     # files for paired-end reads.
     cmds = []
     if opts.readsFile2 == None:
-        cmds.append(readsOps.getReadsCatCommand(opts.readsFile))
+        cmds.append(dataOps.getReadsCatCommand(opts.readsFile))
         readsFile = "/dev/stdin"
         decompressCmd = None
     else:
