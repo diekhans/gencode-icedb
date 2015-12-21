@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.expanduser("~markd/compbio/code/pycbio"))
 myBinDir = os.path.normpath(os.path.dirname(sys.argv[0]))
 sys.path.append(myBinDir + "/../lib")
 from gencode_icedb.rnaSeqData import setDatabase, RnaSeqData
-from gencode_icedb import pipelineOps
+from gencode_icedb import pipelineOps, dataOps
 from peewee import SqliteDatabase
 
 verbose = False
@@ -32,9 +32,20 @@ def parseArgs():
                         help="""scientific name of organism, with underscores for spaces""")
     parser.add_argument('readsFile',
                         help="""input reads file SAM, BAM or Fastq format, which maybe compressed""")
+    parser.add_argument('--readsFile2Url',
+                        help="""URL where files was obtained; for recording only""")
+    parser.add_argument('--readsFile2',
+                        help="""second reads file, used when read pairs are
+                        split into two fastq files.  Both reads must be fastq
+                        files if used.""")
     parser.add_argument('database',
                         help="""Sqlite3 database""")
     opts = parser.parse_args()
+    if opts.readsFile2 is not None:
+        if not (dataOps.isFastq(opts.readsFile) and dataOps.isFastq(opts.readsFile2)):
+            parser.error("both reads files must be fastq if --readsFile2 is specified")
+    if (opts.readsFile2Url is not None) and (opts.readsFile2 is None):
+        parser.error("--readsFile2Url requires --readsFile2")
     verbose = opts.verbose
     return opts
 
@@ -52,6 +63,8 @@ def rnaSeqRunRegister(opts):
         organism=opts.organism,
         readsfileurl=opts.readsFileUrl,
         readsfile=opts.readsFile,
+        readsfile2url=opts.readsFile2Url,
+        readsfile2=opts.readsFile2,
         readlength=getReadLength(os.path.join(opts.dataRootDir, opts.readsFile)),
         description=opts.description,
         tissue=opts.tissue)

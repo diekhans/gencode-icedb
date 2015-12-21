@@ -63,7 +63,7 @@ ucscGencodeFaTest: mkdirs
 	${faUcscToGencode} input/ucscGenome.fa input/ucsc2GencodeNames.tsv output/$@.fa
 	diff expected/$@.fa output/$@.fa
 
-rnaSeqDataRegisterTest: mkdirs
+rnaSeqDataRegisterTest: mkdirs output/smallFastqPair.done
 	@rm -f output/$@.db
 	samtools view -hb input/small-rnaseq.sam > output/$@.bam
 	${rnaSeqDataRegister} --dataRootDir=. \
@@ -76,6 +76,14 @@ rnaSeqDataRegisterTest: mkdirs
 		--description="not so small RNA-Seq" \
 		--tissue="macro brain" \
 		small1B "human" output/$@.bam output/$@.db
+	${rnaSeqDataRegister} --dataRootDir=. \
+		--readsFileUrl="http://fred.org/data/input/smallFastqPair_1.fastq" \
+		--readsFile2Url="http://fred.org/data/input/smallFastqPair_2.fastq" \
+		--description="paired RNA-Seq" \
+		--tissue="micro macro brain" \
+		small1-2 "human" output/smallFastqPair_1.fastq \
+		--readsFile2=output/smallFastqPair_2.fastq \
+		output/$@.db
 	echo 'select * from rnaseqdata;' | sqlite3 -bail output/$@.db > output/$@.tsv
 	cut -f 1-2,4- output/$@.tsv >output/$@.notime.tsv
 	diff expected/$@.notime.tsv output/$@.notime.tsv
