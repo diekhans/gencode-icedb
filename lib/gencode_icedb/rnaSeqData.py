@@ -15,7 +15,8 @@ class RnaSeqData(Model):
     SAM, BAM, or fastq and can be compressed.  readsFile path is relative
     to data root."""
     id = IntegerField(primary_key=True)
-    name = CharField(unique=True)
+    setName = CharField()
+    runName = CharField(unique=True)
     created = DateField()
     organism = CharField()
     readsfileurl = CharField(unique=True)

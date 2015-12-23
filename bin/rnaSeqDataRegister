@@ -24,8 +24,10 @@ def parseArgs():
                         help="""URL where files was obtained; for recording only""")
     parser.add_argument('--description',
                         help="""description of RNA-Seq data""")
-    parser.add_argument('name',
-                        help="""unique name of data set""")
+    parser.add_argument('setName',
+                        help="""name of RNA-Seq data set""")
+    parser.add_argument('runName',
+                        help="""unique name of read run set""")
     parser.add_argument('--tissue',
                         help="""description of tissue(s) that were used""")
     parser.add_argument('organism',
@@ -58,7 +60,8 @@ def rnaSeqRunRegister(opts):
     if not RnaSeqData.table_exists():
          RnaSeqData.create_table()
     rec = RnaSeqData(
-        name=opts.name,
+        setName=opts.setName,
+        runName=opts.runName,
         created=datetime.datetime.utcnow(),
         organism=opts.organism,
         readsfileurl=opts.readsFileUrl,

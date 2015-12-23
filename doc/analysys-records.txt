@@ -1,6 +1,0 @@
-
-2015-12-19
-    # obtain human tissue RNA sequence data from proteinatlas
-    cd icedb/build/data/human/rnaseq/proteinatlas
-    wget -nv http://www.ebi.ac.uk/arrayexpress/files/E-MTAB-2836/E-MTAB-2836.sdrf.txt
-    download from ftp list in this file.

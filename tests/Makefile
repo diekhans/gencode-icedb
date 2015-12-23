@@ -70,22 +70,22 @@ rnaSeqDataRegisterTest: mkdirs output/smallFastqPair.done
 		--readsFileUrl="http://fred.org/data/input/small-rnaseq.sam" \
 		--description="small RNA-Seq" \
 		--tissue="micro brain" \
-		small1A "human" input/small-rnaseq.sam output/$@.db
+		smallSet small1A "human" input/small-rnaseq.sam output/$@.db
 	${rnaSeqDataRegister} --dataRootDir=. \
 		--readsFileUrl="http://fred.org/data/input/smallish-rnaseq.bam" \
 		--description="not so small RNA-Seq" \
 		--tissue="macro brain" \
-		small1B "human" output/$@.bam output/$@.db
+		smallSet small1B "human" output/$@.bam output/$@.db
 	${rnaSeqDataRegister} --dataRootDir=. \
 		--readsFileUrl="http://fred.org/data/input/smallFastqPair_1.fastq" \
 		--readsFile2Url="http://fred.org/data/input/smallFastqPair_2.fastq" \
 		--description="paired RNA-Seq" \
 		--tissue="micro macro brain" \
-		small1-2 "human" output/smallFastqPair_1.fastq \
+		smallSet small1-2 "human" output/smallFastqPair_1.fastq \
 		--readsFile2=output/smallFastqPair_2.fastq \
 		output/$@.db
 	echo 'select * from rnaseqdata;' | sqlite3 -bail output/$@.db > output/$@.tsv
-	cut -f 1-2,4- output/$@.tsv >output/$@.notime.tsv
+	cut -f 1-3,5- output/$@.tsv >output/$@.notime.tsv
 	diff expected/$@.notime.tsv output/$@.notime.tsv
 
 mkdirs:

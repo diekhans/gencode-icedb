@@ -1,0 +1,52 @@
+
+2015-12-19: human RNAseq data
+    # obtain human tissue RNA sequence data from proteinatlas
+    cd icedb/build/data/human/rnaseq/E-MTAB-2836
+    wget -nv http://www.ebi.ac.uk/arrayexpress/files/E-MTAB-2836/E-MTAB-2836.sdrf.txt
+    download from ftp list in this file.
+    readlength: 101 
+
+2015-12-21: human assembly 
+    # get GRCh38 assembly, with GENCODE names and primary assembly sequences
+    cd icedb/build/data/human/genome/grch38
+    wget -nv ftp://ftp.ncbi.nlm.nih.gov/genomes/ASSEMBLY_REPORTS/All/GCF_000001405.28.assembly.txt
+     ~/compbio/code/pycbio/bin/ncbiAssemblyReportConvert --fromIdType=ucscStyleName   --toIdType=gencode  --include=mainAsm idmap GCF_000001405.28.assembly.txt ucscGencodeMap.tsv
+     twoBitToFa /hive/data/genomes/hg38/hg38.2bit /dev/stdout | ~/compbio/gencode/projs/icedb/gencode-icedb/bin/faUcscToGencode /dev/stdin ucscGencodeMap.tsv /dev/stdout | gzip >grch38.fa.gz&
+
+2015-12-21: mouse assembly 
+    # get GRCm38 assembly, with GENCODE names and primary assembly sequences
+    cd icedb/build/data/mouse/genome/grcm38
+    wget -nv ftp://ftp.ncbi.nlm.nih.gov/genomes/ASSEMBLY_REPORTS/All/GCF_000001635.24.assembly.txt
+     ~/compbio/code/pycbio/bin/ncbiAssemblyReportConvert --fromIdType=ucscStyleName   --toIdType=gencode  --include=mainAsm idmap GCF_000001635.24.assembly.txt ucscGencodeMap.tsv
+     twoBitToFa /hive/data/genomes/mm10/mm10.2bit /dev/stdout | ~/compbio/gencode/projs/icedb/gencode-icedb/bin/faUcscToGencode /dev/stdin ucscGencodeMap.tsv /dev/stdout | gzip >grcm38.fa.gz&
+
+2015-12-21: mouse RNASeq data
+    # Kaessmann 76bp single-ended E-GEOD-30352
+    #    http://www.ebi.ac.uk/arrayexpress/experiments/E-GEOD-30352/
+    cd icedb/build/data/mouse/rnaseq/E-GEOD-30352
+    wget -nv http://www.ebi.ac.uk/arrayexpress/files/E-GEOD-30352/E-GEOD-30352.sdrf.txt
+    # pull out URLs of mouse data and wget data
+    tawk '$42=="Mus musculus"{print $41}' E-GEOD-30352.sdrf.txt >doDownload1
+
+2015-12-21: build star genome for human 101 read length
+    cd icedb/build
+    ln /hive/data/genomes/hg38/bed/gencodeV24/data/release_24/gencode.v24.annotation.gtf.gz analysis/grch38/gencodeV24/gencode/
+    (time nice  ../gencode-icedb/bin/starGenerateGenome --numThreads=16 data/human/genome/grch38/grch38.fa.gz analysis/grch38/gencodeV24/gencode/gencode.v24.annotation.gtf.gz 101 analysis/grch38/gencodeV24/star/rl101)>&  analysis/grch38/gencodeV24/star/rl101.out&
+    # add flag that will be used when automated
+    touch analysis/grch38/gencodeV24/star/rl101/done
+
+FUTURE: mouse RNASeq data
+    # ENCODE: 
+    #  search for RNA-Seq, Mus Musculus, fastq,
+        Assay RNA-seq
+        Project ENCODE
+        Organism Mus musculus
+        Available data fastq
+        Run type single-ended, paired-ended
+        Read length 101, 100, 76, 50?
+        Library made from polyadenylated mRNA
+
+     write program to retrieve new data using:
+           https://www.encodeproject.org/help/rest-api/        
+     xargs -n 1 curl -O -L < files.txt
+     use    xargs -n 1 -P 4

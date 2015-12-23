@@ -1,0 +1,50 @@
+#!/usr/bin/env python
+"""
+Toil program to run RNA-Seq support analysis.
+"""
+
+import sys
+import os
+sys.path.insert(0, os.path.expanduser("~markd/compbio/code/pycbio"))
+myBinDir = os.path.normpath(os.path.dirname(sys.argv[0]))
+sys.path.append(myBinDir + "/../lib")
+from pycbio.sys import fileOps
+from gencode_icedb import pipelineOps, config
+
+def starGenerateGenome(refGeneomeName, refGeneomeFa, readLength, geneAnnotationSetName
+                       geneAnnotationSetGtf, numThreads):
+    """Generate STAR genome given reference genome, read, and annotation set.
+    Create a flag file to indicate it is complete.
+    """
+    cmd = ["starGenerateGenome", "--numThreads="+str(numThreads), "refGeneomeFa",
+           geneAnnotationSetGtf, readLength, genomeDir]
+    # NOT IMPLEMENTED YET
+
+
+def starSpliceJunctionMapFn(job, genomeDir, readsFile, readsFile2, numThreads, sjOut):
+    """Run STAR to map reads to splice junctions.
+    """
+    cmd = ["starSpliceJunctionMap", "--numThreads="+str(numThreads),
+           genomeDir, readsFile]
+    if readsFile2 is not None:
+        cmd.append("--readsFile2="+readsFile2)
+    sjOutTmp = fileOps.atomicTmpFile(sjOut)
+    pipelineOps.runCmd(cmd)
+    fileOps.atomicInstall(sjOutTmp, sjOut)
+
+def checkGenomeExists(pathConfig, readLength):
+    "make sure the genome done flag is there"
+    doneFlag = pathConfig.starGenomeDoneFlag(readLength)
+    if not os.path.exists(doneFlag):
+        raise Exception("STAR genome done flag not found: " + done)
+
+def maybeMakeSplitJunctionJob(job, pathConfig, rnaSeqRunName, readsFile, readsFile2,
+                              numThreads, sjOut):
+    "check if output exists, if not add job to generate it"
+    checkGenomeExists(pathConfig, readLength)
+    sjOut = pathConfig.rnaSeqSetAnalysisSjOut(rnaSeqSet, rnaSeqRunName)
+    if not os.path.exists(sjOut):
+        job.addChildJobFn(starSpliceJunctionMapFn
+                          
+genomeDir, readsFile, readsFile2, numThreads, sjOut)
+pathConfig = PathConfig(opts.rootDir, opts.organism, opts.assembly, opts.geneSet)

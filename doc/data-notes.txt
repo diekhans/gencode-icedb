@@ -14,12 +14,13 @@ https://www.illumina.com/informatics/research/sequencing-data-analysis-managemen
     Matthias Uhlens group from 32 tissues as probably more extensive than Body
     Map.
 
-    For mouse you could include Kaessmann data 76bp pair-end 
+    For mouse you could include Kaessmann data 76bp pair-end  (appears to be single-ended)
 
     http://www.ebi.ac.uk/arrayexpress/experiments/E-GEOD-30352/
-    http://www.ebi.ac.uk/arrayexpress/experiments/E-MTAB-2836/
-
     and encode mouse data 75bp pair-end from wold/gingeras and snyder lab would be fine 
+
+    This is human: http://www.ebi.ac.uk/arrayexpress/experiments/E-MTAB-2836/
+
 
 2015-12-08:
   Jose's pacbio data
