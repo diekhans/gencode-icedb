@@ -1,0 +1,39 @@
+#!/usr/bin/env python
+
+import sys
+import os
+import argparse
+sys.path.insert(0, os.path.expanduser("~markd/compbio/code/pycbio"))
+binDir = os.path.normpath(os.path.dirname(sys.argv[0])+"/../../bin")
+sys.path.append(binDir + "/../lib")
+from gencode_icedb import config, arrayExpress
+os.environ['PATH'] = binDir + ":" + os.environ['PATH']
+
+verbose = False
+def parseArgs():
+    desc = """Register E-MTAB-2836 dataset from ArrayExpress"""
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument('--verbose', action="store_true", default=False,
+                        help="write verbose output")
+    parser.add_argument('--rootDir', default=".", help="""root directory""")
+    parser.add_argument('--skipExisting', action="store_true", default=False,
+                        help="skip adding records with same name and keep")
+    parser.add_argument('sdrfTsv', help="""SDRF file for this set of""")
+    opts = parser.parse_args()
+    global verbose
+    verbose = opts.verbose
+    return opts
+
+organism = "human"
+scientificName = "Homo sapiens"
+rnaSeqSetName = "E-MTAB-2836"
+description = "E-MTAB-2836 - RNA-seq of coding RNA (ProteinAtlas)"
+
+def registerSet(opts):
+    pathConfig = config.PathConfig(opts.rootDir, organism)
+    registrar = arrayExpress.ArrayExpressRegister(pathConfig, scientificName, rnaSeqSetName,
+                                                  description, opts.skipExisting, opts.verbose)
+    registrar.load(opts.sdrfTsv)
+
+registerSet(parseArgs())
+

@@ -1,15 +1,13 @@
-ROOT = ../..
-include ${ROOT}/config.mk
+ROOT = ..
 
-progs = ${BINDIR}/faUcscToGencode
+SUBDIRS = faUcscToGencode spliceJunctionSupportSummarize
 
-all: ${progs}
+all: ${SUBDIRS:%=%.all}
 
+%.all:
+	(cd $* && ${MAKE} all)
 
-${BINDIR}/%: %.c
-	@mkdir -p ${BINDIR}
-	${CC} ${CFLAGS} -o $@ $< ${LIBS}
+clean: ${SUBDIRS:%=%.clean}
 
-
-clean:
-	rm -f ${progs}
+%.clean:
+	(cd $* && ${MAKE} clean)

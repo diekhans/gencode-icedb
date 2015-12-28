@@ -33,6 +33,7 @@ def parseArgs():
     parser.add_argument('sjOut',
                         help="""splice junction output file """)
     opts = parser.parse_args()
+    global verbose
     verbose = opts.verbose
     if opts.readsFile2 is not None:
         if not (dataOps.isFastq(opts.readsFile) and dataOps.isFastq(opts.readsFile2)):
@@ -57,6 +58,8 @@ def starCmd(numThreads, genomeDir, readsFile, readsFile2,
     return cmd
 
 def starSpliceJunctionMap(opts):
+    if opts.tmpDir is not None:
+        fileOps.ensureDir(opts.tmpDir)
     starTmpDir = fileOps.tmpFileGet(prefix="star", tmpDir=opts.tmpDir)
     # holds output files before filtering
     outputTmpDir = fileOps.tmpFileGet(prefix="starout", tmpDir=opts.tmpDir)
@@ -77,6 +80,7 @@ def starSpliceJunctionMap(opts):
     cmds.append(starCmd(opts.numThreads, opts.genomeDir, readsFile, opts.readsFile2,
                         decompressCmd, starTmpDir, outputTmpDir))
     pipelineOps.runCmd(cmds, verbose=verbose)
+    fileOps.ensureFileDir(opts.sjOut)
     copyfile(sjTmpOut, opts.sjOut)
     fileOps.rmTree(outputTmpDir)
 

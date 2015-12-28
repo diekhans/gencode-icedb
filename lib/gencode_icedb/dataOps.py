@@ -1,6 +1,5 @@
 """"functions to operate on read and other data"""
-import os
-from pycbio.sys import PycbioException
+import os, re
 from pycbio.sys import fileOps
 from gencode_icedb import pipelineOps
 
@@ -51,3 +50,8 @@ class TmpUncompress(object):
             if os.path.exists(self.__tmpUncompressed):
                 os.unlink(self.__tmpUncompressed)
             self.__tmpUncompressed = None
+
+def estimateReadLength(readsPath):
+    "run estimateReadLength program to get read length from read data"
+    return int(pipelineOps.callCmd(["estimateReadLength", readsPath, "/dev/stdout"]))
+

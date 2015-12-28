@@ -1,0 +1,62 @@
+#!/usr/bin/env python
+
+import sys
+import os
+import argparse
+sys.path.insert(0, os.path.expanduser("~markd/compbio/code/pycbio"))
+binDir = os.path.normpath(os.path.dirname(sys.argv[0])+"/../../bin")
+sys.path.append(binDir + "/../lib")
+from collections import defaultdict
+from gencode_icedb import dataOps, config, rnaSeqData
+from peewee import SqliteDatabase
+from pycbio.tsv import TsvReader, strOrNoneType
+os.environ['PATH'] = binDir + ":" + os.environ['PATH']
+
+verbose = False
+def parseArgs():
+    desc = """Register E-MTAB-2836 dataset from ArrayExpress"""
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument('--verbose', action="store_true", default=False,
+                        help="write verbose output")
+    parser.add_argument('--rootDir', default=".", help="""root directory""")
+    parser.add_argument('--skipExisting', action="store_true", default=False,
+                        help="skip adding records with same name and keep")
+    parser.add_argument('downloadTsv', help="""TSV file created by encodeDccQuery""")
+    opts = parser.parse_args()
+    global verbose
+    verbose = opts.verbose
+    return opts
+
+organism = "mouse"
+scientificName = "Mus musculus"
+rnaSeqSetName = "ENCODE"
+
+def verbPr(msg, rnaSeqRun):
+    if verbose:
+        sys.stderr.write(msg + ": " + rnaSeqSetName + "/" + rnaSeqRun + "\n")
+
+def registerRun(loader, runInfo):
+    if runInfo.organism != organism:
+        raise Exception("unexpected organism: " + runInfo.organism + " in " + str(runInfo))
+    status = loader.registerRun(runInfo.runname, runInfo.description,
+                                runInfo.tissue,
+                                runInfo.readsfileurl,
+                                runInfo.readsfile,
+                                runInfo.readsfile2url,
+                                runInfo.readsfile2)
+    verbPr(str(status), runInfo.runname)
+
+def registerSet(opts):
+    pathConfig = config.PathConfig(opts.rootDir, organism)
+    database = SqliteDatabase(pathConfig.dataDatabase())
+    loader = rnaSeqData.RnaSeqDataLoader(database, pathConfig,
+                                         rnaSeqSetName, organism,
+                                         opts.skipExisting)
+    typeMap = {"readsfile2url": strOrNoneType,
+               "readsfile2": strOrNoneType,
+               "md5sum2": strOrNoneType}
+    for runInfo in TsvReader(opts.downloadTsv, typeMap=typeMap):
+        registerRun(loader, runInfo)
+
+registerSet(parseArgs())
+

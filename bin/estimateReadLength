@@ -27,6 +27,7 @@ def parseArgs():
     opts = parser.parse_args()
     if opts.sampleSize <= 0:
         opts.sampleSize = sys.maxint
+    global verbose
     verbose = opts.verbose
     return opts
 

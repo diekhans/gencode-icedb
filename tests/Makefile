@@ -4,11 +4,13 @@ starSpliceJunctionMap = ../bin/starSpliceJunctionMap
 faUcscToGencode = ../bin/faUcscToGencode
 estimateReadLength = ../bin/estimateReadLength
 rnaSeqDataRegister = ../bin/rnaSeqDataRegister
+spliceJunctionSupportSummarize = ../bin/spliceJunctionSupportSummarize
+encodeDccQuery = ../bin/encodeDccQuery
 
 .SECONDARY:
 
 numThreads=2
-test: smallTests readLenTests faTests
+test: smallTests readLenTests faTests supportTests encodeDccTests
 
 
 # small test data:
@@ -63,30 +65,51 @@ ucscGencodeFaTest: mkdirs
 	${faUcscToGencode} input/ucscGenome.fa input/ucsc2GencodeNames.tsv output/$@.fa
 	diff expected/$@.fa output/$@.fa
 
+# need to construct data test in the expected locations
+rnaSeqDataDir = rnaSeqDataRegisterTest/data/human/rnaSeq
 rnaSeqDataRegisterTest: mkdirs output/smallFastqPair.done
-	@rm -f output/$@.db
-	samtools view -hb input/small-rnaseq.sam > output/$@.bam
-	${rnaSeqDataRegister} --dataRootDir=. \
+	@rm -rf output/$@
+	@mkdir -p output/${rnaSeqDataDir}/smallSet output/${rnaSeqDataDir}/otherSet
+	cp input/small-rnaseq.sam output/${rnaSeqDataDir}/smallSet/small.sam
+	samtools view -hb input/small-rnaseq.sam > output/${rnaSeqDataDir}/smallSet/small.bam
+	ln -f output/smallFastqPair_1.fastq output/smallFastqPair_2.fastq output/${rnaSeqDataDir}/smallSet/
+	ln -f output/smallFastqPair_1.fastq output/smallFastqPair_2.fastq output/${rnaSeqDataDir}/otherSet/
+	${rnaSeqDataRegister} --rootDir=output/$@ \
 		--readsFileUrl="http://fred.org/data/input/small-rnaseq.sam" \
 		--description="small RNA-Seq" \
 		--tissue="micro brain" \
-		smallSet small1A "human" input/small-rnaseq.sam output/$@.db
-	${rnaSeqDataRegister} --dataRootDir=. \
+		human smallSet small1A small.sam
+	${rnaSeqDataRegister} --rootDir=output/$@ \
 		--readsFileUrl="http://fred.org/data/input/smallish-rnaseq.bam" \
 		--description="not so small RNA-Seq" \
 		--tissue="macro brain" \
-		smallSet small1B "human" output/$@.bam output/$@.db
-	${rnaSeqDataRegister} --dataRootDir=. \
+		human smallSet small1B small.bam
+	${rnaSeqDataRegister} --rootDir=output/$@ --skipExisting \
+		human smallSet small1B small.bam
+	${rnaSeqDataRegister} --rootDir=output/$@ --skipExisting \
 		--readsFileUrl="http://fred.org/data/input/smallFastqPair_1.fastq" \
 		--readsFile2Url="http://fred.org/data/input/smallFastqPair_2.fastq" \
 		--description="paired RNA-Seq" \
 		--tissue="micro macro brain" \
-		smallSet small1-2 "human" output/smallFastqPair_1.fastq \
-		--readsFile2=output/smallFastqPair_2.fastq \
-		output/$@.db
-	echo 'select * from rnaseqdata;' | sqlite3 -bail output/$@.db > output/$@.tsv
-	cut -f 1-3,5- output/$@.tsv >output/$@.notime.tsv
-	diff expected/$@.notime.tsv output/$@.notime.tsv
+		human smallSet small1-2 smallFastqPair_1.fastq \
+		--readsFile2=smallFastqPair_2.fastq
+	echo 'select * from rnaseqdata;' | sqlite3 -bail output/$@/data/data.db > output/$@.tsv
+	diff expected/$@.tsv output/$@.tsv
+
+# tests of support results
+supportTests: support1Tests
+
+support1Tests: mkdirs
+	${spliceJunctionSupportSummarize} input/gencode.set1.gp  input/starSj.set1.lst output/$@.support.tsv
+
+encodeDccTests: encodeDcc10Tests
+# just test aginst live site, it was too much of a pain to edit
+# down the huge response to use it as fake input
+
+encodeDcc10Tests: mkdirs
+	${encodeDccQuery} "Mus musculus" --limit=10 output/encodeDcc10Tests.tsv output/encodeDcc10Tests.urls
+	diff expected/encodeDcc10Tests.tsv output/encodeDcc10Tests.tsv
+	diff expected/encodeDcc10Tests.urls output/encodeDcc10Tests.urls
 
 mkdirs:
 	@mkdir -p output

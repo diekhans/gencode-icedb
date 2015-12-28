@@ -29,6 +29,7 @@ def parseArgs():
                         help="""directory to contain all the generated files;
                         this must not exist; Log.out is also saved in this directory""")
     opts = parser.parse_args()
+    global verbose
     verbose = opts.verbose
     return opts
 

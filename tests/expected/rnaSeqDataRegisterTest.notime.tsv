@@ -1,3 +1,0 @@
-1	smallSet	small1A	human	http://fred.org/data/input/small-rnaseq.sam	input/small-rnaseq.sam			75	small RNA-Seq	micro brain
-2	smallSet	small1B	human	http://fred.org/data/input/smallish-rnaseq.bam	output/rnaSeqDataRegisterTest.bam			75	not so small RNA-Seq	macro brain
-3	smallSet	small1-2	human	http://fred.org/data/input/smallFastqPair_1.fastq	output/smallFastqPair_1.fastq	http://fred.org/data/input/smallFastqPair_2.fastq	output/smallFastqPair_2.fastq	75	paired RNA-Seq	micro macro brain
