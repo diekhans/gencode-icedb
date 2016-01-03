@@ -2,12 +2,12 @@ ROOT = ../../..
 include ${ROOT}/config.mk
 
 LINKSRCS = 
-PROGSRCS = spliceJunctionSupportSummarize.c
+PROGSRCS = genePredIntrons.c
 SRCS = ${LINKSRCS} ${PROGSRCS}
 OBJS = ${SRCS:%.c=${OBJDIR}/%.o}
 LINKOBJS = ${LINKSRCS:%.c=${OBJDIR}/%.o}
 DEPENDS =  ${SRCS:%.c=%.depend}
-PROGS = ${BINDIR}/spliceJunctionSupportSummarize
+PROGS = ${BINDIR}/genePredIntrons
 
 all: ${OBJS} ${PROGS}
 

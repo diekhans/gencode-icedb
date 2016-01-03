@@ -5,12 +5,16 @@ faUcscToGencode = ../bin/faUcscToGencode
 estimateReadLength = ../bin/estimateReadLength
 rnaSeqDataRegister = ../bin/rnaSeqDataRegister
 spliceJunctionSupportSummarize = ../bin/spliceJunctionSupportSummarize
+genePredIntrons = ../bin/genePredIntrons
 encodeDccQuery = ../bin/encodeDccQuery
+
+hg38TwoBit = /hive/data/genomes/hg38/hg38.2bit
 
 .SECONDARY:
 
 numThreads=2
-test: smallTests readLenTests faTests supportTests encodeDccTests
+test: smallTests readLenTests faTests genePredIntronsTest \
+	supportTests encodeDccTests
 
 
 # small test data:
@@ -96,6 +100,13 @@ rnaSeqDataRegisterTest: mkdirs output/smallFastqPair.done
 	echo 'select * from rnaseqdata;' | sqlite3 -bail output/$@/data/data.db > output/$@.tsv
 	diff expected/$@.tsv output/$@.tsv
 
+# tests of program to get introns for genePreds
+genePredIntronsTest: genePredIntronsSet1Test
+
+genePredIntronsSet1Test: mkdirs
+	${genePredIntrons} input/gencode.set1.gp ${hg38TwoBit} output/$@.tsv
+	diff expected/$@.tsv output/$@.tsv
+
 # tests of support results
 supportTests: support1Tests
 
@@ -104,12 +115,10 @@ support1Tests: mkdirs
 
 encodeDccTests: encodeDcc10Tests
 # just test aginst live site, it was too much of a pain to edit
-# down the huge response to use it as fake input
-
+# down the huge response to use it as fake input.  Can't verify
+# output.
 encodeDcc10Tests: mkdirs
 	${encodeDccQuery} "Mus musculus" --limit=10 output/encodeDcc10Tests.tsv output/encodeDcc10Tests.urls
-	diff expected/encodeDcc10Tests.tsv output/encodeDcc10Tests.tsv
-	diff expected/encodeDcc10Tests.urls output/encodeDcc10Tests.urls
 
 mkdirs:
 	@mkdir -p output

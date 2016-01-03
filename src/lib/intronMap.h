@@ -10,6 +10,13 @@ struct intronTransLink {
 
 /* information about an intron */
 struct intronInfo {
+    struct intronInfo* next;  // for sorting
+    char* chrom;              // location information
+    int chromStart;           // zero-based, half-open
+    int chromEnd;
+    char transStrand[3];      // transcript strand
+    char transDonor[3];       // obtain from transcript and genome
+    char transAcceptor[3];
     struct starSpliceJunction* starMappings;  // list of start mappings
     struct starSpliceJunction* mappingsSum;   // sum of mappings
     struct intronTransLink* intronTranses;     // links to transcripts
@@ -35,5 +42,16 @@ void intronMapLoadStarJuncs(struct intronMap* intronMap,
 /* load a transcript file */
 void intronMapLoadTranscripts(struct intronMap* intronMap,
                               char* transcriptFile);
+
+/* get location-sorted list of intronInfo objects (DON'T FREE) */
+struct intronInfo* intronMapGetSorted(struct intronMap* intronMap);
+
+/* save splice sites obtained from transcripts to a TSV */
+void intronMapSaveTranscriptSpliceSites(struct intronMap* intronMap,
+                                        char* spliceTsv);
+
+/* load splice sites obtained from transcripts to a TSV */
+void intronMapLoadTranscriptSpliceSites(struct intronMap* intronMap,
+                                        char* spliceTsv);
 
 #endif

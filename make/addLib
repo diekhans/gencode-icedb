@@ -1,0 +1,27 @@
+#!/bin/bash
+set -beEu -o pipefail
+
+usage="addLib arlib obj1 ....
+Add object to the specified library file using locking if available on this platfort.  This
+allows for parallel make."
+
+if [ $# -lt 2 ] ; then
+    echo "wrong # of args: $usage" >&2
+    exit 1
+fi
+arlib=$1
+shift
+objs="$*"
+
+lock=$arlib.lock
+case $(uname -s) in
+    Linux)
+        flock $lock -c "ar -rs $arlib $objs" ;;
+    FreeBSD)
+        lockf -k $lock ar -rs $arlib $objs ;;
+    *)
+        trap "rm -f $lock" EXIT
+        lockfile -s 1 $lock
+        ar -r $arlib $objs
+        ;;
+esac

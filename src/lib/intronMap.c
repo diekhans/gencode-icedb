@@ -2,6 +2,7 @@
 #include "intronMap.h"
 #include "starSpliceJunction.h"
 #include "hash.h"
+#include "sqlNum.h"
 #include "genePred.h"
 
 /* constructor */
@@ -29,9 +30,12 @@ static void intronTransLinkFreeList(struct intronTransLink** intronTransList) {
 }
 
 /* constructor */
-static struct intronInfo* intronInfoNew(void) {
+static struct intronInfo* intronInfoNew(char* chrom, int chromStart, int chromEnd) {
     struct intronInfo* intronInfo;
     AllocVar(intronInfo);
+    intronInfo->chrom = cloneString(chrom);
+    intronInfo->chromStart = chromStart;
+    intronInfo->chromEnd = chromEnd;
     return intronInfo;
 }
 
@@ -40,6 +44,7 @@ static void intronInfoFree(struct intronInfo** intronInfoPtr) {
     intronTransLinkFreeList(&((*intronInfoPtr)->intronTranses));
     starSpliceJunctionFreeList(&(*intronInfoPtr)->starMappings);
     starSpliceJunctionFree(&((*intronInfoPtr)->mappingsSum));
+    freez(&(*intronInfoPtr)->chrom);
     freez(intronInfoPtr);
 }
 
@@ -115,7 +120,7 @@ static struct intronInfo* intronMapObtainIntronInfo(struct intronMap* intronMap,
     char* key = getIntronKey(chrom, chromStart, chromEnd);
     struct hashEl* hel = hashStore(intronMap->intronHash, key);
     if (hel->val == NULL) {
-        hel->val = intronInfoNew();
+        hel->val = intronInfoNew(chrom, chromStart, chromEnd);
     }
     return hel->val;
 }
@@ -137,7 +142,7 @@ void intronMapLoadStarJuncs(struct intronMap* intronMap,
     struct starSpliceJunction* starJuncs = starSpliceJunctionLoadAllByTab(starJuncFile);
     struct starSpliceJunction* starJunc;
     while ((starJunc = slPopHead(&starJuncs)) != NULL) {
-        if (starJuncs->maxOverhang >= minOverhang) {
+        if (starJunc->maxOverhang >= minOverhang) {
             intronMapAddStarJunc(intronMap, starJunc);
         } else {
             starSpliceJunctionFree(&starJunc);
@@ -156,6 +161,7 @@ static void intronMapAddTransIntron(struct intronMap* intronMap,
     struct intronTransLink* intronTrans
         = intronTransLinkNew(transcript, intronIdx);
     slAddHead(&intronInfo->intronTranses, intronTrans);
+    safecpy(intronInfo->transStrand, sizeof(intronInfo->transStrand), transcript->strand);
 }
 
 /* should an transcript intron be included? */
@@ -183,4 +189,116 @@ void intronMapLoadTranscripts(struct intronMap* intronMap,
     for (struct genePred* transcript = intronMap->transcripts; transcript != NULL; transcript = transcript->next) {
         intronMapAddTranscript(intronMap, transcript);
     }
+}
+
+/* compare by location */
+static int intronInfoLocCmp(const void *va, const void *vb) {
+    const struct intronInfo *a = *((struct intronInfo **)va);
+    const struct intronInfo *b = *((struct intronInfo **)vb);
+    int diff = strcmp(a->chrom, b->chrom);
+    if (diff != 0) {
+        return diff;
+    }
+    diff = a->chromStart - b->chromStart;
+    if (diff != 0) {
+        return diff;
+    }
+    return a->chromEnd - b->chromEnd;
+}
+
+/* get location-sorted list of intronInfo objects (DON'T FREE) */
+struct intronInfo* intronMapGetSorted(struct intronMap* intronMap) {
+    struct intronInfo* intronInfos = NULL;
+    struct hashEl *hel;
+    struct hashCookie cookie = hashFirst(intronMap->intronHash);
+    while ((hel = hashNext(&cookie)) != NULL) {
+        struct intronInfo* intronInfo = hel->val;
+        slAddHead(&intronInfos, intronInfo);
+    }
+    slSort(&intronInfos, intronInfoLocCmp);
+    return intronInfos;
+}
+
+/* header for splice sites */
+static const int spliceTsvWidth = 6;
+static char* spliceTsvHeader[] = {
+    "chrom", "chromStart", "chromEnd",
+    "strand", "donor", "acceptor", NULL
+};
+
+/* write intron splice site TSV header */
+static void intronMapWriteSpliceTsvHeader(FILE* spliceTsvFh) {
+    for (int i = 0; spliceTsvHeader[i] != NULL; i++) {
+        if (i > 0) {
+            fputc('\t', spliceTsvFh);
+        }
+        fputs(spliceTsvHeader[i], spliceTsvFh);
+    }
+    fputc('\n', spliceTsvFh);
+}
+
+/* write a row of intron splice site TSV */
+void intronMapWriteSpliceTsvRow(FILE* spliceTsvFh,
+                                struct intronInfo* intronInfo) {
+    fprintf(spliceTsvFh, "%s\t%d\t%d\t%s\t%s\t%s\n",
+            intronInfo->chrom, 
+            intronInfo->chromStart, intronInfo->chromEnd,
+            intronInfo->transStrand,
+            intronInfo->transDonor,
+            intronInfo->transAcceptor);
+}
+
+/* save splice sites obtained from transcripts to a TSV */
+void intronMapSaveTranscriptSpliceSites(struct intronMap* intronMap,
+                                        char* spliceTsv) {
+    FILE* spliceTsvFh = mustOpen(spliceTsv, "w");
+    intronMapWriteSpliceTsvHeader(spliceTsvFh);
+    struct intronInfo* intronInfos = intronMapGetSorted(intronMap);
+    for (struct intronInfo* intronInfo = intronInfos; intronInfo != NULL; intronInfo = intronInfo->next) {
+        if (strlen(intronInfo->transDonor) > 0) {
+            intronMapWriteSpliceTsvRow(spliceTsvFh, intronInfo);
+        }
+    }
+    carefulClose(&spliceTsvFh);
+}
+
+/* check header */
+static void intronMapLoadCheckHeader(struct lineFile *spliceTsvLf) {
+    char* row[spliceTsvWidth];
+    if (!lineFileNextRowTab(spliceTsvLf, row, spliceTsvWidth)) {
+        errAbort("premature EOF on splice TSV"); 
+    }
+    for (int i = 0; spliceTsvHeader[i] != NULL; i++) {
+        if (!sameString(row[i], spliceTsvHeader[i])) {
+            errAbort("unexpected splice TSV column header \"%s\", expected \"%s\"",
+                     row[i], spliceTsvHeader[i]);
+        }
+    }
+}
+
+/* load one transcript splice site */
+static void intronMapLoadTranscriptSpliceSite(struct intronMap* intronMap,
+                                              char* chrom, int chromStart, int chromEnd,
+                                              char* strand, char* donor, char* acceptor) {
+    struct intronInfo* intronInfo =  intronMapObtainIntronInfo(intronMap, chrom, chromStart, chromEnd);
+    safecpy(intronInfo->transStrand, sizeof(intronInfo->transStrand), strand);
+    safecpy(intronInfo->transDonor, sizeof(intronInfo->transDonor), donor);
+    safecpy(intronInfo->transAcceptor, sizeof(intronInfo->transAcceptor), acceptor);
+}
+
+/* load splice sites obtained from transcripts to a TSV */
+void intronMapLoadTranscriptSpliceSites(struct intronMap* intronMap,
+                                        char* spliceTsv) {
+    char* row[spliceTsvWidth];
+    struct lineFile *spliceTsvLf = lineFileOpen(spliceTsv, TRUE);
+    intronMapLoadCheckHeader(spliceTsvLf) ;
+
+    while (lineFileNextRowTab(spliceTsvLf, row, spliceTsvWidth)) {
+        intronMapLoadTranscriptSpliceSite(intronMap,
+                                          row[0], 
+                                          sqlSigned(row[1]),
+                                          sqlSigned(row[2]),
+                                          row[3], row[4], row[5]);
+    }
+    lineFileClose(&spliceTsvLf);
 }

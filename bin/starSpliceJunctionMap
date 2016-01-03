@@ -81,7 +81,9 @@ def starSpliceJunctionMap(opts):
                         decompressCmd, starTmpDir, outputTmpDir))
     pipelineOps.runCmd(cmds, verbose=verbose)
     fileOps.ensureFileDir(opts.sjOut)
-    copyfile(sjTmpOut, opts.sjOut)
+    sjOutFinalTmp = fileOps.atomicTmpFile(opts.sjOut)
+    copyfile(sjTmpOut, sjOutFinalTmp)
+    fileOps.atomicInstall(sjOutFinalTmp, opts.sjOut)
     fileOps.rmTree(outputTmpDir)
 
 starSpliceJunctionMap(parseArgs())

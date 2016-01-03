@@ -4,6 +4,10 @@ ${OBJDIR}/%.o: %.c
 	${CC} ${CFLAGS} -c -MM -MT $@ $< >$*.depend
 	${CC} ${CFLAGS} -c -o $@ $<
 
+(%.o): %.o
+	@mkdir -p  $(dir $@)
+	${ROOT}/make/addLib $@ $*.o
+
 clean:
 	rm -f ${PROGS} ${OBJS} ${LINKOBJS} ${DEPENDS}
 

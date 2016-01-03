@@ -3,13 +3,25 @@ SYS = $(shell uname -s)
 
 .SECONDARY:
 
+CFLAGS =  -Wall -Werror -Wno-sign-compare -std=c99
+CDEBUG = -g -O0
+
+BINDIR = ${ROOT}/bin
+OBJDIR = ${ROOT}/objs
+
+ICEDBINC = -I${ROOT}/src/lib
+ICEDBLIB = ${OBJDIR}/libicedb.a
+
+CFLAGS += ${KENTINC} ${ICEDBINC} ${CDEBUG}
+LIBS += ${ICEDBLIB}
+
 # edit to set to UCSC browser kent/src
 KENTDIR = ${HOME}/kent/src
 
 KENTINC = -I${KENTDIR}/inc -I${KENTDIR}/hg/inc
 KENTLIBDIR = ${KENTDIR}/lib/${MACHTYPE}
 KENTLIBS = ${KENTLIBDIR}/jkhgap.a ${KENTLIBDIR}/jkweb.a
-LIBS = ${KENTLIBS} -lssl -lcrypto -lz -lpthread
+LIBS += ${KENTLIBS} -lssl -lcrypto -lz -lpthread
 
 ifeq (${HTSDIR},)
     HTSDIR = /hive/data/outside/htslib/${MACHTYPE}
@@ -29,12 +41,3 @@ endif
 
 MYSQLLIBS = $(shell mysql_config --libs)
 LIBS += ${MYSQLLIBS}
-
-
-CFLAGS =  -Wall -Werror -Wno-sign-compare -std=c99
-CDEBUG = -g -O0
-
-CFLAGS += ${KENTINC} ${CDEBUG}
-
-BINDIR = ${ROOT}/bin
-OBJDIR = ${ROOT}/objs
