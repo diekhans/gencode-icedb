@@ -8,8 +8,6 @@ spliceJunctionSupportSummarize = ../bin/spliceJunctionSupportSummarize
 genePredIntrons = ../bin/genePredIntrons
 encodeDccQuery = ../bin/encodeDccQuery
 
-hg38TwoBit = /hive/data/genomes/hg38/hg38.2bit
-
 .SECONDARY:
 
 numThreads=2
@@ -104,15 +102,20 @@ rnaSeqDataRegisterTest: mkdirs output/smallFastqPair.done
 genePredIntronsTest: genePredIntronsSet1Test
 
 genePredIntronsSet1Test: mkdirs
-	${genePredIntrons} input/gencode.set1.gp ${hg38TwoBit} output/$@.tsv
+	faToTwoBit  input/small-chr22.fa output/$@.2bit
+	${genePredIntrons} input/small-gencode.gp output/$@.2bit output/$@.tsv
 	diff expected/$@.tsv output/$@.tsv
 
 # tests of support results
-supportTests: support1Tests
+supportTests: support1Test supportCounts1Test
 
-support1Tests: mkdirs
-	${spliceJunctionSupportSummarize} input/gencode.set1.gp  input/starSj.set1.lst output/$@.support.tsv
+support1Test: mkdirs
+	${spliceJunctionSupportSummarize} input/small-gencode.gp expected/genePredIntronsSet1Test.tsv input/small-sj.lst output/$@.support.tsv
+	diff expected/$@.support.tsv output/$@.support.tsv
 
+supportCounts1Test: mkdirs
+	${spliceJunctionSupportSummarize} -minOverhang=20 -countsReport  input/small-gencode.gp expected/genePredIntronsSet1Test.tsv input/small-sj.lst output/$@.counts.tsv
+	diff expected/$@.counts.tsv output/$@.counts.tsv
 encodeDccTests: encodeDcc10Tests
 # just test aginst live site, it was too much of a pain to edit
 # down the huge response to use it as fake input.  Can't verify

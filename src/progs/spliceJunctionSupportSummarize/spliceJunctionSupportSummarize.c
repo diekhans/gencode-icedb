@@ -3,6 +3,7 @@
 #include "intronMap.h"
 #include "starSpliceJunction.h"
 #include "genePred.h"
+#include "intronCounts.h"
 
 static struct optionSpec optionSpecs[] = {
     {"countsReport", OPTION_BOOLEAN},
@@ -19,7 +20,7 @@ static int gMinNumMultiMapReads = 0;
 
 /* usage message and abort */
 static void usage(char *msg) {
-    static char* usageMsg = "spliceJunctionSupportSummarize gencodeGenePred starSpliceJunctionList reportTsv\n\n"
+    static char* usageMsg = "spliceJunctionSupportSummarize gencodeGenePred gencodeSpliceTsv starSpliceJunctionList reportTsv\n\n"
         "Summarize splice junction support\n"
         "\n"
         "Options:\n"
@@ -35,6 +36,7 @@ static void usage(char *msg) {
 
 /* load intron map from files */
 static struct intronMap* loadIntronMap(char* gencodeGenePred,
+                                       char* gencodeSpliceTsv,
                                        char* starSpliceJunctionList) {
     struct intronMap* intronMap = intronMapNew();
     struct slName *spliceJuncFiles = slNameLoadReal(starSpliceJunctionList);
@@ -43,6 +45,7 @@ static struct intronMap* loadIntronMap(char* gencodeGenePred,
         intronMapLoadStarJuncs(intronMap, spliceJuncFile->name, gMinOverhang);
     }
     slFreeList(&spliceJuncFiles);
+    intronMapLoadTranscriptSpliceSites(intronMap, gencodeSpliceTsv);
     return intronMap;
 }
 
@@ -78,31 +81,6 @@ static char* getRnaSeqStrand(struct intronInfo* intronInfo) {
     }
 }
 
-/* check if the is novel? */
-static int getIsNovel(struct intronInfo* intronInfo) {
-    return (intronInfo->mappingsSum != NULL)
-        && (intronInfo->mappingsSum->annotated == 0);
-}
-
-/* convert intron motif code to string */
-static char* getIntronMotifStr(struct intronInfo* intronInfo) {
-    if (intronInfo->mappingsSum == NULL) {
-        return "unk"; 
-    }
-    switch (intronInfo->mappingsSum->intronMotif) {
-        case 0: return "ncon"; 
-        case 1: return "GT/AG";
-        case 2: return "CT/AC";
-        case 3: return "GC/AG";
-        case 4: return "CT/GC";
-        case 5: return "AT/AC";
-        case 6: return "GT/AT";
-        default:
-            errAbort("unknown intron motif code: %d", intronInfo->mappingsSum->intronMotif);
-            return 0;
-    }
-}
-
 /* determine the support level */
 static int getSupportLevel(struct intronInfo* intronInfo) {
     // level 1: strongest support
@@ -127,10 +105,10 @@ static void reportSupportIntron(struct intronInfo* intronInfo,
     fprintf(reportFh, "%s\t%d\t%d\t%d\t%s\t%s\t%s\t%d\t",
             intronInfo->chrom, intronInfo->chromStart,
             intronInfo->chromEnd,
-            getIsNovel(intronInfo),
+            intronInfoIsNovel(intronInfo),
             getAnnotStrand(intronInfo),
             getRnaSeqStrand(intronInfo),
-            getIntronMotifStr(intronInfo),
+            intronInfoMotifStr(intronInfo),
             getSupportLevel(intronInfo));
     for (struct intronTransLink* intronTrans = intronInfo->intronTranses;
          intronTrans != NULL; intronTrans = intronTrans->next) {
@@ -146,12 +124,11 @@ static void reportSupportIntron(struct intronInfo* intronInfo,
 static void reportSupport(struct intronMap* intronMap,
                           FILE* reportFh) {
     reportSupportHeader(reportFh);
-    struct intronInfo* intronInfos = intronMapGetSorted(intronMap);
-    for (struct intronInfo* intronInfo = intronInfos; intronInfo != NULL; intronInfo = intronInfo->next) {
+    for (struct intronInfo* intronInfo = intronMapGetSorted(intronMap); intronInfo != NULL; intronInfo = intronInfo->next) {
         reportSupportIntron(intronInfo, reportFh);
     }
 }
-#ifdef FIXME
+
 /* write counts report header */
 static void reportCountsHeader(FILE* reportFh) {
     static char* header =  "novel\t" "intronMotif\t"
@@ -159,15 +136,39 @@ static void reportCountsHeader(FILE* reportFh) {
         "transcriptCount\n";
     fputs(header, reportFh);
 }
-#endif
+
+/* write counts for one intron */
+static void reportCountsIntron(struct intronCounts* intronCounts,
+                               FILE* reportFh) {
+    fprintf(reportFh, "%d\t%s\t%d\t%d\t%d\t%d\n",
+            !intronCounts->annotated,
+            intronCounts->intronMotif,
+            intronCounts->count,
+            intronCounts->numUniqueMapReads,
+            intronCounts->numMultiMapReads,
+            intronCounts->transcriptCount);
+}
+
+/* write counts report */
+static void reportCounts(struct intronMap* intronMap,
+                         FILE* reportFh) {
+    reportCountsHeader(reportFh);
+    struct intronCounts* intronCountsList = intronCountsCollect(intronMap);
+    for (struct intronCounts* intronCounts = intronCountsList; intronCounts != NULL; intronCounts = intronCounts->next) {
+        reportCountsIntron(intronCounts, reportFh);
+    }
+    slFreeList(&intronCountsList);
+}
 
 /* main */
 static void spliceJunctionSupportSummarize(char* gencodeGenePred,
+                                           char* gencodeSpliceTsv,
                                            char* starSpliceJunctionList,
                                            char* reportTsv) {
-    struct intronMap* intronMap = loadIntronMap(gencodeGenePred, starSpliceJunctionList);
+    struct intronMap* intronMap = loadIntronMap(gencodeGenePred, gencodeSpliceTsv, starSpliceJunctionList);
     FILE* reportFh = mustOpen(reportTsv, "w");
     if (gCountsReport) {
+        reportCounts(intronMap, reportFh);
     } else {
         reportSupport(intronMap, reportFh);
     }
@@ -178,7 +179,7 @@ static void spliceJunctionSupportSummarize(char* gencodeGenePred,
 /* entry */
 int main(int argc, char** argv) {
     optionInit(&argc, argv, optionSpecs);
-    if (argc != 4) {
+    if (argc != 5) {
         usage("wrong # args");
     }
     gCountsReport = optionExists("countsReport");
@@ -186,7 +187,7 @@ int main(int argc, char** argv) {
     gMinNumUniqueMapReads = optionInt("minNumUniqueMapReads", gMinNumUniqueMapReads);
     gMinNumMultiMapReads = optionInt("minNumMultiMapReads", gMinNumMultiMapReads);
 
-    spliceJunctionSupportSummarize(argv[1], argv[2], argv[3]);
+    spliceJunctionSupportSummarize(argv[1], argv[2], argv[3], argv[4]);
     return 0;
 }
 

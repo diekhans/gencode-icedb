@@ -1,7 +1,7 @@
 ROOT = ../../..
 include ${ROOT}/config.mk
 
-LINKSRCS = 
+LINKSRCS = intronCounts.c
 PROGSRCS = spliceJunctionSupportSummarize.c
 SRCS = ${LINKSRCS} ${PROGSRCS}
 OBJS = ${SRCS:%.c=${OBJDIR}/%.o}
@@ -11,7 +11,7 @@ PROGS = ${BINDIR}/spliceJunctionSupportSummarize
 
 all: ${OBJS} ${PROGS}
 
-${BINDIR}/%: ${OBJDIR}/%.o ${LINKOBJS}
+${BINDIR}/%: ${OBJDIR}/%.o ${LINKOBJS} ${ICEDBLIB}
 	@mkdir -p ${BINDIR}
 	${CC} ${CFLAGS} -o $@ $< ${LINKOBJS} ${LIBS}
 

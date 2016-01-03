@@ -90,6 +90,36 @@ static void intronInfoSum(struct intronInfo* intronInfo,
     }
 }
 
+/* get the intron motif, either from the transcript or
+ * the STAR record.  WARNING: static return */
+char* intronInfoMotifStr(struct intronInfo* intronInfo) {
+    if (strlen(intronInfo->transDonor) > 0) {
+        static char motif[6];
+        safef(motif, sizeof(motif), "%s/%s", intronInfo->transDonor, intronInfo->transAcceptor);
+        return motif;
+    } else if (intronInfo->mappingsSum != NULL) {
+        return starSpliceJunctionMotifStr(intronInfo->mappingsSum);
+    } else {
+        return "\?\?/\?\?"; 
+    }
+}
+
+/* intron info is novel */
+bool intronInfoIsNovel(struct intronInfo* intronInfo) {
+    if (intronInfo->mappingsSum != NULL) {
+        if ((intronInfo->mappingsSum->annotated == 0) != (intronInfo->intronTranses == NULL)) {
+            // FIXME make abort
+            fprintf(stderr, "intron %s:%d-%d: STAR annotated state (%d) not the same as transcript state (%d)\n",
+                    intronInfo->chrom, intronInfo->chromStart, intronInfo->chromEnd,
+                    (intronInfo->mappingsSum->annotated == 0),
+                    (intronInfo->intronTranses == NULL));
+        }
+        return (intronInfo->mappingsSum->annotated == 0);
+    } else {
+        return (intronInfo->intronTranses == NULL);
+    }
+}
+
 /* construct a new object */
 struct intronMap* intronMapNew(void) {
     struct intronMap* intronMap;
@@ -157,7 +187,7 @@ static void intronMapAddTransIntron(struct intronMap* intronMap,
     struct intronInfo* intronInfo
         = intronMapObtainIntronInfo(intronMap, transcript->chrom,
                                     transcript->exonEnds[intronIdx],
-                                    transcript->exonStarts[intronIdx]);
+                                    transcript->exonStarts[intronIdx+1]);
     struct intronTransLink* intronTrans
         = intronTransLinkNew(transcript, intronIdx);
     slAddHead(&intronInfo->intronTranses, intronTrans);
@@ -206,8 +236,8 @@ static int intronInfoLocCmp(const void *va, const void *vb) {
     return a->chromEnd - b->chromEnd;
 }
 
-/* get location-sorted list of intronInfo objects (DON'T FREE) */
-struct intronInfo* intronMapGetSorted(struct intronMap* intronMap) {
+/* get list of intronInfo objects (DON'T FREE) */
+struct intronInfo* intronMapGet(struct intronMap* intronMap) {
     struct intronInfo* intronInfos = NULL;
     struct hashEl *hel;
     struct hashCookie cookie = hashFirst(intronMap->intronHash);
@@ -215,6 +245,12 @@ struct intronInfo* intronMapGetSorted(struct intronMap* intronMap) {
         struct intronInfo* intronInfo = hel->val;
         slAddHead(&intronInfos, intronInfo);
     }
+    return intronInfos;
+}
+
+/* get location-sorted list of intronInfo objects (DON'T FREE) */
+struct intronInfo* intronMapGetSorted(struct intronMap* intronMap) {
+    struct intronInfo* intronInfos = intronMapGet(intronMap);
     slSort(&intronInfos, intronInfoLocCmp);
     return intronInfos;
 }

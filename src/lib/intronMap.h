@@ -28,6 +28,18 @@ struct intronMap {
     struct genePred *transcripts;  // all transcripts
 };
 
+/* get the intron motif, either from the transcript or
+ * the STAR record.  WARNING: static return  */
+char* intronInfoMotifStr(struct intronInfo* intronInfo);
+
+/* intron info is novel */
+bool intronInfoIsNovel(struct intronInfo* intronInfo);
+
+/* intron info is annotated */
+static inline bool intronInfoIsAnnotated(struct intronInfo* intronInfo) {
+    return !intronInfoIsNovel(intronInfo);
+}
+
 /* construct a new object */
 struct intronMap* intronMapNew(void);
 
@@ -42,6 +54,9 @@ void intronMapLoadStarJuncs(struct intronMap* intronMap,
 /* load a transcript file */
 void intronMapLoadTranscripts(struct intronMap* intronMap,
                               char* transcriptFile);
+
+/* get list of intronInfo objects (DON'T FREE) */
+struct intronInfo* intronMapGet(struct intronMap* intronMap);
 
 /* get location-sorted list of intronInfo objects (DON'T FREE) */
 struct intronInfo* intronMapGetSorted(struct intronMap* intronMap);

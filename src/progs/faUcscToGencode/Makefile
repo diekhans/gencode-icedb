@@ -9,7 +9,7 @@ PROGS = ${BINDIR}/faUcscToGencode
 
 all: ${OBJS} ${PROGS}
 
-${BINDIR}/%: ${OBJDIR}/%.o
+${BINDIR}/%: ${OBJDIR}/%.o  ${ICEDBLIB}
 	@mkdir -p ${BINDIR}
 	${CC} ${CFLAGS} -o $@ $< ${LIBS}
 

@@ -140,3 +140,19 @@ fputc(lastSep,f);
 
 /* -------------------------------- End autoSql Generated Code -------------------------------- */
 
+/* convert STAR intron motif code to a string.  non-canonical
+ * is returned as ??/?? */
+char* starSpliceJunctionMotifStr(struct starSpliceJunction *ssj) {
+    switch (ssj->intronMotif) {
+        case 0: return "\?\?/\?\?"; 
+        case 1: return "GT/AG";
+        case 2: return "CT/AC";
+        case 3: return "GC/AG";
+        case 4: return "CT/GC";
+        case 5: return "AT/AC";
+        case 6: return "GT/AT";
+        default:
+            errAbort("unknown intron motif code: %d", ssj->intronMotif);
+            return NULL;
+    }
+}

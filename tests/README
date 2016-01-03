@@ -1,5 +1,8 @@
 
-Tests with small region GRCh38 chr22:19175560-19178840 (small-chr22.fa)
+Tests with small region GRCh38 chr22:19175560-19178840
+used for alignment tests:
+      input/small-chr22.fa
+      input/small-rnaseq.sam
 
 Genome obtains from two bit, then hand-end comment
   twoBitToFa /hive/data/genomes/hg38/hg38.2bit:chr22:19175560-19178840 input/small-chr22.fa
@@ -13,4 +16,7 @@ at corresponding region in GRCh37 chr22:19163073-19166353
 wgEncodeCaltechRnaSeqMcf7R2x75Il200AlignsRep2V2.bam
 
  samtools view -h /usr/local/apache/htdocs-hgdownload/goldenPath/hg19/encodeDCC/wgEncodeCaltechRnaSeq/wgEncodeCaltechRnaSeqMcf7R2x75Il200AlignsRep2V2.bam chr22:19163073-19166353  >input/small-rnaseq.sam
-# edit header to remove all by chr22
+# edit header to remove all but chr22
+
+----
+

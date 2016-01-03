@@ -1,12 +1,13 @@
-#ifndef supportCounts_h
-#define supportCounts_h
+#ifndef intronCounts_h
+#define intronCounts_h
+struct intronMap;
 
 /* count of support for an intron of a certain category */
 struct intronCounts {
     struct intronCounts* next;
     bool annotated;    // is it annotated?
-    int intronMotif;   // motif code, -1 if no support
-    int intronCount;
+    char intronMotif[6];
+    int count;
     int numUniqueMapReads;
     int numMultiMapReads;
     int transcriptCount;
