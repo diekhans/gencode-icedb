@@ -99,21 +99,25 @@ static int getSupportLevel(struct intronInfo* intronInfo) {
 /* write support report header */
 static void reportSupportHeader(FILE* reportFh) {
     static char* header = "chrom\t" "intronStart\t" "intronEnd\t" "novel\t"
-        "annotStrand\t" "rnaSeqStrand\t" "intronMotif\t" "supportLevel\t"
-        "transcripts\n";
+        "annotStrand\t" "rnaSeqStrand\t" "intronMotif\t"
+        "numUniqueMapReads\t" "numMultiMapReads\t"
+        "supportLevel\t" "transcripts\n";
     fputs(header, reportFh);
 }
 
 /* report on an intron */
 static void reportSupportIntron(struct intronInfo* intronInfo,
                                 FILE* reportFh) {
-    fprintf(reportFh, "%s\t%d\t%d\t%d\t%s\t%s\t%s\t%d\t",
+    int numUniqueMapReads = intronInfo->mappingsSum != NULL ? intronInfo->mappingsSum->numUniqueMapReads : 0;
+    int numMultiMapReads = intronInfo->mappingsSum != NULL ? intronInfo->mappingsSum->numMultiMapReads : 0;
+    fprintf(reportFh, "%s\t%d\t%d\t%d\t%s\t%s\t%s\t%d\t%d\t%d\t",
             intronInfo->chrom, intronInfo->chromStart,
             intronInfo->chromEnd,
             intronInfoIsNovel(intronInfo),
             getAnnotStrand(intronInfo),
             getRnaSeqStrand(intronInfo),
             intronInfoMotifStr(intronInfo),
+            numUniqueMapReads, numMultiMapReads,
             getSupportLevel(intronInfo));
     for (struct intronTransLink* intronTrans = intronInfo->intronTranses;
          intronTrans != NULL; intronTrans = intronTrans->next) {
