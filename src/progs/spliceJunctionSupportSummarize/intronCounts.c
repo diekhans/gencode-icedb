@@ -43,14 +43,26 @@ static void countIntronInfo(struct hash* intronCountsMap,
         = intronCountsObtain(intronCountsMap,
                              intronInfoIsAnnotated(intronInfo),
                              intronInfoMotifStr(intronInfo));
-    if (intronCounts->count == 0) {
+    intronCounts->count++;
+    if (intronCounts->count == 1) {
         // first time
         slAddHead(intronCountsList, intronCounts);
-    }
-    intronCounts->count++;
+    } 
     if (intronInfo->mappingsSum != NULL) {
         intronCounts->numUniqueMapReads += intronInfo->mappingsSum->numUniqueMapReads;
         intronCounts->numMultiMapReads += intronInfo->mappingsSum->numMultiMapReads;
+
+        if (intronCounts->count == 1) {
+            intronCounts->minNumUniqueMapReads = intronInfo->mappingsSum->numUniqueMapReads;
+            intronCounts->maxNumUniqueMapReads = intronInfo->mappingsSum->numUniqueMapReads;
+            intronCounts->minNumMultiMapReads = intronInfo->mappingsSum->numMultiMapReads;
+            intronCounts->maxNumMultiMapReads = intronInfo->mappingsSum->numMultiMapReads;
+        } else {
+            intronCounts->minNumUniqueMapReads = min(intronCounts->minNumUniqueMapReads, intronInfo->mappingsSum->numUniqueMapReads);
+            intronCounts->maxNumUniqueMapReads = max(intronCounts->maxNumUniqueMapReads, intronInfo->mappingsSum->numUniqueMapReads);
+            intronCounts->minNumMultiMapReads = min(intronCounts->minNumMultiMapReads, intronInfo->mappingsSum->numMultiMapReads);
+            intronCounts->maxNumMultiMapReads = max(intronCounts->maxNumMultiMapReads, intronInfo->mappingsSum->numMultiMapReads);
+        }
     }
     intronCounts->transcriptCount += slCount(intronInfo->intronTranses);
 }

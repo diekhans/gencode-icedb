@@ -9,7 +9,11 @@ struct intronCounts {
     char intronMotif[6];
     int count;
     int numUniqueMapReads;
+    int minNumUniqueMapReads;
+    int maxNumUniqueMapReads;
     int numMultiMapReads;
+    int minNumMultiMapReads;
+    int maxNumMultiMapReads;
     int transcriptCount;
 };
 
