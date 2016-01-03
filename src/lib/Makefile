@@ -9,6 +9,8 @@ DEPENDS = ${SRCS:%.c=%.depend}
 
 all: ${OBJS} ${ICEDBLIB}(${OBJS})
 
+clean::
+	rm -f ${ICEDBLIB}
 
 include ${ROOT}/rules.mk
 

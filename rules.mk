@@ -8,7 +8,7 @@ ${OBJDIR}/%.o: %.c
 	@mkdir -p  $(dir $@)
 	${ROOT}/make/addLib $@ $*.o
 
-clean:
+clean::
 	rm -f ${PROGS} ${OBJS} ${LINKOBJS} ${DEPENDS}
 
 savebak:

@@ -1,10 +1,9 @@
 ROOT = ..
 
 all:
+	(cd lib && ${MAKE})
 	(cd progs && ${MAKE})
 
-test:
-	(cd progs && ${MAKE} test)
-
 clean:
+	(cd lib && ${MAKE} clean)
 	(cd progs && ${MAKE} clean)
