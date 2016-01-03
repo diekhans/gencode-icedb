@@ -10,4 +10,4 @@ test:
 clean:
 	(cd src && ${MAKE} clean)
 	(cd tests && ${MAKE} clean)
-	rm -rf ${BINDIR}/*.dSYM ${OBJS}
+	rm -rf ${BINDIR}/*.dSYM ${OBJS} lib/gencode_icedb/*.pyc
