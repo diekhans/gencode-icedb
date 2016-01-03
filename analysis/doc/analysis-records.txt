@@ -13,15 +13,18 @@
     # get GRCh38 assembly, with GENCODE names and primary assembly sequences
     cd icedb/build/data/human/genome/grch38
     wget -nv ftp://ftp.ncbi.nlm.nih.gov/genomes/ASSEMBLY_REPORTS/All/GCF_000001405.28.assembly.txt
-     ~/compbio/code/pycbio/bin/ncbiAssemblyReportConvert --fromIdType=ucscStyleName   --toIdType=gencode  --include=mainAsm idmap GCF_000001405.28.assembly.txt ucscGencodeMap.tsv
-     twoBitToFa /hive/data/genomes/hg38/hg38.2bit /dev/stdout | ~/compbio/gencode/projs/icedb/gencode-icedb/bin/faUcscToGencode /dev/stdin ucscGencodeMap.tsv /dev/stdout | gzip >grch38.fa.gz&
+    ~/compbio/code/pycbio/bin/ncbiAssemblyReportConvert --fromIdType=ucscStyleName   --toIdType=gencode  --include=mainAsm idmap GCF_000001405.28.assembly.txt ucscGencodeMap.tsv
+    twoBitToFa /hive/data/genomes/hg38/hg38.2bit /dev/stdout | ~/compbio/gencode/projs/icedb/gencode-icedb/bin/faUcscToGencode /dev/stdin ucscGencodeMap.tsv /dev/stdout | gzip >grch38.fa.gz&
+    # need twobit as well     
+    faToTwoBit data/human/genome/grch38/grch38.fa.gz  data/human/genome/grch38/grch38.2bit &
 
 2015-12-21: mouse assembly 
     # get GRCm38 assembly, with GENCODE names and primary assembly sequences
     cd icedb/build/data/mouse/genome/grcm38
     wget -nv ftp://ftp.ncbi.nlm.nih.gov/genomes/ASSEMBLY_REPORTS/All/GCF_000001635.24.assembly.txt
-     ~/compbio/code/pycbio/bin/ncbiAssemblyReportConvert --fromIdType=ucscStyleName   --toIdType=gencode  --include=mainAsm idmap GCF_000001635.24.assembly.txt ucscGencodeMap.tsv
-     twoBitToFa /hive/data/genomes/mm10/mm10.2bit /dev/stdout | ~/compbio/gencode/projs/icedb/gencode-icedb/bin/faUcscToGencode /dev/stdin ucscGencodeMap.tsv /dev/stdout | gzip >grcm38.fa.gz&
+    ~/compbio/code/pycbio/bin/ncbiAssemblyReportConvert --fromIdType=ucscStyleName   --toIdType=gencode  --include=mainAsm idmap GCF_000001635.24.assembly.txt ucscGencodeMap.tsv
+    twoBitToFa /hive/data/genomes/mm10/mm10.2bit /dev/stdout | ~/compbio/gencode/projs/icedb/gencode-icedb/bin/faUcscToGencode /dev/stdin ucscGencodeMap.tsv /dev/stdout | gzip >grcm38.fa.gz&
+    faToTwoBit data/mouse/genome/grcm38/grcm38.fa.gz  data/mouse/genome/grcm38/grcm38.2bit
 
 2015-12-21: mouse RNASeq data
     # Kaessmann 76bp single-ended E-GEOD-30352
@@ -88,3 +91,12 @@
    ssh ku
    para create -batch=batch.tmp -cpu=4 -ram=32g batch.tmp/batch.para 
    para push -batch=batch.tmp
+
+2016-01-02:
+   # gencode human splice information
+   gtfToGenePred analysis/grch38/gencodeV24/gencode/gencode.v24.annotation.gtf.gz  analysis/grch38/gencodeV24/gencode/gencode.v24.annotation.gp
+   ../gencode-icedb/bin/genePredIntrons analysis/grch38/gencodeV24/gencode/gencode.v24.annotation.gp data/human/genome/grch38/grch38.2bit analysis/grch38/gencodeV24/gencode/gencode.v24.annotation.splice.tsv
+
+   # gencode mouse splice information
+   gtfToGenePred analysis/grcm38/gencodeVM8/gencode/gencode.vM8.annotation.gtf.gz  analysis/grcm38/gencodeVM8/gencode/gencode.vM8.annotation.gp
+   ../gencode-icedb/bin/genePredIntrons analysis/grcm38/gencodeVM8/gencode/gencode.vM8.annotation.gp data/mouse/genome/grcm38/grcm38.2bit analysis/grcm38/gencodeVM8/gencode/gencode.vM8.annotation.splice.tsv

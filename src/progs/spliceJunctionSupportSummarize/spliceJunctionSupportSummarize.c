@@ -138,8 +138,8 @@ static void reportSupport(struct intronMap* intronMap,
 static void reportCountsHeader(FILE* reportFh) {
     static char* header =  "novel\t" "intronMotif\t"
         "intronCount\t"
-        "numUniqueMapReads\t" "minNumUniqueMapReads\t" "maxNumUniqueMapReads\t"
-        "numMultiMapReads\t"  "minNumMultiMapReads\t"  "maxNumMultiMapReads\t"
+        "numUniqueMapReads\t" "maxNumUniqueMapReads\t"
+        "numMultiMapReads\t"  "maxNumMultiMapReads\t"
         "transcriptCount\n";
     fputs(header, reportFh);
 }
@@ -147,15 +147,13 @@ static void reportCountsHeader(FILE* reportFh) {
 /* write counts for one intron */
 static void reportCountsIntron(struct intronCounts* intronCounts,
                                FILE* reportFh) {
-    fprintf(reportFh, "%d\t%s\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n",
+    fprintf(reportFh, "%d\t%s\t%d\t%d\t%d\t%d\t%d\t%d\n",
             !intronCounts->annotated,
             intronCounts->intronMotif,
             intronCounts->count,
             intronCounts->numUniqueMapReads,
-            intronCounts->minNumUniqueMapReads,
             intronCounts->maxNumUniqueMapReads,
             intronCounts->numMultiMapReads,
-            intronCounts->minNumMultiMapReads,
             intronCounts->maxNumMultiMapReads,
             intronCounts->transcriptCount);
 }

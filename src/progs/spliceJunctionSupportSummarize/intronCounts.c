@@ -53,14 +53,10 @@ static void countIntronInfo(struct hash* intronCountsMap,
         intronCounts->numMultiMapReads += intronInfo->mappingsSum->numMultiMapReads;
 
         if (intronCounts->count == 1) {
-            intronCounts->minNumUniqueMapReads = intronInfo->mappingsSum->numUniqueMapReads;
             intronCounts->maxNumUniqueMapReads = intronInfo->mappingsSum->numUniqueMapReads;
-            intronCounts->minNumMultiMapReads = intronInfo->mappingsSum->numMultiMapReads;
             intronCounts->maxNumMultiMapReads = intronInfo->mappingsSum->numMultiMapReads;
         } else {
-            intronCounts->minNumUniqueMapReads = min(intronCounts->minNumUniqueMapReads, intronInfo->mappingsSum->numUniqueMapReads);
             intronCounts->maxNumUniqueMapReads = max(intronCounts->maxNumUniqueMapReads, intronInfo->mappingsSum->numUniqueMapReads);
-            intronCounts->minNumMultiMapReads = min(intronCounts->minNumMultiMapReads, intronInfo->mappingsSum->numMultiMapReads);
             intronCounts->maxNumMultiMapReads = max(intronCounts->maxNumMultiMapReads, intronInfo->mappingsSum->numMultiMapReads);
         }
     }
