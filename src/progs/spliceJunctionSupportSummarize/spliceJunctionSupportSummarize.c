@@ -3,6 +3,7 @@
 #include "intronMap.h"
 #include "starSpliceJunction.h"
 #include "genePred.h"
+#include "filePath.h"
 #include "intronCounts.h"
 
 static struct optionSpec optionSpecs[] = {
@@ -23,6 +24,8 @@ static void usage(char *msg) {
     static char* usageMsg = "spliceJunctionSupportSummarize gencodeGenePred gencodeSpliceTsv starSpliceJunctionList reportTsv\n\n"
         "Summarize splice junction support\n"
         "\n"
+        "  o starSpliceJunctionList is list of splice junction files,\n"
+        "    with file names relative to location of list file.\n"
         "Options:\n"
         "   -countsReport - output counts rather than support levels. The -minOverhang\n"
         "        filter is applied.\n"
@@ -42,7 +45,9 @@ static struct intronMap* loadIntronMap(char* gencodeGenePred,
     struct slName *spliceJuncFiles = slNameLoadReal(starSpliceJunctionList);
     intronMapLoadTranscripts(intronMap, gencodeGenePred);
     for (struct slName *spliceJuncFile = spliceJuncFiles; spliceJuncFile != NULL; spliceJuncFile = spliceJuncFile->next) {
-        intronMapLoadStarJuncs(intronMap, spliceJuncFile->name, gMinOverhang);
+        char* juncPath = pathRelativeToFile(starSpliceJunctionList, spliceJuncFile->name);
+        intronMapLoadStarJuncs(intronMap, juncPath, gMinOverhang);
+        freeMem(juncPath);
     }
     slFreeList(&spliceJuncFiles);
     intronMapLoadTranscriptSpliceSites(intronMap, gencodeSpliceTsv);
