@@ -107,9 +107,9 @@ genePredIntronsSet1Test: mkdirs
 	diff expected/$@.tsv output/$@.tsv
 
 # tests of support results
-supportTests: support1Test supportCounts1Test
+supportTests: supportLevel1Test supportCounts1Test
 
-support1Test: mkdirs
+supportLevel1Test: mkdirs
 	${spliceJunctionSupportSummarize} input/small-gencode.gp expected/genePredIntronsSet1Test.tsv input/small-sj.lst output/$@.support.tsv
 	diff expected/$@.support.tsv output/$@.support.tsv
 
