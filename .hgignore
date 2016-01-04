@@ -7,7 +7,7 @@ output/
 config.local.mk
 BROWSE
 TAGS
-
+*.depend
 
 syntax: regexp
 ^output/
@@ -16,3 +16,4 @@ syntax: regexp
 ^testBin/
 ^extern/
 ^lib/
+
