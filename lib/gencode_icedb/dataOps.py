@@ -1,5 +1,6 @@
 """"functions to operate on read and other data"""
 import os, re
+import socket
 from pycbio.sys import fileOps
 from gencode_icedb import pipelineOps
 
@@ -51,6 +52,20 @@ class TmpUncompress(object):
                 os.unlink(self.__tmpUncompressed)
             self.__tmpUncompressed = None
 
+def getNewTmpDir(tmpDir):
+    """need a temporary directory that doesn't exist, since STAR wants
+     the directory not to exist"""
+    if tmpDir is not None:
+        fileOps.ensureDir(tmpDir)
+    cnt = 0
+    while True:
+        path = os.path.join(fileOps.findTmpDir(tmpDir),
+                            "star.{}.{}.{}.tmp".format(socket.gethostname(), os.getpid(), cnt))
+        if not os.path.exists(path):
+            return path
+        cnt += 1
+
+            
 def estimateReadLength(readsPath):
     "run estimateReadLength program to get read length from read data"
     return int(pipelineOps.callCmd(["estimateReadLength", readsPath, "/dev/stdout"]))

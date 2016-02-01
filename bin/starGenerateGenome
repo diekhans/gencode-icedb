@@ -44,14 +44,15 @@ def starCmd(genomeFa, numThreads, genomeDir, annotationGtf, readLength, starTmpD
             "--sjdbOverhang", readLength-1,
             "--outFileNamePrefix", genomeDir + "/"]
 
-def starGenerateGenome(opts):
-    starTmpDir = fileOps.tmpFileGet(prefix="star", tmpDir=opts.tmpDir)
-    fileOps.ensureDir(opts.genomeDir)
-    genomeFa = dataOps.TmpUncompress(opts.genomeFa, opts.tmpDir)
-    annotationGtf = dataOps.TmpUncompress(opts.annotationGtf, opts.tmpDir)
-    cmd = starCmd(genomeFa.path, opts.numThreads, opts.genomeDir, annotationGtf.path, opts.readLength, starTmpDir)
+def starGenerateGenome(genomeFa, annotationGtf, readLength, numThreads, genomeDir, tmpDir):
+    starTmpDir = dataOps.getNewTmpDir(tmpDir)
+    fileOps.ensureDir(genomeDir)
+    genomeFa = dataOps.TmpUncompress(genomeFa, tmpDir)
+    annotationGtf = dataOps.TmpUncompress(annotationGtf, tmpDir)
+    cmd = starCmd(genomeFa.path, numThreads, genomeDir, annotationGtf.path, readLength, starTmpDir)
     pipelineOps.runCmd(cmd, verbose=verbose)
     genomeFa.finish()
     annotationGtf.finish()
 
-starGenerateGenome(parseArgs())
+opts = parseArgs()
+starGenerateGenome(opts.genomeFa, opts.annotationGtf, opts.readLength, opts.numThreads, opts.genomeDir, opts.tmpDir)

@@ -57,33 +57,37 @@ def starCmd(numThreads, genomeDir, readsFile, readsFile2,
         cmd.extend(["--readFilesCommand", decompressCmd])
     return cmd
 
-def starSpliceJunctionMap(opts):
-    if opts.tmpDir is not None:
-        fileOps.ensureDir(opts.tmpDir)
-    starTmpDir = fileOps.tmpFileGet(prefix="star", tmpDir=opts.tmpDir)
-    # holds output files before filtering
-    outputTmpDir = fileOps.tmpFileGet(prefix="starout", tmpDir=opts.tmpDir)
-    sjTmpOut = os.path.join(outputTmpDir, "SJ.out.tab")
-    fileOps.ensureDir(outputTmpDir)
-
+def buildStarPipeline(genomeDir, readsFile, readsFile2, numThreads, tmpDir,
+                      outputTmpDir):
     # Input depends on if one or two files are specified.  with one file, we
     # pipe it and can read from SAM/BAM.  With two, we need parallel fastq
     # files for paired-end reads.
     cmds = []
-    if opts.readsFile2 == None:
-        cmds.append(dataOps.getReadsCatCommand(opts.readsFile))
+    if readsFile2 == None:
+        cmds.append(dataOps.getReadsCatCommand(readsFile))
         readsFile = "/dev/stdin"
         decompressCmd = None
     else:
-        readsFile = opts.readsFile
         decompressCmd = fileOps.decompressCmd(readsFile, None)
-    cmds.append(starCmd(opts.numThreads, opts.genomeDir, readsFile, opts.readsFile2,
-                        decompressCmd, starTmpDir, outputTmpDir))
+    cmds.append(starCmd(numThreads, genomeDir, readsFile, readsFile2,
+                        decompressCmd, dataOps.getNewTmpDir(tmpDir),
+                        outputTmpDir))
+    return cmds
+
+def starSpliceJunctionMap(genomeDir, readsFile, readsFile2, sjOut, numThreads, tmpDir):
+    # holds output files before filtering
+    outputTmpDir = fileOps.tmpDirGet(prefix="starout", tmpDir=tmpDir)
+    fileOps.ensureDir(outputTmpDir)
+    sjTmpOut = os.path.join(outputTmpDir, "SJ.out.tab")
+
+    cmds = buildStarPipeline(genomeDir, readsFile, readsFile2, numThreads, tmpDir, outputTmpDir)
     pipelineOps.runCmd(cmds, verbose=verbose)
     fileOps.ensureFileDir(opts.sjOut)
-    sjOutFinalTmp = fileOps.atomicTmpFile(opts.sjOut)
+    sjOutFinalTmp = fileOps.atomicTmpFile(sjOut)
     copyfile(sjTmpOut, sjOutFinalTmp)
-    fileOps.atomicInstall(sjOutFinalTmp, opts.sjOut)
+    fileOps.atomicInstall(sjOutFinalTmp, sjOut)
     fileOps.rmTree(outputTmpDir)
 
-starSpliceJunctionMap(parseArgs())
+opts = parseArgs()
+starSpliceJunctionMap(opts.genomeDir, opts.readsFile, opts.readsFile2,
+                      opts.sjOut, opts.numThreads, opts.tmpDir)
