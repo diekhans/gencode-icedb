@@ -95,8 +95,10 @@
 2016-01-02:
    # gencode human splice information
    gtfToGenePred analysis/grch38/gencodeV24/gencode/gencode.v24.annotation.gtf.gz  analysis/grch38/gencodeV24/gencode/gencode.v24.annotation.gp
-   ../gencode-icedb/bin/genePredIntrons analysis/grch38/gencodeV24/gencode/gencode.v24.annotation.gp data/human/genome/grch38/grch38.2bit analysis/grch38/gencodeV24/gencode/gencode.v24.annotation.splice.tsv
+   ~/compbio/ccds/ccds2/output/bin/x86_64/opt/gencodeGtfToAttrs analysis/grch38/gencodeV24/gencode/gencode.v24.annotation.gtf.gz analysis/grch38/gencodeV24/gencode/gencode.v24.annotation.attrs
+   ../gencode-icedb/bin/genePredIntrons analysis/grch38/gencodeV24/gencode/gencode.v24.annotation.gp  analysis/grch38/gencodeV24/gencode/gencode.v24.annotation.attrs data/human/genome/grch38/grch38.2bit analysis/grch38/gencodeV24/gencode/gencode.v24.annotation.splice.tsv
 
    # gencode mouse splice information
    gtfToGenePred analysis/grcm38/gencodeVM8/gencode/gencode.vM8.annotation.gtf.gz  analysis/grcm38/gencodeVM8/gencode/gencode.vM8.annotation.gp
-   ../gencode-icedb/bin/genePredIntrons analysis/grcm38/gencodeVM8/gencode/gencode.vM8.annotation.gp data/mouse/genome/grcm38/grcm38.2bit analysis/grcm38/gencodeVM8/gencode/gencode.vM8.annotation.splice.tsv
+   ~/compbio/ccds/ccds2/output/bin/x86_64/opt/gencodeGtfToAttrs analysis/grcm38/gencodeVM8/gencode/gencode.vM8.annotation.gtf.gz analysis/grcm38/gencodeVM8/gencode/gencode.vM8.annotation.attrs
+   ../gencode-icedb/bin/genePredIntrons analysis/grcm38/gencodeVM8/gencode/gencode.vM8.annotation.gp analysis/grcm38/gencodeVM8/gencode/gencode.vM8.annotation.attrs data/mouse/genome/grcm38/grcm38.2bit analysis/grcm38/gencodeVM8/gencode/gencode.vM8.annotation.splice.tsv

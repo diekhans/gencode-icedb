@@ -4,3 +4,16 @@
 awk 'NR%4 == 2 {lengths[length($0)]++} END {for (l in lengths) {print l, lengths[l]}}' file.fastq
 
 git@github.com:maasha/biopieces.git
+
+
+---------- 
+
+2016-01-04 Adam:
+    Are you able to calculate the percent spliced in (PSI) for each exon - see
+    Dmitri's paper on this here (http://www.ncbi.nlm.nih.gov/pubmed/23172860)
+    - from the data you have. I think in the absence of full transcript level
+    quantification this would be a very useful property to capture - e.g. an
+    exon may be well-supported in a highly expressed gene but may be included
+    in relatively few transcripts.
+
+

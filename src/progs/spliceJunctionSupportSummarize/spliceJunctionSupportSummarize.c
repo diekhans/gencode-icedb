@@ -21,7 +21,7 @@ static int gMinNumMultiMapReads = 0;
 
 /* usage message and abort */
 static void usage(char *msg) {
-    static char* usageMsg = "spliceJunctionSupportSummarize gencodeGenePred gencodeSpliceTsv starSpliceJunctionList reportTsv\n\n"
+    static char* usageMsg = "spliceJunctionSupportSummarize gencodeGenePred genecodeAttrsTsv gencodeSpliceTsv starSpliceJunctionList reportTsv\n\n"
         "Summarize splice junction support\n"
         "\n"
         "  o starSpliceJunctionList is list of splice junction files,\n"
@@ -39,11 +39,12 @@ static void usage(char *msg) {
 
 /* load intron map from files */
 static struct intronMap* loadIntronMap(char* gencodeGenePred,
+                                       char* gencodeAttrsTsv,
                                        char* gencodeSpliceTsv,
                                        char* starSpliceJunctionList) {
     struct intronMap* intronMap = intronMapNew();
     struct slName *spliceJuncFiles = slNameLoadReal(starSpliceJunctionList);
-    intronMapLoadTranscripts(intronMap, gencodeGenePred);
+    intronMapLoadTranscripts(intronMap, gencodeGenePred, gencodeAttrsTsv);
     for (struct slName *spliceJuncFile = spliceJuncFiles; spliceJuncFile != NULL; spliceJuncFile = spliceJuncFile->next) {
         char* juncPath = pathRelativeToFile(starSpliceJunctionList, spliceJuncFile->name);
         intronMapLoadStarJuncs(intronMap, juncPath, gMinOverhang);
@@ -101,7 +102,7 @@ static void reportSupportHeader(FILE* reportFh) {
     static char* header = "chrom\t" "intronStart\t" "intronEnd\t" "novel\t"
         "annotStrand\t" "rnaSeqStrand\t" "intronMotif\t"
         "numUniqueMapReads\t" "numMultiMapReads\t"
-        "supportLevel\t" "transcripts\n";
+        "supportLevel\t" "geneBioType\t" "transcripts\n";
     fputs(header, reportFh);
 }
 
@@ -110,7 +111,7 @@ static void reportSupportIntron(struct intronInfo* intronInfo,
                                 FILE* reportFh) {
     int numUniqueMapReads = intronInfo->mappingsSum != NULL ? intronInfo->mappingsSum->numUniqueMapReads : 0;
     int numMultiMapReads = intronInfo->mappingsSum != NULL ? intronInfo->mappingsSum->numMultiMapReads : 0;
-    fprintf(reportFh, "%s\t%d\t%d\t%d\t%s\t%s\t%s\t%d\t%d\t%d\t",
+    fprintf(reportFh, "%s\t%d\t%d\t%d\t%s\t%s\t%s\t%d\t%d\t%d\t%s\t",
             intronInfo->chrom, intronInfo->chromStart,
             intronInfo->chromEnd,
             intronInfoIsNovel(intronInfo),
@@ -118,7 +119,8 @@ static void reportSupportIntron(struct intronInfo* intronInfo,
             getRnaSeqStrand(intronInfo),
             intronInfoMotifStr(intronInfo),
             numUniqueMapReads, numMultiMapReads,
-            getSupportLevel(intronInfo));
+            getSupportLevel(intronInfo),
+            (intronInfo->geneBioType != NULL? intronInfo->geneBioType : ""));
     for (struct intronTransLink* intronTrans = intronInfo->intronTranses;
          intronTrans != NULL; intronTrans = intronTrans->next) {
         if (intronTrans != intronInfo->intronTranses) {
@@ -175,10 +177,11 @@ static void reportCounts(struct intronMap* intronMap,
 
 /* main */
 static void spliceJunctionSupportSummarize(char* gencodeGenePred,
+                                           char* gencodeAttrsTsv,
                                            char* gencodeSpliceTsv,
                                            char* starSpliceJunctionList,
                                            char* reportTsv) {
-    struct intronMap* intronMap = loadIntronMap(gencodeGenePred, gencodeSpliceTsv, starSpliceJunctionList);
+    struct intronMap* intronMap = loadIntronMap(gencodeGenePred, gencodeAttrsTsv, gencodeSpliceTsv, starSpliceJunctionList);
     FILE* reportFh = mustOpen(reportTsv, "w");
     if (gCountsReport) {
         reportCounts(intronMap, reportFh);
@@ -192,7 +195,7 @@ static void spliceJunctionSupportSummarize(char* gencodeGenePred,
 /* entry */
 int main(int argc, char** argv) {
     optionInit(&argc, argv, optionSpecs);
-    if (argc != 5) {
+    if (argc != 6) {
         usage("wrong # args");
     }
     gCountsReport = optionExists("countsReport");
@@ -200,7 +203,7 @@ int main(int argc, char** argv) {
     gMinNumUniqueMapReads = optionInt("minNumUniqueMapReads", gMinNumUniqueMapReads);
     gMinNumMultiMapReads = optionInt("minNumMultiMapReads", gMinNumMultiMapReads);
 
-    spliceJunctionSupportSummarize(argv[1], argv[2], argv[3], argv[4]);
+    spliceJunctionSupportSummarize(argv[1], argv[2], argv[3], argv[4], argv[5]);
     return 0;
 }
 

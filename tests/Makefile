@@ -110,11 +110,11 @@ genePredIntronsSet1Test: mkdirs
 supportTests: supportLevel1Test supportCounts1Test
 
 supportLevel1Test: mkdirs
-	${spliceJunctionSupportSummarize} input/small-gencode.gp expected/genePredIntronsSet1Test.tsv input/small-sj.lst output/$@.support.tsv
+	${spliceJunctionSupportSummarize} input/small-gencode.gp input/small-gencode.attrs expected/genePredIntronsSet1Test.tsv input/small-sj.lst output/$@.support.tsv
 	diff expected/$@.support.tsv output/$@.support.tsv
 
 supportCounts1Test: mkdirs
-	${spliceJunctionSupportSummarize} -minOverhang=20 -countsReport  input/small-gencode.gp expected/genePredIntronsSet1Test.tsv input/small-sj.lst output/$@.counts.tsv
+	${spliceJunctionSupportSummarize} -minOverhang=20 -countsReport  input/small-gencode.gp input/small-gencode.attrs expected/genePredIntronsSet1Test.tsv input/small-sj.lst output/$@.counts.tsv
 	diff expected/$@.counts.tsv output/$@.counts.tsv
 encodeDccTests: encodeDcc10Tests
 # just test aginst live site, it was too much of a pain to edit

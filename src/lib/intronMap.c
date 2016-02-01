@@ -4,6 +4,8 @@
 #include "hash.h"
 #include "sqlNum.h"
 #include "genePred.h"
+#include "linefile.h"
+#include "encode/wgEncodeGencodeAttrs.h"
 
 /* constructor */
 static struct intronTransLink* intronTransLinkNew(struct genePred* transcript,
@@ -45,6 +47,7 @@ static void intronInfoFree(struct intronInfo** intronInfoPtr) {
     starSpliceJunctionFreeList(&(*intronInfoPtr)->starMappings);
     starSpliceJunctionFree(&((*intronInfoPtr)->mappingsSum));
     freez(&(*intronInfoPtr)->chrom);
+    freez(&(*intronInfoPtr)->geneBioType);
     freez(intronInfoPtr);
 }
 
@@ -108,11 +111,10 @@ char* intronInfoMotifStr(struct intronInfo* intronInfo) {
 bool intronInfoIsNovel(struct intronInfo* intronInfo) {
     if (intronInfo->mappingsSum != NULL) {
         if ((intronInfo->mappingsSum->annotated == 0) != (intronInfo->intronTranses == NULL)) {
-            // FIXME make abort
-            fprintf(stderr, "intron %s:%d-%d: STAR annotated state (%d) not the same as transcript state (%d)\n",
-                    intronInfo->chrom, intronInfo->chromStart, intronInfo->chromEnd,
-                    (intronInfo->mappingsSum->annotated == 0),
-                    (intronInfo->intronTranses == NULL));
+            errAbort("intron %s:%d-%d: STAR annotated state (%d) not the same as transcript state (%d)",
+                     intronInfo->chrom, intronInfo->chromStart, intronInfo->chromEnd,
+                     (intronInfo->mappingsSum->annotated == 0),
+                     (intronInfo->intronTranses == NULL));
         }
         return (intronInfo->mappingsSum->annotated == 0);
     } else {
@@ -140,6 +142,34 @@ static char* getIntronKey(char* chrom, int chromStart, int chromEnd) {
     static char key[256];
     safef(key, sizeof(key), "%s:%d-%d", chrom, chromStart, chromEnd);
     return key;
+}
+
+/* load attributes into a hash by index */
+static struct hash* transcriptAttributesLoad(char* attributesTsv) {
+    struct hash* attribMap = hashNew(0);
+    struct lineFile* tsvLf = lineFileOpen(attributesTsv, TRUE);
+    lineFileSkip(tsvLf, 1); // skip header
+    char* row[WGENCODEGENCODEATTRS_NUM_COLS];
+    while (lineFileNextRowTab(tsvLf, row, WGENCODEGENCODEATTRS_NUM_COLS)) {
+        struct wgEncodeGencodeAttrs* attrs = wgEncodeGencodeAttrsLoad(row);
+        hashAdd(attribMap, attrs->transcriptId, attrs);
+    }
+    lineFileClose(&tsvLf);
+    return attribMap;
+}
+
+/* look up a transcript attribute */
+static struct wgEncodeGencodeAttrs* transcriptAttributesGet(struct hash* attribMap,
+                                                            char* transcriptId) {
+    // deal with PAR hack (ENSTR0000431238.7)
+    if (transcriptId[4] == 'R') {
+        char fixedName[32];
+        safecpy(fixedName, sizeof(fixedName), transcriptId);
+        fixedName[4] = '0';
+        return hashMustFindVal(attribMap, fixedName);
+    } else {
+        return hashMustFindVal(attribMap, transcriptId);
+    }
 }
 
 /* get or create an introInfo object */
@@ -183,6 +213,7 @@ void intronMapLoadStarJuncs(struct intronMap* intronMap,
 /* add a transcript intron */
 static void intronMapAddTransIntron(struct intronMap* intronMap,
                                     struct genePred* transcript,
+                                    struct wgEncodeGencodeAttrs* attrs,
                                     int intronIdx) {
     struct intronInfo* intronInfo
         = intronMapObtainIntronInfo(intronMap, transcript->chrom,
@@ -192,6 +223,11 @@ static void intronMapAddTransIntron(struct intronMap* intronMap,
         = intronTransLinkNew(transcript, intronIdx);
     slAddHead(&intronInfo->intronTranses, intronTrans);
     safecpy(intronInfo->transStrand, sizeof(intronInfo->transStrand), transcript->strand);
+    if (intronInfo->geneBioType == NULL) {
+        intronInfo->geneBioType = cloneString(attrs->geneType);
+    } else if (!sameString(attrs->geneType, intronInfo->geneBioType)) {
+        warn("WARNING: differing gene biotypes for %s", transcript->name);
+    }
 }
 
 /* should an transcript intron be included? */
@@ -203,22 +239,26 @@ static bool shouldIncludeTransIntron(struct genePred* transcript,
 
 /* add a transcript object */
 static void intronMapAddTranscript(struct intronMap* intronMap,
-                                   struct genePred* transcript) {
+                                   struct genePred* transcript,
+                                   struct hash* attribMap) {
+    struct wgEncodeGencodeAttrs* attrs = transcriptAttributesGet(attribMap, transcript->name);
     for (int intronIdx = 0; intronIdx < transcript->exonCount-1; intronIdx++) {
         if (shouldIncludeTransIntron(transcript, intronIdx)) {
-            intronMapAddTransIntron(intronMap, transcript, intronIdx);
+            intronMapAddTransIntron(intronMap, transcript, attrs, intronIdx);
         }
     }
 }
 
 /* load a transcript file */
 void intronMapLoadTranscripts(struct intronMap* intronMap,
-                              char* transcriptFile) {
-    // FIXME: maybe drop single exon or save in another list??
+                              char* transcriptFile,
+                              char* attributesTsv) {
+    struct hash* attribMap = transcriptAttributesLoad(attributesTsv);
     intronMap->transcripts = genePredLoadAllByTab(transcriptFile);
     for (struct genePred* transcript = intronMap->transcripts; transcript != NULL; transcript = transcript->next) {
-        intronMapAddTranscript(intronMap, transcript);
+        intronMapAddTranscript(intronMap, transcript, attribMap);
     }
+    hashFreeWithVals(&attribMap, wgEncodeGencodeAttrsFree);
 }
 
 /* compare by location */
