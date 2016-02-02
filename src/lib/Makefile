@@ -1,7 +1,8 @@
 ROOT = ../..
 include ${ROOT}/config.mk
 
-SRCS = intronMap.c \
+SRCS =  intronMap.c \
+	gencodeAttributes.c \
 	starSpliceJunction.c
 OBJS = ${SRCS:%.c=${OBJDIR}/%.o}
 DEPENDS = ${SRCS:%.c=%.depend}

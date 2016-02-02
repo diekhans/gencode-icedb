@@ -2,12 +2,12 @@ ROOT = ../../..
 include ${ROOT}/config.mk
 
 LINKSRCS = intronCounts.c
-PROGSRCS = spliceJunctionSupportSummarize.c
+PROGSRCS = spliceJunctionCollectEvidence.c
 SRCS = ${LINKSRCS} ${PROGSRCS}
 OBJS = ${SRCS:%.c=${OBJDIR}/%.o}
 LINKOBJS = ${LINKSRCS:%.c=${OBJDIR}/%.o}
 DEPENDS =  ${SRCS:%.c=%.depend}
-PROGS = ${BINDIR}/spliceJunctionSupportSummarize
+PROGS = ${BINDIR}/spliceJunctionCollectEvidence
 
 all: ${OBJS} ${PROGS}
 

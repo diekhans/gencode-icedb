@@ -4,7 +4,7 @@ starSpliceJunctionMap = ../bin/starSpliceJunctionMap
 faUcscToGencode = ../bin/faUcscToGencode
 estimateReadLength = ../bin/estimateReadLength
 rnaSeqDataRegister = ../bin/rnaSeqDataRegister
-spliceJunctionSupportSummarize = ../bin/spliceJunctionSupportSummarize
+spliceJunctionCollectEvidence = ../bin/spliceJunctionCollectEvidence
 genePredIntrons = ../bin/genePredIntrons
 encodeDccQuery = ../bin/encodeDccQuery
 
@@ -12,7 +12,7 @@ encodeDccQuery = ../bin/encodeDccQuery
 
 numThreads=2
 test: smallTests readLenTests faTests genePredIntronsTest \
-	supportTests encodeDccTests
+	spliceJuncEvidenceTests encodeDccTests
 
 
 # small test data:
@@ -106,16 +106,17 @@ genePredIntronsSet1Test: mkdirs
 	${genePredIntrons} input/small-gencode.gp output/$@.2bit output/$@.tsv
 	diff expected/$@.tsv output/$@.tsv
 
-# tests of support results
-supportTests: supportLevel1Test supportCounts1Test
+# tests splice junction evidence collection
+spliceJuncEvidenceTests: spliceJuncEvidBasicTest spliceJuncEvidMinOverhangTest
 
-supportLevel1Test: mkdirs
-	${spliceJunctionSupportSummarize} input/small-gencode.gp input/small-gencode.attrs expected/genePredIntronsSet1Test.tsv input/small-sj.lst output/$@.support.tsv
-	diff expected/$@.support.tsv output/$@.support.tsv
+spliceJuncEvidBasicTest: mkdirs
+	${spliceJunctionCollectEvidence} input/small-gencode.gp expected/genePredIntronsSet1Test.tsv input/small-sj.lst output/$@.evid.tsv
+	diff expected/$@.evid.tsv output/$@.evid.tsv
 
-supportCounts1Test: mkdirs
-	${spliceJunctionSupportSummarize} -minOverhang=20 -countsReport  input/small-gencode.gp input/small-gencode.attrs expected/genePredIntronsSet1Test.tsv input/small-sj.lst output/$@.counts.tsv
-	diff expected/$@.counts.tsv output/$@.counts.tsv
+spliceJuncEvidMinOverhangTest: mkdirs
+	${spliceJunctionCollectEvidence} -minOverhang=20  input/small-gencode.gp expected/genePredIntronsSet1Test.tsv input/small-sj.lst output/$@.evid.tsv
+	diff expected/$@.evid.tsv output/$@.evid.tsv
+
 encodeDccTests: encodeDcc10Tests
 # just test aginst live site, it was too much of a pain to edit
 # down the huge response to use it as fake input.  Can't verify

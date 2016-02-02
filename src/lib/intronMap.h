@@ -17,7 +17,6 @@ struct intronInfo {
     char transStrand[3];      // transcript strand
     char transDonor[3];       // obtain from transcript and genome
     char transAcceptor[3];
-    char* geneBioType;        // biotype of gene, if annotated
     struct starSpliceJunction* starMappings;  // list of start mappings
     struct starSpliceJunction* mappingsSum;   // sum of mappings
     struct intronTransLink* intronTranses;     // links to transcripts
@@ -52,10 +51,9 @@ void intronMapLoadStarJuncs(struct intronMap* intronMap,
                             char* starJuncFile,
                             int minOverhang);
 
-/* load a transcript file */
+/* load a transcript genepred file */
 void intronMapLoadTranscripts(struct intronMap* intronMap,
-                              char* transcriptFile,
-                              char* attributesTsv);
+                              char* transcriptGenePred);
 
 /* get list of intronInfo objects (DON'T FREE) */
 struct intronInfo* intronMapGet(struct intronMap* intronMap);

@@ -14,21 +14,18 @@ static struct optionSpec optionSpecs[] = {
     {NULL, 0}
 };
 
-static bool gCountsReport = FALSE;
 static int gMinOverhang = 0;
 static int gMinNumUniqueMapReads = 0;
 static int gMinNumMultiMapReads = 0;
 
 /* usage message and abort */
 static void usage(char *msg) {
-    static char* usageMsg = "spliceJunctionSupportSummarize gencodeGenePred genecodeAttrsTsv gencodeSpliceTsv starSpliceJunctionList reportTsv\n\n"
-        "Summarize splice junction support\n"
+    static char* usageMsg = "spliceJunctionCollectEvidence gencodeGenePred gencodeSpliceTsv starSpliceJunctionList reportTsv\n\n"
+        "Collect splice junction supporting evidence\n"
         "\n"
         "  o starSpliceJunctionList is list of splice junction files,\n"
         "    with file names relative to location of list file.\n"
         "Options:\n"
-        "   -countsReport - output counts rather than support levels. The -minOverhang\n"
-        "        filter is applied.\n"
         "   -minOverhang=n - minimum overhang for a STAR splice junction call.\n"
         "        records with less than this maximum overhang are discards\n"
         "        and not considered more.\n"
@@ -39,12 +36,11 @@ static void usage(char *msg) {
 
 /* load intron map from files */
 static struct intronMap* loadIntronMap(char* gencodeGenePred,
-                                       char* gencodeAttrsTsv,
                                        char* gencodeSpliceTsv,
                                        char* starSpliceJunctionList) {
     struct intronMap* intronMap = intronMapNew();
     struct slName *spliceJuncFiles = slNameLoadReal(starSpliceJunctionList);
-    intronMapLoadTranscripts(intronMap, gencodeGenePred, gencodeAttrsTsv);
+    intronMapLoadTranscripts(intronMap, gencodeGenePred);
     for (struct slName *spliceJuncFile = spliceJuncFiles; spliceJuncFile != NULL; spliceJuncFile = spliceJuncFile->next) {
         char* juncPath = pathRelativeToFile(starSpliceJunctionList, spliceJuncFile->name);
         intronMapLoadStarJuncs(intronMap, juncPath, gMinOverhang);
@@ -87,40 +83,28 @@ static char* getRnaSeqStrand(struct intronInfo* intronInfo) {
     }
 }
 
-/* determine the support level */
-static int getSupportLevel(struct intronInfo* intronInfo) {
-    // level 1: strongest support
-    // level 2: at least 
-    // level 3: at least 
-    // level 4: at least 
-    // level 5: no support
-    return 0;
-}
-
-/* write support report header */
-static void reportSupportHeader(FILE* reportFh) {
+/* write report header */
+static void reportEvidenceHeader(FILE* reportFh) {
     static char* header = "chrom\t" "intronStart\t" "intronEnd\t" "novel\t"
         "annotStrand\t" "rnaSeqStrand\t" "intronMotif\t"
         "numUniqueMapReads\t" "numMultiMapReads\t"
-        "supportLevel\t" "geneBioType\t" "transcripts\n";
+        "transcripts\n";
     fputs(header, reportFh);
 }
 
 /* report on an intron */
-static void reportSupportIntron(struct intronInfo* intronInfo,
-                                FILE* reportFh) {
+static void reportEvidenceIntron(struct intronInfo* intronInfo,
+                                 FILE* reportFh) {
     int numUniqueMapReads = intronInfo->mappingsSum != NULL ? intronInfo->mappingsSum->numUniqueMapReads : 0;
     int numMultiMapReads = intronInfo->mappingsSum != NULL ? intronInfo->mappingsSum->numMultiMapReads : 0;
-    fprintf(reportFh, "%s\t%d\t%d\t%d\t%s\t%s\t%s\t%d\t%d\t%d\t%s\t",
+    fprintf(reportFh, "%s\t%d\t%d\t%d\t%s\t%s\t%s\t%d\t%d\t",
             intronInfo->chrom, intronInfo->chromStart,
             intronInfo->chromEnd,
             intronInfoIsNovel(intronInfo),
             getAnnotStrand(intronInfo),
             getRnaSeqStrand(intronInfo),
             intronInfoMotifStr(intronInfo),
-            numUniqueMapReads, numMultiMapReads,
-            getSupportLevel(intronInfo),
-            (intronInfo->geneBioType != NULL? intronInfo->geneBioType : ""));
+            numUniqueMapReads, numMultiMapReads);
     for (struct intronTransLink* intronTrans = intronInfo->intronTranses;
          intronTrans != NULL; intronTrans = intronTrans->next) {
         if (intronTrans != intronInfo->intronTranses) {
@@ -132,62 +116,22 @@ static void reportSupportIntron(struct intronInfo* intronInfo,
 }
 
 /* report on results */
-static void reportSupport(struct intronMap* intronMap,
-                          FILE* reportFh) {
-    reportSupportHeader(reportFh);
+static void reportEvidence(struct intronMap* intronMap,
+                           FILE* reportFh) {
+    reportEvidenceHeader(reportFh);
     for (struct intronInfo* intronInfo = intronMapGetSorted(intronMap); intronInfo != NULL; intronInfo = intronInfo->next) {
-        reportSupportIntron(intronInfo, reportFh);
+        reportEvidenceIntron(intronInfo, reportFh);
     }
-}
-
-/* write counts report header */
-static void reportCountsHeader(FILE* reportFh) {
-    static char* header =  "novel\t" "intronMotif\t"
-        "intronCount\t"
-        "numUniqueMapReads\t" "maxNumUniqueMapReads\t"
-        "numMultiMapReads\t"  "maxNumMultiMapReads\t"
-        "transcriptCount\n";
-    fputs(header, reportFh);
-}
-
-/* write counts for one intron */
-static void reportCountsIntron(struct intronCounts* intronCounts,
-                               FILE* reportFh) {
-    fprintf(reportFh, "%d\t%s\t%d\t%d\t%d\t%d\t%d\t%d\n",
-            !intronCounts->annotated,
-            intronCounts->intronMotif,
-            intronCounts->count,
-            intronCounts->numUniqueMapReads,
-            intronCounts->maxNumUniqueMapReads,
-            intronCounts->numMultiMapReads,
-            intronCounts->maxNumMultiMapReads,
-            intronCounts->transcriptCount);
-}
-
-/* write counts report */
-static void reportCounts(struct intronMap* intronMap,
-                         FILE* reportFh) {
-    reportCountsHeader(reportFh);
-    struct intronCounts* intronCountsList = intronCountsCollect(intronMap);
-    for (struct intronCounts* intronCounts = intronCountsList; intronCounts != NULL; intronCounts = intronCounts->next) {
-        reportCountsIntron(intronCounts, reportFh);
-    }
-    slFreeList(&intronCountsList);
 }
 
 /* main */
-static void spliceJunctionSupportSummarize(char* gencodeGenePred,
-                                           char* gencodeAttrsTsv,
-                                           char* gencodeSpliceTsv,
-                                           char* starSpliceJunctionList,
-                                           char* reportTsv) {
-    struct intronMap* intronMap = loadIntronMap(gencodeGenePred, gencodeAttrsTsv, gencodeSpliceTsv, starSpliceJunctionList);
+static void spliceJunctionCollectEvidence(char* gencodeGenePred,
+                                          char* gencodeSpliceTsv,
+                                          char* starSpliceJunctionList,
+                                          char* reportTsv) {
+    struct intronMap* intronMap = loadIntronMap(gencodeGenePred, gencodeSpliceTsv, starSpliceJunctionList);
     FILE* reportFh = mustOpen(reportTsv, "w");
-    if (gCountsReport) {
-        reportCounts(intronMap, reportFh);
-    } else {
-        reportSupport(intronMap, reportFh);
-    }
+    reportEvidence(intronMap, reportFh);
     carefulClose(&reportFh);
     intronMapFree(&intronMap);
 }
@@ -195,15 +139,14 @@ static void spliceJunctionSupportSummarize(char* gencodeGenePred,
 /* entry */
 int main(int argc, char** argv) {
     optionInit(&argc, argv, optionSpecs);
-    if (argc != 6) {
+    if (argc != 5) {
         usage("wrong # args");
     }
-    gCountsReport = optionExists("countsReport");
     gMinOverhang = optionInt("minOverhang", gMinOverhang);
     gMinNumUniqueMapReads = optionInt("minNumUniqueMapReads", gMinNumUniqueMapReads);
     gMinNumMultiMapReads = optionInt("minNumMultiMapReads", gMinNumMultiMapReads);
 
-    spliceJunctionSupportSummarize(argv[1], argv[2], argv[3], argv[4], argv[5]);
+    spliceJunctionCollectEvidence(argv[1], argv[2], argv[3], argv[4]);
     return 0;
 }
 
