@@ -107,7 +107,8 @@ genePredIntronsSet1Test: mkdirs
 	diff expected/$@.tsv output/$@.tsv
 
 # tests splice junction evidence collection
-spliceJuncEvidenceTests: spliceJuncEvidBasicTest spliceJuncEvidMinOverhangTest
+spliceJuncEvidenceTests: spliceJuncEvidBasicTest spliceJuncEvidMinOverhangTest \
+		spliceJuncEvidNoSupportTest
 
 spliceJuncEvidBasicTest: mkdirs
 	${spliceJunctionCollectEvidence} input/small-gencode.gp expected/genePredIntronsSet1Test.tsv input/small-sj.lst output/$@.evid.tsv
@@ -116,6 +117,14 @@ spliceJuncEvidBasicTest: mkdirs
 spliceJuncEvidMinOverhangTest: mkdirs
 	${spliceJunctionCollectEvidence} -minOverhang=20  input/small-gencode.gp expected/genePredIntronsSet1Test.tsv input/small-sj.lst output/$@.evid.tsv
 	diff expected/$@.evid.tsv output/$@.evid.tsv
+
+# edit to remove some evidence to check report on unsupport introns
+spliceJuncEvidNoSupportTest: mkdirs
+	awk 'BEGIN{IFS=FS="\\t"} $$2<2000' expected/smallMapPairFastqTestSJ.out.tab > output/smallMapPairFastqTestSJ-edit.out.tab
+	${spliceJunctionCollectEvidence} input/small-gencode.gp expected/genePredIntronsSet1Test.tsv input/small-sj-edit.lst output/$@.evid.tsv
+	diff expected/$@.evid.tsv output/$@.evid.tsv
+
+
 
 encodeDccTests: encodeDcc10Tests
 # just test aginst live site, it was too much of a pain to edit
