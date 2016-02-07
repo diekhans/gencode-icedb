@@ -9,14 +9,10 @@
 static struct optionSpec optionSpecs[] = {
     {"countsReport", OPTION_BOOLEAN},
     {"minOverhang", OPTION_INT},
-    {"minNumUniqueMapReads", OPTION_INT},
-    {"minNumMultiMapReads", OPTION_INT},
     {NULL, 0}
 };
 
 static int gMinOverhang = 0;
-static int gMinNumUniqueMapReads = 0;
-static int gMinNumMultiMapReads = 0;
 
 /* usage message and abort */
 static void usage(char *msg) {
@@ -27,10 +23,9 @@ static void usage(char *msg) {
         "    with file names relative to location of list file.\n"
         "Options:\n"
         "   -minOverhang=n - minimum overhang for a STAR splice junction call.\n"
-        "        records with less than this maximum overhang are discards\n"
-        "        and not considered more.\n"
-        "   -minNumUniqueMapReads=n \n"
-        "   -minNumMultiMapReads=n \n";
+        "        records with less than this maximum overhang have splice\n"
+        "        junction information discarded.  They will still be\n"
+        "        reported if start of the target set.";
     errAbort("%s:\n%s", msg, usageMsg);
 }
 
@@ -143,8 +138,6 @@ int main(int argc, char** argv) {
         usage("wrong # args");
     }
     gMinOverhang = optionInt("minOverhang", gMinOverhang);
-    gMinNumUniqueMapReads = optionInt("minNumUniqueMapReads", gMinNumUniqueMapReads);
-    gMinNumMultiMapReads = optionInt("minNumMultiMapReads", gMinNumMultiMapReads);
 
     spliceJunctionCollectEvidence(argv[1], argv[2], argv[3], argv[4]);
     return 0;
