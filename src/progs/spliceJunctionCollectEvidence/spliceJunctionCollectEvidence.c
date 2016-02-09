@@ -25,7 +25,7 @@ static void usage(char *msg) {
         "   -minOverhang=n - minimum overhang for a STAR splice junction call.\n"
         "        records with less than this maximum overhang have splice\n"
         "        junction information discarded.  They will still be\n"
-        "        reported if start of the target set.";
+        "        reported if part of the target set.";
     errAbort("%s:\n%s", msg, usageMsg);
 }
 

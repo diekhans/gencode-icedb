@@ -13,7 +13,7 @@ class PathConfig(object):
                              /rnaSeq/${rnaSeqSet}/
         root/analysis/${assembly}/${geneSet}/star/rl${realLength}
                                             /gencode/
-                                            /rnaSeq/{rnaSeqSet}/
+                                            /rnaSeqEvid/${rnaSeqSet}/
     """
     def __init__(self, rootDir, organism, assembly=None, geneSet=None):
         """assembly and geneSet can be None if only using data part"""
@@ -52,7 +52,7 @@ class PathConfig(object):
          return os.path.join(self.starGenomeDir(readLength), "done")
 
     def rnaSeqSetAnalysisDir(self, rnaSeqSet):
-         return os.path.join(self.geneSetAnalysisDir(), "rnaSeq", rnaSeqSet)
+         return os.path.join(self.geneSetAnalysisDir(), "rnaSeqEvid", rnaSeqSet)
         
     def rnaSeqSetAnalysisSjOut(self, rnaSeqSet, rnaSeqRunName):
          return os.path.join(self.rnaSeqSetAnalysisDir(rnaSeqSet), rnaSeqRunName+".sj.tab")

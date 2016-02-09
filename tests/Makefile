@@ -7,12 +7,15 @@ rnaSeqDataRegister = ../bin/rnaSeqDataRegister
 spliceJunctionCollectEvidence = ../bin/spliceJunctionCollectEvidence
 genePredIntrons = ../bin/genePredIntrons
 encodeDccQuery = ../bin/encodeDccQuery
+gencodeIntronSupport = ../bin/gencodeIntronSupport
+gencodeIntronEvidBed = ../bin/gencodeIntronEvidBed
 
 .SECONDARY:
 
 numThreads=2
 test: smallTests readLenTests faTests genePredIntronsTest \
-	spliceJuncEvidenceTests encodeDccTests
+	spliceJuncEvidenceTests encodeDccTests intronSupportTests \
+	intronEvidBedTests
 
 
 # small test data:
@@ -132,6 +135,19 @@ encodeDccTests: encodeDcc10Tests
 # output.
 encodeDcc10Tests: mkdirs
 	${encodeDccQuery} "Mus musculus" --limit=10 output/encodeDcc10Tests.tsv output/encodeDcc10Tests.urls
+
+# gencodeIntronSupport tests
+intronSupportTests: intronSupport1Test
+
+intronSupport1Test: mkdirs
+	${gencodeIntronSupport} input/small-gencode.gp input/small-gencode.attrs \
+		expected/spliceJuncEvidNoSupportTest.evid.tsv
+
+# gencodeIntronEvidBed
+intronEvidBedTests: intronEvidBed1Test
+
+intronEvidBed1Test: mkdirs
+	${gencodeIntronEvidBed} expected/spliceJuncEvidNoSupportTest.evid.tsv output/$@.bed
 
 mkdirs:
 	@mkdir -p output
