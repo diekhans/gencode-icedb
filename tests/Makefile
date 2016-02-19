@@ -9,13 +9,14 @@ genePredIntrons = ../bin/genePredIntrons
 encodeDccQuery = ../bin/encodeDccQuery
 gencodeIntronSupport = ../bin/gencodeIntronSupport
 gencodeIntronEvidBed = ../bin/gencodeIntronEvidBed
+gencodeIntronEvidStats = ../bin/gencodeIntronEvidStats
 
 .SECONDARY:
 
 numThreads=2
 test: smallTests readLenTests faTests genePredIntronsTest \
 	spliceJuncEvidenceTests encodeDccTests intronSupportTests \
-	intronEvidBedTests
+	intronEvidBedTests intronEvidStatsTests
 
 
 # small test data:
@@ -127,8 +128,6 @@ spliceJuncEvidNoSupportTest: mkdirs
 	${spliceJunctionCollectEvidence} input/small-gencode.gp expected/genePredIntronsSet1Test.tsv input/small-sj-edit.lst output/$@.evid.tsv
 	diff expected/$@.evid.tsv output/$@.evid.tsv
 
-
-
 encodeDccTests: encodeDcc10Tests
 # just test aginst live site, it was too much of a pain to edit
 # down the huge response to use it as fake input.  Can't verify
@@ -147,7 +146,23 @@ intronSupport1Test: mkdirs
 intronEvidBedTests: intronEvidBed1Test
 
 intronEvidBed1Test: mkdirs
-	${gencodeIntronEvidBed} expected/spliceJuncEvidNoSupportTest.evid.tsv output/$@.bed
+	${gencodeIntronEvidBed} input/hs.chr22-2k.evid.tsv output/$@.bed
+
+# gencodeIntronEvidStats
+intronEvidStatsTests: intronEvidStatsAllTest intronEvidStatsMin30 \
+	intronEvidStatsConsensus
+
+intronEvidStatsAllTest: mkdirs
+	${gencodeIntronEvidStats} input/hs.chr22-2k.evid.tsv output/$@.stats.tsv
+	diff expected/$@.stats.tsv output/$@.stats.tsv
+
+intronEvidStatsMin30: mkdirs
+	${gencodeIntronEvidStats} --minIntronSize=30 input/hs.chr22-2k.evid.tsv output/$@.stats.tsv
+	diff expected/$@.stats.tsv output/$@.stats.tsv
+
+intronEvidStatsConsensus: mkdirs
+	${gencodeIntronEvidStats} --spliceJuncCat=consensus input/hs.chr22-2k.evid.tsv output/$@.stats.tsv
+	diff expected/$@.stats.tsv output/$@.stats.tsv
 
 mkdirs:
 	@mkdir -p output

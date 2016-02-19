@@ -1,0 +1,57 @@
+#!/usr/bin/env python
+
+import os, sys
+import argparse
+myBinDir = os.path.normpath(os.path.dirname(sys.argv[0]))
+sys.path.insert(0, os.path.expanduser("~markd/compbio/code/pipettor/src"))
+sys.path.insert(0, os.path.expanduser("~markd/compbio/code/pycbio/lib"))
+sys.path.append(os.path.join(myBinDir, "../../lib"))
+import pipettor
+from pycbio.sys import fileOps
+from gencode_icedb.gencodeIntronEvid import SpliceJuncCat
+
+def parseArgs():
+    desc = """run gencodeIntronEvidStats with different sets of parameters """
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument('spliceJunctionEvidTsv',
+                        help="length of reads that will be mapped; used to calculate splice junction overhang")
+    parser.add_argument('statsOutDir',
+                        help="output directory for statistics")
+    opts = parser.parse_args()
+    return opts
+
+def gencodeIntronEvidStats(sjTsv, statsOutDir, minIntronSize=None, maxIntronSize=None,
+                           spliceJuncCats=None):
+    fileOps.ensureDir(statsOutDir)
+    cmd = [os.path.join(myBinDir, "../../bin/gencodeIntronEvidStats")]
+    outName = []
+    if minIntronSize != None:
+        cmd.append("--minIntronSize="+str(minIntronSize))
+        outName.append("min"+str(minIntronSize))
+    if maxIntronSize != None:
+        cmd.append("--maxIntronSize="+str(maxIntronSize))
+        outName.append("max"+str(maxIntronSize))
+    if spliceJuncCats is not None:
+        sjcName = []
+        for sjc in sorted(spliceJuncCats):
+            cmd.append("--spliceJuncCat="+str(sjc))
+            sjcName.append(str(sjc))
+        outName.append("_".join(sjcName))
+    if len(outName) == 0:
+        outName.append("all")
+    cmd.append(sjTsv)
+    cmd.append(os.path.join(statsOutDir, ".".join(outName)+".tsv"))
+    pipettor.run(cmd)
+                           
+def runStats(opts, minIntronSize=None, maxIntronSize=None, spliceJuncCats=None):
+    gencodeIntronEvidStats(opts.spliceJunctionEvidTsv, opts.statsOutDir,
+                           minIntronSize, maxIntronSize, spliceJuncCats)
+
+opts = parseArgs()
+runStats(opts)
+runStats(opts, minIntronSize=30)
+runStats(opts, maxIntronSize=30)
+runStats(opts, minIntronSize=30,
+         spliceJuncCats=[SpliceJuncCat.consensus,SpliceJuncCat.known])
+runStats(opts, minIntronSize=30,
+         spliceJuncCats=[SpliceJuncCat.unknown])
