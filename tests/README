@@ -20,3 +20,9 @@ wgEncodeCaltechRnaSeqMcf7R2x75Il200AlignsRep2V2.bam
 
 ----
 
+- test files for data reduction:
+      hs.chr22-2k.attrs.tsv
+      hs.chr22-2k.gp
+      hs.chr22-2k.evid.tsv
+  - these are all from hg38 gencode V24 
+  

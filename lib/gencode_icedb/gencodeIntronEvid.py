@@ -13,17 +13,26 @@ class IntronSupportLevel(SymEnum):
     INTRON_SUPPORT_MEDIUM = 2
     INTRON_SUPPORT_STRONG = 3
 
-_spliceJunctionTsvTypeMap = {
-    "intronStart": int,
-    "intronEnd": int,
-    "novel": lambda v : bool(int(v)),
-    "annotStrand": tsv.strOrNoneType,
-    "rnaSeqStrand": tsv.strOrNoneType,
-    "numUniqueMapReads": int,
-    "numMultiMapReads": int,
-    "transcripts": (lambda s: s.split(',') if len(s) > 0 else [],
-                    lambda l: ",".join(l)),
-}
+class GencodeIntronEvidReader(tsv.TsvReader):
+    "TSV reader for evidence"
+
+    # chrom intronStart intronEnd novel annotStrand rnaSeqStrand intronMotif
+    # numUniqueMapReads numMultiMapReads transcripts
+    
+    spliceJunctionTsvTypeMap = {
+        "intronStart": int,
+        "intronEnd": int,
+        "novel": lambda v : bool(int(v)),
+        "annotStrand": tsv.strOrNoneType,
+        "rnaSeqStrand": tsv.strOrNoneType,
+        "numUniqueMapReads": int,
+        "numMultiMapReads": int,
+        "transcripts": (lambda s: s.split(',') if len(s) > 0 else [],
+                        lambda l: ",".join(l)),
+    }
+    def __init__(self, evidTsv):
+        super(GencodeIntronEvidReader, self).__init__(evidTsv, typeMap=GencodeIntronEvidReader.spliceJunctionTsvTypeMap)
+
 
 class GencodeIntronEvidSet(list):
     """
@@ -37,7 +46,7 @@ class GencodeIntronEvidSet(list):
         self.__loadEvid(evidTsv)
 
     def __loadEvid(self, evidTsv):
-        for evid in tsv.TsvReader(evidTsv, typeMap=_spliceJunctionTsvTypeMap):
+        for evid in  GencodeIntronEvidReader(evidTsv):
             self.__loadEvidRec(evid)
 
     def __loadEvidRec(self, evid):
@@ -69,3 +78,18 @@ def intronEvidSupportLevel(evid):
         return IntronSupportLevel.INTRON_SUPPORT_WEAK
     else:
         return IntronSupportLevel.INTRON_SUPPORT_NONE
+
+class SpliceJuncCat(SymEnum):
+    consensus = 1
+    known = 2
+    unknown = 3
+
+    @staticmethod
+    def fromJunc(junc):
+        "categorize in the form"
+        if junc == "GT/AG":
+            return SpliceJuncCat.consensus
+        elif junc in ("CT/AC", "GC/AG", "CT/GC", "AT/AC", "GT/AT"):
+            return SpliceJuncCat.known
+        else:
+            return SpliceJuncCat.unknown

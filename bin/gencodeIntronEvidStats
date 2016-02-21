@@ -1,0 +1,161 @@
+#!/usr/bin/env python
+
+from __future__ import print_function
+import sys
+import os
+import argparse
+import copy
+sys.path.insert(0, os.path.expanduser("~markd/compbio/code/pycbio/lib"))
+sys.path.insert(0, os.path.expanduser("~markd/compbio/ccds/ccds2/output/lib/py"))
+myBinDir = os.path.normpath(os.path.dirname(sys.argv[0]))
+sys.path.append(os.path.join(myBinDir, "../lib"))
+from pycbio.sys import fileOps
+from gencode_icedb import dataOps
+from gencode_icedb.gencodeIntronEvid import GencodeIntronEvidReader, SpliceJuncCat
+
+
+verbose = False
+def parseArgs():
+    desc = """Create statistics on intron supporting evidence"""
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument('--verbose', action="store_true", default=False,
+                        help="write verbose output")
+    parser.add_argument('--freqs', action="store_true", default=False,
+                        help="output frequencies")
+    parser.add_argument('--cnts', action="store_true", default=False,
+                        help="output counts")
+    parser.add_argument('--minIntronSize', type=int, default=0,
+                        help="mimimum size of an intron to consider")
+    parser.add_argument('--maxIntronSize', type=int, default=sys.maxint,
+                        help="maximum size of an intron to consider")
+    parser.add_argument('--spliceJuncCat', type=SpliceJuncCat, dest="spliceJuncCats",
+                        default=None, action="append",
+                        help="categorize by splice junction type: consensus, known, unknown.  Maybe repeated")
+    parser.add_argument('spliceJunctionEvidTsv',
+                        help="length of reads that will be mapped; used to calculate splice junction overhang")
+    parser.add_argument('statsOut',
+                        help="output for statistics")
+    opts = parser.parse_args()
+    global verbose
+    verbose = opts.verbose
+    if not (opts.freqs or opts.cnts):
+        opts.freqs = opts.cnts = True
+    return opts
+
+
+class GencodeIntronEvidStats(object):
+    # bounds on bins, this is an (n-1 n], with last collecting all
+    binBounds = [0, 10, 100, 1000, 10000, 100000]
+    def __init__(self, spliceJunctionEvidTsv, minIntronSize, maxIntronSize, spliceJuncCats):
+        bins = dict([[b, 0] for b in self.binBounds])
+        self.knownUniqBins = copy.deepcopy(bins)
+        self.novelUniqBins = copy.deepcopy(bins)
+        self.knownMultiBins = copy.deepcopy(bins)
+        self.novelMultiBins = copy.deepcopy(bins)
+        self.minIntronSize = minIntronSize
+        self.maxIntronSize = maxIntronSize
+        self.spliceJuncCats = frozenset(spliceJuncCats) if spliceJuncCats != None else None
+        self.__load(spliceJunctionEvidTsv)
+        self.__writeFreqs = self.__writeCnts = False  # set by write
+
+    def __useRec(self, rec):
+        ilen = rec.intronEnd - rec.intronStart
+        return ((self.minIntronSize <= ilen <= self.maxIntronSize)
+                and ((self.spliceJuncCats == None) or
+                     (SpliceJuncCat.fromJunc(rec.intronMotif) in self.spliceJuncCats)))
+        
+    def __load(self, spliceJunctionEvidTsv):
+        for rec in GencodeIntronEvidReader(spliceJunctionEvidTsv):
+            if self.__useRec(rec):
+                self.__loadRec(rec)
+
+    def __loadRec(self, rec):
+        cnt = rec.numUniqueMapReads
+        cnt = rec.numMultiMapReads
+        if rec.novel:
+            self.__countBin(self.novelUniqBins, rec.numUniqueMapReads)
+            self.__countBin(self.novelMultiBins, rec.numMultiMapReads)
+        else:
+            self.__countBin(self.knownUniqBins, rec.numUniqueMapReads)
+            self.__countBin(self.knownMultiBins, rec.numMultiMapReads)
+
+    def __findBin(self, cnt):
+        # returns last bin not in smaller ones
+        for bin in self.binBounds:
+            if cnt <= bin:
+                break
+        return bin
+
+    def __countBin(self, bins, cnt):
+        bins[self.__findBin(cnt)] += 1
+
+    @staticmethod
+    def __fmtRate(cnt, total):
+        return "0.0" if total == 0 else "%0.3f" % (float(cnt)/float(total))
+
+    @staticmethod
+    def __binsSum(bins):
+        return sum(bins.itervalues())
+
+    def __writeRow(self, fh, bin,
+                   knownUniqCnt, knownUniqFreq, novelUniqCnt, novelUniqFreq,
+                   knownMultCnt, knownMultFreq, novelMultCnt, novelMultFreq):
+        "write row, also for column filtering"
+        row = [bin]
+        if self.__writeCnts:
+            row.append(knownUniqCnt)
+        if self.__writeFreqs:
+            row.append(knownUniqFreq)
+        if self.__writeCnts:
+            row.append(novelUniqCnt)
+        if self.__writeFreqs:
+            row.append(novelUniqFreq)
+        if self.__writeCnts:
+            row.append(knownMultCnt)
+        if self.__writeFreqs:
+            row.append(knownMultFreq)
+        if self.__writeCnts:
+            row.append(novelMultCnt)
+        if self.__writeFreqs:
+            row.append(novelMultFreq)
+        fileOps.prRow(fh, row)
+
+    
+    def write(self, outFh, writeFreqs, writeCnts):
+        self.__writeFreqs = writeFreqs
+        self.__writeCnts = writeCnts
+        self.__writeRow(outFh, "bin",
+                        "knownUniqCnt", "knownUniqFreq", "novelUniqCnt", "novelUniqFreq",
+                        "knownMultCnt",  "knownMultFreq", "novelMultCnt", "novelMultFreq")
+
+        knownUniqSum = self.__binsSum(self.knownUniqBins)
+        novelUniqSum = self.__binsSum(self.novelUniqBins)
+        knownMultiSum = self.__binsSum(self.knownMultiBins)
+        novelMultiSum = self.__binsSum(self.novelMultiBins)
+        for bin in self.binBounds:
+            self.__writeRow(outFh, bin,
+                            self.knownUniqBins[bin],
+                            self.__fmtRate(self.knownUniqBins[bin], knownUniqSum),
+                            self.novelUniqBins[bin],
+                            self.__fmtRate(self.novelUniqBins[bin], novelUniqSum),
+                            self.knownMultiBins[bin],
+                            self.__fmtRate(self.knownMultiBins[bin], knownMultiSum),
+                            self.novelMultiBins[bin],
+                            self.__fmtRate(self.novelMultiBins[bin], novelMultiSum))
+        self.__writeRow(outFh,  "total",
+                        self.__binsSum(self.knownUniqBins),
+                        self.__fmtRate(knownUniqSum, knownUniqSum),
+                        self.__binsSum(self.novelUniqBins),
+                        self.__fmtRate(novelUniqSum, novelUniqSum),
+                        self.__binsSum(self.knownMultiBins),
+                        self.__fmtRate(knownMultiSum, knownMultiSum),
+                        self.__binsSum(self.novelMultiBins),
+                        self.__fmtRate(novelMultiSum, novelMultiSum))
+        
+                                  
+opts = parseArgs()
+gies = GencodeIntronEvidStats(opts.spliceJunctionEvidTsv, opts.minIntronSize, opts.maxIntronSize,
+                              opts.spliceJuncCats)
+with open(opts.statsOut, "w") as outFh:
+    gies.write(outFh, opts.freqs, opts.cnts)
+
