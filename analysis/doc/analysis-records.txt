@@ -5,7 +5,8 @@
     cd icedb/build/data/human/rnaSeq/E-MTAB-2836
     wget -nv http://www.ebi.ac.uk/arrayexpress/files/E-MTAB-2836/E-MTAB-2836.sdrf.txt
     download from ftp list in this file.
-    readlength: 101 
+    readlength: 101
+    data size: 449G
     cd icedb/build
     ../gencode-icedb/analysis/bin/register-E-MTAB-2836 --verbose  data/human/rnaSeq/E-MTAB-2836/E-MTAB-2836.sdrf.txt
 
@@ -31,6 +32,7 @@
     #    http://www.ebi.ac.uk/arrayexpress/experiments/E-GEOD-30352/
     cd icedb/build/data/mouse/rnaSeq/E-GEOD-30352
     wget -nv http://www.ebi.ac.uk/arrayexpress/files/E-GEOD-30352/E-GEOD-30352.sdrf.txt
+    data size: 43G
     # pull out URLs of mouse data and wget data
     tawk '$42=="Mus musculus"{print $41}' E-GEOD-30352.sdrf.txt >doDownload1
     ../gencode-icedb/analysis/bin/register-E-GEOD-30352 --verbose --skipExisting  data/mouse/rnaSeq/E-GEOD-30352/E-GEOD-30352.sdrf.txt 
@@ -70,6 +72,7 @@
 
     ../../../../../gencode-icedb/bin/encodeDccQuery "Mus musculus" --minReadLength=75 encode.tsv encode.urls
     xargs -n 1 -P 8 wget -nv --no-clobber < encode.urls >&download.log
+    data size: 1.7T
     ../gencode-icedb/analysis/bin/register-mouse-ENCODE --verbose data/mouse/rnaSeq/ENCODE/encode.tsv
 
 
