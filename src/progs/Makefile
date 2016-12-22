@@ -1,13 +1,11 @@
-ROOT = ..
+ROOT = ../..
 
-SUBDIRS = faUcscToGencode genePredIntrons spliceJunctionCollectEvidence
+all: rsl.all
 
-all: ${SUBDIRS:%=%.all}
+rsl.all:
+	(cd rsl && ${MAKE} all)
 
-%.all:
-	(cd $* && ${MAKE} all)
+clean: rsl.clean
 
-clean: ${SUBDIRS:%=%.clean}
-
-%.clean:
-	(cd $* && ${MAKE} clean)
+rsl.clean:
+	(cd rsl && ${MAKE} clean)

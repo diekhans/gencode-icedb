@@ -1,14 +1,13 @@
 ROOT = ../..
-include ${ROOT}/config.mk
 
-SRCS =  intronMap.c \
+LIB_SRCS =  intronMap.c \
 	gencodeAttributes.c \
 	starSpliceJunction.c
-OBJS = ${SRCS:%.c=${OBJDIR}/%.o}
-DEPENDS = ${SRCS:%.c=%.depend}
+
+include ${ROOT}/config.mk
 
 
-all: ${OBJS} ${ICEDBLIB}(${OBJS})
+all: ${LIB_OBJS} ${ICEDBLIB}(${LIB_OBJS})
 
 clean::
 	rm -f ${ICEDBLIB}

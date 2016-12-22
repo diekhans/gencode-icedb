@@ -1,0 +1,48 @@
+#!/usr/bin/awk -f
+BEGIN {
+    OFS = "\t"
+    inDesc = 0;
+    print "accver", "mol", "size", "src", "modDate", "div", "desc";
+}
+
+function catCols(start, end) {
+    s = $start
+    for (i = start+1; i <= end; i++) {
+        if ($i != "") {
+            s = s " " $i;
+        }
+    }
+    return s;
+}
+
+/^LOCUS/ {
+    mol = $5;
+    size = $3;
+    div = $7;
+    modDate = $8;
+}
+
+inDesc && /^ / {
+    desc = desc " " catCols(1, NF);
+}
+inDesc && !/^ / {
+    inDesc = 0;
+}
+/^DEFINITION/ {
+    desc = catCols(2, NF);
+    inDesc = 1;
+}
+
+
+/^VERSION/ {
+    accver = $2;
+}
+
+/^SOURCE/ {
+    src = catCols(2, NF);
+    next;
+}
+
+/^\/\// {
+    print accver, mol, size, src, modDate, div, desc;
+}

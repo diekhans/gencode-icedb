@@ -1,0 +1,7 @@
+
+- input/basic.psl hg19
+    AK127585 - non-intron gap
+    AK095966 - non-intron gap
+    BC093083 - query insert, 2-base target insert
+    CU677102 - ??
+    
