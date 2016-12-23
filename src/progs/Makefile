@@ -1,11 +1,11 @@
 ROOT = ../..
 
-all: rsl.all
+all: rsl.all tsl.all
 
-rsl.all:
-	(cd rsl && ${MAKE} all)
+%.all:
+	(cd $* && ${MAKE} all)
 
-clean: rsl.clean
+clean: rsl.clean tsl.clean
 
-rsl.clean:
-	(cd rsl && ${MAKE} clean)
+%.clean:
+	(cd $* && ${MAKE} clean)

@@ -1,14 +1,14 @@
 ROOT = ..
 include ${ROOT}/config.mk
 
-all:
+all::
 
-test: rsl.test
+test:: rsl.test
 
 rsl.test:
 	(cd rsl && ${MAKE} test)
 
-clean: rsl.clean
+clean:: rsl.clean
 
 rsl.clean:
 	(cd rsl && ${MAKE} clean)

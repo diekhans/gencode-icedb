@@ -1,9 +1,6 @@
 ROOT = ..
 
 all::
-	(cd lib && ${MAKE})
-	(cd progs && ${MAKE})
 
 clean::
-	(cd lib && ${MAKE} clean)
-	(cd progs && ${MAKE} clean)
+	rm -f gencode_icedb/*.pyc

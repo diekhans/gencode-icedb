@@ -1,13 +1,13 @@
 ROOT = .
 include ${ROOT}/config.mk
 
-all:
+all::
 	(cd src && ${MAKE})
 
-test:
+test::
 	(cd tests && ${MAKE} test)
 
-clean:
+clean::
 	(cd src && ${MAKE} clean)
 	(cd tests && ${MAKE} clean)
-	rm -rf ${BINDIR}/*.dSYM ${OBJS} lib/gencode_icedb/*.pyc
+	rm -rf ${BINDIR}/*.dSYM ${OBJS} lib/gencode_icedb/*.pyc objs

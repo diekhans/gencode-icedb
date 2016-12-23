@@ -1,7 +1,7 @@
 # Before including, declare:
 #  - PROGS - list of program names to compile, doesn't include BINDIR.
 #  - progName_PROG_MODS = base name (less .o or .c) of modules to build for program
-#  - LIBS_SRCS = *.c files in current directory to add to library
+#  - LIB_MODS = base names files in current directory to compile to library
 
 
 MACHTYPE = $(shell uname -m)

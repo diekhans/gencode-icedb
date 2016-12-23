@@ -1,7 +1,7 @@
 ROOT = ../../../..
 
-faUcscToGencode_PROG_OJBS = faUcscToGencode.o
 PROGS = faUcscToGencode
+faUcscToGencode_PROG_MODS = faUcscToGencode
 
 include ${ROOT}/config.mk
 

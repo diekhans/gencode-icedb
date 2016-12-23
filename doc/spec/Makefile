@@ -10,7 +10,7 @@ drawings =
 images = $(wildcard images/*.pdf)
 depends = ${drawings} ${images}
 
-all: ${docsPdf} ${docsFontchk} ${depends}
+all:: ${docsPdf} ${docsFontchk} ${depends}
 
 ltxopts = -file-line-error-style -output-directory=output
 ltxmode =\\nonstopmode\\input
@@ -45,5 +45,5 @@ output/%.eps: drawings/%.gnuplot
 	gnuplot $< >$@.tmp
 	mv -f $@.tmp $@
 
-clean:
+clean::
 	rm -rf output

@@ -1,6 +1,6 @@
 ROOT = ../..
 
-SUBDIRS = faUcscToGencode genePredIntrons spliceJunctionCollectEvidence
+SUBDIRS = genbankEvidence
 
 all: ${SUBDIRS:%=%.all}
 

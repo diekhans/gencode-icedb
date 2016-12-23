@@ -1,7 +1,7 @@
 ROOT = ../../../..
 
-PROG_SRCS = genePredIntrons.c
-PROG = genePredIntrons
+PROGS = genePredIntrons
+genePredIntrons_PROG_MODS = genePredIntrons
 
 include ${ROOT}/config.mk
 include ${ROOT}/rules.mk
