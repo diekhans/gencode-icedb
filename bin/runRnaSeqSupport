@@ -1,0 +1,44 @@
+#!/usr/bin/env python
+"""
+Toil program to run RNA-Seq support analysis.
+"""
+from __future__ import print_function
+import sys
+import os
+import argparse
+sys.path.insert(0, os.path.expanduser("~markd/compbio/code/pycbio/lib"))
+myBinDir = os.path.abspath(os.path.dirname(sys.argv[0]))
+sys.path.append(myBinDir + "/../lib")
+from gencode_icedb import rnaSeqSupportToil
+from toil.job import Job
+
+# FIXME: jobTree use environment rather than sys.path
+os.environ["PYTHONPATH"] = ":".join(sys.path)
+print("PYTHONPATH=", os.environ["PYTHONPATH"])
+def parseArgs():
+    desc = """run RNA-Seq support analysis using toil.  Don't rebuild
+    files that already exist.
+,"""
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument('--rootDir', default=".",
+                        help="""data root directory""")
+    parser.add_argument('--numThreads', type=int,
+                        help="number of threads to use")
+    parser.add_argument('organism',
+                        help="""common name of organism""")
+    parser.add_argument('assembly',
+                        help="""assembly name""")
+    parser.add_argument('geneSet',
+                        help="""get set name""")
+    Job.Runner.addToilOptions(parser)
+    opts = parser.parse_args()
+    return opts
+
+def main():
+    opts = parseArgs()
+    masterJob = rnaSeqSupportToil.createJobs(opts)
+    Job.Runner.startToil(masterJob, opts)
+
+if __name__=="__main__":
+    main()
+

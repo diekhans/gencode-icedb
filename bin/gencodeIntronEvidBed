@@ -1,0 +1,113 @@
+#!/usr/bin/env python
+
+from __future__ import print_function
+import sys
+import os
+import argparse
+sys.path.insert(0, os.path.expanduser("~markd/compbio/code/pycbio/lib"))
+sys.path.insert(0, os.path.expanduser("~markd/compbio/ccds/ccds2/output/lib/py"))
+myBinDir = os.path.normpath(os.path.dirname(sys.argv[0]))
+sys.path.append(myBinDir + "/../lib")
+from pycbio.sys import fileOps
+from pycbio.sys.color import Color
+from gencode_icedb import dataOps
+from gencode_icedb.gencodeIntronEvid import GencodeIntronEvidSet, IntronSupportLevel, intronEvidSupportLevel
+
+verbose = False
+def parseArgs():
+    desc = """Create a BED of introns colored by support"""
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument('--verbose', action="store_true", default=False,
+                        help="write verbose output")
+    parser.add_argument('--htmlColors', action="store_true", default=False,
+                        help="print colors in  HTML format for use in documentation, then exit")
+    parser.add_argument('spliceJunctionEvidTsv',
+                        help="length of reads that will be mapped; used to calculate splice junction overhang")
+    parser.add_argument('bedOut',
+                        help="output BED file")
+    opts = parser.parse_args()
+    global verbose
+    verbose = opts.verbose
+    return opts
+
+
+class Colors(object):
+    "color codes"
+    strongNovel = Color.fromRgb8(0, 0, 128)  # dark blue
+    strongKnown = Color.fromRgb8(0, 128, 0)  # dark green
+    mediumNovel = Color.fromRgb8(0, 0, 255)  # light blue
+    mediumKnown = Color.fromRgb8(0, 255, 0)  # light green
+    weak = Color.fromRgb8(238, 118, 0)  # dark orange
+    none = Color.fromRgb8(128, 0, 0)  # dark red
+
+    @staticmethod
+    def __printColorHtml(fh, desc, color):
+        print('<li><p style="color:{}">{}</p>'.format(color.toHtmlColor(), desc), file=fh)
+        
+    @staticmethod
+    def printHtml(fh=sys.stdout):
+        "for inclusion in documentation"
+        Colors.__printColorHtml(fh, "strong support known intron", Colors.strongKnown)
+        Colors.__printColorHtml(fh, "strong support novel intron", Colors.strongNovel)
+        Colors.__printColorHtml(fh, "medium support known intron", Colors.mediumKnown)
+        Colors.__printColorHtml(fh, "medium support novel intron", Colors.mediumNovel)
+        Colors.__printColorHtml(fh, "weak support known intron", Colors.weak)
+        Colors.__printColorHtml(fh, "no support known intron", Colors.none)
+
+class GencodeIntronEvidBed(object):
+    def __init__(self, spliceJunctionEvidTsv):
+        self.intronEvid = GencodeIntronEvidSet(spliceJunctionEvidTsv)
+
+    @staticmethod
+    def __evidColor(evid, level):
+        if level == IntronSupportLevel.INTRON_SUPPORT_STRONG:
+            if evid.novel:
+                return Colors.strongNovel
+            else:
+                return Colors.strongKnown
+        elif level == IntronSupportLevel.INTRON_SUPPORT_MEDIUM:
+            if evid.novel:
+                return Colors.mediumNovel
+            else:
+                return Colors.mediumKnown
+        elif level ==  IntronSupportLevel.INTRON_SUPPORT_WEAK:
+            return Colors.weak
+        elif level == IntronSupportLevel.INTRON_SUPPORT_NONE:
+            return Colors.none
+
+    @staticmethod
+    def __evidStrand(evid):
+        if (evid.rnaSeqStrand is not None) and (evid.rnaSeqStrand != '?'):
+            return evid.rnaSeqStrand
+        elif evid.annotStrand is not None:
+            return evid.annotStrand
+        else:
+            return '+'  # something valid
+        
+    @staticmethod
+    def __evidName(evid):
+        return "{} ({}, {})".format(evid.intronMotif, evid.numUniqueMapReads, evid.numMultiMapReads)
+
+    def __writeBedRec(self, evid, bedFh):
+        level = intronEvidSupportLevel(evid)
+        # don't report weak novel
+        if (not evid.novel) or (level > IntronSupportLevel.INTRON_SUPPORT_WEAK):
+            fileOps.prRowv(bedFh, evid.chrom, evid.intronStart, evid.intronEnd,
+                           self.__evidName(evid), 0, self.__evidStrand(evid),
+                           evid.intronStart, evid.intronEnd,
+                           self.__evidColor(evid, level).toRgb8Str())
+        
+    def writeBed(self, bedFh):
+        for evid in sorted(self.intronEvid, key=lambda e: (e.chrom, e.intronStart)):
+            self.__writeBedRec(evid, bedFh)
+            
+        
+opts = parseArgs()
+if opts.htmlColors:
+    Colors.printHtml()
+    sys.exit(0)
+gieb = GencodeIntronEvidBed(opts.spliceJunctionEvidTsv)
+with open(opts.bedOut, "w") as bedFh:
+    gieb.writeBed(bedFh)
+
+                 
