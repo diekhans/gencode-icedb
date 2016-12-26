@@ -3,7 +3,7 @@ Configuration object.
 """
 
 import os
-import sys
+
 
 class PathConfig(object):
     """
@@ -31,30 +31,28 @@ class PathConfig(object):
         return os.path.join(self.dataDir, self.organism)
 
     def genomeDataDir(self):
-         return os.path.join(self.dataOrganismDir(), "genome", self.assembly)
+        return os.path.join(self.dataOrganismDir(), "genome", self.assembly)
 
     def genomeFasta(self):
-        return os.path.join(self.genomeDataDir(), self.assembly+'.fa.gz')
+        return os.path.join(self.genomeDataDir(), '{}.fa.gz'.format(self.assembly))
 
     def rnaSeqSetDataDir(self, rnaSeqSet):
-         return os.path.join(self.dataOrganismDir(), "rnaSeq", rnaSeqSet)
+        return os.path.join(self.dataOrganismDir(), "rnaSeq", rnaSeqSet)
 
     def rnaSeqSetDataFile(self, rnaSeqSet, baseName):
-         return os.path.join(self.rnaSeqSetDataDir(rnaSeqSet), baseName)
+        return os.path.join(self.rnaSeqSetDataDir(rnaSeqSet), baseName)
 
     def geneSetAnalysisDir(self):
         return os.path.join(self.analysisDir, self.assembly, self.geneSet)
-        
+
     def starGenomeDir(self, readLength):
-         return os.path.join(self.geneSetAnalysisDir(), "star", "rl"+str(readLength))
+        return os.path.join(self.geneSetAnalysisDir(), "star", "rl{}".format(readLength))
 
     def starGenomeDoneFlag(self, readLength):
-         return os.path.join(self.starGenomeDir(readLength), "done")
+        return os.path.join(self.starGenomeDir(readLength), "done")
 
     def rnaSeqSetAnalysisDir(self, rnaSeqSet):
-         return os.path.join(self.geneSetAnalysisDir(), "rnaSeqEvid", rnaSeqSet)
-        
+        return os.path.join(self.geneSetAnalysisDir(), "rnaSeqEvid", rnaSeqSet)
+
     def rnaSeqSetAnalysisSjOut(self, rnaSeqSet, rnaSeqRunName):
-         return os.path.join(self.rnaSeqSetAnalysisDir(rnaSeqSet), rnaSeqRunName+".sj.tab")
-        
-     
+        return os.path.join(self.rnaSeqSetAnalysisDir(rnaSeqSet), "{}.sj.tab".format(rnaSeqRunName))

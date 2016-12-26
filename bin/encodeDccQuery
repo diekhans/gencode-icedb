@@ -1,20 +1,20 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
-import sys
+import icedbProgSetup  # noqa: F401
 import os
 import argparse
-from shutil import copyfile
-sys.path.insert(0, os.path.expanduser("~markd/compbio/code/pycbio/lib"))
-myBinDir = os.path.normpath(os.path.dirname(sys.argv[0]))
-sys.path.append(myBinDir + "/../lib")
 from pycbio.sys import fileOps, typeOps
-import urllib, requests, json
+import urllib
+import requests
+import json
 
 encodeUrl = "https://www.encodeproject.org/"
 encodeSearchUrl = urllib.basejoin(encodeUrl, "/search/")
 
 verbose = False
+
+
 def parseArgs():
     desc = """query the encode DCC"""
     parser = argparse.ArgumentParser(description=desc)
@@ -42,8 +42,11 @@ def parseArgs():
 selectedTsvHeader = ("runname", "organism", "tissue", "description",
                      "readsfileurl", "readsfile", "md5sum", "readlength",
                      "readsfile2url", "readsfile2", "md5sum2")
+
+
 def emptyIfNone(v):
     return "" if v is None else v
+
 
 def buildUrl(scientificName, limit):
     args = {"type": "Experiment",
@@ -54,9 +57,9 @@ def buildUrl(scientificName, limit):
             "replicates.library.biosample.donor.organism.scientific_name": scientificName,
             "files.file_type": "fastq",
             "limit": str(limit),
-            "frame": "embedded",
-    }
-    return encodeSearchUrl+"?"+urllib.urlencode(args)
+            "frame": "embedded"}
+    return "{}?{}".format(encodeSearchUrl, urllib.urlencode(args))
+
 
 def search(scientificName, limit):
     headers = {'accept': 'application/json'}
@@ -64,13 +67,16 @@ def search(scientificName, limit):
     response = requests.get(url, headers=headers)
     return response.json()
 
+
 def loadFromJson(fname):
     with open(fname, "r") as fh:
         return json.load(fh)
 
+
 def saveToJson(fname, obj):
     with open(fname, "w") as fh:
         json.dump(obj, fh, indent=4, separators=(',', ': '))
+
 
 def getValue(data, keys):
     "get value from JSON derived object given a tuple of keys"
@@ -78,6 +84,7 @@ def getValue(data, keys):
         return data[keys[0]]
     else:
         return getValue(data[keys[0]], keys[1:])
+
 
 def findPair(frec1, filesById):
     "returns (frec1, frec2) or (frec1, None)"
@@ -90,6 +97,7 @@ def findPair(frec1, filesById):
             return (frec2, frec1)
     else:
         return (frec1, None)
+
 
 def collectFile(frec, filesById, doneIds):
     frec1, frec2 = findPair(frec, filesById)
@@ -116,10 +124,12 @@ def collectFile(frec, filesById, doneIds):
                          md5sum2=md5sum2,
                          readlength=readlength)
 
+
 def useFile(frec, minReadLength, doneIds):
     return ((frec["@id"] not in doneIds) and (frec["file_type"] == "fastq")
             and (frec["read_length"] >= minReadLength))
-    
+
+
 def collectFastqs(fileRecs, minReadLength):
     "pull data from files array"
     filesById = {frec["@id"]: frec for frec in fileRecs}
@@ -130,17 +140,19 @@ def collectFastqs(fileRecs, minReadLength):
             fastqRecs.append(collectFile(frec, filesById, doneIds))
     return fastqRecs
 
+
 def collectMetadata(expr):
     replicate = expr["replicates"][0]
     return typeOps.annon(
-        organism = getValue(replicate, ("library", "biosample", "organism", "name")),
-        tissue = getValue(replicate, ("library", "biosample", "biosample_term_name")),
-        description = expr["description"])
+        organism=getValue(replicate, ("library", "biosample", "organism", "name")),
+        tissue=getValue(replicate, ("library", "biosample", "biosample_term_name")),
+        description=expr["description"])
+
 
 def processExpr(expr, minReadLength, selectedTsvFh, selectedUrlsFh):
     metadata = collectMetadata(expr)
     fastqs = collectFastqs(expr["files"], minReadLength)
-    
+
     for fastq in fastqs:
         fileOps.prRowv(selectedTsvFh, fastq.runname, metadata.organism, metadata.tissue,
                        metadata.description, fastq.readsfileurl, fastq.readsfile, fastq.md5sum,
@@ -149,12 +161,14 @@ def processExpr(expr, minReadLength, selectedTsvFh, selectedUrlsFh):
         fileOps.prRowv(selectedUrlsFh, fastq.readsfileurl)
         if fastq.readsfile2url is not None:
             fileOps.prRowv(selectedUrlsFh, fastq.readsfile2url)
-        
+
+
 def processExprs(response, minReadLength, selectedTsvFh, selectedUrlsFh):
     fileOps.prRow(selectedTsvFh, selectedTsvHeader)
     # we call each thing under @graph an experiment
     for expr in response["@graph"]:
         processExpr(expr, minReadLength, selectedTsvFh, selectedUrlsFh)
+
 
 def encodeDccQuery(opts):
     if opts.fakeResponse is not None:

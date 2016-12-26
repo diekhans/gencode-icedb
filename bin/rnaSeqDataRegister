@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 
+import icedbProgSetup  # noqa: F401
 import sys
 import os
 import argparse
-sys.path.insert(0, os.path.expanduser("~markd/compbio/code/pycbio/lib"))
-myBinDir = os.path.normpath(os.path.dirname(sys.argv[0]))
-sys.path.append(myBinDir + "/../lib")
 from gencode_icedb.rnaSeqData import RnaSeqDataLoader
-from gencode_icedb import pipelineOps, dataOps, config
+from gencode_icedb import dataOps, config
 from peewee import SqliteDatabase
 
-os.environ['PATH'] = myBinDir + ":" + os.environ['PATH']
+os.environ['PATH'] = icedbProgSetup.myBinDir + ":" + os.environ['PATH']
 
 verbose = False
+
+
 def parseArgs():
     desc = """Register an RNA-Seq data (reads) in an IceDb dataset database.
 ,"""
@@ -60,6 +60,7 @@ def verbPr(msg, opts):
     if verbose:
         sys.stderr.write(msg + ": " + opts.rnaSeqSet + "/" + opts.rnaSeqRun + "\n")
 
+
 def rnaSeqRunRegister(opts):
     pathConfig = config.PathConfig(opts.rootDir, opts.organism)
     database = SqliteDatabase(pathConfig.dataDatabase())
@@ -74,4 +75,3 @@ def rnaSeqRunRegister(opts):
 
 opts = parseArgs()
 rnaSeqRunRegister(opts)
-

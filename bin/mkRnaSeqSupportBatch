@@ -3,15 +3,13 @@
 Toil program to run RNA-Seq support analysis.
 """
 from __future__ import print_function
-import sys
+import icedbProgSetup  # noqa: F401
 import os
 import argparse
-sys.path.insert(0, os.path.expanduser("~markd/compbio/code/pycbio/lib"))
-myBinDir = os.path.abspath(os.path.dirname(sys.argv[0]))
-sys.path.append(myBinDir + "/../lib")
 from gencode_icedb.rnaSeqData import setDatabase, RnaSeqData
-from gencode_icedb import pipelineOps, config
+from gencode_icedb import config
 from peewee import SqliteDatabase
+
 
 def parseArgs():
     desc = """Create parasol batch for running RNA-Seq
@@ -34,20 +32,23 @@ def parseArgs():
     opts = parser.parse_args()
     return opts
 
+
 def starSpliceJunctionMapCmd(fh, genomeDir, readsFile, readsFile2, numThreads, sjOut):
-    cmd = [os.path.join(myBinDir, "runStarSpliceJunctionMap"),
-           "--numThreads="+str(numThreads),
+    cmd = [os.path.join(icedbProgSetup.myBinDir, "runStarSpliceJunctionMap"),
+           "--numThreads={}".format(numThreads),
            genomeDir, readsFile]
     if readsFile2 is not None:
-        cmd.append("--readsFile2="+readsFile2)
-    cmd.append("{check out exists " + sjOut + "}")
+        cmd.append("--readsFile2={}".format(readsFile2))
+    cmd.append("{{check out exists {} }}".format(sjOut))
     fh.write(" ".join(cmd) + "\n")
+
 
 def checkGenomeExists(pathConfig, readLength):
     "make sure the genome done flag is there"
     doneFlag = pathConfig.starGenomeDoneFlag(readLength)
     if not os.path.exists(doneFlag):
         raise Exception("STAR genome done flag not found: " + doneFlag)
+
 
 def maybeMakeSplitJunctionJob(fh, pathConfig, rnaSeqData, numThreads):
     "check if output exists, if not add job to generate it"
@@ -57,19 +58,21 @@ def maybeMakeSplitJunctionJob(fh, pathConfig, rnaSeqData, numThreads):
         readsPath = pathConfig.rnaSeqSetDataFile(rnaSeqData.setname, rnaSeqData.readsfile)
         readsPath2 = pathConfig.rnaSeqSetDataFile(rnaSeqData.setname, rnaSeqData.readsfile2) if rnaSeqData.readsfile2 is not None else None
         starSpliceJunctionMapCmd(fh,
-                                pathConfig.starGenomeDir(rnaSeqData.readlength),
-                                readsPath, readsPath2, numThreads, sjOut)
+                                 pathConfig.starGenomeDir(rnaSeqData.readlength),
+                                 readsPath, readsPath2, numThreads, sjOut)
+
 
 def createJobs(opts):
     pathConfig = config.PathConfig(opts.rootDir, opts.organism, opts.assembly, opts.geneSet)
     database = SqliteDatabase(pathConfig.dataDatabase())
     setDatabase(database)
     with open(opts.batchFile, "w") as fh:
-        for rnaSeqData in RnaSeqData.select().where(RnaSeqData.organism==opts.organism):
+        for rnaSeqData in RnaSeqData.select().where(RnaSeqData.organism == opts.organism):
             maybeMakeSplitJunctionJob(fh, pathConfig, rnaSeqData, opts.numThreads)
+
+
 def main():
     opts = parseArgs()
     createJobs(opts)
 
 main()
-

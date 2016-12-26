@@ -6,23 +6,25 @@ from pycbio import tsv
 from pycbio.sys.symEnum import SymEnum
 from collections import defaultdict
 
-# support level on an single intron
+
 class IntronSupportLevel(SymEnum):
-    INTRON_SUPPORT_NONE   = 0
-    INTRON_SUPPORT_WEAK   = 1
+    "support level on an single intron"
+    INTRON_SUPPORT_NONE = 0
+    INTRON_SUPPORT_WEAK = 1
     INTRON_SUPPORT_MEDIUM = 2
     INTRON_SUPPORT_STRONG = 3
+
 
 class GencodeIntronEvidReader(tsv.TsvReader):
     "TSV reader for evidence"
 
     # chrom intronStart intronEnd novel annotStrand rnaSeqStrand intronMotif
     # numUniqueMapReads numMultiMapReads transcripts
-    
+
     spliceJunctionTsvTypeMap = {
         "intronStart": int,
         "intronEnd": int,
-        "novel": lambda v : bool(int(v)),
+        "novel": lambda v: bool(int(v)),
         "annotStrand": tsv.strOrNoneType,
         "rnaSeqStrand": tsv.strOrNoneType,
         "numUniqueMapReads": int,
@@ -30,6 +32,7 @@ class GencodeIntronEvidReader(tsv.TsvReader):
         "transcripts": (lambda s: s.split(',') if len(s) > 0 else [],
                         lambda l: ",".join(l)),
     }
+
     def __init__(self, evidTsv):
         super(GencodeIntronEvidReader, self).__init__(evidTsv, typeMap=GencodeIntronEvidReader.spliceJunctionTsvTypeMap)
 
@@ -46,7 +49,7 @@ class GencodeIntronEvidSet(list):
         self.__loadEvid(evidTsv)
 
     def __loadEvid(self, evidTsv):
-        for evid in  GencodeIntronEvidReader(evidTsv):
+        for evid in GencodeIntronEvidReader(evidTsv):
             self.__loadEvidRec(evid)
 
     def __loadEvidRec(self, evid):
@@ -65,6 +68,7 @@ class GencodeIntronEvidSet(list):
             evids = [evid for evid in evids if evid.chrom == transLocus.chrom]
         return tuple(sorted(evids, key=lambda r: r.intronStart))
 
+
 def intronEvidSupportLevel(evid):
     """compute the level of support for a given intron"""
     # easy first pass implementation
@@ -78,6 +82,7 @@ def intronEvidSupportLevel(evid):
         return IntronSupportLevel.INTRON_SUPPORT_WEAK
     else:
         return IntronSupportLevel.INTRON_SUPPORT_NONE
+
 
 class SpliceJuncCat(SymEnum):
     consensus = 1

@@ -3,18 +3,18 @@
 Toil program to run RNA-Seq support analysis.
 """
 from __future__ import print_function
+import icedbProgSetup  # noqa: F401
 import sys
 import os
 import argparse
-sys.path.insert(0, os.path.expanduser("~markd/compbio/code/pycbio/lib"))
-myBinDir = os.path.abspath(os.path.dirname(sys.argv[0]))
-sys.path.append(myBinDir + "/../lib")
 from gencode_icedb import rnaSeqSupportToil
 from toil.job import Job
 
 # FIXME: jobTree use environment rather than sys.path
 os.environ["PYTHONPATH"] = ":".join(sys.path)
 print("PYTHONPATH=", os.environ["PYTHONPATH"])
+
+
 def parseArgs():
     desc = """run RNA-Seq support analysis using toil.  Don't rebuild
     files that already exist.
@@ -34,11 +34,11 @@ def parseArgs():
     opts = parser.parse_args()
     return opts
 
+
 def main():
     opts = parseArgs()
     masterJob = rnaSeqSupportToil.createJobs(opts)
     Job.Runner.startToil(masterJob, opts)
 
-if __name__=="__main__":
+if __name__ == "__main__":
     main()
-

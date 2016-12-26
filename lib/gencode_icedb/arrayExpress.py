@@ -1,8 +1,11 @@
-import sys, os, re
+import sys
+import os
+import re
 from pycbio.tsv import TsvReader
 from collections import defaultdict
 from gencode_icedb import rnaSeqData
 from peewee import SqliteDatabase
+
 
 class ArrayExpressSdrfMapper(object):
     """Object to TSV column names to field names.  Counting occurrences of
@@ -11,10 +14,11 @@ class ArrayExpressSdrfMapper(object):
     """
     def __init__(self):
         self.nameCount = dict()
+
     def __call__(self, cname):
         # replace ' *[' or ' ' with `_' and remove ']'
         cname = re.sub('( *\\[)|(\\])|( )',
-                       lambda m: '' if m.group(0)==']' else '_', cname).lower()
+                       lambda m: '' if m.group(0) == ']' else '_', cname).lower()
         if cname in self.nameCount:
             self.nameCount[cname] += 1
             cname += str(self.nameCount[cname])
@@ -22,12 +26,14 @@ class ArrayExpressSdrfMapper(object):
             self.nameCount[cname] = 1
         return cname
 
+
 def arrayExpressSdrfReader(sdrfTsv, typeMap=None):
     """create a reader for an sdrf TSV file.  The column names
     are not consistent on all files and some are duplicated. They need to be mapped
     to valid python names (e.g. 'Factor Value[organism part] and made unique')
     """
     return TsvReader(sdrfTsv, columnNameMapper=ArrayExpressSdrfMapper(), typeMap=typeMap)
+
 
 class ArrayExpressRuns(defaultdict):
     """Rows from ArrayExpress SDRF files by run.  Rows will be paired for pair-end
@@ -52,6 +58,7 @@ class ArrayExpressRuns(defaultdict):
         self[run].append(row)
         if len(self[run]) > 2:
             raise Exception("too many entries for run: " + run)
+
 
 class ArrayExpressRegister(object):
     """Register RNA-Seq data from and ArrayExpress SDRF TSV files.

@@ -1,13 +1,16 @@
 """"functions to operate on read and other data"""
-import os, re
+
+import os
 import socket
 from pycbio.sys import fileOps
 from gencode_icedb import pipelineOps
+
 
 def isFastq(readsFile):
     """does file appear to be a fastq by naming convention"""
     base = fileOps.compressBaseName(readsFile)
     return base.endswith(".fastq")
+
 
 def getReadsCatCommand(readsFile):
     """Get command to cat reads file based on extension from either a bam or a fastq, possibly compressed"""
@@ -16,6 +19,7 @@ def getReadsCatCommand(readsFile):
         return ["samtools", "bam2fq", readsFile]
     else:
         return [fileOps.decompressCmd(readsFile), readsFile]
+
 
 class TmpUncompress(object):
     """Wrapper for possibly compressed files to pass to programs that can't read
@@ -31,7 +35,7 @@ class TmpUncompress(object):
         # drop compressed extension, keep next extension
         uncompName = os.path.basename(os.path.splitext(dataFile)[0])
         uncompBase, uncompExt = os.path.splitext(uncompName)
-        uncompExt = uncompExt[0:-1] if len(uncompExt) > 0 else None # drop dot
+        uncompExt = uncompExt[0:-1] if len(uncompExt) > 0 else None  # drop dot
         return fileOps.tmpFileGet(uncompBase, uncompExt, tmpDir=tmpDir)
 
     @property
@@ -52,6 +56,7 @@ class TmpUncompress(object):
                 os.unlink(self.__tmpUncompressed)
             self.__tmpUncompressed = None
 
+
 def getNewTmpDir(tmpDir):
     """need a temporary directory that doesn't exist, since STAR wants
      the directory not to exist"""
@@ -65,8 +70,7 @@ def getNewTmpDir(tmpDir):
             return path
         cnt += 1
 
-            
+
 def estimateReadLength(readsPath):
     "run estimateReadLength program to get read length from read data"
     return int(pipelineOps.callCmd(["estimateReadLength", readsPath, "/dev/stdout"]))
-

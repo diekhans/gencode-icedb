@@ -1,19 +1,16 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
+import icedbProgSetup  # noqa: F401
 import sys
-import os
 import argparse
-sys.path.insert(0, os.path.expanduser("~markd/compbio/code/pycbio/lib"))
-sys.path.insert(0, os.path.expanduser("~markd/compbio/ccds/ccds2/output/lib/py"))
-myBinDir = os.path.normpath(os.path.dirname(sys.argv[0]))
-sys.path.append(myBinDir + "/../lib")
 from pycbio.sys import fileOps
 from pycbio.sys.color import Color
-from gencode_icedb import dataOps
 from gencode_icedb.gencodeIntronEvid import GencodeIntronEvidSet, IntronSupportLevel, intronEvidSupportLevel
 
 verbose = False
+
+
 def parseArgs():
     desc = """Create a BED of introns colored by support"""
     parser = argparse.ArgumentParser(description=desc)
@@ -43,7 +40,7 @@ class Colors(object):
     @staticmethod
     def __printColorHtml(fh, desc, color):
         print('<li><p style="color:{}">{}</p>'.format(color.toHtmlColor(), desc), file=fh)
-        
+
     @staticmethod
     def printHtml(fh=sys.stdout):
         "for inclusion in documentation"
@@ -53,6 +50,7 @@ class Colors(object):
         Colors.__printColorHtml(fh, "medium support novel intron", Colors.mediumNovel)
         Colors.__printColorHtml(fh, "weak support known intron", Colors.weak)
         Colors.__printColorHtml(fh, "no support known intron", Colors.none)
+
 
 class GencodeIntronEvidBed(object):
     def __init__(self, spliceJunctionEvidTsv):
@@ -70,7 +68,7 @@ class GencodeIntronEvidBed(object):
                 return Colors.mediumNovel
             else:
                 return Colors.mediumKnown
-        elif level ==  IntronSupportLevel.INTRON_SUPPORT_WEAK:
+        elif level == IntronSupportLevel.INTRON_SUPPORT_WEAK:
             return Colors.weak
         elif level == IntronSupportLevel.INTRON_SUPPORT_NONE:
             return Colors.none
@@ -83,7 +81,7 @@ class GencodeIntronEvidBed(object):
             return evid.annotStrand
         else:
             return '+'  # something valid
-        
+
     @staticmethod
     def __evidName(evid):
         return "{} ({}, {})".format(evid.intronMotif, evid.numUniqueMapReads, evid.numMultiMapReads)
@@ -96,12 +94,11 @@ class GencodeIntronEvidBed(object):
                            self.__evidName(evid), 0, self.__evidStrand(evid),
                            evid.intronStart, evid.intronEnd,
                            self.__evidColor(evid, level).toRgb8Str())
-        
+
     def writeBed(self, bedFh):
         for evid in sorted(self.intronEvid, key=lambda e: (e.chrom, e.intronStart)):
             self.__writeBedRec(evid, bedFh)
-            
-        
+
 opts = parseArgs()
 if opts.htmlColors:
     Colors.printHtml()
@@ -109,5 +106,3 @@ if opts.htmlColors:
 gieb = GencodeIntronEvidBed(opts.spliceJunctionEvidTsv)
 with open(opts.bedOut, "w") as bedFh:
     gieb.writeBed(bedFh)
-
-                 

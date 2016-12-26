@@ -1,17 +1,14 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
+import icedbProgSetup  # noqa: F401
 import sys
-import os
 import argparse
-from shutil import copyfile
-sys.path.insert(0, os.path.expanduser("~markd/compbio/code/pycbio/lib"))
-myBinDir = os.path.normpath(os.path.dirname(sys.argv[0]))
-sys.path.append(myBinDir + "/../lib")
-from pycbio.sys import fileOps
 from gencode_icedb import dataOps, pipelineOps
 
 verbose = False
+
+
 def parseArgs():
     desc = """Estimate the read length to use in building the index.  This does
     a partial scan of the read file"""
@@ -31,8 +28,10 @@ def parseArgs():
     verbose = opts.verbose
     return opts
 
+
 def fastqReader(readsFile):
     return pipelineOps.openPipeline(dataOps.getReadsCatCommand(readsFile), verbose=verbose)
+
 
 def fastqReadSeq(fqfh):
     """read one  fastq sequence or None on EOF"""
@@ -44,14 +43,16 @@ def fastqReadSeq(fqfh):
         raise Exception("premature EOF in FASTQ record")
     return lines[1].strip()
 
+
 def fastqGenerator(fqfh):
     """read of fastq sequences. only sequence string is returned"""
     while True:
         seq = fastqReadSeq(fqfh)
-        if seq == None:
+        if seq is None:
             break
         else:
             yield seq
+
 
 def collectReadLens(readsFile, sampleSize):
     readCnt = 0
@@ -65,8 +66,10 @@ def collectReadLens(readsFile, sampleSize):
     fqfh.close()
     return (readCnt, totalLen)
 
+
 def writeReadLen(fh, aveLen):
-    fh.write(str(aveLen)+'\n')
+    fh.write('{}\n'.format(aveLen))
+
 
 def estimateReadLength(opts):
     readCnt, totalLen = collectReadLens(opts.readsFile, opts.sampleSize)
@@ -75,7 +78,7 @@ def estimateReadLength(opts):
     aveLen = totalLen / readCnt
     if aveLen == 0:
         raise Exception("aver length of 0 from " + opts.readsFile)
-    if opts.outfile == None:
+    if opts.outfile is None:
         writeReadLen(sys.stdout, aveLen)
     else:
         with open(opts.outfile, "w") as fh:

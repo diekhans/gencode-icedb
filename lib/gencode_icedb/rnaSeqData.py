@@ -2,15 +2,17 @@
 Data associate with RNA seq database, store in an sqlite database
 """
 import os
-from peewee import *
+from peewee import Proxy, Model, IntegerField, CharField
 from gencode_icedb import dataOps
 from pycbio.sys.symEnum import SymEnum
 
 database_proxy = Proxy()
 
+
 def setDatabase(database):
     "bind the proxy to a database"
     database_proxy.initialize(database)
+
 
 class RnaSeqData(Model):
     """specification of a single set of RNA-Seq reads.
@@ -32,13 +34,14 @@ class RnaSeqData(Model):
     class Meta:
         database = database_proxy
 
+
 class RnaSeqDataLoader(object):
     "load into RnaSeqData table"
 
     class Status(SymEnum):
         "status of added a record"
-        added    = 1
-        skipped  = 2
+        added = 1
+        skipped = 2
 
     def __init__(self, database, pathConfig, rnaSeqSet, organism, skipExisting):
         setDatabase(database)
@@ -76,7 +79,7 @@ class RnaSeqDataLoader(object):
         rec.save()
 
     def __checkForExisting(self, rnaSeqRun):
-         # FIXME: should validate?
+        # FIXME: should validate?
         return RnaSeqData.select().where(RnaSeqData.setname == self.rnaSeqSet,
                                          RnaSeqData.runname == rnaSeqRun).count() > 0
 
@@ -88,7 +91,7 @@ class RnaSeqDataLoader(object):
         if readsFile2 is not None:
             self.__validateReadsFilePath(readsFile2)
         if not RnaSeqData.table_exists():
-             RnaSeqData.create_table()
+            RnaSeqData.create_table()
         exists = self.__checkForExisting(rnaSeqRun)
         if self.skipExisting and exists:
             return RnaSeqDataLoader.Status.skipped
