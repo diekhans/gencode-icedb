@@ -21,4 +21,4 @@ lint:
 clean::
 	(cd src && ${MAKE} clean)
 	(cd tests && ${MAKE} clean)
-	rm -rf ${BINDIR}/*.dSYM ${OBJS} lib/gencode_icedb/*.pyc objs
+	rm -rf ${BINDIR}/*.dSYM ${OBJS} lib/gencode_icedb/*.pyc objs ${BINDIR}/*.pyc

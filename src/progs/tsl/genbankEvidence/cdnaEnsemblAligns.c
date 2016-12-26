@@ -19,9 +19,9 @@ static char* ensDbPort = "5306";
 
 /* usage message and abort */
 static void usage(char *msg) {
-    static char* usageMsg = "cdnaEnsemblAligns [options] ensemblDb mappingPsl outPsl missingAccFile\n"
+    static char* usageMsg = "cdnaEnsemblAligns [options] ensemblDb cdnaLengthCacheDb mappingPsl outPsl\n"
         "\n"
-        "Fetch alignments from ENSEMBL and write as PSLs.\n"
+        "Fetch cDNA alignments from Ensembl and write as PSLs.\n"
         "\n"
         "The Ensembl alignments don't include the poly-A and lack the lengths,\n"
         "The length of cDNA sequences are obtained from either the UCSC browser\n"

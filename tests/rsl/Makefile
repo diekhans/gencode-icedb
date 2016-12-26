@@ -9,9 +9,9 @@ rnaSeqDataRegister = ${binDir}/rnaSeqDataRegister
 spliceJunctionCollectEvidence = ${binDir}/spliceJunctionCollectEvidence
 genePredIntrons = ${binDir}/genePredIntrons
 encodeDccQuery = ${binDir}/encodeDccQuery
-gencodeIntronSupport = ${binDir}/gencodeIntronSupport
+rnaSeqIntronSupport = ${binDir}/rnaSeqIntronSupport
 gencodeIntronEvidBed = ${binDir}/gencodeIntronEvidBed
-gencodeIntronEvidStats = ${binDir}/gencodeIntronEvidStats
+rnaSeqIntronEvidStats = ${binDir}/rnaSeqIntronEvidStats
 
 .SECONDARY:
 
@@ -137,11 +137,11 @@ encodeDccTests: encodeDcc10Tests
 encodeDcc10Tests: mkdirs
 	${encodeDccQuery} "Mus musculus" --limit=10 output/encodeDcc10Tests.tsv output/encodeDcc10Tests.urls
 
-# gencodeIntronSupport tests
+# rnaSeqIntronSupport tests
 intronSupportTests: intronSupport1Test
 
 intronSupport1Test: mkdirs
-	${gencodeIntronSupport} input/small-gencode.gp input/small-gencode.attrs \
+	${rnaSeqIntronSupport} input/small-gencode.gp input/small-gencode.attrs \
 		expected/spliceJuncEvidNoSupportTest.evid.tsv
 
 # gencodeIntronEvidBed
@@ -150,20 +150,20 @@ intronEvidBedTests: intronEvidBed1Test
 intronEvidBed1Test: mkdirs
 	${gencodeIntronEvidBed} input/hs.chr22-2k.evid.tsv output/$@.bed
 
-# gencodeIntronEvidStats
+# rnaSeqIntronEvidStats
 intronEvidStatsTests: intronEvidStatsAllTest intronEvidStatsMin30 \
 	intronEvidStatsConsensus
 
 intronEvidStatsAllTest: mkdirs
-	${gencodeIntronEvidStats} input/hs.chr22-2k.evid.tsv output/$@.stats.tsv
+	${rnaSeqIntronEvidStats} input/hs.chr22-2k.evid.tsv output/$@.stats.tsv
 	diff expected/$@.stats.tsv output/$@.stats.tsv
 
 intronEvidStatsMin30: mkdirs
-	${gencodeIntronEvidStats} --minIntronSize=30 input/hs.chr22-2k.evid.tsv output/$@.stats.tsv
+	${rnaSeqIntronEvidStats} --minIntronSize=30 input/hs.chr22-2k.evid.tsv output/$@.stats.tsv
 	diff expected/$@.stats.tsv output/$@.stats.tsv
 
 intronEvidStatsConsensus: mkdirs
-	${gencodeIntronEvidStats} --spliceJuncCat=consensus input/hs.chr22-2k.evid.tsv output/$@.stats.tsv
+	${rnaSeqIntronEvidStats} --spliceJuncCat=consensus input/hs.chr22-2k.evid.tsv output/$@.stats.tsv
 	diff expected/$@.stats.tsv output/$@.stats.tsv
 
 mkdirs:
