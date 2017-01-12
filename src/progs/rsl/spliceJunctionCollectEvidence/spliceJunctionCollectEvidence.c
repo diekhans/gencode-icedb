@@ -7,7 +7,6 @@
 #include "intronCounts.h"
 
 static struct optionSpec optionSpecs[] = {
-    {"countsReport", OPTION_BOOLEAN},
     {"minOverhang", OPTION_INT},
     {NULL, 0}
 };

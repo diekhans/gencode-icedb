@@ -28,9 +28,9 @@ def parseArgs():
     parser.add_argument('assembly',
                         help="""assembly name""")
     parser.add_argument('geneSet',
-                        help="""get set name""")
+                        help="""gene set name""")
     parser.add_argument('batchFile',
-                        help="""get set name""")
+                        help="""batch file to create""")
     opts = parser.parse_args()
     return opts
 
