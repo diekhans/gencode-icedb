@@ -74,24 +74,38 @@ static void intronInfoSumCheck(struct starSpliceJunction* sum,
     }
 }
 
+/* collect summarize splice info for the first time */
+static void intronInfoSumFirst(struct intronInfo* intronInfo,
+                               struct starSpliceJunction* starJunc) {
+    struct starSpliceJunction* sum;
+    AllocVar(sum);
+    intronInfo->mappingsSum = sum;
+    *sum = *starJunc;  // byte copy
+    // fix up dynamic pointers, srcAnalyses should only be one
+    sum->next = NULL;
+    sum->chrom = cloneString(starJunc->chrom);
+    sum->srcAnalyses = rslAnalysisLinkCloneList(starJunc->srcAnalyses);  // normally one
+}
+
+/* collect summarize splice info for the subsequence times */
+static void intronInfoSumRest(struct intronInfo* intronInfo,
+                              struct starSpliceJunction* starJunc) {
+    struct starSpliceJunction* sum = intronInfo->mappingsSum;
+    intronInfoSumCheck(sum, starJunc);
+    sum->numUniqueMapReads += starJunc->numUniqueMapReads;
+    sum->numMultiMapReads += starJunc->numMultiMapReads;
+    sum->maxOverhang = max(sum->maxOverhang, starJunc->maxOverhang);
+    sum->srcAnalyses = slCat(sum->srcAnalyses,
+                             rslAnalysisLinkCloneList(starJunc->srcAnalyses));
+}
 
 /* summarize splice info */
 static void intronInfoSum(struct intronInfo* intronInfo,
                           struct starSpliceJunction* starJunc) {
-    struct starSpliceJunction* sum = intronInfo->mappingsSum;
-    if (sum == NULL) {
-        AllocVar(sum);
-        intronInfo->mappingsSum = sum;
-        *sum = *starJunc;  // byte copy
-        // fix up dynamic pointers
-        sum->next = NULL;
-        sum->chrom = cloneString(starJunc->chrom);
-        sum->srcAnalyses = rslAnalysisLinkCloneList(sum->srcAnalyses);  // normally one
+    if (intronInfo->mappingsSum == NULL) {
+        intronInfoSumFirst(intronInfo, starJunc);
     } else {
-        intronInfoSumCheck(sum, starJunc);
-        sum->numUniqueMapReads += starJunc->numUniqueMapReads;
-        sum->numMultiMapReads += starJunc->numMultiMapReads;
-        sum->maxOverhang = max(sum->maxOverhang, starJunc->maxOverhang);
+        intronInfoSumRest(intronInfo, starJunc);
     }
 }
 

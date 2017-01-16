@@ -81,8 +81,44 @@ static void reportEvidenceHeader(FILE* reportFh) {
     static char* header = "chrom\t" "intronStart\t" "intronEnd\t" "novel\t"
         "annotStrand\t" "rnaSeqStrand\t" "intronMotif\t"
         "numUniqueMapReads\t" "numMultiMapReads\t"
-        "transcripts\n";
+        "transcripts\t" "runs\t" "tissues\n";
     fputs(header, reportFh);
+}
+
+/* write transcripts column */
+static void reportEvidenceTranscripts(struct intronInfo* intronInfo,
+                                      FILE* reportFh) {
+    for (struct intronTransLink* intronTrans = intronInfo->intronTranses;
+         intronTrans != NULL; intronTrans = intronTrans->next) {
+        if (intronTrans != intronInfo->intronTranses) {
+            fputc(',', reportFh);
+        }
+        fputs(intronTrans->transcript->name, reportFh);
+    }
+}
+
+/* write runs column */
+static void reportEvidenceRuns(struct intronInfo* intronInfo,
+                               FILE* reportFh) {
+    for (struct rslAnalysisLink *ral = intronInfo->mappingsSum->srcAnalyses;
+         ral != NULL; ral = ral->next) {
+        if (ral != intronInfo->mappingsSum->srcAnalyses) {
+            fputc(',', reportFh);
+        }
+        fputs(ral->rslAnalysis->runname, reportFh);
+    }
+}
+
+/* write tissues column */
+static void reportEvidenceTissues(struct intronInfo* intronInfo,
+                                  FILE* reportFh) {
+    for (struct rslAnalysisLink *ral = intronInfo->mappingsSum->srcAnalyses;
+         ral != NULL; ral = ral->next) {
+        if (ral != intronInfo->mappingsSum->srcAnalyses) {
+            fputc(',', reportFh);
+        }
+        fputs(ral->rslAnalysis->tissue, reportFh);
+    }
 }
 
 /* report on an intron */
@@ -98,12 +134,14 @@ static void reportEvidenceIntron(struct intronInfo* intronInfo,
             getRnaSeqStrand(intronInfo),
             intronInfoMotifStr(intronInfo),
             numUniqueMapReads, numMultiMapReads);
-    for (struct intronTransLink* intronTrans = intronInfo->intronTranses;
-         intronTrans != NULL; intronTrans = intronTrans->next) {
-        if (intronTrans != intronInfo->intronTranses) {
-            fputc(',', reportFh);
-        }
-        fputs(intronTrans->transcript->name, reportFh);
+    reportEvidenceTranscripts(intronInfo, reportFh);
+    fputc('\t', reportFh);
+    if (intronInfo->mappingsSum != NULL) {
+        reportEvidenceRuns(intronInfo, reportFh);
+    }
+    fputc('\t', reportFh);
+    if (intronInfo->mappingsSum != NULL) {
+        reportEvidenceTissues(intronInfo, reportFh);
     }
     fputc('\n', reportFh);
 }

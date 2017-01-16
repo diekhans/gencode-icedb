@@ -23,13 +23,22 @@ INLINE struct rslAnalysisLink* rslAnalysisLinkNew(struct rslAnalysis *rslAnalysi
     return ral;
 }
 
+/* clone a list of links (but not objects) */
+INLINE struct rslAnalysisLink *rslAnalysisLinkCloneList(struct rslAnalysisLink *head) {
+    struct rslAnalysisLink *head2 = NULL;;
+    for (struct rslAnalysisLink *ral = head; ral != NULL; ral = ral->next) {
+        slAddHead(&head2, rslAnalysisLinkNew(ral->rslAnalysis));
+    }
+    slReverse(&head2);
+    return head2;
+}
+
 /* free list of links (but not objects) */
 INLINE void rslAnalysisLinkFreeList(struct rslAnalysisLink **head) {
-    struct rslAnalysisLink *next;
-    while ((next = slPopHead(head)) != NULL) {
-        freeMem(next);
+    struct rslAnalysisLink *ral;
+    while ((ral = slPopHead(head)) != NULL) {
+        freeMem(ral);
     }
-    *head = NULL;
 }
     
 /* a set of RSL analysis for a geneset */
