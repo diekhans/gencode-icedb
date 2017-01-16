@@ -82,8 +82,11 @@ static void intronInfoSum(struct intronInfo* intronInfo,
     if (sum == NULL) {
         AllocVar(sum);
         intronInfo->mappingsSum = sum;
-        *sum = *starJunc;
+        *sum = *starJunc;  // byte copy
+        // fix up dynamic pointers
+        sum->next = NULL;
         sum->chrom = cloneString(starJunc->chrom);
+        sum->srcAnalyses = rslAnalysisLinkCloneList(sum->srcAnalyses);  // normally one
     } else {
         intronInfoSumCheck(sum, starJunc);
         sum->numUniqueMapReads += starJunc->numUniqueMapReads;
@@ -170,7 +173,7 @@ static void intronMapAddStarJunc(struct intronMap* intronMap,
 static struct starSpliceJunction* spliceJunctionsLoad(struct rslAnalysis* rslAnalysis) {
     struct starSpliceJunction* starJuncs = starSpliceJunctionLoadAllByTab(rslAnalysis->sjPath);
     for (struct starSpliceJunction* starJunc = starJuncs; starJunc != NULL; starJunc = starJunc->next) {
-        starJunc->srcAnalyses = rslAnalysisLinkNew(rslAnalysis);
+        slAddHead(&starJunc->srcAnalyses, rslAnalysisLinkNew(rslAnalysis));
     }
     return starJuncs;
 }

@@ -1,7 +1,7 @@
 #include "common.h"
 #include "rslAnalysisSet.h"
 #include "filePath.h"
-#include "lineFile.h"
+#include "linefile.h"
 
 /* construct new analysis object */
 static struct rslAnalysis *rslAnalysisNew(char *runname, char *tissue, char *sjPath) {

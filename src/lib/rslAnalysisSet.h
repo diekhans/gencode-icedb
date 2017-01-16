@@ -29,6 +29,7 @@ INLINE void rslAnalysisLinkFreeList(struct rslAnalysisLink **head) {
     while ((next = slPopHead(head)) != NULL) {
         freeMem(next);
     }
+    *head = NULL;
 }
     
 /* a set of RSL analysis for a geneset */
