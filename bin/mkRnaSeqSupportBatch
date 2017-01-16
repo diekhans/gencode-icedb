@@ -17,7 +17,7 @@ def parseArgs():
     desc = """Create parasol batch for running RNA-Seq
     support analysis until toil is working.  Don't rebuild
     files that already exist.
-,"""
+"""
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('--rootDir', default=".",
                         help="""data root directory""")
@@ -57,8 +57,8 @@ def maybeMakeSplitJunctionJob(fh, pathConfig, rnaSeqData, numThreads):
         readsPath = pathConfig.rnaSeqSetDataFile(rnaSeqData.setname, rnaSeqData.readsfile)
         readsPath2 = pathConfig.rnaSeqSetDataFile(rnaSeqData.setname, rnaSeqData.readsfile2) if rnaSeqData.readsfile2 is not None else None
         starSpliceJunctionMapCmd(fh,
-                                pathConfig.starGenomeDir(rnaSeqData.readlength),
-                                readsPath, readsPath2, numThreads, sjOut)
+                                 pathConfig.starGenomeDir(rnaSeqData.readlength),
+                                 readsPath, readsPath2, numThreads, sjOut)
 
 def createJobs(opts):
     pathConfig = config.PathConfig(opts.rootDir, opts.organism, opts.assembly, opts.geneSet)

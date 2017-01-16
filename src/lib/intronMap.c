@@ -5,6 +5,7 @@
 #include "sqlNum.h"
 #include "genePred.h"
 #include "linefile.h"
+#include "rslAnalysisSet.h"
 
 /* constructor */
 static struct intronTransLink* intronTransLinkNew(struct genePred* transcript,
@@ -165,11 +166,20 @@ static void intronMapAddStarJunc(struct intronMap* intronMap,
     intronInfoSum(intronInfo, starJunc);
 }
 
+/* read splice junctions from file and link if source analysis information */
+static struct starSpliceJunction* spliceJunctionsLoad(struct rslAnalysis* rslAnalysis) {
+    struct starSpliceJunction* starJuncs = starSpliceJunctionLoadAllByTab(rslAnalysis->sjPath);
+    for (struct starSpliceJunction* starJunc = starJuncs; starJunc != NULL; starJunc = starJunc->next) {
+        starJunc->srcAnalyses = rslAnalysisLinkNew(rslAnalysis);
+    }
+    return starJuncs;
+}
+
 /* load a star junction file */
 void intronMapLoadStarJuncs(struct intronMap* intronMap,
-                            char* starJuncFile,
+                            struct rslAnalysis* rslAnalysis,
                             int minOverhang) {
-    struct starSpliceJunction* starJuncs = starSpliceJunctionLoadAllByTab(starJuncFile);
+    struct starSpliceJunction* starJuncs = spliceJunctionsLoad(rslAnalysis);
     struct starSpliceJunction* starJunc;
     while ((starJunc = slPopHead(&starJuncs)) != NULL) {
         if (starJunc->maxOverhang >= minOverhang) {

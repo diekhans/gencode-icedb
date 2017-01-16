@@ -16,7 +16,7 @@ gencodeIntronEvidStats = ${binDir}/gencodeIntronEvidStats
 .SECONDARY:
 
 numThreads=2
-test: smallTests readLenTests faTests genePredIntronsTest \
+test: smallTests readLenTests faTests rnaSeqDataRegisterTest genePredIntronsTest \
 	spliceJuncEvidenceTests encodeDccTests intronSupportTests \
 	intronEvidBedTests intronEvidStatsTests
 

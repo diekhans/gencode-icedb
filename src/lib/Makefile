@@ -1,6 +1,6 @@
 ROOT = ../..
 
-LIB_MODS =  intronMap gencodeAttributes starSpliceJunction
+LIB_MODS =  intronMap gencodeAttributes starSpliceJunction rslAnalysisSet
 
 include ${ROOT}/config.mk
 

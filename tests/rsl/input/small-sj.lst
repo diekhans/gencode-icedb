@@ -1,2 +1,3 @@
-../expected/smallMapPairFastqTestSJ.out.tab
-../expected/smallMapSamTestSJ.out.tab
+runname	tissue	sjPath
+E12584	brain	../expected/smallMapPairFastqTestSJ.out.tab
+E12585	spleen	../expected/smallMapSamTestSJ.out.tab
