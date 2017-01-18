@@ -114,3 +114,10 @@
    (../gencode-icedb/bin/gencodeIntronEvidBed analysis/grcm38/gencodeVM8/rnaSeqSupport/intron.evid.tsv /dev/stdout | liftOver -tab -bedPlus=9 /dev/stdin /hive/data/genomes/mm10/bed/gencodeVM8/data/ensemblToUcsc.chain /dev/stdout analysis/grcm38/gencodeVM8/rnaSeqSupport/intron.evid.nolift.bed | sort -k1,1 -k2,2n >analysis/grcm38/gencodeVM8/rnaSeqSupport/intron.evid.bed) >&mm.log&
 
    bedToBigBed -tab -type=bed9 analysis/grcm38/gencodeVM8/rnaSeqSupport/intron.evid.bed /hive/data/genomes/mm10/chrom.sizes analysis/grcm38/gencodeVM8/rnaSeqSupport/intron.evid.bigBed
+
+
+2017-01-18:
+   # rerun connection report for Anne-Maud to include runname and tissue
+   mv analysis/grch38/gencodeV24/rnaSeqSupport  analysis/grch38/gencodeV24/rnaSeqSupport.oldformat
+   nice ../gencode-icedb/bin/sjCollectEvidence --minOverhang=6 human GRCh38 gencodeV24 analysis/grch38/gencodeV24/gencode/gencode.v24.annotation.gp analysis/grch38/gencodeV24/gencode/gencode.v24.annotation.splice.tsv  >&hs.log
+

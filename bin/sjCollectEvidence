@@ -71,7 +71,6 @@ def runSjCollectEvidence(pathConfig, minOverhang, sjInfoFile, gencodeGenePred, g
 
 def sjCollectEvidence(opts):
     pathConfig = config.PathConfig(opts.rootDir, opts.organism, opts.assembly, opts.geneSet)
-    print(pathConfig.dataDatabase())
     database = SqliteDatabase(pathConfig.dataDatabase())
     setDatabase(database)
     sjInfoFile = makeSjInfoFile(pathConfig, opts.organism)
