@@ -43,7 +43,7 @@ void rslAnalysisSetFree(struct rslAnalysisSet *rslAnalysisSet) {
 static void loadRslAnalysis(struct rslAnalysisSet *rslAnalysisSet, char *tsvFile,
                             char *runname, char *tissue, char *relSjPath) {
     char *sjPath = pathRelativeToFile(tsvFile, relSjPath);
-    struct rslAnalysis *rslAnalysis= rslAnalysisNew(runname, tissue, sjPath);
+    struct rslAnalysis *rslAnalysis = rslAnalysisNew(runname, tissue, sjPath);
     freeMem(sjPath);  // was copied
     slAddHead(&rslAnalysisSet->analyses, rslAnalysis);
 }

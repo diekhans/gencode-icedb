@@ -1,0 +1,86 @@
+#!/usr/bin/env python
+from __future__ import print_function
+import sys
+import os   
+import argparse
+sys.path.insert(0, os.path.expanduser("~markd/compbio/code/pycbio/lib"))
+myBinDir = os.path.abspath(os.path.dirname(sys.argv[0]))
+sys.path.append(myBinDir + "/../lib")
+from gencode_icedb.rnaSeqData import setDatabase, RnaSeqData
+from gencode_icedb import pipelineOps, config
+from pycbio.sys import fileOps
+from peewee import SqliteDatabase
+
+verbose = False
+
+def parseArgs():
+    desc = """Collect and combine splice junction support.  This
+    used the C program spliceJunctionCollectEvidence to do the real work.
+    """
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument('--rootDir', default=".",
+                        help="""data root directory""")
+    parser.add_argument('--minOverhang', default=0, type=int,
+                        help="""minimum overhang for a STAR splice junction call. Records with less than this maximum overhang have splice\n"
+                        junction information discarded.  They will still be
+                        reported if part of the target set""")
+    parser.add_argument('--verbose', action="store_true", default=False,
+                        help="write verbose output")
+    parser.add_argument('organism',
+                        help="""common name of organism""")
+    parser.add_argument('assembly',
+                        help="""assembly name""")
+    parser.add_argument('geneSet',
+                        help="""gene set name""")
+#   FIXME these should come from config
+    parser.add_argument('gencodeGenePred',
+                        help="""gene gene predfile""")
+    parser.add_argument('gencodeSpliceTsv',
+                        help="""gencode splice TSV""")
+    opts = parser.parse_args()
+    global verbose
+    verbose = opts.verbose
+    return opts
+
+def writeSjInfoRow(sjInfoFh, pathConfig, rnaSeqData):
+    # need abs path, since we store this in tmp
+    sjOut = os.path.abspath(pathConfig.rnaSeqSetAnalysisSjOut(rnaSeqData.setname, rnaSeqData.runname))
+    if not os.path.exists(sjOut):
+        raise Exception("missing splice junction file: {}".format(sjOut))
+    fileOps.prRowv(sjInfoFh, rnaSeqData.runname, rnaSeqData.tissue, sjOut)
+
+def makeSjInfoFile(pathConfig, organism):
+    "create input file for spliceJunctionCollectEvidence"
+    sjInfoFile = fileOps.tmpFileGet("sjInfo")
+    with open(sjInfoFile, "w") as sjInfoFh:
+        fileOps.prRowv(sjInfoFh, "spliceJuncFile", "runname", "tissue")
+        for rnaSeqData in RnaSeqData.select().where(RnaSeqData.organism==organism):
+            writeSjInfoRow(sjInfoFh, pathConfig, rnaSeqData)
+    return sjInfoFile
+
+def runSjCollectEvidence(pathConfig, minOverhang, sjInfoFile, gencodeGenePred, gencodeSpliceTsv):
+    supportTsv = pathConfig.rnaSeqSetSupportTsv()
+    fileOps.ensureFileDir(supportTsv)
+    supportTsvTmp = fileOps.atomicTmpFile(supportTsv)
+    pipelineOps.runCmd(
+        [os.path.join(myBinDir, "spliceJunctionCollectEvidence"),
+         "-minOverhang={}".format(minOverhang),
+         gencodeGenePred, gencodeSpliceTsv, sjInfoFile, supportTsvTmp,
+        ], verbose=verbose)
+    fileOps.atomicInstall(supportTsvTmp, supportTsv)
+
+def sjCollectEvidence(opts):
+    pathConfig = config.PathConfig(opts.rootDir, opts.organism, opts.assembly, opts.geneSet)
+    print(pathConfig.dataDatabase())
+    database = SqliteDatabase(pathConfig.dataDatabase())
+    setDatabase(database)
+    sjInfoFile = makeSjInfoFile(pathConfig, opts.organism)
+    runSjCollectEvidence(pathConfig, opts.minOverhang, sjInfoFile, opts.gencodeGenePred, opts.gencodeSpliceTsv)
+    os.unlink(sjInfoFile)
+
+def main():
+    opts = parseArgs()
+    sjCollectEvidence(opts)
+
+main()
+

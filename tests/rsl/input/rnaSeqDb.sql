@@ -1,0 +1,12 @@
+PRAGMA foreign_keys=OFF;
+BEGIN TRANSACTION;
+CREATE TABLE "rnaseqdata" ("id" INTEGER NOT NULL PRIMARY KEY, "setname" VARCHAR(255) NOT NULL, "runname" VARCHAR(255) NOT NULL, "organism" VARCHAR(255) NOT NULL, "readsfileurl" VARCHAR(255) NOT NULL, "readsfile" VARCHAR(255) NOT NULL, "readsfile2url" VARCHAR(255), "readsfile2" VARCHAR(255), "readlength" INTEGER NOT NULL, "description" VARCHAR(255) NOT NULL, "tissue" VARCHAR(255) NOT NULL);
+INSERT INTO "rnaseqdata" VALUES(1,'smallSet','small1A','human','http://fred.org/data/input/small-rnaseq.sam','small.sam',NULL,NULL,75,'small RNA-Seq','micro brain');
+INSERT INTO "rnaseqdata" VALUES(2,'smallSet','small1B','human','http://fred.org/data/input/smallish-rnaseq.bam','small.bam',NULL,NULL,75,'not so small RNA-Seq','macro brain');
+INSERT INTO "rnaseqdata" VALUES(3,'smallSet','small1-2','human','http://fred.org/data/input/smallFastqPair_1.fastq','smallFastqPair_1.fastq','http://fred.org/data/input/smallFastqPair_2.fastq','smallFastqPair_2.fastq',75,'paired RNA-Seq','micro macro brain');
+CREATE INDEX "rnaseqdata_setname" ON "rnaseqdata" ("setname");
+CREATE UNIQUE INDEX "rnaseqdata_runname" ON "rnaseqdata" ("runname");
+CREATE INDEX "rnaseqdata_organism" ON "rnaseqdata" ("organism");
+CREATE UNIQUE INDEX "rnaseqdata_readsfileurl" ON "rnaseqdata" ("readsfileurl");
+CREATE UNIQUE INDEX "rnaseqdata_readsfile2url" ON "rnaseqdata" ("readsfile2url");
+COMMIT;

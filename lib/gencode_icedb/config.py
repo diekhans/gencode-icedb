@@ -49,12 +49,20 @@ class PathConfig(object):
          return os.path.join(self.geneSetAnalysisDir(), "star", "rl"+str(readLength))
 
     def starGenomeDoneFlag(self, readLength):
-         return os.path.join(self.starGenomeDir(readLength), "done")
+        return os.path.join(self.starGenomeDir(readLength), "done")
 
     def rnaSeqSetAnalysisDir(self, rnaSeqSet):
-         return os.path.join(self.geneSetAnalysisDir(), "rnaSeqEvid", rnaSeqSet)
+        return os.path.join(self.geneSetAnalysisDir(), "rnaSeqEvid", rnaSeqSet)
         
     def rnaSeqSetAnalysisSjOut(self, rnaSeqSet, rnaSeqRunName):
-         return os.path.join(self.rnaSeqSetAnalysisDir(rnaSeqSet), rnaSeqRunName+".sj.tab")
+        return os.path.join(self.rnaSeqSetAnalysisDir(rnaSeqSet), rnaSeqRunName+".sj.tab")
+
+    def rnaSeqSetSupportDir(self):
+        return os.path.join(self.geneSetAnalysisDir(), "rnaSeqSupport")
+        
+    def rnaSeqSetSupportTsv(self):
+        return os.path.join(self.rnaSeqSetSupportDir(), "intron.evid.tsv")
+        
+
         
      

@@ -20,7 +20,7 @@ static void usage(char *msg) {
         "Collect splice junction supporting evidence\n"
         "\n"
         "  o starSpliceJunctionList is tab-separated file with the columns:\n"
-        "      splitJuncFile runname tissue\n"
+        "       runname tissue spliceJuncFile\n"
         "    with file paths relative to location of list file.\n"
         "    A file header is skipped, but not used; columns must be in this order\n"
         "Options:\n"
