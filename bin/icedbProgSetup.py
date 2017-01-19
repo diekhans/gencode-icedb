@@ -18,8 +18,10 @@ _addExtern("pipettor", "build/lib")
 _addExtern("ccds2", "output/lib/py")
 sys.path.insert(0, os.path.join(rootDir, "lib"))
 
-# executable PATH, make sure we can override kent commands
-os.environ["PATH"] = "{}:{}:{}:{}".format(os.path.join(rootDir, "bin"),
-                                          os.path.expanduser("~/kent/bin/x86_64"),
-                                          "/cluster/bin/x86_64",
-                                          os.environ["PATH"])
+# executable PATH, make sure we can override kent commands and
+# we get ~markd commands rather than installed ones.
+os.environ["PATH"] = ":".join([os.path.join(rootDir, "bin"),
+                               os.path.expanduser("~markd/opt/current/x86_64/bin"),
+                               os.path.expanduser("~/kent/bin/x86_64"),
+                               "/cluster/bin/x86_64",
+                               os.environ["PATH"]])
