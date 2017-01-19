@@ -33,7 +33,7 @@ build:: ${PROGS:%=%_linkProg}
 ifneq (${PROG},)
 # recursive call
 linkProg: ${BINDIR}/${PROG}
-${BINDIR}/${PROG}: $(${PROG}_PROG_OBJS)
+${BINDIR}/${PROG}: $(${PROG}_PROG_OBJS) ${ICEDBLIB}
 	@mkdir -p $(dir $@)
 	${CC} ${CFLAGS} -o $@ $^ ${LIBS}
 endif

@@ -35,7 +35,7 @@ def parseArgs():
 
 
 def starSpliceJunctionMapCmd(fh, genomeDir, readsFile, readsFile2, numThreads, sjOut):
-    cmd = [os.path.join(icedbProgSetup.myBinDir, "runStarSpliceJunctionMap"),
+    cmd = ["runStarSpliceJunctionMap",
            "--numThreads={}".format(numThreads),
            genomeDir, readsFile]
     if readsFile2 is not None:

@@ -1,0 +1,15 @@
+chrom	intronStart	intronEnd	novel	annotStrand	rnaSeqStrand	intronMotif	numUniqueMapReads	numMultiMapReads	transcripts	runs	tissues
+chr22	684	860	0	-	-	GT/AG	1344	0	ENST00000470922.5,ENST00000451283.5,ENST00000215882.9	small1A,small1B,small1-2	micro brain,macro brain,micro macro brain
+chr22	684	1285	1		-	CT/AC	3	0		small1A,small1B,small1-2	micro brain,macro brain,micro macro brain
+chr22	934	1017	0	-	-	GT/AG	1663	1	ENST00000470922.5,ENST00000451283.5,ENST00000215882.9	small1A,small1B,small1-2	micro brain,macro brain,micro macro brain
+chr22	934	1285	1		-	CT/AC	15	0		small1A,small1B,small1-2	micro brain,macro brain,micro macro brain
+chr22	1133	1285	0	-	-	GT/AG	2888	0	ENST00000461267.1,ENST00000470922.5,ENST00000451283.5,ENST00000215882.9	small1A,small1B,small1-2	micro brain,macro brain,micro macro brain
+chr22	1390	1559	0	-	-	GT/AG	2217	0	ENST00000461267.1,ENST00000470922.5,ENST00000451283.5,ENST00000215882.9	small1A,small1B,small1-2	micro brain,macro brain,micro macro brain
+chr22	1644	2166	0	-	-	GT/AG	718	0	ENST00000461267.1,ENST00000470922.5,ENST00000451283.5,ENST00000215882.9	small1A,small1B,small1-2	micro brain,macro brain,micro macro brain
+chr22	1644	2381	1		-	CT/AC	6	0		small1A,small1B,small1-2	micro brain,macro brain,micro macro brain
+chr22	1644	2572	1		-	CT/AC	13	0		small1A,small1B,small1-2	micro brain,macro brain,micro macro brain
+chr22	2305	2381	0	-	-	GT/AG	981	0	ENST00000461267.1,ENST00000451283.5,ENST00000215882.9	small1A,small1B,small1-2	micro brain,macro brain,micro macro brain
+chr22	2305	2572	1		-	CT/AC	4	0		small1A,small1B,small1-2	micro brain,macro brain,micro macro brain
+chr22	2481	2572	0	-	-	GT/AG	913	0	ENST00000461267.1,ENST00000470922.5,ENST00000451283.5,ENST00000215882.9	small1A,small1B,small1-2	micro brain,macro brain,micro macro brain
+chr22	2680	2826	0	-	-	GT/AG	84	0	ENST00000451283.5	small1A,small1B,small1-2	micro brain,macro brain,micro macro brain
+chr22	2680	3019	0	-	-	GT/AG	841	5	ENST00000468824.1,ENST00000470922.5,ENST00000215882.9	small1A,small1B,small1-2	micro brain,macro brain,micro macro brain

@@ -56,3 +56,9 @@ class PathConfig(object):
 
     def rnaSeqSetAnalysisSjOut(self, rnaSeqSet, rnaSeqRunName):
         return os.path.join(self.rnaSeqSetAnalysisDir(rnaSeqSet), "{}.sj.tab".format(rnaSeqRunName))
+
+    def rnaSeqSetSupportDir(self):
+        return os.path.join(self.geneSetAnalysisDir(), "rnaSeqSupport")
+        
+    def rnaSeqSetSupportTsv(self):
+        return os.path.join(self.rnaSeqSetSupportDir(), "intron.evid.tsv")

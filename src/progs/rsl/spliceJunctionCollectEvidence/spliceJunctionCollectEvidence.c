@@ -5,9 +5,9 @@
 #include "genePred.h"
 #include "filePath.h"
 #include "intronCounts.h"
+#include "rslAnalysisSet.h"
 
 static struct optionSpec optionSpecs[] = {
-    {"countsReport", OPTION_BOOLEAN},
     {"minOverhang", OPTION_INT},
     {NULL, 0}
 };
@@ -19,8 +19,10 @@ static void usage(char *msg) {
     static char* usageMsg = "spliceJunctionCollectEvidence gencodeGenePred gencodeSpliceTsv starSpliceJunctionList reportTsv\n\n"
         "Collect splice junction supporting evidence\n"
         "\n"
-        "  o starSpliceJunctionList is list of splice junction files,\n"
-        "    with file names relative to location of list file.\n"
+        "  o starSpliceJunctionList is tab-separated file with the columns:\n"
+        "       runname tissue spliceJuncFile\n"
+        "    with file paths relative to location of list file.\n"
+        "    A file header is skipped, but not used; columns must be in this order\n"
         "Options:\n"
         "   -minOverhang=n - minimum overhang for a STAR splice junction call.\n"
         "        records with less than this maximum overhang have splice\n"
@@ -32,16 +34,12 @@ static void usage(char *msg) {
 /* load intron map from files */
 static struct intronMap* loadIntronMap(char* gencodeGenePred,
                                        char* gencodeSpliceTsv,
-                                       char* starSpliceJunctionList) {
+                                       struct rslAnalysisSet *rslAnalysisSet) {
     struct intronMap* intronMap = intronMapNew();
-    struct slName *spliceJuncFiles = slNameLoadReal(starSpliceJunctionList);
     intronMapLoadTranscripts(intronMap, gencodeGenePred);
-    for (struct slName *spliceJuncFile = spliceJuncFiles; spliceJuncFile != NULL; spliceJuncFile = spliceJuncFile->next) {
-        char* juncPath = pathRelativeToFile(starSpliceJunctionList, spliceJuncFile->name);
-        intronMapLoadStarJuncs(intronMap, juncPath, gMinOverhang);
-        freeMem(juncPath);
+    for (struct rslAnalysis *rslAnalysis = rslAnalysisSet->analyses; rslAnalysis != NULL; rslAnalysis = rslAnalysis->next) {
+        intronMapLoadStarJuncs(intronMap, rslAnalysis, gMinOverhang);
     }
-    slFreeList(&spliceJuncFiles);
     intronMapLoadTranscriptSpliceSites(intronMap, gencodeSpliceTsv);
     return intronMap;
 }
@@ -83,8 +81,44 @@ static void reportEvidenceHeader(FILE* reportFh) {
     static char* header = "chrom\t" "intronStart\t" "intronEnd\t" "novel\t"
         "annotStrand\t" "rnaSeqStrand\t" "intronMotif\t"
         "numUniqueMapReads\t" "numMultiMapReads\t"
-        "transcripts\n";
+        "transcripts\t" "runs\t" "tissues\n";
     fputs(header, reportFh);
+}
+
+/* write transcripts column */
+static void reportEvidenceTranscripts(struct intronInfo* intronInfo,
+                                      FILE* reportFh) {
+    for (struct intronTransLink* intronTrans = intronInfo->intronTranses;
+         intronTrans != NULL; intronTrans = intronTrans->next) {
+        if (intronTrans != intronInfo->intronTranses) {
+            fputc(',', reportFh);
+        }
+        fputs(intronTrans->transcript->name, reportFh);
+    }
+}
+
+/* write runs column */
+static void reportEvidenceRuns(struct intronInfo* intronInfo,
+                               FILE* reportFh) {
+    for (struct rslAnalysisLink *ral = intronInfo->mappingsSum->srcAnalyses;
+         ral != NULL; ral = ral->next) {
+        if (ral != intronInfo->mappingsSum->srcAnalyses) {
+            fputc(',', reportFh);
+        }
+        fputs(ral->rslAnalysis->runname, reportFh);
+    }
+}
+
+/* write tissues column */
+static void reportEvidenceTissues(struct intronInfo* intronInfo,
+                                  FILE* reportFh) {
+    for (struct rslAnalysisLink *ral = intronInfo->mappingsSum->srcAnalyses;
+         ral != NULL; ral = ral->next) {
+        if (ral != intronInfo->mappingsSum->srcAnalyses) {
+            fputc(',', reportFh);
+        }
+        fputs(ral->rslAnalysis->tissue, reportFh);
+    }
 }
 
 /* report on an intron */
@@ -100,12 +134,14 @@ static void reportEvidenceIntron(struct intronInfo* intronInfo,
             getRnaSeqStrand(intronInfo),
             intronInfoMotifStr(intronInfo),
             numUniqueMapReads, numMultiMapReads);
-    for (struct intronTransLink* intronTrans = intronInfo->intronTranses;
-         intronTrans != NULL; intronTrans = intronTrans->next) {
-        if (intronTrans != intronInfo->intronTranses) {
-            fputc(',', reportFh);
-        }
-        fputs(intronTrans->transcript->name, reportFh);
+    reportEvidenceTranscripts(intronInfo, reportFh);
+    fputc('\t', reportFh);
+    if (intronInfo->mappingsSum != NULL) {
+        reportEvidenceRuns(intronInfo, reportFh);
+    }
+    fputc('\t', reportFh);
+    if (intronInfo->mappingsSum != NULL) {
+        reportEvidenceTissues(intronInfo, reportFh);
     }
     fputc('\n', reportFh);
 }
@@ -124,11 +160,15 @@ static void spliceJunctionCollectEvidence(char* gencodeGenePred,
                                           char* gencodeSpliceTsv,
                                           char* starSpliceJunctionList,
                                           char* reportTsv) {
-    struct intronMap* intronMap = loadIntronMap(gencodeGenePred, gencodeSpliceTsv, starSpliceJunctionList);
+    // rslAnalysisSet is reference by intronMap, so must be freed after.
+    // FIXME is set name needed
+    struct rslAnalysisSet *rslAnalysisSet = rslAnalysisSetLoad(starSpliceJunctionList, "");
+    struct intronMap* intronMap = loadIntronMap(gencodeGenePred, gencodeSpliceTsv, rslAnalysisSet);
     FILE* reportFh = mustOpen(reportTsv, "w");
     reportEvidence(intronMap, reportFh);
     carefulClose(&reportFh);
     intronMapFree(&intronMap);
+    rslAnalysisSetFree(rslAnalysisSet);
 }
 
 /* entry */

@@ -2,6 +2,7 @@
 #include "intronCounts.h"
 #include "intronMap.h"
 #include "starSpliceJunction.h"
+#include "rslAnalysisSet.h"
 #include "hash.h"
 
 /* constructor */

@@ -15,7 +15,7 @@ def parseArgs():
     desc = """Create parasol batch for running RNA-Seq
     support analysis until toil is working.  Don't rebuild
     files that already exist.
-,"""
+"""
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('--rootDir', default=".",
                         help="""data root directory""")
@@ -26,15 +26,15 @@ def parseArgs():
     parser.add_argument('assembly',
                         help="""assembly name""")
     parser.add_argument('geneSet',
-                        help="""get set name""")
+                        help="""gene set name""")
     parser.add_argument('batchFile',
-                        help="""get set name""")
+                        help="""batch file to create""")
     opts = parser.parse_args()
     return opts
 
 
 def starSpliceJunctionMapCmd(fh, genomeDir, readsFile, readsFile2, numThreads, sjOut):
-    cmd = [os.path.join(icedbProgSetup.myBinDir, "runStarSpliceJunctionMap"),
+    cmd = ["runStarSpliceJunctionMap",
            "--numThreads={}".format(numThreads),
            genomeDir, readsFile]
     if readsFile2 is not None:

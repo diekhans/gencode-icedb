@@ -7,7 +7,7 @@
 #include "dystring.h"
 #include "jksql.h"
 #include "starSpliceJunction.h"
-
+#include "rslAnalysisSet.h"
 
 
 char *starSpliceJunctionCommaSepFieldNames = "chrom,chromStart,chromEnd,strand,intronMotif,annotated,numUniqueMapReads,numMultiMapReads,maxOverhang";
@@ -97,6 +97,7 @@ struct starSpliceJunction *el;
 
 if ((el = *pEl) == NULL) return;
 freeMem(el->chrom);
+rslAnalysisLinkFreeList(&el->srcAnalyses);
 freez(pEl);
 }
 

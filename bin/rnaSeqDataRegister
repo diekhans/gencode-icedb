@@ -8,8 +8,6 @@ from gencode_icedb.rnaSeqData import RnaSeqDataLoader
 from gencode_icedb import dataOps, config
 from peewee import SqliteDatabase
 
-os.environ['PATH'] = icedbProgSetup.myBinDir + ":" + os.environ['PATH']
-
 verbose = False
 
 

@@ -5,6 +5,7 @@
 #include "sqlNum.h"
 #include "genePred.h"
 #include "linefile.h"
+#include "rslAnalysisSet.h"
 
 /* constructor */
 static struct intronTransLink* intronTransLinkNew(struct genePred* transcript,
@@ -73,21 +74,38 @@ static void intronInfoSumCheck(struct starSpliceJunction* sum,
     }
 }
 
+/* collect summarize splice info for the first time */
+static void intronInfoSumFirst(struct intronInfo* intronInfo,
+                               struct starSpliceJunction* starJunc) {
+    struct starSpliceJunction* sum;
+    AllocVar(sum);
+    intronInfo->mappingsSum = sum;
+    *sum = *starJunc;  // byte copy
+    // fix up dynamic pointers, srcAnalyses should only be one
+    sum->next = NULL;
+    sum->chrom = cloneString(starJunc->chrom);
+    sum->srcAnalyses = rslAnalysisLinkCloneList(starJunc->srcAnalyses);  // normally one
+}
+
+/* collect summarize splice info for the subsequence times */
+static void intronInfoSumRest(struct intronInfo* intronInfo,
+                              struct starSpliceJunction* starJunc) {
+    struct starSpliceJunction* sum = intronInfo->mappingsSum;
+    intronInfoSumCheck(sum, starJunc);
+    sum->numUniqueMapReads += starJunc->numUniqueMapReads;
+    sum->numMultiMapReads += starJunc->numMultiMapReads;
+    sum->maxOverhang = max(sum->maxOverhang, starJunc->maxOverhang);
+    sum->srcAnalyses = slCat(sum->srcAnalyses,
+                             rslAnalysisLinkCloneList(starJunc->srcAnalyses));
+}
 
 /* summarize splice info */
 static void intronInfoSum(struct intronInfo* intronInfo,
                           struct starSpliceJunction* starJunc) {
-    struct starSpliceJunction* sum = intronInfo->mappingsSum;
-    if (sum == NULL) {
-        AllocVar(sum);
-        intronInfo->mappingsSum = sum;
-        *sum = *starJunc;
-        sum->chrom = cloneString(starJunc->chrom);
+    if (intronInfo->mappingsSum == NULL) {
+        intronInfoSumFirst(intronInfo, starJunc);
     } else {
-        intronInfoSumCheck(sum, starJunc);
-        sum->numUniqueMapReads += starJunc->numUniqueMapReads;
-        sum->numMultiMapReads += starJunc->numMultiMapReads;
-        sum->maxOverhang = max(sum->maxOverhang, starJunc->maxOverhang);
+        intronInfoSumRest(intronInfo, starJunc);
     }
 }
 
@@ -165,11 +183,20 @@ static void intronMapAddStarJunc(struct intronMap* intronMap,
     intronInfoSum(intronInfo, starJunc);
 }
 
+/* read splice junctions from file and link if source analysis information */
+static struct starSpliceJunction* spliceJunctionsLoad(struct rslAnalysis* rslAnalysis) {
+    struct starSpliceJunction* starJuncs = starSpliceJunctionLoadAllByTab(rslAnalysis->sjPath);
+    for (struct starSpliceJunction* starJunc = starJuncs; starJunc != NULL; starJunc = starJunc->next) {
+        slAddHead(&starJunc->srcAnalyses, rslAnalysisLinkNew(rslAnalysis));
+    }
+    return starJuncs;
+}
+
 /* load a star junction file */
 void intronMapLoadStarJuncs(struct intronMap* intronMap,
-                            char* starJuncFile,
+                            struct rslAnalysis* rslAnalysis,
                             int minOverhang) {
-    struct starSpliceJunction* starJuncs = starSpliceJunctionLoadAllByTab(starJuncFile);
+    struct starSpliceJunction* starJuncs = spliceJunctionsLoad(rslAnalysis);
     struct starSpliceJunction* starJunc;
     while ((starJunc = slPopHead(&starJuncs)) != NULL) {
         if (starJunc->maxOverhang >= minOverhang) {

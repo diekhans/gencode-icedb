@@ -1,6 +1,8 @@
 #ifndef intronMap_h
 #define intronMap_h
 
+struct rslAnalysis;
+
 /* linking of an intron to a transcript */
 struct intronTransLink {
     struct intronTransLink* next;
@@ -19,13 +21,13 @@ struct intronInfo {
     char transAcceptor[3];
     struct starSpliceJunction* starMappings;  // list of start mappings
     struct starSpliceJunction* mappingsSum;   // sum of mappings
-    struct intronTransLink* intronTranses;     // links to transcripts
+    struct intronTransLink* intronTranses;    // links to transcripts
 };
 
 /* map to collect splice junctions */
 struct intronMap {
     struct hash* intronHash;         // intronInfo, indexed by chr:start-end
-    struct genePred *transcripts;  // all transcripts
+    struct genePred *transcripts;    // all transcripts
 };
 
 /* get the intron motif, either from the transcript or
@@ -48,7 +50,7 @@ void intronMapFree(struct intronMap** intronMapPtr);
 
 /* load a star junction file */
 void intronMapLoadStarJuncs(struct intronMap* intronMap,
-                            char* starJuncFile,
+                            struct rslAnalysis* rslAnalysis,
                             int minOverhang);
 
 /* load a transcript genepred file */
