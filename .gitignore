@@ -1,0 +1,6 @@
+*.pyc
+.emacs.bak
+output
+objs
+extern
+.*.depend
