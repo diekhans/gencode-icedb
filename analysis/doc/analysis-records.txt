@@ -119,5 +119,9 @@
 2017-01-18:
    # rerun connection report for Anne-Maud to include runname and tissue
    mv analysis/grch38/gencodeV24/rnaSeqSupport  analysis/grch38/gencodeV24/rnaSeqSupport.oldformat
-   nice ../gencode-icedb/bin/sjCollectEvidence --minOverhang=6 human GRCh38 gencodeV24 analysis/grch38/gencodeV24/gencode/gencode.v24.annotation.gp analysis/grch38/gencodeV24/gencode/gencode.v24.annotation.splice.tsv  >&hs.log
+   nice ../gencode-icedb/bin/sjCollectEvidence --minOverhang=6 human grch38 gencodeV24 analysis/grch38/gencodeV24/gencode/gencode.v24.annotation.gp analysis/grch38/gencodeV24/gencode/gencode.v24.annotation.splice.tsv  >&hs.log
+
+   mv analysis/grcm38/gencodeVM8/rnaSeqSupport  analysis/grcm38/gencodeVM8/rnaSeqSupport.oldformat
+   nice ../gencode-icedb/bin/sjCollectEvidence --minOverhang=6 mouse grcm38 gencodeVM8 analysis/grcm38/gencodeVM8/gencode/gencode.vM8.annotation.gp analysis/grcm38/gencodeVM8/gencode/gencode.vM*.annotation.splice.tsv  >&mm.log
+
 
