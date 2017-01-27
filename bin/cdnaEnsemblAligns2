@@ -48,6 +48,7 @@ def parseArgs():
     verbose = opts.verbose
     return opts
 
+
 ensCDnaAlnQuery = """SELECT
     daf.hit_name, daf.hit_strand, daf.hit_start, daf.hit_end,
     sr.name, sr.length, daf.seq_region_strand, daf.seq_region_start, daf.seq_region_end,
@@ -181,47 +182,62 @@ def pslFromCigar(qName, qSize, qStart, qEnd, qStrand, tName, tSize, tStart, tEnd
 def orientToStrand(orient):
     return '-' if orient < 0 else '+'
 
-
 def pslFromEnsembl(row, qSize, tName, tSize):
-    return pslFromCigar(row["hit_name"], qSize, row["hit_start"] - 1,  row["hit_end"], orientToStrand(row["hit_strand"]),
+    return pslFromCigar(row["hit_name"], qSize, row["hit_start"] - 1, row["hit_end"], orientToStrand(row["hit_strand"]),
                         tName, tSize, row["seq_region_start"] - 1, row["seq_region_end"], orientToStrand(row["seq_region_strand"]),
                         row["cigar_line"])
 
+class EnsemblCDnaConverter(object):
+    def __init__(self, cDnaSizeFinder, asmReport):
+        self.cDnaSizeFinder = cDnaSizeFinder
+        self.asmReport = asmReport
+        self.reportedUnmappedChrs = set()
+        
+    def __findChromInfo(self, row):
+        # unplaced use GenBank acccession, some case use sequenceName with CHR_
+        # prefix, which are patches embedded in full chroms, and are ignored
+        chrom = row["name"]
+        chromInfo = self.asmReport.bySequenceName.get(chrom)
+        if chromInfo is None:
+            chromInfo = self.asmReport.byGenBankAccn.get(chrom)
+        if chromInfo is None:
+            if (chrom not in self.reportedUnmappedChrs) and (not chrom.startswith("CHR_")):
+                print("Note: Ensembl chromosome `{}' not in assembly info".format(chrom), file=sys.stderr)
+                self.reportedUnmappedChrs.add(chrom)
+            return None
+        if chromInfo.ucscStyleName is None:
+            if chrom not in self.reportedUnmappedChrs:
+                print("Note: Ensembl chromosome `{}' is not mapped to an UCSC chromosome".format(row["name"]), file=sys.stderr)
+                self.reportedUnmappedChrs.add(chrom)
+            return None
+        return chromInfo
 
-def convertToPsl(row, cDnaSizeFinder, asmReport):
-    "return psl or None"
-    qSize = cDnaSizeFinder.getSize(row["hit_name"])
-    if qSize is None:
-        print("Note: UCSC and eutils esearch can't find `{}'".format(row["hit_name"]), file=sys.stderr)
-        return None
-    # unplaced use GenBank acccession
-    chromInfo = asmReport.bySequenceName.get(row["name"])
-    if chromInfo is None:
-        chromInfo = asmReport.byGenBankAccn.get(row["name"])
-    if chromInfo is None:
-        print("Note: Ensembl chromosome `{}' not in assembly info".format(row["name"]), file=sys.stderr)
-        return None
-    if chromInfo.ucscStyleName is None:
-        print("Note: Ensembl chromosome `{}' is not mapped to an UCSC chromosome".format(row["name"]), file=sys.stderr)
-        return None
-    return pslFromEnsembl(row, qSize, chromInfo.ucscStyleName, chromInfo.sequenceLength)
+    def __convertToPsl(self, row):
+        "return psl or None"
+        qSize = self.cDnaSizeFinder.getSize(row["hit_name"])
+        if qSize is None:
+            print("Note: UCSC and eutils esearch can't find `{}'".format(row["hit_name"]), file=sys.stderr)
+            return None
+        chromInfo = self.__findChromInfo(row)
+        if chromInfo is None:
+            return None
+        return pslFromEnsembl(row, qSize, chromInfo.ucscStyleName, chromInfo.sequenceLength)
 
-
-def ensemblCDnaToPsl(ensemblCDnaDb, limit, cDnaSizeFinder, asmReport, pslOutFh):
-    for row in ensemblCDnaQuery(ensemblCDnaDb, limit):
-        if verbose:
-            print(row, file=sys.stderr)
-        psl = convertToPsl(row, cDnaSizeFinder, asmReport)
-        if psl is not None:
-            psl.write(pslOutFh)
+    def ensemblCDnaToPsl(self, ensemblCDnaDb, limit, pslOutFh):
+        for row in ensemblCDnaQuery(ensemblCDnaDb, limit):
+            if verbose:
+                print(row, file=sys.stderr)
+            psl = self.__convertToPsl(row)
+            if psl is not None:
+                psl.write(pslOutFh)
 
 
 def cdnaEnsemblAligns(opts):
     "main function"
-    cDnaSizeFinder = CDnaSizeFinder(opts.hgFixedDb)
-    asmReport = AssemblyReport(opts.assemblyReport)
+    converter = EnsemblCDnaConverter(CDnaSizeFinder(opts.hgFixedDb),
+                                     AssemblyReport(opts.assemblyReport))
     with open(opts.pslOut, "w") as pslOutFh:
-        ensemblCDnaToPsl(opts.ensemblCDnaDb, opts.limit, cDnaSizeFinder, asmReport, pslOutFh),
+        converter.ensemblCDnaToPsl(opts.ensemblCDnaDb, opts.limit, pslOutFh)
 
 dbOps.mySqlSetErrorOnWarn()
 cdnaEnsemblAligns(parseArgs())
