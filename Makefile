@@ -3,8 +3,8 @@ include ${ROOT}/config.mk
 
 libs = arrayExpress.py config.py dataOps.py gencodeIntronEvid.py \
 	pipelineOps.py rnaSeqData.py rnaSeqSupportToil.py
-progs = encodeDccQuery estimateReadLength gencodeIntronEvidBed \
-	gencodeIntronSupport \
+progs = encodeDccQuery estimateReadLength rnaSeqIntronEvidBed \
+	rnaSeqIntronSupport \
 	icedbProgSetup.py mkRnaSeqSupportBatch rnaSeqDataRegister runRnaSeqSupport \
 	starGenerateGenome starSpliceJunctionMap \
 	cdnaEnsemblAligns2
