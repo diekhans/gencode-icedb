@@ -6,7 +6,8 @@ libs = arrayExpress.py config.py dataOps.py gencodeIntronEvid.py \
 progs = encodeDccQuery estimateReadLength gencodeIntronEvidBed \
 	gencodeIntronSupport \
 	icedbProgSetup.py mkRnaSeqSupportBatch rnaSeqDataRegister runRnaSeqSupport \
-	starGenerateGenome starSpliceJunctionMap
+	starGenerateGenome starSpliceJunctionMap \
+	cdnaEnsemblAligns2
 #gencodeIntronEvidStats gencodeIntronEvidPlot 
 
 all::

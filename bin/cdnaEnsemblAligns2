@@ -4,8 +4,17 @@ Obtain cDNA alignments from an Ensembl database.
 """
 from __future__ import print_function
 import icedbProgSetup  # noqa: F401
-import os
 import argparse
+from pycbio.hgdata import hgDb
+from pycbio.sys import dbOps
+from pycbio.ncbi.assembly import AssemblyReport
+import eutils.client
+import MySQLdb
+import MySQLdb.cursors
+
+ensDbHost = "ensembldb.ensembl.org"
+ensDbPort = 5306
+ensDbUser = "anonymous"
 
 
 def parseArgs():
@@ -14,66 +23,102 @@ def parseArgs():
 
     The Ensembl alignments don't include the poly-A and lack the lengths,
     The length of cDNA sequences are obtained from either the UCSC browser
-    database.  If they are not available there, are obtained from NCBI eutils
-    API and cached in cdnaInfoCacheDb.
+    database or NCBI eutils API.
 """
     parser = argparse.ArgumentParser(description=desc)
-    parser.add_argument('--rootDir', default=".",
-                        help="""data root directory""")
-    parser.add_argument('--numThreads', type=int,
-                        help="number of threads to use")
-    parser.add_argument('organism',
-                        help="""common name of organism""")
-    parser.add_argument('assembly',
-                        help="""assembly name""")
-    parser.add_argument('geneSet',
-                        help="""get set name""")
-    parser.add_argument('batchFile',
-                        help="""get set name""")
+    parser.add_argument('--hgFixedDb', default="hgFixed",
+                        help="""hgFixed database to use to get sizes""")
+    parser.add_argument('--limit', type=int,
+                        help="""limit on query resuts, used for tests """)
+    parser.add_argument('ensemblCDnaDb',
+                        help="""Ensembl cDNA database to use""")
+    parser.add_argument('assemblyReport',
+                        help="""NCBI assembly report for mapping chromosome names""")
+    parser.add_argument('pslOut',
+                        help="""PSL of alignments""")
     opts = parser.parse_args()
     return opts
 
-
-def starSpliceJunctionMapCmd(fh, genomeDir, readsFile, readsFile2, numThreads, sjOut):
-    cmd = ["runStarSpliceJunctionMap",
-           "--numThreads={}".format(numThreads),
-           genomeDir, readsFile]
-    if readsFile2 is not None:
-        cmd.append("--readsFile2={}".format(readsFile2))
-    cmd.append("{{check out exists {} }}".format(sjOut))
-    fh.write(" ".join(cmd) + "\n")
-
-
-def checkGenomeExists(pathConfig, readLength):
-    "make sure the genome done flag is there"
-    doneFlag = pathConfig.starGenomeDoneFlag(readLength)
-    if not os.path.exists(doneFlag):
-        raise Exception("STAR genome done flag not found: " + doneFlag)
+ensCDnaAlnQuery = """SELECT
+    daf.hit_name, daf.hit_strand, daf.hit_start, daf.hit_end,
+    sr.name, sr.length, daf.seq_region_strand, daf.seq_region_start, daf.seq_region_end,
+    daf.cigar_line
+  FROM
+    dna_align_feature daf, seq_region sr, external_db ed, transcript_supporting_feature tsf
+  WHERE
+    ((daf.seq_region_id = sr.seq_region_id)
+     AND (daf.external_db_id = ed.external_db_id)
+     AND (ed.db_name = "EMBL")
+     AND (daf.dna_align_feature_id = tsf.feature_id)
+     AND (tsf.feature_type = "dna_align_feature"))"""
 
 
-def maybeMakeSplitJunctionJob(fh, pathConfig, rnaSeqData, numThreads):
-    "check if output exists, if not add job to generate it"
-    checkGenomeExists(pathConfig, rnaSeqData.readlength)
-    sjOut = pathConfig.rnaSeqSetAnalysisSjOut(rnaSeqData.setname, rnaSeqData.runname)
-    if not os.path.exists(sjOut):
-        readsPath = pathConfig.rnaSeqSetDataFile(rnaSeqData.setname, rnaSeqData.readsfile)
-        readsPath2 = pathConfig.rnaSeqSetDataFile(rnaSeqData.setname, rnaSeqData.readsfile2) if rnaSeqData.readsfile2 is not None else None
-        starSpliceJunctionMapCmd(fh,
-                                 pathConfig.starGenomeDir(rnaSeqData.readlength),
-                                 readsPath, readsPath2, numThreads, sjOut)
+class CDnaSizeFinder(object):
+    "work around the fact that Ensembl doesn't have cDNA sizes"
+    def __init__(self, hgFixedDb):
+        self.hgFixedConn = hgDb.connect(hgFixedDb)
+        self.eclient = eutils.client.Client()
+
+    def __getSizeUcsc(self, accver):
+        acc, ver = accver.split('.')
+        cur = self.hgFixedConn.cursor()
+        try:
+            sql = """select size from gbSeq where (acc = %s) and (version = %s)"""
+            cur.execute(sql, (acc, int(ver)))
+            row = cur.fetchone()
+            if row == None:
+                return None
+            else:
+                return row[0]
+        finally:
+            cur.close()
+
+    def __getSizeEutils(self, accver):
+        esr = self.eclient.esearch(db='nuccore', term=accver)
+        if len(esr.ids) == 0:
+            return None
+        if len(esr.ids) > 1:
+            raise Exception("multiple results return for eutil query for `{}'".format(accver))
+        efr = self.eclient.efetch(db='nuccore', id=esr.ids[0])
+        return efr.gbseqs[0].length
+
+    def getSize(self, accver):
+        size = self.__getSizeUcsc(accver)
+        if size is None:
+            size = self.__getSizeEutils(accver)
+        if size is None:
+            raise Exception("UCSC and eutils esearch can't find `{}'".format(accver))
+        return size
+
+def ensemblCDnaQuery(ensemblCDnaDb, limit=None):
+    "generator of cDNA alignments from Ensembl"
+    conn = MySQLdb.Connect(host=ensDbHost, port=ensDbPort, user=ensDbUser,
+                           db=ensemblCDnaDb, cursorclass=MySQLdb.cursors.DictCursor)
+    sql = ensCDnaAlnQuery
+    if limit is not None:
+        sql += " LIMIT {}".format(limit)
+    try:
+        cur = conn.cursor()
+        cur.execute(sql)
+        for row in cur:
+            yield row
+    finally:
+        conn.close()
 
 
-def createJobs(opts):
-    pathConfig = config.PathConfig(opts.rootDir, opts.organism, opts.assembly, opts.geneSet)
-    database = SqliteDatabase(pathConfig.dataDatabase())
-    setDatabase(database)
-    with open(opts.batchFile, "w") as fh:
-        for rnaSeqData in RnaSeqData.select().where(RnaSeqData.organism == opts.organism):
-            maybeMakeSplitJunctionJob(fh, pathConfig, rnaSeqData, opts.numThreads)
+def convertAlign(row, cDnaSizeFinder, asmReport, pslOutFh):
+    print(row["hit_name"], cDnaSizeFinder.getSize(row["hit_name"]), file=pslOutFh)
+        
+def ensemblCDnaToPsl(ensemblCDnaDb, limit, cDnaSizeFinder, asmReport, pslOutFh):
+    for row in ensemblCDnaQuery(ensemblCDnaDb, limit):
+        convertAlign(row, cDnaSizeFinder, asmReport, pslOutFh)
 
+def cdnaEnsemblAligns(opts):
+    "main function"
+    cDnaSizeFinder = CDnaSizeFinder(opts.hgFixedDb)
+    asmReport = AssemblyReport(opts.assemblyReport)
+    with open(opts.pslOut, "w") as pslOutFh:
+        ensemblCDnaToPsl(opts.ensemblCDnaDb, opts.limit, cDnaSizeFinder, asmReport, pslOutFh),
 
-def main():
-    opts = parseArgs()
-    createJobs(opts)
-
-main()
+dbOps.mySqlSetErrorOnWarn()
+cdnaEnsemblAligns(parseArgs())

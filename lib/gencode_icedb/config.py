@@ -59,6 +59,6 @@ class PathConfig(object):
 
     def rnaSeqSetSupportDir(self):
         return os.path.join(self.geneSetAnalysisDir(), "rnaSeqSupport")
-        
+
     def rnaSeqSetSupportTsv(self):
         return os.path.join(self.rnaSeqSetSupportDir(), "intron.evid.tsv")
