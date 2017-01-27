@@ -4,6 +4,7 @@ Obtain cDNA alignments from an Ensembl database.
 """
 from __future__ import print_function
 import icedbProgSetup  # noqa: F401
+import sys
 import argparse
 from pycbio.hgdata import hgDb
 from pycbio.sys import dbOps
@@ -15,7 +16,6 @@ import MySQLdb.cursors
 ensDbHost = "ensembldb.ensembl.org"
 ensDbPort = 5306
 ensDbUser = "anonymous"
-
 
 def parseArgs():
     desc = """Fetch cDNA alignments from Ensembl and load as PSLs in evidence
@@ -87,7 +87,7 @@ class CDnaSizeFinder(object):
         if size is None:
             size = self.__getSizeEutils(accver)
         if size is None:
-            raise Exception("UCSC and eutils esearch can't find `{}'".format(accver))
+            print("Note: UCSC and eutils esearch can't find `{}'".format(accver), file=sys.stderr)
         return size
 
 def ensemblCDnaQuery(ensemblCDnaDb, limit=None):
@@ -107,7 +107,8 @@ def ensemblCDnaQuery(ensemblCDnaDb, limit=None):
 
 
 def convertAlign(row, cDnaSizeFinder, asmReport, pslOutFh):
-    print(row["hit_name"], cDnaSizeFinder.getSize(row["hit_name"]), file=pslOutFh)
+    size = cDnaSizeFinder.getSize(row["hit_name"])
+    print(row["hit_name"], size, file=pslOutFh)
         
 def ensemblCDnaToPsl(ensemblCDnaDb, limit, cDnaSizeFinder, asmReport, pslOutFh):
     for row in ensemblCDnaQuery(ensemblCDnaDb, limit):
