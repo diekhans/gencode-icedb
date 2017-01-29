@@ -1,7 +1,7 @@
 ROOT = ../../..
 
 binDir = ${ROOT}/bin
-cdnaEnsemblAligns = ${binDir}/cdnaEnsemblAligns2
+getEnsemblRnaAligns = ${binDir}/getEnsemblRnaAligns
 
 gencodeOrg = human
 ensemblVer = 87_38
@@ -35,13 +35,13 @@ ensemblTests: ensemblChrMTest ensemblIdListTest
 
 ensemblChrMTest: mkdirs
 	@rm -f output/$@.db
-	${cdnaEnsemblAligns} --ensChrom=MT ${ensemblCDnaDb} ${grcRefAssemblyReport} output/$@.db ensemblCDnaAln
+	${getEnsemblRnaAligns} --ensChrom=MT ${ensemblCDnaDb} ${grcRefAssemblyReport} output/$@.db ensemblCDnaAln
 	sqlite3 --batch output/$@.db 'select * from ensemblCDnaAln;' | cut -f 2- | sort > output/$@.sort.psl
 	diff expected/$@.sort.psl output/$@.sort.psl
 
 ensemblIdListTest: mkdirs
 	@rm -f output/$@.db
-	${cdnaEnsemblAligns} --accverList=input/ensembl-cdna.acc ${ensemblCDnaDb} ${grcRefAssemblyReport} output/$@.db ensemblCDnaAln
+	${getEnsemblRnaAligns} --accverList=input/ensembl-cdna.acc ${ensemblCDnaDb} ${grcRefAssemblyReport} output/$@.db ensemblCDnaAln
 	sqlite3 --batch output/$@.db 'select * from ensemblCDnaAln;' | cut -f 2- | sort > output/$@.sort.psl
 	diff expected/$@.sort.psl output/$@.sort.psl
 

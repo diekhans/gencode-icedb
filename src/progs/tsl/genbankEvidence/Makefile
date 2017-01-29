@@ -1,7 +1,6 @@
 ROOT = ../../../..
 
-PROGS = cdnaEnsemblAligns cdnaPslEvidence estPslEvidence
-cdnaEnsemblAligns_PROG_MODS = cdnaEnsemblAligns
+PROGS = cdnaPslEvidence estPslEvidence
 cdnaPslEvidence_PROG_MODS = cdnaPslEvidence pslEvidCollect pslEvidence
 estPslEvidence_PROG_MODS = estPslEvidence pslEvidCollect pslEvidence
 
