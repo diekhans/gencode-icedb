@@ -7,7 +7,7 @@ progs = encodeDccQuery estimateReadLength rnaSeqIntronEvidBed \
 	rnaSeqIntronSupport \
 	icedbProgSetup.py mkRnaSeqSupportBatch rnaSeqDataRegister runRnaSeqSupport \
 	starGenerateGenome starSpliceJunctionMap \
-	cdnaEnsemblAligns2
+	getEnsemblRnaAligns
 #gencodeIntronEvidStats gencodeIntronEvidPlot 
 
 all::

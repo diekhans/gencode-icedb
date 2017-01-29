@@ -23,6 +23,7 @@ ensDbUser = "anonymous"
 
 verbose = False
 
+
 def parseArgs():
     desc = """Fetch cDNA alignments from Ensembl and load as PSLs in evidence
     sqllite3 database.
@@ -105,18 +106,20 @@ class CDnaSizeFinder(object):
             size = self.__getSizeEutils(accver)
         return size
 
+
 def buildCDnaQuery(limit, accverSubset, ensChromsSubset):
     sql = ensCDnaAlnQuery
     sqlArgs = []
     if accverSubset is not None:
-        sql += " AND (daf.hit_name in ({}))".format(",".join(len(accverSubset)*["%s"]))
+        sql += " AND (daf.hit_name in ({}))".format(",".join(len(accverSubset) * ["%s"]))
         sqlArgs += accverSubset
     if ensChromsSubset is not None:
-        sql += " AND (sr.name in ({}))".format(",".join(len(ensChromsSubset)*["%s"]))
+        sql += " AND (sr.name in ({}))".format(",".join(len(ensChromsSubset) * ["%s"]))
         sqlArgs += ensChromsSubset
     if limit is not None:
         sql += " LIMIT {}".format(limit)
     return sql, sqlArgs
+
 
 def ensemblCDnaQuery(ensemblCDnaDb, limit=None, accverSubset=None, ensChromsSubset=None):
     "generator of cDNA alignments from Ensembl"
@@ -199,17 +202,19 @@ def pslFromCigar(qName, qSize, qStart, qEnd, qStrand, tName, tSize, tStart, tEnd
 def orientToStrand(orient):
     return '-' if orient < 0 else '+'
 
+
 def pslFromEnsembl(row, qSize, tName, tSize):
     return pslFromCigar(row["hit_name"], qSize, row["hit_start"] - 1, row["hit_end"], orientToStrand(row["hit_strand"]),
                         tName, tSize, row["seq_region_start"] - 1, row["seq_region_end"], orientToStrand(row["seq_region_strand"]),
                         row["cigar_line"])
+
 
 class EnsemblCDnaConverter(object):
     def __init__(self, cDnaSizeFinder, asmReport):
         self.cDnaSizeFinder = cDnaSizeFinder
         self.asmReport = asmReport
         self.reportedUnmappedChrs = set()
-        
+
     def __findChromInfo(self, row):
         # unplaced use GenBank acccession, some case use sequenceName with CHR_
         # prefix, which are patches embedded in full chroms, and are ignored
@@ -250,6 +255,7 @@ class EnsemblCDnaConverter(object):
                 psls.append(psl)
         psls.sort(key=lambda p: (p.tName, p.tStart, p.tEnd))
         return psls
+
 
 def cdnaEnsemblAligns(opts):
     "main function"
