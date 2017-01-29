@@ -10,7 +10,7 @@ from pycbio.hgdata import hgDb
 from pycbio.hgdata.psl import Psl, PslBlock, reverseCoords
 from pycbio.hgdata.cigar import ExonerateCigar, OP_ALIGNED, OP_TINSERT, OP_TDELETE
 from pycbio.hgdata.hgLite import PslDbTable
-from pycbio.sys import dbOps
+from pycbio.sys import dbOps, fileOps
 from pycbio.ncbi.assembly import AssemblyReport
 import eutils.client
 import MySQLdb
@@ -38,6 +38,10 @@ def parseArgs():
                         help="""limit on query resuts, used for tests""")
     parser.add_argument('--verbose', action="store_true", default=False,
                         help="""verbose tracing""")
+    parser.add_argument('--accverList',
+                        help="""file with list of accession/versions to process, used for testing.""")
+    parser.add_argument('--ensChrom', action="append", dest="ensChroms",
+                        help="""Restrict to this chromosome (Ensembl conventions), maybe repeated, used for testing.""")
     parser.add_argument('ensemblCDnaDb',
                         help="""Ensembl cDNA database to use""")
     parser.add_argument('assemblyReport',
@@ -101,17 +105,27 @@ class CDnaSizeFinder(object):
             size = self.__getSizeEutils(accver)
         return size
 
+def buildCDnaQuery(limit, accverSubset, ensChromsSubset):
+    sql = ensCDnaAlnQuery
+    sqlArgs = []
+    if accverSubset is not None:
+        sql += " AND (daf.hit_name in ({}))".format(",".join(len(accverSubset)*["%s"]))
+        sqlArgs += accverSubset
+    if ensChromsSubset is not None:
+        sql += " AND (sr.name in ({}))".format(",".join(len(ensChromsSubset)*["%s"]))
+        sqlArgs += ensChromsSubset
+    if limit is not None:
+        sql += " LIMIT {}".format(limit)
+    return sql, sqlArgs
 
-def ensemblCDnaQuery(ensemblCDnaDb, limit=None):
+def ensemblCDnaQuery(ensemblCDnaDb, limit=None, accverSubset=None, ensChromsSubset=None):
     "generator of cDNA alignments from Ensembl"
     conn = MySQLdb.Connect(host=ensDbHost, port=ensDbPort, user=ensDbUser,
                            db=ensemblCDnaDb, cursorclass=MySQLdb.cursors.DictCursor)
-    sql = ensCDnaAlnQuery
-    if limit is not None:
-        sql += " LIMIT {}".format(limit)
+    sql, sqlArgs = buildCDnaQuery(limit, accverSubset, ensChromsSubset)
     try:
         cur = conn.cursor()
-        cur.execute(sql)
+        cur.execute(sql, sqlArgs)
         for row in cur:
             yield row
     finally:
@@ -226,9 +240,9 @@ class EnsemblCDnaConverter(object):
             return None
         return pslFromEnsembl(row, qSize, chromInfo.ucscStyleName, chromInfo.sequenceLength)
 
-    def ensemblCDnasToPsls(self, ensemblCDnaDb, limit):
+    def ensemblCDnasToPsls(self, ensemblCDnaDb, limit, accverSubset, ensChromsSubset):
         psls = []
-        for row in ensemblCDnaQuery(ensemblCDnaDb, limit):
+        for row in ensemblCDnaQuery(ensemblCDnaDb, limit, accverSubset, ensChromsSubset):
             if verbose:
                 print(row, file=sys.stderr)
             psl = self.__convertToPsl(row)
@@ -241,7 +255,8 @@ def cdnaEnsemblAligns(opts):
     "main function"
     converter = EnsemblCDnaConverter(CDnaSizeFinder(opts.hgFixedDb),
                                      AssemblyReport(opts.assemblyReport))
-    psls = converter.ensemblCDnasToPsls(opts.ensemblCDnaDb, opts.limit)
+    accverSubset = fileOps.readFileLines(opts.accverList) if opts.accverList is not None else None
+    psls = converter.ensemblCDnasToPsls(opts.ensemblCDnaDb, opts.limit, accverSubset, opts.ensChroms)
     conn = sqlite3.connect(opts.sqliteDb)
     pslDbTable = PslDbTable(conn, opts.table, create=True)
     pslDbTable.loads(psls)
