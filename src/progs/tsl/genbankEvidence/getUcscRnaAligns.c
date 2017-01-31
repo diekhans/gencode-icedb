@@ -57,6 +57,8 @@ static char *pslInsertSqlite =
     "INSERT INTO {table} VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22);";
 static char *pslCreateSqliteBinIndex =
     "CREATE INDEX {table}_tName_bin on {table} (tName, bin);";
+static char *pslCreateSqliteQnameIndex =
+    "CREATE INDEX {table}_qname on {table} (qName);";
 
 /* load PSLs and sort by target */
 static struct psl* loadPsls(struct sqlConnection *hgConn, char *table,
@@ -214,6 +216,7 @@ static void storeSqliteDb(struct psl *psls, char *sqliteDb, char *table) {
     writePslsToDb(psls, conn, table);
     sqliteEzExec(conn, "COMMIT TRANSACTION;");
     sqliteEzExecTable(conn, table, pslCreateSqliteBinIndex);
+    sqliteEzExecTable(conn, table, pslCreateSqliteQnameIndex);
     sqliteEzClose(conn);
 }
 

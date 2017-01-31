@@ -1,6 +1,7 @@
 ROOT = ../../..
 
 binDir = ${ROOT}/bin
+getUcscRnaAligns = ${binDir}/getUcscRnaAligns
 getEnsemblRnaAligns = ${binDir}/getEnsemblRnaAligns
 
 gencodeOrg = human
@@ -10,27 +11,28 @@ grcRefAssembly = GRCh38
 grcRefAssemblyReport = input/GCF_000001405.36_GRCh38.p10_assembly_report.txt
 ucscGenomeDb = hg38
 
-test:: mrnaEvidTest estEvidTest estAllEvidTest estInclSingleEvidTest
+test:: ucscTests ensemblTests
 
-mrnaEvidTest: mkdirs
-	${cdnaPslEvidence} input/mrnaEvid.psl ${ucscGenomeSeqs} output/$@.alninter
-	diff expected/$@.alninter output/$@.alninter
+##
+# UCSC tsts
+##
+ucscTests: ucscRnaChrMTest ucscEstChrMTest
 
-estEvidTest: mkdirs
-	${estPslEvidence} input/estEvid.psl ${ucscGenomeSeqs} output/$@.alninter
-	diff expected/$@.alninter output/$@.alninter
+ucscRnaChrMTest: mkdirs
+	rm -f output/$@.db
+	${getUcscRnaAligns} -chrom=chrM ${ucscGenomeDb} rna output/$@.db ucscRnaAligns
+	sqlite3 --batch output/$@.db 'select * from ucscRnaAligns;' | cut -f 2- | sort > output/$@.sort.psl
+	diff expected/$@.sort.psl output/$@.sort.psl
 
-estAllEvidTest: mkdirs
-	${estPslEvidence} -allMultiExon input/estEvid.psl ${ucscGenomeSeqs} output/$@.alninter
-	diff expected/$@.alninter output/$@.alninter
-
-estInclSingleEvidTest: mkdirs
-	${estPslEvidence} -inclSingleExon input/estEvid.psl ${ucscGenomeSeqs} output/$@.alninter
-	diff expected/$@.alninter output/$@.alninter
+ucscEstChrMTest: mkdirs
+	rm -f output/$@.db
+	${getUcscRnaAligns} -chrom=chrM ${ucscGenomeDb} est output/$@.db ucscEstAligns
+	sqlite3 --batch output/$@.db 'select * from ucscEstAligns;' | cut -f 2- | sort > output/$@.sort.psl
+	diff expected/$@.sort.psl output/$@.sort.psl
 
 ##
 # Ensembl
-##
+##n
 ensemblTests: ensemblChrMTest ensemblIdListTest
 
 ensemblChrMTest: mkdirs
