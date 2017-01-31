@@ -48,3 +48,10 @@ endif
 
 MYSQLLIBS = $(shell mysql_config --libs)
 LIBS += ${MYSQLLIBS}
+
+ifneq (${MED_OPT},)
+   CFLAGS += -I${MED_OPT}/include
+   LIBS += -L${MED_OPT}/lib
+endif
+
+LIBS += -lsqlite3
