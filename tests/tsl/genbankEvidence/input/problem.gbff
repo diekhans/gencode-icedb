@@ -1,0 +1,550 @@
+LOCUS       DC296167                 553 bp    mRNA    linear   EST 10-JAN-2008
+DEFINITION  DC296167 SYNOV4 Homo sapiens cDNA clone SYNOV4003648 5', mRNA
+            sequence.
+ACCESSION   DC296167
+VERSION     DC296167.1  GI:146133613
+KEYWORDS    EST.
+SOURCE      Homo sapiens (human)
+  ORGANISM  Homo sapiens
+            Eukaryota; Metazoa; Chordata; Craniata; Vertebrata; Euteleostomi;
+            Mammalia; Eutheria; Euarchontoglires; Primates; Haplorrhini;
+            Catarrhini; Hominidae; Homo.
+REFERENCE   1  (bases 1 to 553)
+  AUTHORS   Wakamatsu,A., Morikawa,N., Tanaka,S., Takayanagi,H., Sugiyama,T.,
+            Ishii,S., Yamamoto,J., Kushida,N., Yoneyama,T., Otsuka,R.,
+            Isono,Y., Saito,K., Wagatsuma,M., Nagai,K., Kikuchi,H., Sugano,S.
+            and Isogai,T.
+  TITLE     NEDO human cDNA sequencing project (b)
+  JOURNAL   Unpublished (2007)
+COMMENT     Contact: Takao Isogai
+            FLJ Project (HRI Team)
+            Helix Research Institute
+            2-6-7 Kazusa-Kamatari, Kisarazu, Chiba, 292-0818, Japan
+            Email: flj-cdna@nifty.com
+            NEDO human cDNA project (New Energy and Industrial Technology
+            Developmental Organization, Japan); cDNA library construction:
+            Helix Research Institute (HRI); 5'-end  one pass sequencing: HRI,
+            Research Association for Biotechnology (RAB) and Biotechnology
+            Center, National Institute of Technology and Evaluation; 3'-end one
+            pass sequencing: RAB.
+FEATURES             Location/Qualifiers
+     source          1..553
+                     /organism="Homo sapiens"
+                     /mol_type="mRNA"
+                     /db_xref="taxon:9606"
+                     /db_xref="biosample:177248"
+                     /clone="SYNOV4003648"
+                     /tissue_type="synovial membrane tissue from rheumatioid
+                     arthritis"
+                     /clone_lib="LIBEST_018481 SYNOV4"
+                     /note="Vector: pME18SFL3"
+ORIGIN      
+        1 gttgtaaggt ccccacatcc ctaccagctt ccacaggcct tggcccccca tgtggacttt
+       61 ggtaacacct atggggtgaa tgggggatgg ggcacacaga tccaggggct gaggaagttt
+      121 agatgccatt ggggactggg ggtggggtga gttgtaaggt gggcattaca gtctataaga
+      181 tctcctcaag cctgacttct ccctacagtg gggggactgc accgttttcc cccaacatca
+      241 tccctgaggc aacgtcctga gccgcaggtg acagggactg taggcctgca tctgggggta
+      301 accccctctg tgatccgtaa gcgatacaac ttgacctcac aagacgtggg ctctggcacc
+      361 agcaataaca gccaagcctg tgcccagttc ctggagcagt atttccatga ctcagacctg
+      421 gctcagttca tgcgcctctt cggtggcaac tttgcacatc aggcatcagt agcccgtgtg
+      481 gttggacaac agggccgggg ccgggccggg attgaggcca gtctagatgt gcagtacctg
+      541 atgagtgctg gtg
+//
+
+LOCUS       AK074070                5241 bp    mRNA    linear   PRI 28-FEB-2009
+DEFINITION  Homo sapiens mRNA for FLJ00141 protein.
+ACCESSION   AK074070
+VERSION     AK074070.2  GI:224434590
+KEYWORDS    FLI_CDNA; fis (full insert sequence).
+SOURCE      Homo sapiens (human)
+  ORGANISM  Homo sapiens
+            Eukaryota; Metazoa; Chordata; Craniata; Vertebrata; Euteleostomi;
+            Mammalia; Eutheria; Euarchontoglires; Primates; Haplorrhini;
+            Catarrhini; Hominidae; Homo.
+REFERENCE   1
+  AUTHORS   Jikuya,H., Takano,J., Nomura,N., Kikuno,R., Nagase,T. and Ohara,O.
+  TITLE     The nucleotide sequence of a long cDNA clone isolated from human
+            spleen
+  JOURNAL   Published Only in Database (2002)
+REFERENCE   2  (bases 1 to 5241)
+  AUTHORS   Jikuya,H., Takano,J., Nomura,N., Kikuno,R., Nagase,T. and Ohara,O.
+  TITLE     Direct Submission
+  JOURNAL   Submitted (21-JAN-2002) Contact:Takahiro Nagase Kazusa DNA Research
+            Institute, Department of Human Gene Research; 1532-3, Yana,
+            Kisarazu, Chiba 292-0812, Japan URL :http://www.kazusa.or.jp/NEDO
+COMMENT     On Feb 27, 2009 this sequence version replaced gi:18676487.
+            NEDO human cDNA sequencing project supported by Ministry of
+            Economy, Trade and Industry of Japan; cDNA full insert and 5'- &
+            3'-end one pass sequencing: Research Association for Biotechnology;
+            cDNA library construction and clone selection: Kazusa DNA Research
+            Institute.
+FEATURES             Location/Qualifiers
+     source          1..5241
+                     /organism="Homo sapiens"
+                     /mol_type="mRNA"
+                     /db_xref="taxon:9606"
+                     /clone="FLJ00141"
+                     /tissue_type="spleen"
+                     /dev_stage="adult"
+                     /note="vector:pBluescriptII SK plus"
+     gene            <1..5241
+                     /gene="FLJ00141"
+     CDS             <59..4039
+                     /gene="FLJ00141"
+                     /inference="non-experimental evidence, no additional
+                     details recorded"
+                     /note="Start codon is not identified."
+                     /codon_start=1
+                     /product="FLJ00141 protein"
+                     /protein_id="BAB84896.2"
+                     /db_xref="GI:224434591"
+                     /translation="ELWSLRTMDALNRNQIGPGCQTQTMVQKGPLDLIETGKGLKVQT
+                     DKPHLVSLGSGRLSTAITLLPLEEGRTVIGSAARDISLQGPGLAPEHCYIENLRGTLT
+                     LYPCGNACTIDGLPVRQPTRLTQGCMLCLGQSTFLRFNHPAEAKWMKSMIPAGGRAPG
+                     PPYSPVPAESESLVNGNHTPQTATRGPSACASHSSLVSSIEKDLQEIMDSLVLEEPGA
+                     AGKKPAATSPLSPMANGGRYLLSPPTSPGAMSVGSSYENTSPAFSPLSSPASSGSCAS
+                     HSPSGQEPGPSVPPLVPARSSSYHLALQPPQSRPSGARSESPRLSRKGGHERPPSPGL
+                     RGLLTDSPAATVLAEARRATESPRLGGQLPVVAISLSEYPASGALSQPTSIPGSPKFQ
+                     PPVPAPRNKIGTLQDRPPSPFREPPGSERVLTTSPSRQLVGRTFSDGLATRTLQPPES
+                     PRLGRRGLDSMRELPPLSPSLSRRALSPLPTRTTPDPKLNREVAESPRPRRWAAHGAS
+                     PEDFSLTLGARGRRTRSPSPTLGESLAPHKGSFSGRLSPAYSLGSLTGASPCQSPCVQ
+                     RKLSSGDLRVPVTRERKNSITEISDNEDDLLEYHRRQRQERLREQEMERLERQRLETI
+                     LNLCAEYSRADGGPEAGELPSIGEATAALALAGRRPSRGLAGASGRSSEEPGVATQRL
+                     WESMERSDEENLKEECSSTESTQQEHEDAPSTKLQGEVLALEEERAQVLGHVEQLKVR
+                     VKELEQQLQESAREAEMERALLQGEREAERALLQKEQKAVDQLQEKLVALETGIQKER
+                     DKEAEALETETKLFEDLEFQQLERESRVEEERELAGQGLLRSKAELLRSIAKRKERLA
+                     ILDSQAGQIRAQAVQESERLARDKNASLQLLQKEKEKLTVLERRYHSLTGGRPFPKTT
+                     STLKEVYRSKMDGEATSPLPRTRSGPLPSSSGSSSSSSQLSVATLGRSPSPKSALLTQ
+                     NGTGSLPRNLAATLQDIETKRQLALQQKGQQVIEEQRRRLAELKQKAAAEAQCQWDAL
+                     HGAAPFPAGPSGFPPLMHHSILHHLPAGRERGEEGEHAYDTLSLESSDSMETSISTGG
+                     NSACSPDNMSSASGLDMGKIEEMEKMLKEAHAEKNRLMESREREMELRRQALEEERRR
+                     REQVERRLQSESARRQQLVEKEVKMREKQFSQARPLTRYLPIRKEDFDLKTHIESSGH
+                     GVDTCLHVVLSSKVCRGYLVKMGGKIKSWKKRWFVFDRLKRTLSYYVDKHETKLKGVI
+                     YFQAIEEVYYDHLRSAAKSPNPALTFCVKTHDRLYYMVAPSAEAMRIWMDVIVTGAEG
+                     YTQFMN"
+ORIGIN      
+        1 gaccgagccg agccaggcta agggaccagt gtctccctgc cccccccccc acctctagga
+       61 gctctggagc cttaggacca tggacgctct caataggaac caaataggcc ctggatgcca
+      121 gacccagacc atggtgcaga aaggaccctt ggacctgatc gagacaggca aagggctgaa
+      181 agtgcaaacg gacaaacccc acctggtgag cctgggcagt gggcgactca gcacagccat
+      241 caccctcctg ccgctggagg aagggaggac ggtgattggc tctgcagcca gagacatctc
+      301 actacagggc ccaggcctgg ctccagagca ctgctacatc gagaacctgc ggggcaccct
+      361 caccctctac ccctgtggca atgcctgcac tattgatggg ctccctgtcc ggcagcctac
+      421 ccggctcact cagggctgca tgttgtgcct gggtcagtcc accttccttc gctttaacca
+      481 cccggctgaa gccaagtgga tgaaaagcat gattccagca gggggccgag cccctgggcc
+      541 cccctacagc cctgttcctg cagaatcaga aagtctggta aatgggaacc acaccccaca
+      601 gactgcaaca cggggaccct ctgcctgtgc cagccacagt tccctggtga gctctattga
+      661 gaaggacctg caagagatca tggactcact ggtgctagag gagcctggag ctgctggcaa
+      721 gaagcctgcc gcaacctctc cactgtcacc gatggctaat ggtgggcgct acctgctgtc
+      781 tcccccaacc agccccggcg ccatgtctgt gggctccagc tatgagaaca cctctccagc
+      841 cttctctcca ctctcttcac cagccagcag tggaagctgt gccagtcact cacccagtgg
+      901 gcaagagcca ggaccttctg tgcccccgct ggtacctgcc cgttcctcca gctaccatct
+      961 ggccctacag cccccacagt cccgcccaag tggtgctcgc tccgagagtc ctcggctgag
+     1021 caggaaaggg ggccatgaga ggcctcccag ccctggcctc cggggtctgc tgacagacag
+     1081 ccctgcagct actgtcttgg cggaggcccg gagagccact gagagccccc ggctgggtgg
+     1141 gcagctgcct gtggtggcca tcagcctgag tgaataccca gcttctggtg ctctcagtca
+     1201 acccaccagc attcctggca gccccaagtt tcagcctcca gtccctgctc cccgaaacaa
+     1261 gattggcaca ctccaggacc gccctcccag ccctttccgt gagcctccag gcagtgagcg
+     1321 ggtgctaaca accagcccct cacgccaact ggtgggccga acattttcag atgggttagc
+     1381 cacccgtacc ctgcagcctc ctgagagtcc ccgcctgggc cggcggggcc tggacagtat
+     1441 gcgagaacta ccccccttaa gtccatctct gtcccggcga gctctctccc cgctgcccac
+     1501 ccggaccacc ccagatccca agctaaacag ggaagtggca gagagtcctc ggccccggcg
+     1561 ctgggcagcc catggggctt caccagagga cttctccctg acgctggggg cacggggccg
+     1621 taggacacgg agcccctcac ccacactggg tgagtctctg gcaccccaca agggcagctt
+     1681 cagtggcagg ctgagcccag cctacagtct gggctctctt actggggctt caccctgcca
+     1741 gagtccctgt gtccagagga agctctccag cggggacttg cgggtgcctg tcacaaggga
+     1801 gcggaaaaat agcatcacag agatcagtga caatgaggac gacctcctgg agtaccaccg
+     1861 gcgacagcgc caagagcggc tccgggagca ggagatggag aggctggaac gccagcgcct
+     1921 ggagaccatc ctgaacctgt gtgccgaata cagccgggct gatgggggac ctgaggctgg
+     1981 ggagcttccc agcattgggg aggccaccgc agcattggca ctggcaggcc ggaggccctc
+     2041 acgaggcctt gcaggggcct ctgggcggag cagcgaggag cctggcgttg ccacccaacg
+     2101 cctatgggag agtatggagc gctcagatga ggaaaatctc aaggaggagt gcagcagcac
+     2161 tgagagcacc cagcaggagc acgaagatgc acctagcacc aagctccagg gagaggtgct
+     2221 agccctggaa gaagagcggg ctcaggtgct ggggcacgtg gagcagctca aggtccgtgt
+     2281 gaaggagcta gagcagcagc tgcaggagtc agcccgagag gccgaaatgg agcgggcact
+     2341 gctgcaggga gagagggagg cagagcgggc actgctgcag aaggagcaga aggcagtgga
+     2401 tcagctgcag gagaagctgg tggccttgga gacaggcatc cagaaggaga gggacaagga
+     2461 ggcagaggcc ctggagactg agacaaagct ctttgaggac ttggagttcc agcagttgga
+     2521 gcgggagagc cgcgtggagg aggagcgcga gctggccggc caggggctgc tccggagcaa
+     2581 ggctgagctg ctccgcagca tcgccaagag gaaggagcgc ctggccatcc tggacagtca
+     2641 ggctgggcag atccgggctc aggccgtgca ggagtcagaa cgcctggccc gggacaagaa
+     2701 tgcctcctta cagctgctgc aaaaggagaa ggagaagctg actgtgctgg aaaggagata
+     2761 ccactcactc acagggggca ggcctttccc gaagaccaca tcgaccctca aagaggttta
+     2821 ccgctccaag atggatggcg aggccaccag cccccttccc cggacccgca gcggccccct
+     2881 cccctcctcc tctggctctt cctcctcctc ctcccagctc agcgtggcta ccctggggcg
+     2941 tagcccctcc ccaaagagcg ctctactcac ccagaatggc acgggcagcc ttcctcgcaa
+     3001 cctggcagcc acactgcagg acatcgagac caagcgccaa ctagctctgc agcagaaggg
+     3061 acaacaagtg attgaagagc agcggcggcg actggctgag ctgaagcaga aagcggcagc
+     3121 tgaggcacag tgccagtggg atgcccttca cggggcagca cccttcccag cgggcccctc
+     3181 gggcttcccc cctctcatgc accactctat cctacaccac ctgcctgcgg ggcgggagcg
+     3241 tggggaggag ggtgagcacg cctatgatac gctgagtctg gagagctctg acagcatgga
+     3301 gaccagcatc tccaccgggg gcaactcggc ctgctcccct gacaacatgt ccagcgcgag
+     3361 tggtctggac atggggaaga tcgaggagat ggagaagatg ctgaaagagg ctcatgcaga
+     3421 gaagaaccgg ctcatggagt cgagggagcg ggagatggag ctgcggcggc aggccctgga
+     3481 ggaggagcgg cggaggcgtg agcaggtaga acggaggctg cagagtgaga gtgcccggag
+     3541 gcagcagctg gtcgagaagg aggtcaagat gcgggagaaa caattttccc aggcacgacc
+     3601 cctgacccgc tacctgccaa tccggaagga ggactttgac ctgaagacac atattgagtc
+     3661 atcgggccat ggtgttgata cctgcctgca cgtggtgctc agcagcaagg tctgccgtgg
+     3721 ctacttggtc aagatgggcg gcaagattaa atcatggaag aagcgctggt ttgtctttga
+     3781 ccggctcaag cgcacccttt cctattatgt ggacaagcat gagacgaagc tgaagggagt
+     3841 catctatttc caggccattg aggaagtgta ctacgaccac ctgcgcagtg cagccaagag
+     3901 cccgaaccca gccctcacct tctgcgtaaa gacccatgac cggctgtact acatggtggc
+     3961 cccatctgca gaggccatgc gtatctggat ggatgtcatt gtcacagggg ctgagggcta
+     4021 cactcagttc atgaactaac tgccgtgggc ctcctggcag agcacaactg gggcttttgt
+     4081 ataagaagac tttaatattc tgtaaggagc ttggtcctgt gagtttctgg gctctggcct
+     4141 cctgaagaac cagccagaag aagaaaagta gaggtggctt tgctgcctcc tgggagccca
+     4201 gaacttgcag taacccttta gggtcctgcc ccaggcccag ccagggctga ggagctgtca
+     4261 cagagagggc ctcagctctg acctgacacc tgctctcccc agcctgtttt ctcttttcta
+     4321 aaagacaaat tatggtacca taagctgcca aagatcccct cctgcctcag acccctttgc
+     4381 caggggcttt gggggctgag cagagccaca tccagagtgg ggtaatagct caggcggccc
+     4441 gcttcccatt tctcaaaccc cgctctgccc cattgttctc ctttccctta tactttttat
+     4501 taccttgctc aagggccaga gatctcaagt gtcaaccttg aggtcccagc tccatcccct
+     4561 agttgcagac tcatcaccat ggttaccata gtgactgctt cattgccatg gttacatact
+     4621 aattgctgca gctctgtggc ccagcccact gcttcagctg tgggccatct gagggtacgt
+     4681 gccatcatct ctccagccca ggcccctggg catctcatgc tggggggaag ggactgaata
+     4741 cctttttcct tccccctgcc tgtgtcttca gccctgatgc acaggctgcc agccccccag
+     4801 tccagccctc tcccttccac tggtgccttg cttagagcca gaagggatga agccggggga
+     4861 tctatggaac agaggaggag cgatgcagtt gggagaggaa gctagaaggg ttatggttgg
+     4921 agttctgtac agtgttgagt ttccgacagg gaaagaggat tcctccaatg cgcctagaga
+     4981 gaaagcctga gcaggagatg atgcagcaga ggggaagggc cctgtggtgc cgccgccctt
+     5041 ccttcagcct ccgaagggtg atggaaatgg agagtggagg accaggcctc cagctgtctg
+     5101 gcctcgccct tcacgcctta acactaagcc cacctcccct gctctccttc ccagcattga
+     5161 gcccttggtt gcctgggccc aggctggggg ttttcagtat ttgtaagcat ttcagcagaa
+     5221 caataaagcc tttggactac g
+//
+
+LOCUS       BC001034                 645 bp    mRNA    linear   PRI 04-AUG-2008
+DEFINITION  Homo sapiens superoxide dismutase 1, soluble, mRNA (cDNA clone
+            MGC:2325 IMAGE:3140145), complete cds.
+ACCESSION   BC001034
+VERSION     BC001034.1  GI:12654416
+KEYWORDS    MGC.
+SOURCE      Homo sapiens (human)
+  ORGANISM  Homo sapiens
+            Eukaryota; Metazoa; Chordata; Craniata; Vertebrata; Euteleostomi;
+            Mammalia; Eutheria; Euarchontoglires; Primates; Haplorrhini;
+            Catarrhini; Hominidae; Homo.
+REFERENCE   1  (bases 1 to 645)
+  AUTHORS   Strausberg,R.L., Feingold,E.A., Grouse,L.H., Derge,J.G.,
+            Klausner,R.D., Collins,F.S., Wagner,L., Shenmen,C.M., Schuler,G.D.,
+            Altschul,S.F., Zeeberg,B., Buetow,K.H., Schaefer,C.F., Bhat,N.K.,
+            Hopkins,R.F., Jordan,H., Moore,T., Max,S.I., Wang,J., Hsieh,F.,
+            Diatchenko,L., Marusina,K., Farmer,A.A., Rubin,G.M., Hong,L.,
+            Stapleton,M., Soares,M.B., Bonaldo,M.F., Casavant,T.L.,
+            Scheetz,T.E., Brownstein,M.J., Usdin,T.B., Toshiyuki,S.,
+            Carninci,P., Prange,C., Raha,S.S., Loquellano,N.A., Peters,G.J.,
+            Abramson,R.D., Mullahy,S.J., Bosak,S.A., McEwan,P.J.,
+            McKernan,K.J., Malek,J.A., Gunaratne,P.H., Richards,S.,
+            Worley,K.C., Hale,S., Garcia,A.M., Gay,L.J., Hulyk,S.W.,
+            Villalon,D.K., Muzny,D.M., Sodergren,E.J., Lu,X., Gibbs,R.A.,
+            Fahey,J., Helton,E., Ketteman,M., Madan,A., Rodrigues,S.,
+            Sanchez,A., Whiting,M., Madan,A., Young,A.C., Shevchenko,Y.,
+            Bouffard,G.G., Blakesley,R.W., Touchman,J.W., Green,E.D.,
+            Dickson,M.C., Rodriguez,A.C., Grimwood,J., Schmutz,J., Myers,R.M.,
+            Butterfield,Y.S., Krzywinski,M.I., Skalska,U., Smailus,D.E.,
+            Schnerch,A., Schein,J.E., Jones,S.J. and Marra,M.A.
+  CONSRTM   Mammalian Gene Collection Program Team
+  TITLE     Generation and initial analysis of more than 15,000 full-length
+            human and mouse cDNA sequences
+  JOURNAL   Proc. Natl. Acad. Sci. U.S.A. 99 (26), 16899-16903 (2002)
+   PUBMED   12477932
+REFERENCE   2  (bases 1 to 645)
+  CONSRTM   NIH MGC Project
+  TITLE     Direct Submission
+  JOURNAL   Submitted (17-NOV-2000) National Institutes of Health, Mammalian
+            Gene Collection (MGC), Bethesda, MD 20892-2590, USA
+  REMARK    NIH-MGC Project URL: http://mgc.nci.nih.gov
+COMMENT     Contact: MGC help desk
+            Email: cgapbs-r@mail.nih.gov
+            Tissue Procurement: ATCC
+            cDNA Library Preparation: Rubin Laboratory
+            cDNA Library Arrayed by: The I.M.A.G.E. Consortium (LLNL)
+            DNA Sequencing by: National Institutes of Health Intramural
+            Sequencing Center (NISC),
+            Gaithersburg, Maryland;
+            Web site: http://www.nisc.nih.gov/
+            Contact: nisc_mgc@nhgri.nih.gov
+            Akhter,N., Ayele,K., Beckstrom-Sternberg,S.M., Benjamin,B.,
+            Blakesley,R.W., Bouffard,G.G., Breen,K., Brinkley,C., Brooks,S.,
+            Dietrich,N.L., Granite,S., Guan,X., Gupta,J., Haghighi,P.,
+            Hansen,N., Ho,S.-L., Karlins,E., Kwong,P., Laric,P., Legaspi,R.,
+            Maduro,Q.L., Masiello,C., Maskeri,B., Mastrian,S.D.,McCloskey,J.C.,
+            McDowell,J., Pearson,R., Stantripop,S., Thomas,P.J., Touchman,J.W.,
+            Tsurgeon,C., Vogt,J.L., Walker,M.A., Wetherby,K.D., Wiggins,L.,
+            Young,A., Zhang,L.-H. and Green,E.D.
+            
+            Clone distribution: MGC clone distribution information can be found
+            through the I.M.A.G.E. Consortium/LLNL at: http://image.llnl.gov
+            Series: IRAL Plate: 4 Row: a Column: 16
+            This clone was selected for full length sequencing because it
+            passed the following selection criteria: matched mRNA gi: 48762945.
+            
+            Differences found between this sequence and the human reference
+            genome (build 36) are described in misc_difference features below.
+FEATURES             Location/Qualifiers
+     source          1..645
+                     /organism="Homo sapiens"
+                     /mol_type="mRNA"
+                     /db_xref="taxon:9606"
+                     /clone="MGC:2325 IMAGE:3140145"
+                     /tissue_type="Placenta, choriocarcinoma"
+                     /clone_lib="NIH_MGC_21"
+                     /lab_host="DH10B-R"
+                     /note="Vector: pOTB7"
+     gene            1..645
+                     /gene="SOD1"
+                     /gene_synonym="homodimer"
+                     /gene_synonym="IPOA"
+                     /gene_synonym="SOD"
+                     /db_xref="GeneID:6647"
+                     /db_xref="HGNC:11179"
+                     /db_xref="MIM:147450"
+     CDS             68..532
+                     /gene="SOD1"
+                     /gene_synonym="homodimer"
+                     /gene_synonym="IPOA"
+                     /gene_synonym="SOD"
+                     /codon_start=1
+                     /product="superoxide dismutase 1, soluble"
+                     /protein_id="AAH01034.1"
+                     /db_xref="GI:12654417"
+                     /db_xref="GeneID:6647"
+                     /db_xref="HGNC:11179"
+                     /db_xref="MIM:147450"
+                     /translation="MATKAVCVLKGDGPVQGIINFEQKESNGPVKVWGSIKGLTEGLH
+                     GFHVHEFGDNTAGCTSAGPHFNPLSRKHGGPKDEERHVGDLGNVTADKDGVADVSIED
+                     SVISLSGDHCIIGRTLVVHEKADDLGKGGNEESTKTGNAGSRLACGVIGIAQ"
+     misc_difference 632..645
+                     /gene="SOD1"
+                     /gene_synonym="homodimer"
+                     /gene_synonym="IPOA"
+                     /gene_synonym="SOD"
+                     /note="polyA tail: 14 bases do not align to the human
+                     genome."
+ORIGIN      
+        1 ctcctgcagc gtctggggtt tccgttgcag tcctcggaac caggacctcg gcgtggccta
+       61 gcgagttatg gcgacgaagg ccgtgtgcgt gctgaagggc gacggcccag tgcagggcat
+      121 catcaatttc gagcagaagg aaagtaatgg accagtgaag gtgtggggaa gcattaaagg
+      181 actgactgaa ggcctgcatg gattccatgt tcatgagttt ggagataata cagcaggctg
+      241 taccagtgca ggtcctcact ttaatcctct atccagaaaa cacggtgggc caaaggatga
+      301 agagaggcat gttggagact tgggcaatgt gactgctgac aaagatggtg tggccgatgt
+      361 gtctattgaa gattctgtga tctcactctc aggagaccat tgcatcattg gccgcacact
+      421 ggtggtccat gaaaaagcag atgacttggg caaaggtgga aatgaagaaa gtacaaagac
+      481 aggaaacgct ggaagtcgtt tggcttgtgg tgtaattggg atcgcccaat aaacattccc
+      541 ttggatgtag tctgaggccc cttaactcat ctgttatcct gctagctgta gaaatgtatc
+      601 ctgataaaca ttaaacactg taatcttaaa aaaaaaaaaa aaaaa
+//
+
+LOCUS       AK129029                2674 bp    mRNA    linear   ROD 09-JAN-2008
+DEFINITION  Mus musculus cDNA fis, clone TRACH3037696.
+ACCESSION   AK129029
+VERSION     AK129029.1  GI:34536701
+KEYWORDS    FLI_CDNA; oligo capping; fis (full insert sequence).
+SOURCE      Mus musculus (house mouse)
+  ORGANISM  Mus musculus
+            Eukaryota; Metazoa; Chordata; Craniata; Vertebrata; Euteleostomi;
+            Mammalia; Eutheria; Euarchontoglires; Glires; Rodentia;
+            Sciurognathi; Muroidea; Muridae; Murinae; Mus; Mus.
+REFERENCE   1
+  AUTHORS   Suzuki,O., Sasaki,N., Aotsuka,S., Shoji,T., Ichihara,T.,
+            Shiohata,N., Matsumoto,K., Hirano,M., Sano,S., Nomura,R.,
+            Yoshikawa,Y., Matsumura,Y., Moriya,S., Chiba,E., Momiyama,H.,
+            Onogawa,S., Kaeriyama,S., Satoh,N., Matsunawa,H., Takahashi,E.,
+            Kataoka,R., Kuga,N., Kuroda,A., Satoh,I., Kamata,K., Takami,S.,
+            Terashima,Y., Watanabe,M., Sugiyama,T., Irie,R., Otsuki,T.,
+            Sato,H., Ota,T., Wakamatsu,A., Ishii,S., Yamamoto,J., Isono,Y.,
+            Kawai-Hio,Y., Saito,K., Nishikawa,T., Kimura,K., Yamashita,H.,
+            Matsuo,K., Nakamura,Y., Sekine,M., Kikuchi,H., Kanda,K.,
+            Wagatsuma,M., Murakawa,K., Kanehori,K., Takahashi-Fujii,A.,
+            Oshima,A., Sugiyama,A., Kawakami,B., Suzuki,Y., Sugano,S.,
+            Nagahari,K., Masuho,Y., Nagai,K. and Isogai,T.
+  TITLE     NEDO cDNA sequencing project
+  JOURNAL   Unpublished
+REFERENCE   2  (bases 1 to 2674)
+  AUTHORS   Isogai,T. and Yamamoto,J.
+  TITLE     Direct Submission
+  JOURNAL   Submitted (15-JUL-2003) Contact:Takao Isogai Helix Research
+            Institute, Genomics Laboratory; 1532-3 Yana, Kisarazu, Chiba
+            292-0812, Japan E-mail :flj-cdna@nifty.com
+COMMENT     NEDO cDNA sequencing project supported by Ministry of Economy,
+            Trade and Industry of Japan; cDNA full insert sequencing: Research
+            Association for Biotechnology (RAB); cDNA library construction:
+            Helix Research Institute (HRI) (supported by Japan Key Technology
+            Center etc.); 5'- & 3'-end one pass sequencing: RAB, HRI, and
+            Biotechnology Center, National Institute of Technology and
+            Evaluation; clone selection for full insert sequencing: HRI and
+            RAB; annotation: HRI and RAB.
+FEATURES             Location/Qualifiers
+     source          1..2674
+                     /organism="Mus musculus"
+                     /mol_type="mRNA"
+                     /db_xref="taxon:10090"
+                     /clone="TRACH3037696"
+                     /note="cloning vector: pME18SFL3"
+     CDS             904..1554
+                     /note="unnamed protein product"
+                     /codon_start=1
+                     /protein_id="BAC87671.1"
+                     /db_xref="GI:34536702"
+                     /translation="MNVTNVVKALHCPDISENIEEHILERNPMNVISVVKPLHRAVVF
+                     KIMKEFILERNPMNVINVVKPLHIPDIFRNMKEHILERNPMNVINVVKPLHITVISRN
+                     MKEFILERNPMNVINVVKPLHITVTSKTMKEHTLERNPMNVINVVKLFQSRLFSNYIK
+                     EHILERNRMYVINVVKPLHITVILKFMEELILERNPMNVISVAEPLHITVVFKYMR"
+ORIGIN      
+        1 aagtggtgta ggagctggcg gttctgtgcc tctgctgaga gccgagaaaa gtactcgcgc
+       61 aagcttggag gccaagctat gtttttgagg acaagttttc tccgtgttgc tttggctgtc
+      121 ctgacattag ctcttgagat tcagttcatc ttgatctgtc tgattcctcc tctcatgttc
+      181 tgggattaaa ggatgcagtg acctatgatg atgtgcacat aaacttcact caggaagaat
+      241 gggtcttgtt ggatctttct caaaagaggc tctacaaaga tgttatcctg gagacctaca
+      301 ggaacctcac tgctatagga tacaaatggg aagaatacaa tattgaagaa tattgtcaaa
+      361 attctagaat acatggaagg caagaaagaa gtcatcctga agataaactc tatgaatata
+      421 gacaatgtgg taaagttttt gcatgtcaca gtcatcttca aagtcatgaa agaattcgtg
+      481 ctggagagga atcctgtgaa tgtaatcaat gtaataatca cagtactctt caaaatcctg
+      541 aaaaaaatca tactgaagag agactatatg aatgtaatga atgtggtaaa gctttttcac
+      601 aacagagtca tctccaaata catacaagga cacatcatgg acagaaaatc tatgaatgta
+      661 agcaatgttg taaagccttt gcctgttgca gcagtcttca aaaacatgaa aaagatcata
+      721 ctagagatac aacctatgag tctaagcaaa gtggtataga cttttcacat cagagttatc
+      781 tctataagca taaaagaaca tatatcgtac agaaacacta caaatgcact caatgtgata
+      841 aagtgttttc aaaacgtagt aatttccaaa gacataaaag actacataca ggagagaaac
+      901 cctatgaatg taaccaatgt ggtaaaggct ttgcactgcc cagatatctc agaaaacata
+      961 gaagaacaca tattggagag aaaccctatg aatgtaatca gtgtggtaaa gcctttacac
+     1021 agagcagtgg tcttcaaaat catgaaagaa ttcatactgg agagaaaccc tatgaatgta
+     1081 atcaatgtgg taaagccttt gcatatccca gatatcttca gaaacatgaa agaacacata
+     1141 ctggagagaa accctatgaa tgtaatcaat gtggtaaagc ctttgcacat cacagttatc
+     1201 tccagaaaca tgaaagaatt catactggag agaaacccta tgaatgtaat caatgtggta
+     1261 aagcctttgc acatcacagt aacttccaaa accatgaaag aacacacact ggagagaaac
+     1321 cctatgaatg taatcaatgt ggtaaagctt tttcaaagca gactcttctc caactacata
+     1381 aaagaacaca tactggagag aaaccgtatg tatgtaatca atgtggtaaa gcctttgcat
+     1441 atcacagtca tcttaaagtt catggaagag ctcatactgg agagaaaccc tatgaatgta
+     1501 atcagtgtgg cagagccttt gcatataaca gtagtcttca aatacatgag atagtccata
+     1561 ctgcagagaa accctatgaa tgtaagcaat gtggtagagc ctttgcacat cagagttatc
+     1621 tccagaaaca tgaaagaaca catactggag agaaacccta taaatgtaat cagtgtggta
+     1681 aagcctttgc acaacagatt catcttcaag ttcatggaag aatccatact ggagagaaac
+     1741 cctatgaatg taatcagtgt ggtagagcct ttgcatatag cagtagtctt aaaaaacatg
+     1801 aaatagtcca tactggagag aaaccctatg aatgtaatca gtgtggtaaa gcctttgcac
+     1861 atctcagata tcttcgaaaa catgaaagaa cacatactgg agagaaaccc tatgaatcta
+     1921 atcagtgtgg taaaaccttt gcacataaca ataatcttca acatcatgaa agaattcata
+     1981 ctgaagagaa accctatgaa catagtcaat gtagaaaacc cttttcatat cacagtagtc
+     2041 ttcagattca tacttcagag aaacactaat gtagttaacg tggtaaagcc tttgcatgtc
+     2101 atagtagtct ttacattctt gaaagaattc atattggaga gaaacactat gatataatca
+     2161 atgtggtaaa gcattgcata ttacaattat ttgcaaatat acaaaagaac acactgaagg
+     2221 aaaatgatac aaatgtaatc aatgtagtat aaagcctttc aacatcacag ttatcttcaa
+     2281 atacaaagga acacatactg gagagtaacg ttatgaatgt actcagcctg ttaaagcctt
+     2341 tgcatatcac agttgtcttt gaggacatga aagtactcag gaagtgaatc tatgaatata
+     2401 aagtgttttt ttccccatag gtttcctgtt tattcagggt taaatgttac agagttcata
+     2461 cactgtcgga accatgcctg agaacccaaa gaaagaaatg gtgcgatgga cagcctcatc
+     2521 cacccagtgt attaaaactt gattcatatg cattttgata atttcacaat cttgaaaact
+     2581 ataacaagac ttgggattta catctgctgc aggtcttcag cattcagtac agtatgctat
+     2641 taaaataacc tcatcatgtc tccgttcact tcct
+//
+
+LOCUS       CU453739                 509 bp    mRNA    linear   EST 02-MAR-2011
+DEFINITION  CU453739 Homo sapiens ORESTES from keratinocytes Homo sapiens cDNA,
+            mRNA sequence.
+ACCESSION   CU453739
+VERSION     CU453739.1
+DBLINK      BioSample: LIBEST_021612
+KEYWORDS    EST.
+SOURCE      Homo sapiens (human)
+  ORGANISM  Homo sapiens
+            Eukaryota; Metazoa; Chordata; Craniata; Vertebrata; Euteleostomi;
+            Mammalia; Eutheria; Euarchontoglires; Primates; Haplorrhini;
+            Catarrhini; Hominidae; Homo.
+REFERENCE   1  (bases 1 to 509)
+  AUTHORS   Toulza,E., Mattiuzzo,N.R., Galliano,M.F., Jonca,N., Dossat,C.,
+            Jacob,D., de Daruvar,A., Wincker,P., Serre,G. and Guerrin,M.
+  TITLE     Large-scale identification of human genes implicated in epidermal
+            barrier function
+  JOURNAL   Genome Biol. 8 (6), R107 (2007)
+   PUBMED   17562024
+COMMENT     Contact: Genoscope
+            Genoscope - Centre National de Sequencage
+            BP 191 91006 EVRY cedex - FRANCE
+            Email: seqref@genoscope.cns.fr, Web : www.genoscope.cns.fr
+            http://genome.ucsc.edu/cgi-bin/hgTracks?db=hg18
+            Genoscope sequence ID : NT0AAA38YB24RM1.
+FEATURES             Location/Qualifiers
+     source          1..509
+                     /organism="Homo sapiens"
+                     /mol_type="mRNA"
+                     /db_xref="taxon:9606"
+                     /map="chr2:232034652-232037322"
+                     /tissue_type="epidermis"
+                     /cell_type="keratinocyte"
+                     /clone_lib="LIBEST_021612 Homo sapiens ORESTES from
+                     keratinocytes"
+                     /note="This sequence was obtained by production of EST
+                     minilibraries using the ORESTES method, from ex vivo
+                     normal human epidermis samples enriched in granular
+                     keratinocytes"
+ORIGIN      
+        1 cctcatggac tcttccctta ctgtcatcat cctcctcttc atcactgtct cccttcttgg
+       61 cattcttgcc attctttgcc cccttggctg ggatggcagc acccttctta ccaggagttg
+      121 ctaccaatgc tttgcctggt gtggctccct tcttgccagg tgtggtaact gctttggctg
+      181 gtgtaactgt cttcttggca ggtgttgctg ctgccttttt gcctggagtg acagctgctt
+      241 tcttggctgg tgtggcaact gcaacctttt ttgttgggga aacgaccacc ttctttgctg
+      301 aggttgcagc agccttcttg cctttcttct gaggtatgac gacctcttct ccactgctat
+      361 catcttcttc atcttctgac atttcctcat cttcactatc ttcttctacc tcctttggag
+      421 gaggagccat tttcttgggg tcaccttgat ttttacctgc cttcgcgagc ttcaccatga
+      481 tggcggcgga gtatgtagcg gctcatggc
+//
+
+LOCUS       BG217842                 890 bp    mRNA    linear   EST 29-JAN-2011
+DEFINITION  RST37556 Athersys RAGE Library Homo sapiens cDNA, mRNA sequence.
+ACCESSION   BG217842
+VERSION     BG217842.1
+DBLINK      BioSample: LIBEST_008655
+KEYWORDS    EST.
+SOURCE      Homo sapiens (human)
+  ORGANISM  Homo sapiens
+            Eukaryota; Metazoa; Chordata; Craniata; Vertebrata; Euteleostomi;
+            Mammalia; Eutheria; Euarchontoglires; Primates; Haplorrhini;
+            Catarrhini; Hominidae; Homo.
+REFERENCE   1  (bases 1 to 890)
+  AUTHORS   Harrington,J.J., Sherf,B., Rundlett,S., Jackson,P.D., Perry,R.,
+            Cain,S., Leventhal,C., Thornton,M., Ramachandran,R.,
+            Whittington,J., Lerner,L., Costanzo,D., McElligott,K., Boozer,S.,
+            Mays,R., Smith,E., Veloso,N., Klika,A., Hess,J., Cothren,K., Lo,K.,
+            Offenbacher,J., Danzig,J. and Ducar,M.
+  TITLE     Creation of genome-wide protein expression libraries using random
+            activation of gene expression
+  JOURNAL   Nat. Biotechnol. 19 (5), 440-445 (2001)
+   PUBMED   11329013
+COMMENT     Contact: Scott J. Cain
+            Athersys, Inc.
+            3201 Carnegie Ave, Cleveland, OH 44115, USA
+            Tel: 216 431 9900
+            Fax: 216 361 9596
+            Email: scain@athersys.com
+            High quality sequence stop: 516.
+FEATURES             Location/Qualifiers
+     source          1..890
+                     /organism="Homo sapiens"
+                     /mol_type="mRNA"
+                     /db_xref="taxon:9606"
+                     /cell_line="HT1080"
+                     /clone_lib="LIBEST_008655 Athersys RAGE Library"
+                     /note="See 'Creation of Genome-wide Protein Expression
+                     Libraries using Random Activation of Gene Expression',
+                     Nature Biotechnology, in press. Note that even though the
+                     cell type indicated is HT1080, since a random activation
+                     method was used, these sequence tags are not necessarily
+                     expressed in HT1080 under normal circumstances."
+ORIGIN      
+        1 cagccagtgt ccactcctgc tcactttggg nacatctgtn gagcagggtg cctccttttt
+       61 gtccctccaa gagacagttg ggggacttgg cctctggccg cctcaagttg ggtcagcacc
+      121 tgctgggcct catcctggtt catcgtgcat caatgggagc gcacctgggt tctgctgaca
+      181 tgtgagagct tcttcaccga ggggttcaga aaagtgtgct catggcctgt aggtctggat
+      241 tcaaagggag atgagaaaaa taggaactga gcccgtggct tgcctcaccc acttcctgag
+      301 cctgcgcaag ggacaagact ttcctgtgtg gccttcttac ggcagtccac agggaagtgg
+      361 cctcattttc tgtgtctgtc ctgcccagcg cccccactct cctgtgctgg tcccaggcca
+      421 tcccttagcc agagtgcaga actccagacc cccaatattc tctcatatcc tcagaatctt
+      481 cagcttccat ccatggatgt tggctgaatc ctgagtgggg tcgtagaaag atctggtcct
+      541 gtgagtaggg gggcgaggag gaaagcacgg acttcanctg ggctgtctac aacctgagtc
+      601 ttaaacacct aaagacaagc acaacttgcc cccgcttgga cgaatttctt gctccagacc
+      661 gcctcactgc atctctaggg ccatgtgtat tcctgctatt tggccccctt tcttgagaaa
+      721 aattgcctat taaaagaatt tccttattca aaaaaaaaca aaaaaatggc ctccttggcc
+      781 ctccccggag gagctctgcg ggcgccttcc cttaggggag gctaattcaa tgaccctgcc
+      841 tcactacctc gcttgccctc ggncgatcca ctggggagag aaggtatcac
+//
+
