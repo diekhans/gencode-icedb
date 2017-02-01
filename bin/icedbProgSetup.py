@@ -5,7 +5,7 @@ automatically on the path.
 """
 import sys
 import os
-rootDir = os.path.normpath(os.path.dirname(os.path.dirname(sys.argv[0])))
+rootDir = os.path.dirname(os.path.abspath(os.path.dirname(sys.argv[0])))
 
 
 def _addExtern(module, relDir):
