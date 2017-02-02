@@ -3,6 +3,9 @@ ROOT = ../../..
 # force sort to be consistent
 export LC_ALL=C
 
+# always use public database, since hgwdev might be ahead
+export HGDB_CONF=hg.pub.conf
+
 binDir = ${ROOT}/bin
 getUcscRnaAligns = ${binDir}/getUcscRnaAligns
 getEnsemblRnaAligns = ${binDir}/getEnsemblRnaAligns
