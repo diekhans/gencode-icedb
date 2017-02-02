@@ -1,0 +1,272 @@
+LOCUS       AK129027                3666 bp    mRNA    linear   ROD 09-JAN-2008
+DEFINITION  Mus musculus cDNA fis, clone TRACH3037288, highly similar to
+            Oligosaccharyl transferase STT3 subunit homolog.
+ACCESSION   AK129027
+VERSION     AK129027.1
+KEYWORDS    FLI_CDNA; oligo capping; fis (full insert sequence).
+SOURCE      Mus musculus (house mouse)
+  ORGANISM  Mus musculus
+            Eukaryota; Metazoa; Chordata; Craniata; Vertebrata; Euteleostomi;
+            Mammalia; Eutheria; Euarchontoglires; Glires; Rodentia;
+            Sciurognathi; Muroidea; Muridae; Murinae; Mus; Mus.
+REFERENCE   1
+  AUTHORS   Suzuki,O., Sasaki,N., Aotsuka,S., Shoji,T., Ichihara,T.,
+            Shiohata,N., Matsumoto,K., Hirano,M., Sano,S., Nomura,R.,
+            Yoshikawa,Y., Matsumura,Y., Moriya,S., Chiba,E., Momiyama,H.,
+            Onogawa,S., Kaeriyama,S., Satoh,N., Matsunawa,H., Takahashi,E.,
+            Kataoka,R., Kuga,N., Kuroda,A., Satoh,I., Kamata,K., Takami,S.,
+            Terashima,Y., Watanabe,M., Sugiyama,T., Irie,R., Otsuki,T.,
+            Sato,H., Ota,T., Wakamatsu,A., Ishii,S., Yamamoto,J., Isono,Y.,
+            Kawai-Hio,Y., Saito,K., Nishikawa,T., Kimura,K., Yamashita,H.,
+            Matsuo,K., Nakamura,Y., Sekine,M., Kikuchi,H., Kanda,K.,
+            Wagatsuma,M., Murakawa,K., Kanehori,K., Takahashi-Fujii,A.,
+            Oshima,A., Sugiyama,A., Kawakami,B., Suzuki,Y., Sugano,S.,
+            Nagahari,K., Masuho,Y., Nagai,K. and Isogai,T.
+  TITLE     NEDO cDNA sequencing project
+  JOURNAL   Unpublished
+REFERENCE   2  (bases 1 to 3666)
+  AUTHORS   Isogai,T. and Yamamoto,J.
+  TITLE     Direct Submission
+  JOURNAL   Submitted (15-JUL-2003) Contact:Takao Isogai Helix Research
+            Institute, Genomics Laboratory; 1532-3 Yana, Kisarazu, Chiba
+            292-0812, Japan E-mail :flj-cdna@nifty.com
+COMMENT     NEDO cDNA sequencing project supported by Ministry of Economy,
+            Trade and Industry of Japan; cDNA full insert sequencing: Research
+            Association for Biotechnology (RAB); cDNA library construction:
+            Helix Research Institute (HRI) (supported by Japan Key Technology
+            Center etc.); 5'- & 3'-end one pass sequencing: RAB, HRI, and
+            Biotechnology Center, National Institute of Technology and
+            Evaluation; clone selection for full insert sequencing: HRI and
+            RAB; annotation: HRI and RAB.
+FEATURES             Location/Qualifiers
+     source          1..3666
+                     /organism="Mus musculus"
+                     /mol_type="mRNA"
+                     /db_xref="taxon:10090"
+                     /clone="TRACH3037288"
+                     /note="cloning vector: pME18SFL3"
+ORIGIN      
+        1 agggttgagt gcgccgctga acggatggca gggggagcag agtgggttcc tgaggagcat
+       61 ccgtgagtta tttgaatatc atcagttgcc acccattgat gtcaagatga ctaagcttgg
+      121 atttttgcga ttgtcctatg agaagcagga cacacttcta aagcttctca tcctgtcgat
+      181 ggctgctgtg ttatcttttt ctactcgtct ttttgctgtg ctgagatttg aaagtgtcat
+      241 ccatgagttt gatccgtact ttaattatcg gactacccgg tttctggctg aggaggggtt
+      301 ttataaattc cataactggt ttgatgaccg ggcttggtac cctttgggcc gaatcattgg
+      361 aggaacaatt tacccaggtt taatgatcac ttctgctgca atctaccatg tactccattt
+      421 cttccatatc actattgaca ttcggaatgt ctgtgttttc ctggccccac ttttctcctc
+      481 tttcaccacc atcgttacgt accaccttac caaagagctc aaggatgcag gagctgggct
+      541 tcttgctgct gccatgattg ctgtagttcc tgggtatatt tctcgatctg tagctggctc
+      601 ctatgataat gaaggaattg ctatcttttg catgctgctt acttactaca tgtggatcaa
+      661 ggcagtgaag actggttcca tctattgggc tgccaagtgt gccctcgctt atttctacat
+      721 ggtctcttca tggggaggct atgtgttcct gatcaacttg attcctctac atgtcctggt
+      781 gctaatgctg acaggccgtt tttctcaccg gatctacgta gcctactgta ctgtttactg
+      841 cctgggcacc attctttcta tgcagatttc ctttgttggt ttccagcccg tcctttcatc
+      901 agaacacatg gcagcctttg gagtgtttgg tctctgtcag atccatgctt tcgtagatta
+      961 cctgcgcagc aagttgaatc cacagcaatt cgaagttctt ttccggagtg ttatctccct
+     1021 ggttggcttt gtcctcctca ctgtgggagc tctcctcatg ctaacaggaa aaatttctcc
+     1081 ctggacaggg cgtttctact ctctgctgga tccctcttat gctaagaata acattcccat
+     1141 tattgcatct gtttctgagc accagcccac aacctggtct tcctactatt ttgatctaca
+     1201 gctccttgtc ttcatgtttc cagttggcct ctattactgc tttagcaacc tgtctgatgc
+     1261 tcggattttt atcatcatgt atggtgtgac cagcatgtac ttttcagctg taatggtgcg
+     1321 tctaatgctg gtattggcac ctgttatgtg cattctttct ggcattggtg tttcccaggt
+     1381 gctgtccaca tatatgaaaa atctggacat aagtcgccca gacaagaaga gcaagaagca
+     1441 acaggattct acttacccta ttaagaatga ggtggcgagt gggatgatac tggtcatggc
+     1501 tttttttctc atcacctaca cgtttcattc gacttgggtg accagtgaag cctattcttc
+     1561 tccctccatt gtactgtctg ctcgtggtgg ggatggcagt aggatcattt ttgatgactt
+     1621 ccgagaagcg tattattggc tccgtcacaa tactccagag gatgcaaaag tcatgtcatg
+     1681 gtgggattat ggctaccaaa ttactgcaat ggcaaatcgg acaattttag tggacaataa
+     1741 cacatggaat aatacccata tttctcgagt agggcaggca atggcatcca cagaagaaaa
+     1801 agcctatgaa atcatgaggg agcttgatgt cagctatgtg cttgtcattt ttggaggcct
+     1861 tactgggtat tcttcggatg atatcaacaa gtctctttgg atggtccgga ttggaggaag
+     1921 cacagagaca ggaagacaca ttaaggagaa tgactactat actcctactg gggaattccg
+     1981 tgttgatcgt gagggttctc cggtgctgct caactgcctt atgtacaaaa tgtgttacta
+     2041 ccgctttggg caggtctaca cagaagccaa gcgtccacca ggctttgacc gtgttcgaaa
+     2101 tgctgagatt ggtaataaag actttgagct tgatgtcctg gaggaagcgt ataccacaga
+     2161 acactggcta gtcaggatat acaaggtaaa ggacttggat aatcgaggct tgtcaaggac
+     2221 ataaacgtca cattgtgccc tgagcattat gcttcgcact gagcgcgtca tgttgaggac
+     2281 gctgaagatg ttttttatat gcagtttata agaacagccg gatggggtta gaattgtctg
+     2341 caagttttgc cctggacaat atgggctggg ccaagtgaaa tgatttttat aattctgagc
+     2401 aggttaccaa atgaaatgtt atggctttac tttggtcaat taaaagaggg ggggggattt
+     2461 tttttaaatg tgccttattt gttttgactt aaattggctg atacgaggat cacagaagtg
+     2521 agcggatgga agaccatatc catgctctag gtccccaaat gaaccagata ggagcatttt
+     2581 tttctcctat cagcaatctc aaggactagc tctggttcaa caaatgtaaa caacaacttt
+     2641 gtcacacttt tttgtttttt agcacccagg tacaatgctt tccttataat gggtgcttaa
+     2701 taaattttta tcaaatgaat aaatgtttct gggaccagag gagtgctgtt tctgggcaag
+     2761 aaagacagct ttcttgctgt tatgtctatg ttctcgatgt ctatttcttt agaagctctt
+     2821 tggctttata aggacagaaa gttgctgagt attcctgatc tcaccagtat cctttcaaac
+     2881 taatggcagt tattcttttt ctaagtagaa atgtgaagca aaagtgacta atccagtagt
+     2941 tcttaagatc agtgaaacat caatcctaga ggaagacact cctccaacat caggttgatg
+     3001 atcagtagat gtttctggaa tcagatgtca ttatgtggac ctacatgaag tttaggcatt
+     3061 caatacttca ctaaacctaa aacatagtaa atggctcttt gctcattttc tctagactgc
+     3121 actaaatctc ttagggttat ccaccgtgag cttctgtttt tcttaatgtc agtctgctgt
+     3181 gttcatatac cactttgagg cttgattact tggttttgaa tcccttgcta aatatataca
+     3241 taggaagtgg gaagtattgc tactagcagg tactttgata tcattgccag tctgactgca
+     3301 agaaaagaga cttcaaaaac tacaaagcac agagatccca tagatatttt gtgtcaggat
+     3361 aaatagcttt ctgttctgta taataggata tttcatgtaa tttacaacat agggcataat
+     3421 cactgatgta tataaaccat cttaaattaa ttatagtgtt tctatttaag aaaacaggag
+     3481 gaattatatg acttttagat agtcacagtg gtactcaatg catatgtgct taggtgtact
+     3541 tgtataccta agggcttttc cttcaaaccg gtgtatgtac tgtgtatttt aactgtgggt
+     3601 gaaattttag atttaacaga tgatttgata tcctatatgt aaatacatta tttgatttat
+     3661 atacag
+//
+LOCUS       BG217841                 447 bp    mRNA    linear   EST 29-JAN-2011
+DEFINITION  RST37555 Athersys RAGE Library Homo sapiens cDNA, mRNA sequence.
+ACCESSION   BG217841
+VERSION     BG217841.1
+DBLINK      BioSample: LIBEST_008655
+KEYWORDS    EST.
+SOURCE      Homo sapiens (human)
+  ORGANISM  Homo sapiens
+            Eukaryota; Metazoa; Chordata; Craniata; Vertebrata; Euteleostomi;
+            Mammalia; Eutheria; Euarchontoglires; Primates; Haplorrhini;
+            Catarrhini; Hominidae; Homo.
+REFERENCE   1  (bases 1 to 447)
+  AUTHORS   Harrington,J.J., Sherf,B., Rundlett,S., Jackson,P.D., Perry,R.,
+            Cain,S., Leventhal,C., Thornton,M., Ramachandran,R.,
+            Whittington,J., Lerner,L., Costanzo,D., McElligott,K., Boozer,S.,
+            Mays,R., Smith,E., Veloso,N., Klika,A., Hess,J., Cothren,K., Lo,K.,
+            Offenbacher,J., Danzig,J. and Ducar,M.
+  TITLE     Creation of genome-wide protein expression libraries using random
+            activation of gene expression
+  JOURNAL   Nat. Biotechnol. 19 (5), 440-445 (2001)
+   PUBMED   11329013
+COMMENT     Contact: Scott J. Cain
+            Athersys, Inc.
+            3201 Carnegie Ave, Cleveland, OH 44115, USA
+            Tel: 216 431 9900
+            Fax: 216 361 9596
+            Email: scain@athersys.com.
+FEATURES             Location/Qualifiers
+     source          1..447
+                     /organism="Homo sapiens"
+                     /mol_type="mRNA"
+                     /db_xref="taxon:9606"
+                     /cell_line="HT1080"
+                     /clone_lib="LIBEST_008655 Athersys RAGE Library"
+                     /note="See 'Creation of Genome-wide Protein Expression
+                     Libraries using Random Activation of Gene Expression',
+                     Nature Biotechnology, in press. Note that even though the
+                     cell type indicated is HT1080, since a random activation
+                     method was used, these sequence tags are not necessarily
+                     expressed in HT1080 under normal circumstances."
+ORIGIN      
+        1 nttttcgggc actggcttgt ttcananaag tgaagaagcg gaaaagaata gaagagatcc
+       61 atatgacctt gatgcttgga gcattctcat tcgagaggca cagaatcaac ctatagacaa
+      121 agcacggaag acttatgaac gccttgttgc ccagttcccc agttctggca gattctggaa
+      181 actgtacatt gaagcagagg ttactatttt attttatttt ttcttatatc agtattgcag
+      241 cattcactgt agtgatagaa aacaagttag gaacatagcc aattaggaca aggaggattt
+      301 aaatgtgtct tacctttatt ttgtaaaata ggtataaagg agtaattaaa atgaattttt
+      361 gaaatttggg tcttttacaa gctgatgatt gttgcatttt ggagttgcaa caacattaaa
+      421 acagtttcaa tggcaaaaaa aaaaaaa
+//
+
+LOCUS       AK129026                3591 bp    mRNA    linear   ROD 09-JAN-2008
+DEFINITION  Mus musculus cDNA fis, clone TRACH3037267, highly similar to Mus
+            musculus flavin containing monooxygenase 2 (Fmo2).
+ACCESSION   AK129026
+VERSION     AK129026.1
+KEYWORDS    FLI_CDNA; oligo capping; fis (full insert sequence).
+SOURCE      Mus musculus (house mouse)
+  ORGANISM  Mus musculus
+            Eukaryota; Metazoa; Chordata; Craniata; Vertebrata; Euteleostomi;
+            Mammalia; Eutheria; Euarchontoglires; Glires; Rodentia;
+            Sciurognathi; Muroidea; Muridae; Murinae; Mus; Mus.
+REFERENCE   1
+  AUTHORS   Suzuki,O., Sasaki,N., Aotsuka,S., Shoji,T., Ichihara,T.,
+            Shiohata,N., Matsumoto,K., Hirano,M., Sano,S., Nomura,R.,
+            Yoshikawa,Y., Matsumura,Y., Moriya,S., Chiba,E., Momiyama,H.,
+            Onogawa,S., Kaeriyama,S., Satoh,N., Matsunawa,H., Takahashi,E.,
+            Kataoka,R., Kuga,N., Kuroda,A., Satoh,I., Kamata,K., Takami,S.,
+            Terashima,Y., Watanabe,M., Sugiyama,T., Irie,R., Otsuki,T.,
+            Sato,H., Ota,T., Wakamatsu,A., Ishii,S., Yamamoto,J., Isono,Y.,
+            Kawai-Hio,Y., Saito,K., Nishikawa,T., Kimura,K., Yamashita,H.,
+            Matsuo,K., Nakamura,Y., Sekine,M., Kikuchi,H., Kanda,K.,
+            Wagatsuma,M., Murakawa,K., Kanehori,K., Takahashi-Fujii,A.,
+            Oshima,A., Sugiyama,A., Kawakami,B., Suzuki,Y., Sugano,S.,
+            Nagahari,K., Masuho,Y., Nagai,K. and Isogai,T.
+  TITLE     NEDO cDNA sequencing project
+  JOURNAL   Unpublished
+REFERENCE   2  (bases 1 to 3591)
+  AUTHORS   Isogai,T. and Yamamoto,J.
+  TITLE     Direct Submission
+  JOURNAL   Submitted (15-JUL-2003) Contact:Takao Isogai Helix Research
+            Institute, Genomics Laboratory; 1532-3 Yana, Kisarazu, Chiba
+            292-0812, Japan E-mail :flj-cdna@nifty.com
+COMMENT     NEDO cDNA sequencing project supported by Ministry of Economy,
+            Trade and Industry of Japan; cDNA full insert sequencing: Research
+            Association for Biotechnology (RAB); cDNA library construction:
+            Helix Research Institute (HRI) (supported by Japan Key Technology
+            Center etc.); 5'- & 3'-end one pass sequencing: RAB, HRI, and
+            Biotechnology Center, National Institute of Technology and
+            Evaluation; clone selection for full insert sequencing: HRI and
+            RAB; annotation: HRI and RAB.
+FEATURES             Location/Qualifiers
+     source          1..3591
+                     /organism="Mus musculus"
+                     /mol_type="mRNA"
+                     /db_xref="taxon:10090"
+                     /clone="TRACH3037267"
+                     /note="cloning vector: pME18SFL3"
+ORIGIN      
+        1 aaaatgaact tcttgtaatt gtttacttgg tagctcagtc tccctcttct tcttcctcct
+       61 gaaggtattg agaggttccg aggccagtat ttccatagcc gcgaatacaa gcacccagtg
+      121 gggtttgagg ggaaacgcat cctggtggtt ggaataggaa attcagctgc agatattgcc
+      181 tctgaactga gtaagacggc cgcacaggtg tttgtcagca ccagacatgg atcctgggtc
+      241 atgagtcgaa tctctgaaga tggctaccct tgggacatgg tgttccacac tagatttagc
+      301 tccatgctcc gaaatgtcct gccccgcacg gtcgtcaagt ggatgatgga acaacagatg
+      361 aatcgatggt tcaaccatga aaattatggt ctggtgcctc agaacaaata ccttatgaaa
+      421 gaacctgtgc taaacgacga cctccccagc cgcctgctct acggagccat caaagtaaaa
+      481 acacgggtga aggagctcac ggagacagct gtggtcttcg aggatggcac ggtggaggaa
+      541 gacgtggata tcattgtctt tgccacgggg tatacgttct ctttttcttt cctggaagac
+      601 tcacttgtta aagtggagga taatagggtt tccctgtaca aagccatgtt tccccctcac
+      661 ctggagaagc caacccttgc gtgcataggt ctcatccagc ctctaggctc catcttccca
+      721 accgtagagc ttcaggcgcg ctgggcaaca agagttttca aaggcttgtg tagcttgcct
+      781 tcggagacga ctatgatggc agacattgtt gaaagaaatg aaaaaagagt taacctgttt
+      841 gggaaaagcc agagtcagat actgcagacc aactacgttg actacctgga tgaactcgcc
+      901 ttggagatag gtgcaaagcc agatttcgtc tctctctttt tcaaagaccc taaactggct
+      961 gtgaaactct acttcggacc ctgtaattcc taccagtacc gcctggttgg acctgggcag
+     1021 tgggaaggag ccaggaacgc catcctcacc cagaagcaga ggatcctgaa acccttaaag
+     1081 acccggactc tccagtcctc tgatagtgcc ccagtgtctt tcctgctcaa gatcctgggg
+     1141 ctgctcgctg ttgttctggc cttctttttc caacttcagg ggttttaatc agtcacatga
+     1201 cagttttctt catcactgcc tctttgaaag ggaaactgga gaaattccat cctcattata
+     1261 attttacttt aggggaataa gtagggggac taattgtagg gagatcagaa aacttaggtc
+     1321 tagatataaa actaagttaa ggttacagga tgttcttatc attgtttccc caaattcatc
+     1381 agtctccaca tggtattcta taataacacc agcacaggta gatagtacta tcagccatgg
+     1441 caggttttga gttacaagat ttaaaaaaaa tcaataaaat tatgtagaat aaaaagtaag
+     1501 tcatagttga gcatgttaga acatggcttt aatcttagca cttggaaggc agatggatct
+     1561 ctgtgagttc aaagaaaaaa aaggcaagac actgaagaac tgaaattgta gtagatattt
+     1621 cacatcttgt acactatgat gctcagtgct gttcctatgc atactctggt cacagttccc
+     1681 acttctgatg caaaaatgaa aacaatattc cctagctaca acatatagat agatactgtt
+     1741 tctcatagac tagacattgt gctgtgtgta cattatgtat tttattggat ttaattctca
+     1801 cagcaactgt gtgatgggta gagctatata tatcacccat tctacagatg gcactgagga
+     1861 ggggacatta tagagcatgt cctaaacagc tggtcttgag atgaggcttc aattgaagcc
+     1921 caatttgtta aactcaggaa cttatgctca tgacctcccc atgcaatatg cttattaatg
+     1981 aatagtccac tcttgacgaa gtacttccta atcacttatt ttagtcatta taaactcaca
+     2041 taatagctct attcattagc ataaagtttt ctaagactat tgtagaaaat ggcactttct
+     2101 ttgcaaatag aatctgtcta ggttcattta caatattagg tctgtatgtc cgctggaatt
+     2161 taaaaagcac ttgggataag cacagtagta cagaccttta atcccagcac taaggagtca
+     2221 agacaggcag attactacca gtttgaggct gggttgctct acatagcaaa atctgggcca
+     2281 gccagggcta catggtgaca acctgtctca aaagaaaaat aattacaaag agatttagta
+     2341 ttaaaaatag ctatgcagtg atatttaatc atcaccatgt gaaagtataa gaaatgaagt
+     2401 gaagtgcatc tcccaagcag atgaaactct acaatggctg aggttatagg gttaacatta
+     2461 taggtaagaa aagcaaatct cagcaatgtc ctgtctttgt catctgataa ggggcagggg
+     2521 gaggttgtca gttatgagag acattttctt ggaacggaaa actaaaggag acaccagcag
+     2581 tttagtgtca acaaacattg agcaacatag caaacaccag gctacaaaca ctcctgatag
+     2641 catctctttc catgaaccgc actgcaaaag ataagctatg cccagagacc agaccagagc
+     2701 ctctgcagag gggacaaagg ccaggatact gaaggtttaa gtaaatagct cttctttagc
+     2761 cctccgagca gtggttctca gttttcctaa tgctacaccc ccttaaaaca atccctcatg
+     2821 ttgtggtgac cctcaaccat aaaagtatct cattgctgct tcataactgt aattttgcta
+     2881 ctcttatgaa ttgttgtgca aatagctgat atgtgacccc tgtgggggtc ttgacccact
+     2941 gattgagaac tactgcttca aagctttgtg aacactgtct ttaaaccagc ccctctctcc
+     3001 gttctctccc cttactctcc tccccctttc cagtttgatg gcaatctctt ccaaaggaaa
+     3061 cttctttctt ctaagcccac tgaattgggc tgcagaattg cccggttggc aaagccttgt
+     3121 aagcttaaga atctgaattt gagcttcagg acccatattt tacaagcccg gtgtggctgc
+     3181 acacacttct aatcccagca ttggggaggg agatgaaaac agtatcctgg gtatcgctgg
+     3241 ccagcctcct ctgttttaat gagttccagg tcagtcagag accctgtctc agaaaacaaa
+     3301 agtgggcgaa tcctgaggag caataccaga gtctcacctc tggcctatgt actcatgctt
+     3361 gtatatgttt ccacataccc ctgcaactgc acgcacttga acacacacaa acatatatgc
+     3421 atacacatat atacatacaa aagttcactg atattactac atttgcattt aagactcttg
+     3481 actgtactta taagcaaatt cctttcaaaa gttacaaatg aaaatgtatt gtgtgcatct
+     3541 atgaaattct caaacacatt tttttaaaaa taaaaattac aagtgaaatg t
+//
+

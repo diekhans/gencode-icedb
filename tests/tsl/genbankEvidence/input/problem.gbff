@@ -548,3 +548,228 @@ ORIGIN
       841 tcactacctc gcttgccctc ggncgatcca ctggggagag aaggtatcac
 //
 
+LOCUS       AK129030                3313 bp    mRNA    linear   ROD 09-JAN-2008
+DEFINITION  Mus musculus cDNA fis, clone TRACH3037897, weakly similar to Homo
+            sapiens HpaII tiny fragments locus 9C (HTF9C).
+ACCESSION   AK129030
+VERSION     AK129030.1
+KEYWORDS    FLI_CDNA; oligo capping; fis (full insert sequence).
+SOURCE      Mus musculus (house mouse)
+  ORGANISM  Mus musculus
+            Eukaryota; Metazoa; Chordata; Craniata; Vertebrata; Euteleostomi;
+            Mammalia; Eutheria; Euarchontoglires; Glires; Rodentia;
+            Sciurognathi; Muroidea; Muridae; Murinae; Mus; Mus.
+REFERENCE   1
+  AUTHORS   Suzuki,O., Sasaki,N., Aotsuka,S., Shoji,T., Ichihara,T.,
+            Shiohata,N., Matsumoto,K., Hirano,M., Sano,S., Nomura,R.,
+            Yoshikawa,Y., Matsumura,Y., Moriya,S., Chiba,E., Momiyama,H.,
+            Onogawa,S., Kaeriyama,S., Satoh,N., Matsunawa,H., Takahashi,E.,
+            Kataoka,R., Kuga,N., Kuroda,A., Satoh,I., Kamata,K., Takami,S.,
+            Terashima,Y., Watanabe,M., Sugiyama,T., Irie,R., Otsuki,T.,
+            Sato,H., Ota,T., Wakamatsu,A., Ishii,S., Yamamoto,J., Isono,Y.,
+            Kawai-Hio,Y., Saito,K., Nishikawa,T., Kimura,K., Yamashita,H.,
+            Matsuo,K., Nakamura,Y., Sekine,M., Kikuchi,H., Kanda,K.,
+            Wagatsuma,M., Murakawa,K., Kanehori,K., Takahashi-Fujii,A.,
+            Oshima,A., Sugiyama,A., Kawakami,B., Suzuki,Y., Sugano,S.,
+            Nagahari,K., Masuho,Y., Nagai,K. and Isogai,T.
+  TITLE     NEDO cDNA sequencing project
+  JOURNAL   Unpublished
+REFERENCE   2  (bases 1 to 3313)
+  AUTHORS   Isogai,T. and Yamamoto,J.
+  TITLE     Direct Submission
+  JOURNAL   Submitted (15-JUL-2003) Contact:Takao Isogai Helix Research
+            Institute, Genomics Laboratory; 1532-3 Yana, Kisarazu, Chiba
+            292-0812, Japan E-mail :flj-cdna@nifty.com
+COMMENT     NEDO cDNA sequencing project supported by Ministry of Economy,
+            Trade and Industry of Japan; cDNA full insert sequencing: Research
+            Association for Biotechnology (RAB); cDNA library construction:
+            Helix Research Institute (HRI) (supported by Japan Key Technology
+            Center etc.); 5'- & 3'-end one pass sequencing: RAB, HRI, and
+            Biotechnology Center, National Institute of Technology and
+            Evaluation; clone selection for full insert sequencing: HRI and
+            RAB; annotation: HRI and RAB.
+FEATURES             Location/Qualifiers
+     source          1..3313
+                     /organism="Mus musculus"
+                     /mol_type="mRNA"
+                     /db_xref="taxon:10090"
+                     /clone="TRACH3037897"
+                     /note="cloning vector: pME18SFL3"
+ORIGIN      
+        1 aaccccttcg cgccatccgc tggtatttta gtttgccact gcacgtccgt ccaaggcctt
+       61 agtgactccc aaggagtccc gggacatctg gcttgtttcc agcttctggc tattacaaat
+      121 aaggctgcta tgaacacagt ggggcatgtg tccttgtggc atcaagagtc ctaaatgcac
+      181 aacccaagac tattcctttc cagagcgggt ttcttctcca aaccaggact gcttccctgg
+      241 gatactggaa gaccaccaga tttgtcacag tccttattgg gcagagcata taaagggagt
+      301 ttcaccagcg tgatagctaa gaagcaccca agcagacaaa aatatcagaa gaaacaaagg
+      361 cattgtagag atgactcctg gcaggagagg ctggctgatg ttgtgactcc actctggagg
+      421 ctgagttatg aagcacaact caaggtgaaa tttgaagctc agaagaaact tttacaaagc
+      481 ctagagtctc acctaaaagt gctccatgga gtcagtgaca cagtggctgc acatcagtct
+      541 gaggggctcc gctgtctcct ccatcccatt ataccctctc ctaccaccac tggctaccgg
+      601 aacaagtcca ccttttctgt gtacaggagc ccagatggca atccaaagac tgtgggctac
+      661 tacctaggaa cttggaaaga tggaaatgtc gtctgtctac catgtaatca tctgaaaaac
+      721 atcccagaga aacacagtca agtggctcag tactatgaag tattccttcg acagtcttca
+      781 gtggaaccct gccttctctt tcatgaaggt ggacactggc gtgaactcgt agttcgtacc
+      841 aataggcaag gacacacaat ggctattgtc acttttcatc cccagggatt aagtgaggag
+      901 gaggtctgtg ttcagaaggt gaccttgaag gattttttca ctaaaggccc tggagcgatc
+      961 tgtgaattga cctcgctcta tttccaggaa agcaccatga cccgttgcag ccatcagcag
+     1021 tccccctacc agctcctgtt tggggagccc cacatctttg aggatcttct gggtttgaag
+     1081 attcgaattt ctccagatgc cttcttccag attaatactg ctggggcaga gatgctgtat
+     1141 cggatcattg gggagctgag tggagtgaac tctgagagcc tcctcctaga catttgctgt
+     1201 ggcacgggca agtggcctcc ctaggaagag tctatgtatg tgttgtctag gtctcagatg
+     1261 tcatctaccc agaacttatg gtcttttcaa gggtggcagg ggaaggtagt gttgatggta
+     1321 tagatataac catgttggtt taaaacagaa aataatctcc tcttatttct tacttctcca
+     1381 ggtgtgattg gcctctctct ggctcagcgt gcctcccagg ttcatggcat tgagctagtg
+     1441 gagcaggcag tagaggatgc caggtggact gcagccttca atggtgtcac caactgtgag
+     1501 tttcacgctg gcagagcaga gacgattttg ccacagctgt taaagtcaca gaaagatgat
+     1561 aagttgactg ttgctgtggt gaaccctgcc cgagctggat tgcattacag agtggtgcga
+     1621 gccattcgga actgcagggc catccacact ctagtgtttg tttcctgcaa gccccatggt
+     1681 gaaagcacaa ggaacttcat tgaactatgc tgtcctccaa attctgcaaa gcagctccta
+     1741 ggtgatccat tcgtcctgag agaagctgta cctgtggatt tgtttcccca caccccacac
+     1801 tgtgagctgg ttctcctctt cactcggtaa gacctggacg ctgcaggctg ataaggctga
+     1861 agtttccgag acacccaggt tgccatagga gacagtggaa gcatcaccag aaagaccaat
+     1921 tttgaatcct ggccaaaaga atttgactgg cctccttctc tgaggcagat tggactgtag
+     1981 cttgtcctag tcctttgggg ttatccatat tcccttagct ttgattgctc ctaactcctt
+     2041 gaacctgaat ttgtgttgct ccatcctttt gctgtctata catcattcaa tctacagtct
+     2101 tgtccccgcc atgggattct gcttttgttg tggggacaac tgcttttttg agcagccggc
+     2161 agtaatttca tattgactgg gacctgtata tttactctga gattttacca tttgcatttt
+     2221 ttgttgtttt gttttgtttt gttttgaaac aaggtctcac atagtgcaca ctagccttgc
+     2281 tctcacaata taactgaggt tgacttcgaa cttgtaagcc ttctgcctac actttgtgag
+     2341 tgttgggctt acaggcatgt gccaccacac atggctttat gcagtgatgg ggatcaaagc
+     2401 cagggaaaga tgcgtgtgag ggaaacccgt ttactaactg agctacagcc ctagcccctt
+     2461 gcaaatattt ttaggaagta gaaccacatt gagcttttta caaagcagaa taagaggcta
+     2521 gggagatggc taactgggta aagtgcttat cgcacataca cacaagaagc tgaatttgga
+     2581 tctagcacat aataacaagg catagtggta cctgcctgtt cttgtgctga gacgtgtatg
+     2641 cagtgggatc ctgagggctt tcctggacag tcaatttagc taatagtggt ttaatgagag
+     2701 accctatctc aaaaaaagtt gaaaaatgat aagacacctg atagcgacat ctgtcctcca
+     2761 caagtataat cacacacaca tactacacac atgcaatgca gacaaagtta tagaatgatt
+     2821 acagggttgt tgggctttct agaatttgac acttctagaa tgtcctttca tgatggggtt
+     2881 atctctgggg ctagagagat ggctcagtgt tcacaagcat ataatgctct tgcagaggcc
+     2941 ctgagtttga ttgttagtat ccatgtcaag ttgctcatta ctgcctatga ctctagttcc
+     3001 agggtatctg atacccttgg ctggtctcca tggacatggt acttatattc acacacatgc
+     3061 aaatacacat agtttaaaaa taacttttaa aaggcttaaa gagaaaatgt ggttatctct
+     3121 agggacaata atgccattca tctcttacct gtagaaggag aatcagtcat tagagatccc
+     3181 caaaagggtt aaaaactcgg aaaggaagga ctgaatactt agattgtcct gtgtattctg
+     3241 gaggaaggaa gcaccagtgg tcctatagta atccagtatg tgttataata aagtgaatgt
+     3301 tgaaattaac tgt
+//
+
+LOCUS       AK129028                4135 bp    mRNA    linear   ROD 09-JAN-2008
+DEFINITION  Mus musculus cDNA fis, clone TRACH3037573, highly similar to
+            Vesicular integral-membrane protein VIP36 precursor.
+ACCESSION   AK129028
+VERSION     AK129028.1
+KEYWORDS    FLI_CDNA; oligo capping; fis (full insert sequence).
+SOURCE      Mus musculus (house mouse)
+  ORGANISM  Mus musculus
+            Eukaryota; Metazoa; Chordata; Craniata; Vertebrata; Euteleostomi;
+            Mammalia; Eutheria; Euarchontoglires; Glires; Rodentia;
+            Sciurognathi; Muroidea; Muridae; Murinae; Mus; Mus.
+REFERENCE   1
+  AUTHORS   Suzuki,O., Sasaki,N., Aotsuka,S., Shoji,T., Ichihara,T.,
+            Shiohata,N., Matsumoto,K., Hirano,M., Sano,S., Nomura,R.,
+            Yoshikawa,Y., Matsumura,Y., Moriya,S., Chiba,E., Momiyama,H.,
+            Onogawa,S., Kaeriyama,S., Satoh,N., Matsunawa,H., Takahashi,E.,
+            Kataoka,R., Kuga,N., Kuroda,A., Satoh,I., Kamata,K., Takami,S.,
+            Terashima,Y., Watanabe,M., Sugiyama,T., Irie,R., Otsuki,T.,
+            Sato,H., Ota,T., Wakamatsu,A., Ishii,S., Yamamoto,J., Isono,Y.,
+            Kawai-Hio,Y., Saito,K., Nishikawa,T., Kimura,K., Yamashita,H.,
+            Matsuo,K., Nakamura,Y., Sekine,M., Kikuchi,H., Kanda,K.,
+            Wagatsuma,M., Murakawa,K., Kanehori,K., Takahashi-Fujii,A.,
+            Oshima,A., Sugiyama,A., Kawakami,B., Suzuki,Y., Sugano,S.,
+            Nagahari,K., Masuho,Y., Nagai,K. and Isogai,T.
+  TITLE     NEDO cDNA sequencing project
+  JOURNAL   Unpublished
+REFERENCE   2  (bases 1 to 4135)
+  AUTHORS   Isogai,T. and Yamamoto,J.
+  TITLE     Direct Submission
+  JOURNAL   Submitted (15-JUL-2003) Contact:Takao Isogai Helix Research
+            Institute, Genomics Laboratory; 1532-3 Yana, Kisarazu, Chiba
+            292-0812, Japan E-mail :flj-cdna@nifty.com
+COMMENT     NEDO cDNA sequencing project supported by Ministry of Economy,
+            Trade and Industry of Japan; cDNA full insert sequencing: Research
+            Association for Biotechnology (RAB); cDNA library construction:
+            Helix Research Institute (HRI) (supported by Japan Key Technology
+            Center etc.); 5'- & 3'-end one pass sequencing: RAB, HRI, and
+            Biotechnology Center, National Institute of Technology and
+            Evaluation; clone selection for full insert sequencing: HRI and
+            RAB; annotation: HRI and RAB.
+FEATURES             Location/Qualifiers
+     source          1..4135
+                     /organism="Mus musculus"
+                     /mol_type="mRNA"
+                     /db_xref="taxon:10090"
+                     /clone="TRACH3037573"
+                     /note="cloning vector: pME18SFL3"
+ORIGIN      
+        1 gtggccgaga gaacaaggag aatggcggcc gaggcctgtc tttggcgctg gggctggggc
+       61 tggggtcagc ggtgcccagg gaggcctggg cttcctggcc ccggcccgag ccccacgaca
+      121 tttctacatt tgcttctgtt gctggggccg gtggctgcgg atatcaccga cggcaacagc
+      181 gaacacctca agcgggagca ctcgctcatc aagccctacc aaggggtcgg ttccagttcc
+      241 atgccgctct gggacttcca aggcagcacg atgctgacga gccagtacgt gcgcctgacc
+      301 ccggacgagc gcagcaaaga gggctcgatc tggaaccacc agccatgctt ccttaaggac
+      361 tgggaaatgc acgtccactt caaagtccat ggcacaggga agaagaacct ccacggagat
+      421 ggcattgcct tgtggtacac ccgagaccgc ctcgtaccag ggcctgtgtt tggaagcaaa
+      481 gacaacttcc atggtttggc catcttcctg gacacgtatc ccaatgatga aaccactgag
+      541 cgtgtgttcc cgtacatctc ggtgatggtg aacaatggct ctctgtcgta cgatcatagc
+      601 aaagatggac gatggagtga gttggcaggc tgcacggctg acttccgcaa ccgggaccat
+      661 gacaccttcc tagctgtacg ctattcccgg ggccgcctca cggtgatgac tgacctggaa
+      721 gacaagaacg agtggaagaa ctgcattgac atcacagggg tgcgcctgcc cactggctac
+      781 tactttggag cctctgctgg caccggcgac ctgtctgaca accacgacat catctccatc
+      841 aagctgttcc agctcacggt ggagcggacg cctgaggagg agagcatcga ctggaccaag
+      901 attgagcctg gcgtcaattt cctcaagtcc cccaaagaca atgtggacga ccccactgga
+      961 aacttccgca atgggcccct gacaggatgg agggtgttcc tgctgctgct gtgcgcactc
+     1021 ctgggcgttg tcgtctgtgc tgtggtgggc gctgtggtgt ttcagaagcg ccaggaacgg
+     1081 aacaaacgtt tctactgagg ccggtctggc tgggaagggc ctgaccttgg gccagggctc
+     1141 ttatgtgaac ttttttctac tgggattgta aaaaccaacg aaccttactt cttaactgtt
+     1201 tcaaagaaat aattaaatta ttttcataca ttttgcttct tgcccagctg agacagcggg
+     1261 cagggctggg gtcagggttt agcatcccca cagctggagg tttttgctcc atcccaagtc
+     1321 tagctctcag gagcaagcaa gtctgtattt ggggcccagg tgaggccctg tgtatgggat
+     1381 ggctacttag ggttccaggc agtggttttg ttctgaggcc tgcggcagca aatgggattt
+     1441 gtggttctgg acctcccagt agctttttac aaagacagac ctcagccaag gctggaggac
+     1501 cgttcagtag ggccaaggtg tgacagttta ctaaaagtag cccgtctcag cctcatgcct
+     1561 gtcctaaggg cttttttcca catctggtga ttcccggtcc cttctctgac ctagagcaga
+     1621 gagatggtgg ctgtcacatt gccatttggg gaagcatgac tctcaggtca agcaggactc
+     1681 accccattct gcctggtatg caatgttttg ggaatagggt attgtacaca ggatgtgacc
+     1741 tcagcccagg gcacaggcac tggggacaga ggggcaatga cagaaatctt gagattgagg
+     1801 tgatctggaa ggagctgctg agccaggaat ggaagacagc tggatggcag tgctgctccc
+     1861 tttgggcggc ttgaggggac aaggctgggg ggccgagtgg aaagcaggca ataccacagc
+     1921 cagcttccgg tctctggcac cctccccagt ccagctctag ggactcacca agtctgcctc
+     1981 cttcctcgcc atcccctccc cacagtcaat gcttggtctc ttacctcaca agcaaaggct
+     2041 gccatccatg cagtgcggcg tcctcagttc gctttgttgc tgcaggaaag gagtggtgga
+     2101 agcccatgga gtgaacacgg ctgttttgtt agtaccaccg tctttacctt ctctcagcag
+     2161 agctgttcgc tgagctgcta ggagccatct gtccttgtcg gaaactgttc atggtcatgt
+     2221 gtccagaggt agtcacagca gctgccagct gcagcttgct cccaggctta tgagcctgtc
+     2281 atggagcctc aggaaccccg tctttttgac acattgctct ctaagcatgc attgcctatt
+     2341 tgctgtgaca ccatgtgggc cgtgtccaag cagttacgtt ctgcgtgaca gcaggcctgg
+     2401 gacctgaagc atcaggcttc tgccgtcggg aaggacctca gttcctgttc taacttggcc
+     2461 ttcctgatgt ccagagttat tagctacatt ataatcaaga tttacctttg tgtattagag
+     2521 cctccttagc agctgctgta gcattgggag ataactcaat aaaacacttg tctgacagta
+     2581 ctggcggctg atggtctctg gggctcacta gtctagttgg ggacttccat gccaaaggag
+     2641 gcacatggca ttcccaaaga tcacacccaa agctgtcctc tggtctccac acacatggca
+     2701 taaaacaaaa caaaacaaac ccctgctttc tccatatttg gcctagtaaa tcttgtggtg
+     2761 taggaccagg cagggtctgc aatgaacctt agatgccagc acttagtgag tttgtttaac
+     2821 cttccaggtg ggctctccat ccctcatcac atagcctcac tgtacttgtg aagaactgtt
+     2881 tctaagttca ccccagagtt gtctgtctgc acacaggaat gattccacaa ttagtttttt
+     2941 ttttcatatg ttcctaaaaa tggccttcct aatcaacact gaagcacaaa tgtgtacccc
+     3001 tccttgtatc ttctctgcag tgttggagat gcaaacctgc cgactcacgt ggcctccttt
+     3061 gtcccctccc cacagagatg atggttgtta aagtgttcct taaattgtgt attttaaaac
+     3121 tttgttttgc tttaaaaagc ttttaaatgg tgtttggatg tattcctcag ctcttcgagc
+     3181 agcatggccg tgtcctggac atgtaaccca agatgtcgct caagatgtct tctgtgcaca
+     3241 ctggtgacct cttagcaccg taccagactg tcagatggcc tctggcggtg cttatacctg
+     3301 gtgcagcctc caatgttctt gaattgtgtt ctcacacgtc atgagaagtt tgggtctgca
+     3361 gcttgtatcc agttccagtt ttgctagcca gagctacgat gcattctgaa gagaattttt
+     3421 ctccccttcc cacccccact ccctcagcag ctctgctgtg tgcttttctg caccaggctg
+     3481 gcagtctctg ctcaccggtc acgtgcgtcc tctgacgctt tagttccaac tcctgttact
+     3541 gatgttgtgg aattgttatt ttcagcctcc tggttataag ctttgcagag gttccttccc
+     3601 acatgcttag cttcctgatt tgctaatgac gtcatttgat gtgccatctg catttaaatg
+     3661 gcacttatta atcttttcca aagatgattt tcctgaaggt ttctaacttt ggcctttaaa
+     3721 aatttgcact ttgttgaggt gggtcttatg gagtgctgat gtcatcgccc ctgctgtctc
+     3781 cacccagttg tggccaagtt ttcctgactc tgtcatcttc cagcacccac tcctgacctt
+     3841 gtccctttct cttctcatca gctgggatgc ttctcctccc agctgcttcc atgtggacct
+     3901 gtggctcagg agacccagag gacatgaggt gcggaaggtc ttcccttcct gcctggaata
+     3961 tggtaggacc ctgggggtac agaagcaagc gcctgtgaca gggctggaga gagcacatac
+     4021 ctgttagata gggggcctcc aggtcagcac tgaagccctg cctcaagcct tagattgtca
+     4081 actgctgggg ttttgtgtgt gtgagtgtgt gaaagaaata aatccctatt tgttc
+//
+

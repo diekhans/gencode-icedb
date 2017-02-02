@@ -11,8 +11,8 @@ GenbankProblemReason = symEnum.SymEnum("GenbankProblemReason",
 
 
 class GenbankProblemCase(namedtuple("GenbankProblemCase",
-                                    ("acc", "reason"))):
-    """a problem case"""
+                                    ("startAcc", "endAcc", "reason"))):
+    """a range of problem case"""
     __slots__ = ()
     pass
 
@@ -25,10 +25,12 @@ class GenbankProblemCaseDbTable(HgLiteTable):
     Storage for problem cases
     """
     __createSql = """CREATE TABLE {table} (
-            acc text not null,
+            startAcc text not null,
+            endAcc text not null,
             reason text not null);"""
-    __insertSql = """INSERT INTO {table} (acc, reason) VALUES (?, ?);"""
-    __indexSql = """CREATE UNIQUE INDEX {table}_acc on {table} (acc);"""
+    __insertSql = """INSERT INTO {table} (startAcc, endAcc, reason) VALUES (?, ?, ?);"""
+    __indexSql = """CREATE UNIQUE INDEX {table}_startAcc on {table} (startAcc);
+                    CREATE UNIQUE INDEX {table}_endAcc on {table} (endAcc);"""
 
     def __init__(self, conn, table, create=False):
         super(GenbankProblemCaseDbTable, self).__init__(conn, table)
@@ -44,13 +46,13 @@ class GenbankProblemCaseDbTable(HgLiteTable):
         self._index(self.__indexSql)
 
     def loads(self, rows):
-        """load rows into table.  Each element of row is a list, tuple, or GenbankProblemCase object of name and seq"""
+        """load rows into table.  Each element of row is a list, tuple, or GenbankProblemCase"""
         self._inserts(self.__insertSql, rows)
 
     def get(self, acc):
         "retrieve a record by accession, or None"
-        sql = "SELECT acc, reason FROM {table} WHERE acc = ?;"
-        row = next(self.query(sql, acc), None)
+        sql = "SELECT startAcc, endAcc, reason FROM {table} WHERE (startAcc >= ?) and (endAcc <= ?);"
+        row = next(self.query(sql, acc, acc), None)
         if row is None:
             return None
         else:

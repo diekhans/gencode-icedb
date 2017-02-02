@@ -2,10 +2,11 @@
 
 from __future__ import print_function
 import icedbProgSetup  # noqa: F401
+import re
 import argparse
 from pycbio.sys import fileOps
 from gencode_icedb.gbffProblemCaseParser import GbffProblemCaseParser, Organism
-
+from gencode_icedb.genbankProblemCasesDb import GenbankProblemCase
 # Note: wanted to do this via eutils, however NCBI can't
 # query on clone library
 
@@ -36,15 +37,68 @@ def parseArgs():
     return parser.parse_args()
 
 
-def writeProblemCase(problemCase, hsTabFh, mmTabFh):
-    fh = hsTabFh if problemCase.organism == Organism.hs else mmTabFh
-    fileOps.prRowv(fh, problemCase.acc, problemCase.reason)
+class SplitAcc(list):
+    "split accssion into (alpha, numeric, version)"
+    __slots__ = ("alpha", "numeric", "version")
+
+    def __init__(self, acc):
+        parts = re.split("([A-Z]+)([0-9]+)\\.([0-9]+)", acc)
+        if len(parts) != 5:
+            raise Exception("can't parse accession \"{}\"".format(acc))
+        self.alpha = parts[1]
+        self.numeric = int(parts[2])
+        self.version = int(parts[3])
+
+    def __str__(self):
+        return "{}{}.{}".format(self.alpha, self.numeric, self.version)
+
+    def isIncr(self, accSplit):
+        """is accSplit numeric part one more than this part and the
+        rest the same"""
+        return (accSplit.alpha == self.alpha) and (accSplit.numeric == self.numeric + 1) and (accSplit.version == self.version)
+
+
+class OrgProblemCases(list):
+    "collect organism problem cases and convert to accession ranges"
+
+    def __popRange(self, idx):
+        reason = self[idx].reason
+        startAcc = endAcc = SplitAcc(self[idx].acc)
+        idx += 1
+        while (idx < len(self)) and (self[idx].reason == reason):
+            nextAcc = SplitAcc(self[idx].acc)
+            if endAcc.isIncr(nextAcc):
+                endAcc = nextAcc
+                idx += 1
+            else:
+                break
+        return (GenbankProblemCase(str(startAcc), str(endAcc), reason), idx)
+
+    def writeRanges(self, tabFh):
+        self.sort(key=lambda opc: (opc.acc,))
+        idx = 0
+        while idx < len(self):
+            problemCase, idx = self.__popRange(idx)
+            fileOps.prRow(tabFh, problemCase)
+
+
+def collectProblemCases(gbffInputs):
+    problemCases = GbffProblemCaseParser(gbffInputs)
+    byOrgProblemCases = {o: OrgProblemCases() for o in Organism}
+    for problemEntry in problemCases.problemEntries:
+        byOrgProblemCases[problemEntry.organism].append(problemEntry)
+    return byOrgProblemCases
+
+
+def writeProblemCases(orgProblemCases, tabOut):
+    with open(tabOut, "w") as tabFh:
+        orgProblemCases.writeRanges(tabFh)
 
 
 def gbffGetProblemCases(opts):
-    problemCases = GbffProblemCaseParser(opts.gbffInputs)
-    with open(opts.hsTabOut, "w") as hsTabFh, open(opts.mmTabOut, "w") as mmTabFh:
-        for problemEntry in problemCases.problemEntries:
-            writeProblemCase(problemEntry, hsTabFh, mmTabFh)
+    byOrgProblemCases = collectProblemCases(opts.gbffInputs)
+    writeProblemCases(byOrgProblemCases[Organism.hs], opts.hsTabOut)
+    writeProblemCases(byOrgProblemCases[Organism.mm], opts.mmTabOut)
+
 
 gbffGetProblemCases(parseArgs())
