@@ -1,5 +1,8 @@
 ROOT = ../../..
 
+# force sort to be consistent
+export LC_ALL=C
+
 binDir = ${ROOT}/bin
 getUcscRnaAligns = ${binDir}/getUcscRnaAligns
 getEnsemblRnaAligns = ${binDir}/getEnsemblRnaAligns
