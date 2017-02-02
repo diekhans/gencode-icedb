@@ -6,6 +6,10 @@ import argparse
 import re
 from pycbio.sys import fileOps
 
+# Note: wanted to do this via eutils, but eutils class
+# doesn't handle large returns and gave up on some of
+# the queries anyway.
+
 
 def parseArgs():
     desc = """Scan genbank flat files looking for known problem libraries.

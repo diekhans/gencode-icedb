@@ -4,6 +4,7 @@ binDir = ${ROOT}/bin
 getUcscRnaAligns = ${binDir}/getUcscRnaAligns
 getEnsemblRnaAligns = ${binDir}/getEnsemblRnaAligns
 gbffGetProblemCases = ${binDir}/gbffGetProblemCases
+genbankProblemCasesLoad = ${binDir}/genbankProblemCasesLoad
 
 gencodeOrg = human
 ensemblVer = 87_38
@@ -51,12 +52,17 @@ ensemblIdListTest: mkdirs
 ##
 # GBFF problem case parser
 ##
-problemCasesTests: problemCasesParseTest
+problemCasesTests: problemCasesParseTest problemCasesLoadTest
 
 problemCasesParseTest: mkdirs
 	${gbffGetProblemCases} output/hs.$@.tab output/mm.$@.tab input/problem.gbff
 	diff expected/hs.$@.tab output/hs.$@.tab
 	diff expected/mm.$@.tab output/mm.$@.tab
+
+problemCasesLoadTest: mkdirs
+	${genbankProblemCasesLoad} expected/hs.problemCasesParseTest.tab output/$@.db problemCases
+	sqlite3 --batch output/$@.db 'select * from problemCases;' > output/$@.tab
+	diff expected/hs.problemCasesParseTest.tab output/$@.tab
 
 mkdirs:
 	@mkdir -p output

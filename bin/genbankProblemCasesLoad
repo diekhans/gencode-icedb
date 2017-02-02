@@ -1,0 +1,31 @@
+#!/usr/bin/env python
+from __future__ import print_function
+import icedbProgSetup  # noqa: F401
+import argparse
+from gencode_icedb.genbankProblemCasesDb import GenbankProblemCaseDbTable
+from pycbio.tsv.tabFile import TabFile
+import sqlite3
+
+
+def parseArgs():
+    desc = """Load problem case tab file generate gbffGetProblemCases by
+    into a sqlite3 databases. """
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument('problemTabFile',
+                        help="""tab file with problem accessions and reasons""")
+    parser.add_argument('sqliteDb',
+                        help="""database to load problems into""")
+    parser.add_argument('table',
+                        help="""table to load problems into""")
+    return parser.parse_args()
+
+
+def genbankProblemCasesLoad(opts):
+    "main function"
+    rows = TabFile(opts.problemTabFile)
+    conn = sqlite3.connect(opts.sqliteDb)
+    problemTable = GenbankProblemCaseDbTable(conn, opts.table, create=True)
+    problemTable.loads(rows)
+    conn.close()
+
+genbankProblemCasesLoad(parseArgs())
