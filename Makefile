@@ -3,7 +3,7 @@ include ${ROOT}/config.mk
 
 libs = arrayExpress.py config.py dataOps.py gencodeIntronEvid.py \
 	pipelineOps.py rnaSeqData.py rnaSeqSupportToil.py \
-	genbankProblemCasesDb.py
+	gbffProblemCaseParser.py genbankProblemCasesDb.py
 progs = encodeDccQuery estimateReadLength rnaSeqIntronEvidBed \
 	rnaSeqIntronSupport \
 	icedbProgSetup.py mkRnaSeqSupportBatch rnaSeqDataRegister runRnaSeqSupport \

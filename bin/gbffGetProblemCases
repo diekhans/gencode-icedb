@@ -3,12 +3,11 @@
 from __future__ import print_function
 import icedbProgSetup  # noqa: F401
 import argparse
-import re
 from pycbio.sys import fileOps
+from gencode_icedb.gbffProblemCaseParser import GbffProblemCaseParser, Organism
 
-# Note: wanted to do this via eutils, but eutils class
-# doesn't handle large returns and gave up on some of
-# the queries anyway.
+# Note: wanted to do this via eutils, however NCBI can't
+# query on clone library
 
 
 def parseArgs():
@@ -37,102 +36,15 @@ def parseArgs():
     return parser.parse_args()
 
 
-def skipToRecord(gbffInFh):
-    while True:
-        line = gbffInFh.readline()
-        if len(line) == 0:
-            return None
-        if line.startswith("LOCUS "):
-            return line
-
-
-def recordLineReader(gbffInFh):
-    while True:
-        line = gbffInFh.readline()
-        if ((len(line) == 0) or line.startswith("//")):
-            break
-        yield line
-
-
-class RecordInfoParser(object):
-    "parse info from one record"
-    def __init__(self):
-        self.accv = None
-        self.organism = None
-        self.isNedo = False
-        self.isAthersysRage = False
-        self.isOrestes = False
-
-    def __str__(self):
-        return "accv={accv} organism={organism} isNedo={isNedo} isAthersysRage={isAthersysRage} isOrestes=${isOrestes}".format(self)
-
-    def __isCloneLibLine(self, line):
-        return re.match("^ +/clone_lib=", line) is not None
-
-    def __parseLineForVersion(self, line):
-        m = re.match("^VERSION     (\S+)", line)
-        if m is not None:
-            assert self.accv is None
-            self.accv = m.group(1)
-
-    def __parseLineForOrganism(self, line):
-        m = re.match("^  ORGANISM  (.*)$", line)
-        if m is not None:
-            assert self.organism is None
-            if m.group(1) == "Homo sapiens":
-                self.organism = "hs"
-            elif m.group(1).startswith("Mus musculus"):
-                self.organism = "mm"
-
-    def parseLine(self, line):
-        self.__parseLineForVersion(line)
-        self.__parseLineForOrganism(line)
-        if re.search("NEDO .*cDNA sequencing project", line):
-            self.isNedo = True
-        elif self.__isCloneLibLine(line):
-            if line.find("Athersys RAGE Library") >= 0:
-                self.isAthersysRage = True
-            elif re.search("(\\s|^)ORESTES(\\s|$)", line) is not None:
-                self.isOrestes = True
-
-    def __writeIfHit(self, tabFh):
-        if self.isNedo:
-            fileOps.prRowv(tabFh, self.accv, "nedo")
-        elif self.isAthersysRage:
-            fileOps.prRowv(tabFh, self.accv, "athRage")
-        elif self.isOrestes:
-            fileOps.prRowv(tabFh, self.accv, "orestes")
-
-    def writeIfHit(self, hsTabFh, mmTabFh):
-        if self.organism == "hs":
-            self.__writeIfHit(hsTabFh)
-        elif self.organism == "mm":
-            self.__writeIfHit(mmTabFh)
-
-
-def scanGbffRecord(gbffInFh, hsTabFh, mmTabFh):
-    """Scan the next GBFF record, this is crude pattern matching,
-    not a true parser."""
-    # note, LOCUS first line has been skipped
-    recInfo = RecordInfoParser()
-    for line in recordLineReader(gbffInFh):
-        recInfo.parseLine(line)
-    recInfo.writeIfHit(hsTabFh, mmTabFh)
-
-
-def scanGbffFile(gbffIn, hsTabFh, mmTabFh):
-    with fileOps.opengz(gbffIn) as gbffInFh:
-        while skipToRecord(gbffInFh):
-            scanGbffRecord(gbffInFh, hsTabFh, mmTabFh)
-
-
-def scanGbffFiles(gbffInputs, hsTabFh, mmTabFh):
-    for gbffIn in gbffInputs:
-        scanGbffFile(gbffIn, hsTabFh, mmTabFh)
+def writeProblemCase(problemCase, hsTabFh, mmTabFh):
+    fh = hsTabFh if problemCase.organism == Organism.hs else mmTabFh
+    fileOps.prRowv(fh, problemCase.acc, problemCase.reason)
 
 
 def gbffGetProblemCases(opts):
+    problemCases = GbffProblemCaseParser(opts.gbffInputs)
     with open(opts.hsTabOut, "w") as hsTabFh, open(opts.mmTabOut, "w") as mmTabFh:
-        scanGbffFiles(opts.gbffInputs, hsTabFh, mmTabFh)
+        for problemEntry in problemCases.problemEntries:
+            writeProblemCase(problemEntry, hsTabFh, mmTabFh)
 
 gbffGetProblemCases(parseArgs())

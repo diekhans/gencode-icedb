@@ -2,7 +2,12 @@
 GenBank problem case accession and reason table.
 """
 from collections import namedtuple
+import sqlite3
 from pycbio.hgdata.hgLite import HgLiteTable
+from pycbio.sys import symEnum
+
+GenbankProblemReason = symEnum.SymEnum("GenbankProblemReason",
+                                       ("nedo", "athRage", "orestes"))
 
 
 class GenbankProblemCase(namedtuple("GenbankProblemCase",
@@ -10,6 +15,9 @@ class GenbankProblemCase(namedtuple("GenbankProblemCase",
     """a problem case"""
     __slots__ = ()
     pass
+
+sqlite3.register_adapter(GenbankProblemReason, str)
+sqlite3.register_converter("reason", GenbankProblemReason)
 
 
 class GenbankProblemCaseDbTable(HgLiteTable):
