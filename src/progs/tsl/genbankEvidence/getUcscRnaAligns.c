@@ -1,7 +1,6 @@
 #include "common.h"
 #include "options.h"
 #include "psl.h"
-#include "pslReader.h"
 #include "hash.h"
 #include "hdb.h"
 #include "jksql.h"
@@ -63,12 +62,24 @@ static char *pslCreateSqliteQnameIndex =
 /* load PSLs and sort by target */
 static struct psl* loadPsls(struct sqlConnection *hgConn, char *table,
                             char *restrictChrom) {
-    char *where = NULL, whereBuf[256];
+    char *sqlTemplate =
+        "SELECT matches, misMatches, repMatches, nCount, qNumInsert, qBaseInsert, tNumInsert, "
+        "tBaseInsert, strand, concat(qName,\".\",version), qSize, qStart, qEnd, tName, "
+        "tSize, tStart, tEnd, blockCount, blockSizes, qStarts, tStarts "
+        "FROM %s, hgFixed.gbCdnaInfo where (qName = acc) %s;";
+    char where[256];
+    where[0] = '\0';
     if (restrictChrom != NULL) {
-        safef(whereBuf, sizeof(whereBuf), "(tName = \"%s\")", restrictChrom);
-        where = whereBuf;
+        safef(where, sizeof(where), " AND (tName = \"%s\")", restrictChrom);
     }
-    struct psl *psls = pslReaderLoadQuery(hgConn, table, where);
+    char sql[2048];
+    safef(sql, sizeof(sql), sqlTemplate, table, where);
+    struct sqlResult *sr = sqlGetResult(hgConn, sql);
+    char **row;
+    struct psl *psls = NULL;
+    while ((row = sqlNextRow(sr)) != NULL) {
+        slAddHead(&psls, pslLoad(row));
+    }
     slSort(&psls, pslCmpTarget);
     return psls;
 }
