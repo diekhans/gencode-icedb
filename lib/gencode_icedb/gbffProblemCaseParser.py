@@ -5,9 +5,12 @@ import re
 from collections import namedtuple
 from pycbio.sys import fileOps, symEnum
 from gencode_icedb.genbankProblemCasesDb import GenbankProblemReason
+import multiprocessing as mp
 
-Organism = symEnum.SymEnum("Organism", ("hs", "mm"))
 
+class Organism(symEnum.SymEnum):
+    hs = 1
+    mm = 2
 
 class GenbankOrgProblemCase(namedtuple("GenbankOrgProblemCase",
                                        ("organism", "acc", "reason"))):
@@ -100,17 +103,19 @@ class GbffParser(object):
         return recInfo.toProblemCase()
 
     def scanFile(self):
+        problemCases = []
         while self.__skipToRecord():
             problemCase = self.__scanRecord()
             if problemCase is not None:
-                yield problemCase
-
+                problemCases.append(problemCase)
+        return problemCases
 
 class GbffProblemCaseParser(object):
     "parses problem cases and save"
 
-    def __init__(self, gbffInputs):
+    def __init__(self, gbffInputs, maxProcesses=2):
         self.problemEntries = []
+        self.maxProcesses = maxProcesses
         for gbffIn in gbffInputs:
             self.__scanGbffFile(gbffIn)
 
@@ -119,3 +124,17 @@ class GbffProblemCaseParser(object):
             parser = GbffParser(gbffInFh)
             for problemEntry in parser.scanFile():
                 self.problemEntries.append(problemEntry)
+
+def parseGbff(gbffIn):
+    with fileOps.opengz(gbffIn) as gbffInFh:
+        return GbffParser(gbffInFh).scanFile()
+
+                
+def gbffProblemCaseParse(gbffInputs, maxProcesses):
+    pool = mp.Pool(processes=maxProcesses)
+    results = [pool.apply_async(parseGbff, args=(gbffIn,)) for gbffIn in gbffInputs]
+    problemCases = []
+    for result in results:
+        problemCases.extend(result.get())
+    return problemCases
+

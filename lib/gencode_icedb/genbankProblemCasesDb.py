@@ -6,8 +6,10 @@ import sqlite3
 from pycbio.hgdata.hgLite import HgLiteTable
 from pycbio.sys import symEnum
 
-GenbankProblemReason = symEnum.SymEnum("GenbankProblemReason",
-                                       ("nedo", "athRage", "orestes"))
+class GenbankProblemReason(symEnum.SymEnum):
+    nedo = 1
+    athRage = 2
+    orestes = 3
 
 
 class GenbankProblemCase(namedtuple("GenbankProblemCase",

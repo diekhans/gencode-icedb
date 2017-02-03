@@ -5,7 +5,7 @@ import icedbProgSetup  # noqa: F401
 import re
 import argparse
 from pycbio.sys import fileOps
-from gencode_icedb.gbffProblemCaseParser import GbffProblemCaseParser, Organism
+from gencode_icedb.gbffProblemCaseParser import gbffProblemCaseParse, Organism
 from gencode_icedb.genbankProblemCasesDb import GenbankProblemCase
 # Note: wanted to do this via eutils, however NCBI can't
 # query on clone library
@@ -28,6 +28,8 @@ def parseArgs():
    done by the UCSC GenBank pipeline.
 """
     parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument('--maxProcess', type=int, default=2,
+                        help="maximum number of process to use for parallel parse")
     parser.add_argument('hsTabOut',
                         help="output for human")
     parser.add_argument('mmTabOut',
@@ -82,10 +84,10 @@ class OrgProblemCases(list):
             fileOps.prRow(tabFh, problemCase)
 
 
-def collectProblemCases(gbffInputs):
-    problemCases = GbffProblemCaseParser(gbffInputs)
+def collectProblemCases(gbffInputs, maxProcess):
+    problemEntries = gbffProblemCaseParse(gbffInputs, maxProcess)
     byOrgProblemCases = {o: OrgProblemCases() for o in Organism}
-    for problemEntry in problemCases.problemEntries:
+    for problemEntry in problemEntries:
         byOrgProblemCases[problemEntry.organism].append(problemEntry)
     return byOrgProblemCases
 
@@ -96,7 +98,7 @@ def writeProblemCases(orgProblemCases, tabOut):
 
 
 def gbffGetProblemCases(opts):
-    byOrgProblemCases = collectProblemCases(opts.gbffInputs)
+    byOrgProblemCases = collectProblemCases(opts.gbffInputs, opts.maxProcess)
     writeProblemCases(byOrgProblemCases[Organism.hs], opts.hsTabOut)
     writeProblemCases(byOrgProblemCases[Organism.mm], opts.mmTabOut)
 
