@@ -1,0 +1,4 @@
+- 2017-02-02:
+  - build of genbank problem cases from genbank.215.0:
+    - hs.genbank-problem-cases.tab
+    - mm.genbank-problem-cases.tab

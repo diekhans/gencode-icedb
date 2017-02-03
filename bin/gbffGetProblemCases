@@ -47,9 +47,10 @@ class SplitAcc(list):
         parts = re.split("([A-Z]+)([0-9]+)\\.([0-9]+)", acc)
         if len(parts) != 5:
             raise Exception("can't parse accession \"{}\"".format(acc))
+        # keep as chars, but compare as ints
         self.alpha = parts[1]
-        self.numeric = int(parts[2])
-        self.version = int(parts[3])
+        self.numeric = parts[2]
+        self.version = parts[3]
 
     def __str__(self):
         return "{}{}.{}".format(self.alpha, self.numeric, self.version)
@@ -57,7 +58,7 @@ class SplitAcc(list):
     def isIncr(self, accSplit):
         """is accSplit numeric part one more than this part and the
         rest the same"""
-        return (accSplit.alpha == self.alpha) and (accSplit.numeric == self.numeric + 1) and (accSplit.version == self.version)
+        return (accSplit.alpha == self.alpha) and (int(accSplit.numeric) == int(self.numeric) + 1) and (accSplit.version == self.version)
 
 
 class OrgProblemCases(list):
