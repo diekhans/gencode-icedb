@@ -64,7 +64,9 @@ class RecordInfoParser(object):
 
     def toProblemCase(self):
         "returns None if not a hit"
-        if self.isNedo:
+        if self.organism is None:
+            return None
+        elif self.isNedo:
             return GenbankOrgProblemCase(self.organism, self.accv, GenbankProblemReason.nedo)
         elif self.isAthersysRage:
             return GenbankOrgProblemCase(self.organism, self.accv, GenbankProblemReason.athRage)
