@@ -10,6 +10,7 @@ SYS = $(shell uname -s)
 BINDIR = ${ROOT}/bin
 OBJDIR = ${ROOT}/objs
 
+PYLIBDIR = ${ROOT}/lib/gencode_icedb
 
 .SECONDARY:
 

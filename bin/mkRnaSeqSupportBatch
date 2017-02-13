@@ -6,8 +6,8 @@ from __future__ import print_function
 import icedbProgSetup  # noqa: F401
 import os
 import argparse
-from gencode_icedb.rnaSeqData import setDatabase, RnaSeqData
-from gencode_icedb import config
+from gencode_icedb.rsl.rnaSeqData import setDatabase, RnaSeqData
+from gencode_icedb.rsl import config
 from peewee import SqliteDatabase
 
 

@@ -6,7 +6,7 @@ import sys
 import argparse
 from pycbio.sys import fileOps
 from pycbio.sys.color import Color
-from gencode_icedb.gencodeIntronEvid import GencodeIntronEvidSet, IntronSupportLevel, intronEvidSupportLevel
+from gencode_icedb.rsl.gencodeIntronEvid import GencodeIntronEvidSet, IntronSupportLevel, intronEvidSupportLevel
 
 verbose = False
 

@@ -1,1 +1,13 @@
 
+
+- for a multi-exon transcript annotation:
+    - For one piece of overlapping alignment evidence:
+      - ignore if obviously not useful in providing support
+      - build probable exon/intron list, combining small indels, splice junctions
+      - compare with annotation
+
+
+
+- Enhancements:
+   - Add TSL override list, for things like 3-base exon
+

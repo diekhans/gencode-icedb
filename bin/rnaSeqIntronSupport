@@ -3,7 +3,7 @@
 import icedbProgSetup  # noqa: F401
 import argparse
 from gencode.data.gencodeGenes import GencodeGenes
-from gencode_icedb.gencodeIntronEvid import GencodeIntronEvidSet
+from gencode_icedb.rsl.gencodeIntronEvid import GencodeIntronEvidSet
 
 
 verbose = False

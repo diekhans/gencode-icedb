@@ -12,6 +12,7 @@ class Organism(symEnum.SymEnum):
     hs = 1
     mm = 2
 
+
 class GenbankOrgProblemCase(namedtuple("GenbankOrgProblemCase",
                                        ("organism", "acc", "reason"))):
     """a problem case for an organism"""
@@ -112,6 +113,7 @@ class GbffParser(object):
                 problemCases.append(problemCase)
         return problemCases
 
+
 class GbffProblemCaseParser(object):
     "parses problem cases and save"
 
@@ -127,11 +129,12 @@ class GbffProblemCaseParser(object):
             for problemEntry in parser.scanFile():
                 self.problemEntries.append(problemEntry)
 
+
 def parseGbff(gbffIn):
     with fileOps.opengz(gbffIn) as gbffInFh:
         return GbffParser(gbffInFh).scanFile()
 
-                
+
 def gbffProblemCaseParse(gbffInputs, maxProcesses):
     pool = mp.Pool(processes=maxProcesses)
     results = [pool.apply_async(parseGbff, args=(gbffIn,)) for gbffIn in gbffInputs]
@@ -139,4 +142,3 @@ def gbffProblemCaseParse(gbffInputs, maxProcesses):
     for result in results:
         problemCases.extend(result.get())
     return problemCases
-

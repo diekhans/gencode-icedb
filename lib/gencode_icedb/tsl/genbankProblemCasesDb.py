@@ -6,6 +6,7 @@ import sqlite3
 from pycbio.hgdata.hgLite import HgLiteTable
 from pycbio.sys import symEnum
 
+
 class GenbankProblemReason(symEnum.SymEnum):
     nedo = 1
     athRage = 2

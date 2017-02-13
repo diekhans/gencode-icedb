@@ -4,8 +4,9 @@ import icedbProgSetup  # noqa: F401
 import sys
 import os   
 import argparse
-from gencode_icedb.rnaSeqData import setDatabase, RnaSeqData
-from gencode_icedb import pipelineOps, config
+from gencode_icedb.rsl.rnaSeqData import setDatabase, RnaSeqData
+from gencode_icedb.rsl import config
+from gencode_icedb import pipelineOps
 from pycbio.sys import fileOps
 from peewee import SqliteDatabase
 

@@ -2,7 +2,7 @@
 from __future__ import print_function
 import icedbProgSetup  # noqa: F401
 import argparse
-from gencode_icedb.genbankProblemCasesDb import GenbankProblemCaseDbTable
+from gencode_icedb.tsl.genbankProblemCasesDb import GenbankProblemCaseDbTable
 from pycbio.tsv.tabFile import TabFile
 import sqlite3
 

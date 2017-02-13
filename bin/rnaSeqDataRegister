@@ -3,8 +3,9 @@
 import icedbProgSetup  # noqa: F401
 import sys
 import argparse
-from gencode_icedb.rnaSeqData import RnaSeqDataLoader
-from gencode_icedb import dataOps, config
+from gencode_icedb.rsl.rnaSeqData import RnaSeqDataLoader
+from gencode_icedb.rsl import config
+from gencode_icedb import dataOps
 from peewee import SqliteDatabase
 
 verbose = False

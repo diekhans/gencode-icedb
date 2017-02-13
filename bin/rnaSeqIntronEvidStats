@@ -6,7 +6,7 @@ import sys
 import argparse
 import copy
 from pycbio.sys import fileOps
-from gencode_icedb.gencodeIntronEvid import GencodeIntronEvidReader, SpliceJuncCat
+from gencode_icedb.rsl.gencodeIntronEvid import GencodeIntronEvidReader, SpliceJuncCat
 
 
 verbose = False

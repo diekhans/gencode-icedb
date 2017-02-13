@@ -1,9 +1,8 @@
 ROOT = .
 include ${ROOT}/config.mk
 
-libs = arrayExpress.py config.py dataOps.py gencodeIntronEvid.py \
-	pipelineOps.py rnaSeqData.py rnaSeqSupportToil.py \
-	gbffProblemCaseParser.py genbankProblemCasesDb.py
+pylibs = $(wildcard ${PYLIBDIR}/*.py) $(wildcard ${PYLIBDIR}/rsl/*.py) $(wildcard ${PYLIBDIR}/tsl/*.py)
+
 progs = encodeDccQuery estimateReadLength rnaSeqIntronEvidBed \
 	rnaSeqIntronSupport \
 	icedbProgSetup.py mkRnaSeqSupportBatch rnaSeqDataRegister runRnaSeqSupport \
@@ -19,9 +18,10 @@ test::
 	(cd tests && ${MAKE} test)
 
 lint:
-	flake8 ${libs:%=lib/gencode_icedb/%} ${progs:%=bin/%}
+	flake8 ${pylibs} ${progs:%=bin/%}
 
 clean::
 	(cd src && ${MAKE} clean)
 	(cd tests && ${MAKE} clean)
-	rm -rf ${BINDIR}/*.dSYM ${OBJS} lib/gencode_icedb/*.pyc objs ${BINDIR}/*.pyc
+	rm -f  ${PYLIBDIR}/*.pyc ${BINDIR}/*.pyc
+	rm -rf  ${OBJDIR}

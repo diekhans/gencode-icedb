@@ -7,7 +7,7 @@ import icedbProgSetup  # noqa: F401
 import sys
 import os
 import argparse
-from gencode_icedb import rnaSeqSupportToil
+from gencode_icedb.rsl import rnaSeqSupportToil
 from toil.job import Job
 
 # FIXME: jobTree use environment rather than sys.path
