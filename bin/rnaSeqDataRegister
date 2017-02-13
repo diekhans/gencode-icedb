@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 import icedbProgSetup  # noqa: F401
 import sys
 import argparse
@@ -7,16 +8,15 @@ from gencode_icedb.rsl.rnaSeqData import RnaSeqDataLoader
 from gencode_icedb.rsl import config
 from gencode_icedb import dataOps
 from peewee import SqliteDatabase
-
-verbose = False
+from pycbio.sys import loggingOps
+import logging
 
 
 def parseArgs():
     desc = """Register an RNA-Seq data (reads) in an IceDb dataset database.
 ,"""
     parser = argparse.ArgumentParser(description=desc)
-    parser.add_argument('--verbose', action="store_true", default=False,
-                        help="write verbose output")
+    loggingOps.addCmdOptions(parser)
     parser.add_argument('--rootDir', default=".",
                         help="""data root directory""")
     parser.add_argument('--skipExisting', action="store_true", default=False,
@@ -49,14 +49,8 @@ def parseArgs():
             parser.error("both reads files must be fastq if --readsFile2 is specified")
     if (opts.readsFile2Url is not None) and (opts.readsFile2 is None):
         parser.error("--readsFile2Url requires --readsFile2")
-    global verbose
-    verbose = opts.verbose
+    loggingOps.setupFromCmd(opts, sys.argv[0])
     return opts
-
-
-def verbPr(msg, opts):
-    if verbose:
-        sys.stderr.write(msg + ": " + opts.rnaSeqSet + "/" + opts.rnaSeqRun + "\n")
 
 
 def rnaSeqRunRegister(opts):
@@ -69,7 +63,7 @@ def rnaSeqRunRegister(opts):
                                 opts.description, opts.tissue,
                                 opts.readsFileUrl, opts.readsFile,
                                 opts.readsFile2Url, opts.readsFile2)
-    verbPr(str(status), opts)
+    logging.getLogger().debug("{}: {}/{}".format(str(status), opts.rnaSeqSet, opts.rnaSeqRun))
 
-opts = parseArgs()
-rnaSeqRunRegister(opts)
+
+rnaSeqRunRegister(parseArgs())

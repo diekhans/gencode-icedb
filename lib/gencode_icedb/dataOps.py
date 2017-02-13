@@ -3,7 +3,8 @@
 import os
 import socket
 from pycbio.sys import fileOps
-from gencode_icedb import pipelineOps
+import pipettor
+import logging
 
 
 def isFastq(readsFile):
@@ -29,7 +30,7 @@ class TmpUncompress(object):
         self.__tmpUncompressed = None
         if fileOps.isCompressed(dataFile):
             self.__tmpUncompressed = self.__getTmpFile(dataFile, tmpDir)
-            pipelineOps.runCmd([fileOps.decompressCmd(dataFile), dataFile], stdout=self.__tmpUncompressed)
+            pipettor.run([fileOps.decompressCmd(dataFile), dataFile], stdout=self.__tmpUncompressed, logger=logging.getLogger())
 
     def __getTmpFile(self, dataFile, tmpDir):
         # drop compressed extension, keep next extension
@@ -73,4 +74,4 @@ def getNewTmpDir(tmpDir):
 
 def estimateReadLength(readsPath):
     "run estimateReadLength program to get read length from read data"
-    return int(pipelineOps.callCmd(["estimateReadLength", readsPath, "/dev/stdout"]))
+    return int(pipettor.runout(["estimateReadLength", readsPath, "/dev/stdout"]))

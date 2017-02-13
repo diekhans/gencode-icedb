@@ -3,13 +3,13 @@ include ${ROOT}/config.mk
 
 pylibs = $(wildcard ${PYLIBDIR}/*.py) $(wildcard ${PYLIBDIR}/rsl/*.py) $(wildcard ${PYLIBDIR}/tsl/*.py)
 
-progs = encodeDccQuery estimateReadLength rnaSeqIntronEvidBed \
-	rnaSeqIntronSupport \
-	icedbProgSetup.py mkRnaSeqSupportBatch rnaSeqDataRegister runRnaSeqSupport \
-	starGenerateGenome starSpliceJunctionMap \
-	getEnsemblRnaAligns \
-	gbffGetProblemCases genbankProblemCasesLoad
-#gencodeIntronEvidStats gencodeIntronEvidPlot 
+progs = encodeDccQuery estimateReadLength gbffGetProblemCases genbankProblemCasesLoad \
+	getEnsemblRnaAligns icedbProgSetup.py mkRnaSeqSupportBatch rnaSeqDataRegister \
+	rnaSeqIntronEvidBed \
+	rnaSeqIntronSupport runRnaSeqSupport sjCollectEvidence starGenerateGenome \
+	starSpliceJunctionMap
+
+# not done:  rnaSeqIntronEvidPlot rnaSeqIntronEvidStats
 
 all::
 	(cd src && ${MAKE})

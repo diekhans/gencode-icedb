@@ -71,8 +71,4 @@ def createJobs(opts):
             maybeMakeSplitJunctionJob(fh, pathConfig, rnaSeqData, opts.numThreads)
 
 
-def main():
-    opts = parseArgs()
-    createJobs(opts)
-
-main()
+createJobs(parseArgs())

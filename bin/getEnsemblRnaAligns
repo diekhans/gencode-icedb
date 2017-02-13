@@ -10,18 +10,18 @@ from pycbio.hgdata import hgDb
 from pycbio.hgdata.psl import Psl, PslBlock, reverseCoords
 from pycbio.hgdata.cigar import ExonerateCigar, OP_ALIGNED, OP_TINSERT, OP_TDELETE
 from pycbio.hgdata.hgLite import PslDbTable
-from pycbio.sys import dbOps, fileOps
+from pycbio.sys import dbOps, fileOps, loggingOps
 from pycbio.ncbi.assembly import AssemblyReport
 import eutils.client
 import MySQLdb
 import MySQLdb.cursors
 import sqlite3
+import logging
+
 
 ensDbHost = "ensembldb.ensembl.org"
 ensDbPort = 5306
 ensDbUser = "anonymous"
-
-verbose = False
 
 
 def parseArgs():
@@ -33,12 +33,11 @@ def parseArgs():
     database or NCBI eutils API.
 """
     parser = argparse.ArgumentParser(description=desc)
+    loggingOps.addCmdOptions(parser)
     parser.add_argument('--hgFixedDb', default="hgFixed",
                         help="""hgFixed database to use to get sizes""")
     parser.add_argument('--limit', type=int,
                         help="""limit on query resuts, used for tests""")
-    parser.add_argument('--verbose', action="store_true", default=False,
-                        help="""verbose tracing""")
     parser.add_argument('--accverList',
                         help="""file with list of accession/versions to process, used for testing.""")
     parser.add_argument('--ensChrom', action="append", dest="ensChroms",
@@ -52,8 +51,7 @@ def parseArgs():
     parser.add_argument('table',
                         help="""table to load alignments""")
     opts = parser.parse_args()
-    global verbose
-    verbose = opts.verbose
+    loggingOps.setupFromCmd(opts, sys.argv[0])
     return opts
 
 
@@ -248,8 +246,7 @@ class EnsemblCDnaConverter(object):
     def ensemblCDnasToPsls(self, ensemblCDnaDb, limit, accverSubset, ensChromsSubset):
         psls = []
         for row in ensemblCDnaQuery(ensemblCDnaDb, limit, accverSubset, ensChromsSubset):
-            if verbose:
-                print(row, file=sys.stderr)
+            logging.getLogger().debug("Ensembl cDNA row: {}".format(row))
             psl = self.__convertToPsl(row)
             if psl is not None:
                 psls.append(psl)

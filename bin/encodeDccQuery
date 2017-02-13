@@ -3,8 +3,9 @@
 from __future__ import print_function
 import icedbProgSetup  # noqa: F401
 import os
+import sys
 import argparse
-from pycbio.sys import fileOps, typeOps
+from pycbio.sys import fileOps, typeOps, loggingOps
 import urllib
 import requests
 import json
@@ -12,14 +13,11 @@ import json
 encodeUrl = "https://www.encodeproject.org/"
 encodeSearchUrl = urllib.basejoin(encodeUrl, "/search/")
 
-verbose = False
-
 
 def parseArgs():
     desc = """query the encode DCC"""
     parser = argparse.ArgumentParser(description=desc)
-    parser.add_argument('--verbose', action="store_true", default=False,
-                        help="write verbose output")
+    loggingOps.addCmdOptions(parser)
     parser.add_argument('--fakeResponse',
                         help="""for testing use this response instead of querying server""")
     parser.add_argument('--response',
@@ -35,8 +33,7 @@ def parseArgs():
     parser.add_argument('selectedUrls',
                         help="""URLs for downloading written to this file""")
     opts = parser.parse_args()
-    global verbose
-    verbose = opts.verbose
+    loggingOps.setupFromCmd(opts, sys.argv[0])
     return opts
 
 selectedTsvHeader = ("runname", "organism", "tissue", "description",

@@ -4,18 +4,15 @@ from __future__ import print_function
 import icedbProgSetup  # noqa: F401
 import sys
 import argparse
-from pycbio.sys import fileOps
+from pycbio.sys import fileOps, loggingOps
 from pycbio.sys.color import Color
 from gencode_icedb.rsl.gencodeIntronEvid import GencodeIntronEvidSet, IntronSupportLevel, intronEvidSupportLevel
-
-verbose = False
 
 
 def parseArgs():
     desc = """Create a BED of introns colored by support"""
     parser = argparse.ArgumentParser(description=desc)
-    parser.add_argument('--verbose', action="store_true", default=False,
-                        help="write verbose output")
+    loggingOps.addCmdOptions(parser)
     parser.add_argument('--htmlColors', action="store_true", default=False,
                         help="print colors in  HTML format for use in documentation, then exit")
     parser.add_argument('spliceJunctionEvidTsv',
@@ -23,8 +20,7 @@ def parseArgs():
     parser.add_argument('bedOut',
                         help="output BED file")
     opts = parser.parse_args()
-    global verbose
-    verbose = opts.verbose
+    loggingOps.setupFromCmd(opts, sys.argv[0])
     return opts
 
 
@@ -99,10 +95,13 @@ class GencodeIntronEvidBed(object):
         for evid in sorted(self.intronEvid, key=lambda e: (e.chrom, e.intronStart)):
             self.__writeBedRec(evid, bedFh)
 
-opts = parseArgs()
-if opts.htmlColors:
-    Colors.printHtml()
-    sys.exit(0)
-gieb = GencodeIntronEvidBed(opts.spliceJunctionEvidTsv)
-with open(opts.bedOut, "w") as bedFh:
-    gieb.writeBed(bedFh)
+
+def rnaSeqIntronEvidBed(opts):
+    if opts.htmlColors:
+        Colors.printHtml()
+        sys.exit(0)
+    gieb = GencodeIntronEvidBed(opts.spliceJunctionEvidTsv)
+    with open(opts.bedOut, "w") as bedFh:
+        gieb.writeBed(bedFh)
+
+rnaSeqIntronEvidBed(parseArgs())

@@ -1,20 +1,21 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 import icedbProgSetup  # noqa: F401
 import argparse
-from pycbio.sys import fileOps
-from gencode_icedb import dataOps, pipelineOps
-
-verbose = False
+from pycbio.sys import fileOps, loggingOps
+from gencode_icedb import dataOps
+import sys
+import logging
+import pipettor
 
 
 def parseArgs():
     desc = """Create STAR genome index for a given read size and annotation set"""
     parser = argparse.ArgumentParser(description=desc)
+    loggingOps.addCmdOptions(parser)
     parser.add_argument('--numThreads', type=int,
                         help="number of threads to use")
-    parser.add_argument('--verbose', action="store_true", default=False,
-                        help="write verbose output")
     parser.add_argument('--tmpDir',
                         help="""temporary directory to use; a directory with a unique name is created under here and removed after.  Defaults to value of TMPDIR""")
     parser.add_argument('genomeFa',
@@ -27,8 +28,7 @@ def parseArgs():
                         help="""directory to contain all the generated files;
                         this must not exist; Log.out is also saved in this directory""")
     opts = parser.parse_args()
-    global verbose
-    verbose = opts.verbose
+    loggingOps.setupFromCmd(opts, sys.argv[0])
     return opts
 
 
@@ -44,15 +44,19 @@ def starCmd(genomeFa, numThreads, genomeDir, annotationGtf, readLength, starTmpD
             "--outFileNamePrefix", genomeDir + "/"]
 
 
-def starGenerateGenome(genomeFa, annotationGtf, readLength, numThreads, genomeDir, tmpDir):
+def generateStarGenome(genomeFa, annotationGtf, readLength, numThreads, genomeDir, tmpDir):
     starTmpDir = dataOps.getNewTmpDir(tmpDir)
     fileOps.ensureDir(genomeDir)
     genomeFa = dataOps.TmpUncompress(genomeFa, tmpDir)
     annotationGtf = dataOps.TmpUncompress(annotationGtf, tmpDir)
     cmd = starCmd(genomeFa.path, numThreads, genomeDir, annotationGtf.path, readLength, starTmpDir)
-    pipelineOps.runCmd(cmd, verbose=verbose)
+    pipettor.run(cmd, logger=logging.getLogger())
     genomeFa.finish()
     annotationGtf.finish()
 
-opts = parseArgs()
-starGenerateGenome(opts.genomeFa, opts.annotationGtf, opts.readLength, opts.numThreads, opts.genomeDir, opts.tmpDir)
+
+def starGenerateGenome(opts):
+    generateStarGenome(opts.genomeFa, opts.annotationGtf, opts.readLength, opts.numThreads, opts.genomeDir, opts.tmpDir)
+
+
+starGenerateGenome(parseArgs())

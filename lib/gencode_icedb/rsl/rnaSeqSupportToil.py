@@ -3,9 +3,11 @@ import sys
 import os
 from pycbio.sys import fileOps
 from gencode_icedb.rnaSeqData import setDatabase, RnaSeqData
-from gencode_icedb import pipelineOps, config
+from gencode_icedb import config
 from peewee import SqliteDatabase
 from toil.job import Job
+import pipettor
+import logging
 
 
 def starGenerateGenome(refGeneomeName, refGeneomeFa, readLength, geneAnnotationSetName,
@@ -27,7 +29,7 @@ def starSpliceJunctionMapFn(job, genomeDir, readsFile, readsFile2, numThreads, s
     if readsFile2 is not None:
         cmd.append("--readsFile2={}".format(+readsFile2))
     sjOutTmp = fileOps.atomicTmpFile(sjOut)
-    pipelineOps.runCmd(cmd)
+    pipettor.run(cmd, logger=logging.getLogger())
     fileOps.atomicInstall(sjOutTmp, sjOut)
 
 

@@ -14,21 +14,19 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
+from pycbio.sys import loggingOps
 
 
-verbose = False
 def parseArgs():
     desc = """Create density plots of introns supporting evidence"""
     parser = argparse.ArgumentParser(description=desc)
-    parser.add_argument('--verbose', action="store_true", default=False,
-                        help="write verbose output")
+    loggingOps.addCmdOptions(parser)
     parser.add_argument('spliceJunctionEvidTsv',
                         help="length of reads that will be mapped; used to calculate splice junction overhang")
     parser.add_argument('plotOut',
                         help="output plot file, defaults to pdf")
     opts = parser.parse_args()
-    global verbose
-    verbose = opts.verbose
+    loggingOps.setupFromCmd(opts, sys.argv[0])
     return opts
 
 
@@ -81,9 +79,10 @@ class GencodeIntronEvidPlot(object):
                                     log=log, range=range, normed=normed)
         plt.savefig(plotOut)
         plt.show()
-                                  
-opts = parseArgs()
-##matplotlib.interactive(1)
-giep = GencodeIntronEvidPlot(opts.spliceJunctionEvidTsv)
-giep.plot(opts.plotOut)
+
+def rnaSeqIntronEvidPlot(opts):
+    ##FIXME: should be option? matplotlib.interactive(1)
+    giep = GencodeIntronEvidPlot(opts.spliceJunctionEvidTsv)
+    giep.plot(opts.plotOut)
                  
+rnaSeqIntronEvidPlot(parseArgs())

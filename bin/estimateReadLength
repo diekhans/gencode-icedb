@@ -4,19 +4,19 @@ from __future__ import print_function
 import icedbProgSetup  # noqa: F401
 import sys
 import argparse
-from gencode_icedb import dataOps, pipelineOps
-
-verbose = False
+from gencode_icedb import dataOps
+from pycbio.sys import loggingOps
+import pipettor
+import logging
 
 
 def parseArgs():
     desc = """Estimate the read length to use in building the index.  This does
     a partial scan of the read file"""
     parser = argparse.ArgumentParser(description=desc)
+    loggingOps.addCmdOptions(parser)
     parser.add_argument('--sampleSize', type=int, default=20000,
                         help="number of reads to examine, if zero, examine all")
-    parser.add_argument('--verbose', action="store_true", default=False,
-                        help="write verbose output")
     parser.add_argument('readsFile',
                         help="""input reads in SAM, BAM or Fastq format, which maybe compressed""")
     parser.add_argument('outfile', default=None, nargs='?',
@@ -24,13 +24,12 @@ def parseArgs():
     opts = parser.parse_args()
     if opts.sampleSize <= 0:
         opts.sampleSize = sys.maxint
-    global verbose
-    verbose = opts.verbose
+    loggingOps.setupFromCmd(opts, sys.argv[0])
     return opts
 
 
 def fastqReader(readsFile):
-    return pipelineOps.openPipeline(dataOps.getReadsCatCommand(readsFile), verbose=verbose)
+    return pipettor.Popen(dataOps.getReadsCatCommand(readsFile), logger=logging.getLogger())
 
 
 def fastqReadSeq(fqfh):
