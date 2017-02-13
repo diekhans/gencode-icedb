@@ -4,7 +4,7 @@ Parse problem cases from set of genbank flat files.
 import re
 from collections import namedtuple
 from pycbio.sys import fileOps, symEnum
-from gencode_icedb.genbankProblemCasesDb import GenbankProblemReason
+from gencode_icedb.tsl.genbankProblemCasesDb import GenbankProblemReason
 import multiprocessing as mp
 
 
