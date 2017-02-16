@@ -3,7 +3,7 @@ include ${ROOT}/config.mk
 
 all::
 
-test:: genbankEvidence.test
+test:: genbankEvidence.test classify.test
 
 %.test:
 	(cd $* && ${MAKE} test)
