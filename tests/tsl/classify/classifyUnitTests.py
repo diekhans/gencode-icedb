@@ -39,13 +39,13 @@ class MockSeqWriter(object):
     def __init__(self, seqReader, mockDataTsv):
         self.seqReader = seqReader
         self.mockDataFh = open(mockDataTsv, "w")
-        fileOps.prRowv(self.mockDataFh, "chrom", "start", "end", "seq")
+        fileOps.prRowv(self.mockDataFh, "chrom", "start", "end", "strand", "seq")
 
     def get(self, chrom, start, end, strand=None):
         if strand is None:
             strand = '+'
         seq = self.seqReader.get(chrom, start, end, strand)
-        fileOps.prRowv(self.mockDataFh, chrom, start, end, seq)
+        fileOps.prRowv(self.mockDataFh, chrom, start, end, strand, seq)
         return seq
 
 
