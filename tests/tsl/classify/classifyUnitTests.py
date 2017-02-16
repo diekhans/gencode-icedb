@@ -66,21 +66,21 @@ class EvidenceTests(TestCaseBase):
         return MockSeqReader(self.getInputFile(mockReaderHg19Tsv))
 
     def __obtainSeqReader(self):
-        if self.seqReader is None:
+        if EvidenceTests.seqReader is None:
             if os.path.exists(twoBitHg19):
-                self.seqReader = self.__getRealSeqReader()
+                EvidenceTests.seqReader = self.__getRealSeqReader()
             else:
-                self.seqReader = self.__getMockSeqReader()
-        return self.seqReader
+                EvidenceTests.seqReader = self.__getMockSeqReader()
+        return EvidenceTests.seqReader
 
     def __requireSet1Psls(self):
-        if self.set1Psls is None:
-            self.set1Psls = PslTbl(self.getInputFile("set1.ucsc-mrna.psl"),
-                                   qNameIdx=True)
+        if EvidenceTests.set1Psls is None:
+            EvidenceTests.set1Psls = PslTbl(self.getInputFile("set1.ucsc-mrna.psl"),
+                                            qNameIdx=True)
 
     def __getSet1Psl(self, acc):
         self.__requireSet1Psls()
-        return self.set1Psls.qNameMap[acc][0]
+        return EvidenceTests.set1Psls.qNameMap[acc][0]
 
     def __assertFeatures(self, feats, expectFeatsStr, expectFeatStrs):
         self.assertEqual(str(feats), expectFeatsStr)
