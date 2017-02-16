@@ -26,7 +26,7 @@ class MockSeqReader(object):
         for row in TsvReader(mockDataTsv,
                              typeMap={"start": int,
                                       "end": int}):
-            self.mockData[tuple(row.chrom, row.start, row.end, row.strand)] = row.seq
+            self.mockData[(row.chrom, row.start, row.end, row.strand)] = row.seq
 
     def get(self, chrom, start, end, strand=None):
         if strand is None:
