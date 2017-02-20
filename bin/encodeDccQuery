@@ -7,7 +7,7 @@ import sys
 import argparse
 from pycbio.sys import fileOps, typeOps, loggingOps
 import urllib
-import requests
+import requests  # from pip
 import json
 
 encodeUrl = "https://www.encodeproject.org/"
