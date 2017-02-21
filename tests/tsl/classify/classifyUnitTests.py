@@ -10,7 +10,7 @@ from pycbio.sys.testCaseBase import TestCaseBase
 from pycbio.hgdata.psl import PslTbl
 from pycbio.tsv import TsvReader
 from pycbio.sys import fileOps
-from gencode_icedb.tsl.evidFeatures import SeqReader, EvidFeatures
+from gencode_icedb.tsl.evidFeatures import SeqReader, EvidFeatures, EvidFeaturesMap
 from twobitreader import TwoBitFile
 
 
@@ -19,6 +19,7 @@ mockReaderHg19Tsv = "mockReaderHg19.tsv"
 updateMockReader = False   # set this to update from a real run
 
 debugResults = False   # print out results for updated expected
+
 
 class MockSeqReader(object):
     """Fake SeqReader when 2bit isn't there"""
@@ -51,28 +52,28 @@ class MockSeqWriter(object):
 
 
 class EvidenceTests(TestCaseBase):
-    seqReader = None
+    genomeReader = None
     set1Psls = None
 
     def __getRealSeqReader(self):
-        seqReader = SeqReader(TwoBitFile(twoBitHg19))
+        genomeReader = SeqReader(TwoBitFile(twoBitHg19))
         if updateMockReader:
-            seqReader = MockSeqWriter(seqReader,
+            genomeReader = MockSeqWriter(genomeReader,
                                       self.getInputFile(mockReaderHg19Tsv))
-        return seqReader
+        return genomeReader
 
     def __getMockSeqReader(self):
         if updateMockReader:
             raise Exception("updateMockReader is True, however twobit {} is not available".format(twoBitHg19))
         return MockSeqReader(self.getInputFile(mockReaderHg19Tsv))
 
-    def __obtainSeqReader(self):
-        if EvidenceTests.seqReader is None:
+    def __obtainGenomeReader(self):
+        if EvidenceTests.genomeReader is None:
             if os.path.exists(twoBitHg19):
-                EvidenceTests.seqReader = self.__getRealSeqReader()
+                EvidenceTests.genomeReader = self.__getRealSeqReader()
             else:
-                EvidenceTests.seqReader = self.__getMockSeqReader()
-        return EvidenceTests.seqReader
+                EvidenceTests.genomeReader = self.__getMockSeqReader()
+        return EvidenceTests.genomeReader
 
     def __requireSet1Psls(self):
         if EvidenceTests.set1Psls is None:
@@ -93,7 +94,7 @@ class EvidenceTests(TestCaseBase):
 
     def testAF010310(self):
         psl = self.__getSet1Psl("AF010310.1")
-        feats = EvidFeatures(psl, self.__obtainSeqReader())
+        feats = EvidFeatures(psl, self.__obtainGenomeReader())
         self.__assertFeatures(feats, "t=chr22:18900294-18905926 -, q=AF010310.1:0=888 901",
                               ["exon 18900294-18900875 qIns=32 tIns=8",
                                "intron 18900875-18900950 qDel=0 sjBases=CT...AC (spliceGT_AG)",
@@ -105,7 +106,7 @@ class EvidenceTests(TestCaseBase):
 
     def testX96484(self):
         psl = self.__getSet1Psl("X96484.1")
-        feats = EvidFeatures(psl, self.__obtainSeqReader())
+        feats = EvidFeatures(psl, self.__obtainGenomeReader())
         self.__assertFeatures(feats, "t=chr22:18893922-18899592 +, q=X96484.1:48=1067 1080",
                               ["exon 18893922-18893997 qIns=0 tIns=0",
                                "intron 18893997-18894077 qDel=0 sjBases=GT...AG (spliceGT_AG)",
@@ -117,14 +118,11 @@ class EvidenceTests(TestCaseBase):
                                "intron 18898541-18899052 qDel=0 sjBases=GT...AG (spliceGT_AG)",
                                "exon 18899052-18899592 qIns=0 tIns=0"])
 
-    def testSet1(self):
+    def testRangeMap1(self):
         # just run through to see if they all convert
         self.__requireSet1Psls()
-        cnt = 0
-        for psl in self.set1Psls:
-            EvidFeatures(psl, self.__obtainSeqReader())
-            cnt += 1
-        self.assertEqual(cnt, 81)
+        evidFeaturesMap = EvidFeaturesMap(self.set1Psls, self.__obtainGenomeReader())
+        self.assertEqual(len(evidFeaturesMap.featuresList), 81)
 
 
 def suite():
