@@ -3,6 +3,7 @@ Convert PSL to features, closing (and tracking gaps)
 """
 from __future__ import print_function
 from pycbio.hgdata import dnaOps
+from pycbio.sys.symEnum import SymEnum
 
 
 class SeqReader(object):
@@ -29,6 +30,17 @@ class SeqReader(object):
             seq = dnaOps.reverseComplement(seq)
         return seq
 
+SpliceSites = SymEnum("SpliceSite",
+                     ("spliceGT_AG", "spliceGC_AG", "spliceAT_AC", "spliceOther"))
+
+spliceSitesMap = {
+    ("gt", "ag"): SpliceSites.spliceGT_AG,
+    ("gc", "ag"): SpliceSites.spliceGC_AG,
+    ("at", "ac"): SpliceSites.spliceAT_AC,
+}
+
+def spliceSitesClassify(donor, acceptor):
+    return spliceSitesMap.get((donor.lower(), acceptor.lower()), SpliceSites.spliceOther)
 
 class EvidFeature(object):
     __slots__ = ("start", "end")
@@ -50,15 +62,20 @@ class EvidExon(EvidFeature):
 
 
 class EvidIntron(EvidFeature):
-    __slots__ = ("qDeleteBases", "startBases", "endBases")
+    __slots__ = ("qDeleteBases", "startBases", "endBases", "spliceSites")
 
-    def __init__(self, start, end, qDeleteBases, startBases, endBases):
+    def __init__(self, start, end, qDeleteBases, startBases, endBases, strand):
         super(EvidIntron, self).__init__(start, end)
         self.qDeleteBases, self.startBases, self.endBases = qDeleteBases, startBases, endBases
-
+        if strand == '+':
+            self.spliceSites = spliceSitesClassify(startBases, endBases)
+        else:
+            self.spliceSites = spliceSitesClassify(dnaOps.reverseComplement(endBases), dnaOps.reverseComplement(startBases))
+        
     def __str__(self):
-        return "intron {}-{} qDel={} sjBases={}...{}".format(self.start,
-                                                             self.end, self.qDeleteBases, self.startBases, self.endBases)
+        return "intron {}-{} qDel={} sjBases={}...{} ({})".format(self.start,
+                                                                  self.end, self.qDeleteBases, self.startBases, self.endBases,
+                                                                  self.spliceSites)
 
 
 class EvidFeatures(list):
@@ -67,11 +84,11 @@ class EvidFeatures(list):
     """
     minIntronSize = 30
 
-    def __init__(self, psl, tStrand, seqRegion):
-        if psl.getTStrand() != tStrand:
-            psl = psl.reverseComplement()
-        self.chrom = psl.tStart
-        self.strand = tStrand
+    def __init__(self, psl, seqRegion):
+        if psl.getTStrand() != '+':
+            raise Exception("expected PSL target strand of +")
+        self.chrom = psl.tName
+        self.strand = psl.getQStrand()
         self.qName = psl.qName
         self.qStart = psl.qStart
         self.qEnd = psl.qEnd
@@ -119,4 +136,4 @@ class EvidFeatures(list):
                                  psl.blocks[iBlkNext].tEnd, psl.getTStrand())
         self.append(EvidIntron(psl.blocks[iBlkNext - 1].tEnd,
                                psl.blocks[iBlkNext].tStart,
-                               qDeleteBases, startBases, endBases))
+                               qDeleteBases, startBases, endBases, self.strand))

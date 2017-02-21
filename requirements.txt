@@ -1,2 +1,4 @@
-sqlite3
 peewee
+requests
+eutils
+pytz

@@ -88,7 +88,7 @@ class EvidenceTests(TestCaseBase):
 
     def testAF010310(self):
         psl = self.__getSet1Psl("AF010310.1")
-        feats = EvidFeatures(psl, '-', self.__obtainSeqReader())
+        feats = EvidFeatures(psl, self.__obtainSeqReader())
         self.__assertFeatures(feats, "t=18900294 -, q=AF010310.1:0=888 901",
                               ['exon 32398640-32398738 qIns=1 tIns=4 ',
                                'intron 32398738-32400065 qDel=0 sjBases=GT...AG',
@@ -110,7 +110,7 @@ class EvidenceTests(TestCaseBase):
 
     def testX96484(self):
         psl = self.__getSet1Psl("X96484.1")
-        feats = EvidFeatures(psl, '+', self.__obtainSeqReader())
+        feats = EvidFeatures(psl, self.__obtainSeqReader())
         self.__assertFeatures(feats, "t=18893922 +, q=X96484.1:48=1067 1080",
                               ['exon 18893922-18893997 qIns=0 tIns=0 ',
                                'intron 18893997-18894077 qDel=0 sjBases=CT...GA',
@@ -127,7 +127,7 @@ class EvidenceTests(TestCaseBase):
         self.__requireSet1Psls()
         cnt = 0
         for psl in self.set1Psls:
-            EvidFeatures(psl, psl.getTStrand(), self.__obtainSeqReader())
+            EvidFeatures(psl, self.__obtainSeqReader())
             cnt += 1
         self.assertEqual(cnt, 81)
 
