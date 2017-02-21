@@ -18,7 +18,7 @@ twoBitHg19 = "/hive/data/genomes/hg19/hg19.2bit"
 mockReaderHg19Tsv = "mockReaderHg19.tsv"
 updateMockReader = False   # set this to update from a real run
 
-debugResults = True   # print out results for updated expected
+debugResults = False   # print out results for updated expected
 
 class MockSeqReader(object):
     """Fake SeqReader when 2bit isn't there"""
