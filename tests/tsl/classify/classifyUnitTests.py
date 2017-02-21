@@ -18,6 +18,7 @@ twoBitHg19 = "/hive/data/genomes/hg19/hg19.2bit"
 mockReaderHg19Tsv = "mockReaderHg19.tsv"
 updateMockReader = False   # set this to update from a real run
 
+debugResults = True   # print out results for updated expected
 
 class MockSeqReader(object):
     """Fake SeqReader when 2bit isn't there"""
@@ -83,44 +84,38 @@ class EvidenceTests(TestCaseBase):
         return EvidenceTests.set1Psls.qNameMap[acc][0]
 
     def __assertFeatures(self, feats, expectFeatsStr, expectFeatStrs):
+        if debugResults:
+            print('"{}"'.format(feats))
+            for f in feats:
+                print('"{}",'.format(f))
         self.assertEqual(str(feats), expectFeatsStr)
         self.assertEqual([str(f) for f in feats], expectFeatStrs)
 
     def testAF010310(self):
         psl = self.__getSet1Psl("AF010310.1")
         feats = EvidFeatures(psl, self.__obtainSeqReader())
-        self.__assertFeatures(feats, "t=18900294 -, q=AF010310.1:0=888 901",
-                              ['exon 32398640-32398738 qIns=1 tIns=4 ',
-                               'intron 32398738-32400065 qDel=0 sjBases=GT...AG',
-                               'exon 32400065-32400164 qIns=0 tIns=0 ',
-                               'intron 32400164-32403527 qDel=0 sjBases=GA...GG',
-                               'exon 32403527-32403616 qIns=0 tIns=0 ',
-                               'intron 32403616-32403691 qDel=0 sjBases=GC...CA',
-                               'exon 32403691-32403763 qIns=1 tIns=0 ',
-                               'intron 32403763-32403763 qDel=1 sjBases=GC...GA',
-                               'exon 32403763-32403897 qIns=2 tIns=0 ',
-                               'intron 32403897-32403897 qDel=1 sjBases=TA...CC',
-                               'exon 32403897-32403932 qIns=3 tIns=0 ',
-                               'intron 32403932-32403938 qDel=10 sjBases=AG...CA',
-                               'exon 32403938-32403987 qIns=6 tIns=1 ',
-                               'intron 32403987-32403987 qDel=1 sjBases=AC...AC',
-                               'exon 32403987-32404031 qIns=3 tIns=0 ',
-                               'intron 32404031-32404031 qDel=1 sjBases=GC...TC',
-                               'exon 32404031-32404272 qIns=3 tIns=1 '])
+        self.__assertFeatures(feats, "t=chr22:18900294-18905926 -, q=AF010310.1:0=888 901",
+                              ["exon 18900294-18900875 qIns=32 tIns=8",
+                               "intron 18900875-18900950 qDel=0 sjBases=CT...AC (spliceGT_AG)",
+                               "exon 18900950-18901039 qIns=0 tIns=0",
+                               "intron 18901039-18904402 qDel=0 sjBases=CT...AC (spliceGT_AG)",
+                               "exon 18904402-18904501 qIns=0 tIns=0",
+                               "intron 18904501-18905828 qDel=0 sjBases=CT...AC (spliceGT_AG)",
+                               "exon 18905828-18905926 qIns=1 tIns=4"])
 
     def testX96484(self):
         psl = self.__getSet1Psl("X96484.1")
         feats = EvidFeatures(psl, self.__obtainSeqReader())
-        self.__assertFeatures(feats, "t=18893922 +, q=X96484.1:48=1067 1080",
-                              ['exon 18893922-18893997 qIns=0 tIns=0 ',
-                               'intron 18893997-18894077 qDel=0 sjBases=CT...GA',
-                               'exon 18894077-18894238 qIns=1 tIns=0 ',
-                               'intron 18894238-18897684 qDel=0 sjBases=TG...AG',
-                               'exon 18897684-18897785 qIns=0 tIns=0 ',
-                               'intron 18897785-18898400 qDel=0 sjBases=GC...AG',
-                               'exon 18898400-18898541 qIns=0 tIns=0 ',
-                               'intron 18898541-18899052 qDel=0 sjBases=GA...TG',
-                               'exon 18899052-18899592 qIns=0 tIns=0 '])
+        self.__assertFeatures(feats, "t=chr22:18893922-18899592 +, q=X96484.1:48=1067 1080",
+                              ["exon 18893922-18893997 qIns=0 tIns=0",
+                               "intron 18893997-18894077 qDel=0 sjBases=GT...AG (spliceGT_AG)",
+                               "exon 18894077-18894238 qIns=1 tIns=0",
+                               "intron 18894238-18897684 qDel=0 sjBases=GT...AG (spliceGT_AG)",
+                               "exon 18897684-18897785 qIns=0 tIns=0",
+                               "intron 18897785-18898400 qDel=0 sjBases=GT...AG (spliceGT_AG)",
+                               "exon 18898400-18898541 qIns=0 tIns=0",
+                               "intron 18898541-18899052 qDel=0 sjBases=GT...AG (spliceGT_AG)",
+                               "exon 18899052-18899592 qIns=0 tIns=0"])
 
     def testSet1(self):
         # just run through to see if they all convert

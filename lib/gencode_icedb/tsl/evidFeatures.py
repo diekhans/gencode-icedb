@@ -24,7 +24,7 @@ class SeqReader(object):
     def get(self, chrom, start, end, strand=None):
         self.__obtainChrom(chrom)
         if strand == '-':
-            start, end = self.size - end, self.size - start
+            start, end = dnaOps.reverseCoords(start, end, self.size)
         seq = self.twoBitSeq[start:end]
         if strand == '-':
             seq = dnaOps.reverseComplement(seq)
@@ -57,48 +57,44 @@ class EvidExon(EvidFeature):
         self.qInsertBases, self.tInsertBases = qInsertBases, tInsertBases
 
     def __str__(self):
-        return "exon {}-{} qIns={} tIns={} ".format(self.start, self.end,
-                                                    self.qInsertBases, self.tInsertBases)
+        return "exon {}-{} qIns={} tIns={}".format(self.start, self.end,
+                                                   self.qInsertBases, self.tInsertBases)
 
 
 class EvidIntron(EvidFeature):
     __slots__ = ("qDeleteBases", "startBases", "endBases", "spliceSites")
 
-    def __init__(self, start, end, qDeleteBases, startBases, endBases, strand):
+    def __init__(self, start, end, qDeleteBases, startBases, endBases, spliceSites):
         super(EvidIntron, self).__init__(start, end)
-        self.qDeleteBases, self.startBases, self.endBases = qDeleteBases, startBases, endBases
-        if strand == '+':
-            self.spliceSites = spliceSitesClassify(startBases, endBases)
-        else:
-            self.spliceSites = spliceSitesClassify(dnaOps.reverseComplement(endBases), dnaOps.reverseComplement(startBases))
+        self.qDeleteBases, self.startBases, self.endBases, self.spliceSites = qDeleteBases, startBases, endBases, spliceSites
         
     def __str__(self):
-        return "intron {}-{} qDel={} sjBases={}...{} ({})".format(self.start,
-                                                                  self.end, self.qDeleteBases, self.startBases, self.endBases,
-                                                                  self.spliceSites)
+        return "intron {}-{} qDel={} sjBases={}...{} ({})".format(self.start, self.end, self.qDeleteBases,
+                                                                  self.startBases, self.endBases, self.spliceSites)
 
 
 class EvidFeatures(list):
     """
-    Set of features derived from a PSL alignment, features are in genomic order.
+    Set of features derived from a PSL alignment, features are kept in genomic
+    order.
     """
     minIntronSize = 30
 
     def __init__(self, psl, seqRegion):
         if psl.getTStrand() != '+':
-            raise Exception("expected PSL target strand of +")
+            raise Exception("unexpected target `-' strand on {} ".format(psl.qName))
         self.chrom = psl.tName
         self.strand = psl.getQStrand()
+        self.start, self.end = psl.tStart, psl.tEnd
+        self.size = psl.tSize
         self.qName = psl.qName
-        self.qStart = psl.qStart
-        self.qEnd = psl.qEnd
+        self.qStart, self.qEnd = psl.qStart, psl.qEnd
         self.qSize = psl.qSize
         self.__buildFeatures(psl, seqRegion)
 
     def __str__(self):
-        return "t={} {}, q={}:{}={} {}".format(self.chrom, self.strand,
-                                               self.qName, self.qStart,
-                                               self.qEnd, self.qSize)
+        return "t={}:{}-{} {}, q={}:{}={} {}".format(self.chrom, self.start, self.end, self.strand,
+                                                     self.qName, self.qStart, self.qEnd, self.qSize)
 
     def __buildFeatures(self, psl, seqRegion):
         iBlkStart = 0
@@ -109,13 +105,14 @@ class EvidFeatures(list):
                 self.__makeIntron(psl, iBlkEnd, seqRegion)
             iBlkStart = iBlkEnd
 
-    def __tGapSize(self, psl, iBlkStart, iBlkEnd):
-        return psl.blocks[iBlkEnd].tStart - psl.blocks[iBlkStart].tEnd
+    def __tGapSize(self, psl, iBlk):
+        "size of gap before the block"
+        return psl.blocks[iBlk].tStart - psl.blocks[iBlk-1].tEnd
 
     def __findExonEnd(self, psl, iBlkStart):
         "finds half-open end of blocks covering current exon"
         iBlkEnd = iBlkStart + 1
-        while (iBlkEnd < len(psl.blocks)) and (self.__tGapSize(psl, iBlkStart, iBlkEnd) < self.minIntronSize):
+        while (iBlkEnd < len(psl.blocks)) and (self.__tGapSize(psl, iBlkEnd) < self.minIntronSize):
             iBlkEnd += 1
         return iBlkEnd
 
@@ -130,10 +127,14 @@ class EvidFeatures(list):
 
     def __makeIntron(self, psl, iBlkNext, seqRegion):
         qDeleteBases = psl.blocks[iBlkNext].qStart - psl.blocks[iBlkNext - 1].qEnd
-        startBases = seqRegion.get(psl.tName, psl.blocks[iBlkNext].tStart,
-                                   psl.blocks[iBlkNext].tStart + 2, psl.getTStrand())
-        endBases = seqRegion.get(psl.tName, psl.blocks[iBlkNext].tEnd - 2,
-                                 psl.blocks[iBlkNext].tEnd, psl.getTStrand())
+        startBases = seqRegion.get(psl.tName, psl.blocks[iBlkNext - 1].tEnd,
+                                   psl.blocks[iBlkNext - 1].tEnd + 2)
+        endBases = seqRegion.get(psl.tName, psl.blocks[iBlkNext].tStart - 2,
+                                 psl.blocks[iBlkNext].tStart)
+        if self.strand == '+':
+            spliceSites = spliceSitesClassify(startBases, endBases)
+        else:
+            spliceSites = spliceSitesClassify(dnaOps.reverseComplement(endBases), dnaOps.reverseComplement(startBases))
         self.append(EvidIntron(psl.blocks[iBlkNext - 1].tEnd,
                                psl.blocks[iBlkNext].tStart,
-                               qDeleteBases, startBases, endBases, self.strand))
+                               qDeleteBases, startBases, endBases, spliceSites))
