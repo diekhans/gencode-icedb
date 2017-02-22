@@ -5,6 +5,7 @@ from __future__ import print_function
 from pycbio.hgdata import dnaOps
 from pycbio.hgdata.rangeFinder import RangeFinder
 from pycbio.sys.symEnum import SymEnum
+from pycbio.hgdata.hgLite import PslDbTable
 
 
 class SeqReader(object):
@@ -132,7 +133,7 @@ class EvidFeatures(list):
         startBases = genomeReader.get(psl.tName, psl.blocks[iBlkNext - 1].tEnd,
                                       psl.blocks[iBlkNext - 1].tEnd + 2)
         endBases = genomeReader.get(psl.tName, psl.blocks[iBlkNext].tStart - 2,
-                                psl.blocks[iBlkNext].tStart)
+                                    psl.blocks[iBlkNext].tStart)
         if self.strand == '+':
             spliceSites = spliceSitesClassify(startBases, endBases)
         else:
@@ -150,6 +151,13 @@ class EvidFeaturesMap(list):
         for psl in psls:
             self.__addPsl(psl, genomeReader)
 
+    @staticmethod
+    def dbFactory(conn, table, chrom, start, end, genomeReader):
+        "constructor from a sqlite3 databases"
+        pslDbTable = PslDbTable(conn, table)
+        psls = pslDbTable.getTRangeOverlap(chrom, start, end)
+        return EvidFeaturesMap(psls, genomeReader)
+
     def __addPsl(self, psl, genomeReader):
         evidFeatures = EvidFeatures(psl, genomeReader)
         self.featuresList.append(evidFeatures)
@@ -159,4 +167,4 @@ class EvidFeaturesMap(list):
 
     def overlapping(self, chrom, start, end, strand=None):
         "generator over ExonFeatures overlaping the specified range"
-        return self.exonRangeMap.overlaping(chrom, start, end, strand)
+        return self.exonRangeMap.overlapping(chrom, start, end, strand)

@@ -7,11 +7,12 @@ if __name__ == '__main__':
                 os.path.join(rootDir, "extern/pycbio/lib")] + sys.path
 import unittest
 from pycbio.sys.testCaseBase import TestCaseBase
-from pycbio.hgdata.psl import PslTbl
 from pycbio.tsv import TsvReader
 from pycbio.sys import fileOps
 from gencode_icedb.tsl.evidFeatures import SeqReader, EvidFeatures, EvidFeaturesMap
 from twobitreader import TwoBitFile
+from pycbio.hgdata.hgLite import PslDbTable
+import sqlite3
 
 
 twoBitHg19 = "/hive/data/genomes/hg19/hg19.2bit"
@@ -53,13 +54,13 @@ class MockSeqWriter(object):
 
 class EvidenceTests(TestCaseBase):
     genomeReader = None
-    set1Psls = None
+    set1PslDbTbl = None
 
     def __getRealSeqReader(self):
         genomeReader = SeqReader(TwoBitFile(twoBitHg19))
         if updateMockReader:
             genomeReader = MockSeqWriter(genomeReader,
-                                      self.getInputFile(mockReaderHg19Tsv))
+                                         self.getInputFile(mockReaderHg19Tsv))
         return genomeReader
 
     def __getMockSeqReader(self):
@@ -75,14 +76,19 @@ class EvidenceTests(TestCaseBase):
                 EvidenceTests.genomeReader = self.__getMockSeqReader()
         return EvidenceTests.genomeReader
 
-    def __requireSet1Psls(self):
-        if EvidenceTests.set1Psls is None:
-            EvidenceTests.set1Psls = PslTbl(self.getInputFile("set1.ucsc-mrna.psl"),
-                                            qNameIdx=True)
+    def __obtainSetPslDbTbl(self):
+        if EvidenceTests.set1PslDbTbl is None:
+            conn = sqlite3.connect(":memory")
+            EvidenceTests.set1PslDbTbl = PslDbTable(conn, "set1", create=True)
+            EvidenceTests.set1PslDbTbl.loadPslFile(self.getInputFile("set1.ucsc-mrna.psl"))
+        return EvidenceTests.set1PslDbTbl
 
     def __getSet1Psl(self, acc):
-        self.__requireSet1Psls()
-        return EvidenceTests.set1Psls.qNameMap[acc][0]
+        pslDbTbl = self.__obtainSetPslDbTbl()
+        psls = pslDbTbl.getByQName(acc)
+        if len(psls) == 0:
+            raise Exception("psl not found: {}".format(acc))
+        return psls[0]
 
     def __assertFeatures(self, feats, expectFeatsStr, expectFeatStrs):
         if debugResults:
@@ -119,10 +125,14 @@ class EvidenceTests(TestCaseBase):
                                "exon 18899052-18899592 qIns=0 tIns=0"])
 
     def testRangeMap1(self):
-        # just run through to see if they all convert
-        self.__requireSet1Psls()
-        evidFeaturesMap = EvidFeaturesMap(self.set1Psls, self.__obtainGenomeReader())
-        self.assertEqual(len(evidFeaturesMap.featuresList), 81)
+        # range is set1: chr22:18632931-19279166
+        pslDbTbl = self.__obtainSetPslDbTbl()
+        evidFeaturesMap = EvidFeaturesMap.dbFactory(pslDbTbl.conn, pslDbTbl.table,
+                                                    "chr22", 18958026, 19109719,
+                                                    self.__obtainGenomeReader())
+        self.assertEqual(len(evidFeaturesMap.featuresList), 30)
+        overFeats = list(evidFeaturesMap.overlapping("chr22", 18958026, 18982141))
+        self.assertEqual(len(overFeats), 12)
 
 
 def suite():
