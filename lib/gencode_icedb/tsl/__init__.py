@@ -1,0 +1,2 @@
+
+minIntronSize = 30

@@ -31,10 +31,11 @@ class GenbankProblemCaseDbTable(HgLiteTable):
             startAcc text not null,
             endAcc text not null,
             reason text not null);"""
-    __insertSql = """INSERT INTO {table} (startAcc, endAcc, reason) VALUES (?, ?, ?);"""
+    __insertSql = """INSERT INTO {table} ({columns}) VALUES ({values});"""
     __indexSql = """CREATE UNIQUE INDEX {table}_startAcc on {table} (startAcc);
                     CREATE UNIQUE INDEX {table}_endAcc on {table} (endAcc);"""
-
+    columnNames = ("startAcc", "endAcc", "reason")
+    
     def __init__(self, conn, table, create=False):
         super(GenbankProblemCaseDbTable, self).__init__(conn, table)
         if create:
@@ -50,12 +51,12 @@ class GenbankProblemCaseDbTable(HgLiteTable):
 
     def loads(self, rows):
         """load rows into table.  Each element of row is a list, tuple, or GenbankProblemCase"""
-        self._inserts(self.__insertSql, rows)
+        self._inserts(self.__insertSql, self.columnNames, rows)
 
     def get(self, acc):
         "retrieve a record by accession, or None"
-        sql = "SELECT startAcc, endAcc, reason FROM {table} WHERE (startAcc >= ?) and (endAcc <= ?);"
-        row = next(self.query(sql, acc, acc), None)
+        sql = "SELECT {columns}, reason FROM {table} WHERE (startAcc >= ?) and (endAcc <= ?);"
+        row = next(self.query(sql, self.columnNames, acc, acc), None)
         if row is None:
             return None
         else:

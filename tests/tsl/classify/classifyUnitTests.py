@@ -9,7 +9,8 @@ import unittest
 from pycbio.sys.testCaseBase import TestCaseBase
 from pycbio.tsv import TsvReader
 from pycbio.sys import fileOps
-from gencode_icedb.tsl.evidFeatures import SeqReader, EvidFeatures, EvidFeaturesMap
+from gencode_icedb.sequence import SeqReader
+from gencode_icedb.tsl.evidFeatures import EvidFeatureMap, EvidTranscriptPslFactory
 from twobitreader import TwoBitFile
 from pycbio.hgdata.hgLite import PslDbTable
 import sqlite3
@@ -78,7 +79,7 @@ class EvidenceTests(TestCaseBase):
 
     def __obtainSetPslDbTbl(self):
         if EvidenceTests.set1PslDbTbl is None:
-            conn = sqlite3.connect(":memory")
+            conn = sqlite3.connect(":memory:")
             EvidenceTests.set1PslDbTbl = PslDbTable(conn, "set1", create=True)
             EvidenceTests.set1PslDbTbl.loadPslFile(self.getInputFile("set1.ucsc-mrna.psl"))
         return EvidenceTests.set1PslDbTbl
@@ -90,6 +91,10 @@ class EvidenceTests(TestCaseBase):
             raise Exception("psl not found: {}".format(acc))
         return psls[0]
 
+    def __pslToEvidTranscript(self, psl):
+        factory = EvidTranscriptPslFactory(self.__obtainGenomeReader())
+        return factory.fromPsl(psl)
+
     def __assertFeatures(self, feats, expectFeatsStr, expectFeatStrs):
         if debugResults:
             print('"{}"'.format(feats))
@@ -99,8 +104,7 @@ class EvidenceTests(TestCaseBase):
         self.assertEqual([str(f) for f in feats], expectFeatStrs)
 
     def testAF010310(self):
-        psl = self.__getSet1Psl("AF010310.1")
-        feats = EvidFeatures(psl, self.__obtainGenomeReader())
+        feats = self.__pslToEvidTranscript(self.__getSet1Psl("AF010310.1"))
         self.__assertFeatures(feats, "t=chr22:18900294-18905926 -, q=AF010310.1:0=888 901",
                               ["exon 18900294-18900875 qIns=32 tIns=8",
                                "intron 18900875-18900950 qDel=0 sjBases=CT...AC (spliceGT_AG)",
@@ -111,8 +115,7 @@ class EvidenceTests(TestCaseBase):
                                "exon 18905828-18905926 qIns=1 tIns=4"])
 
     def testX96484(self):
-        psl = self.__getSet1Psl("X96484.1")
-        feats = EvidFeatures(psl, self.__obtainGenomeReader())
+        feats = self.__pslToEvidTranscript(self.__getSet1Psl("X96484.1"))
         self.__assertFeatures(feats, "t=chr22:18893922-18899592 +, q=X96484.1:48=1067 1080",
                               ["exon 18893922-18893997 qIns=0 tIns=0",
                                "intron 18893997-18894077 qDel=0 sjBases=GT...AG (spliceGT_AG)",
@@ -127,11 +130,11 @@ class EvidenceTests(TestCaseBase):
     def testRangeMap1(self):
         # range is set1: chr22:18632931-19279166
         pslDbTbl = self.__obtainSetPslDbTbl()
-        evidFeaturesMap = EvidFeaturesMap.dbFactory(pslDbTbl.conn, pslDbTbl.table,
-                                                    "chr22", 18958026, 19109719,
-                                                    self.__obtainGenomeReader())
-        self.assertEqual(len(evidFeaturesMap.featuresList), 30)
-        overFeats = list(evidFeaturesMap.overlapping("chr22", 18958026, 18982141))
+        evidFeatureMap = EvidFeatureMap.dbFactory(pslDbTbl.conn, pslDbTbl.table,
+                                                  "chr22", 18958026, 19109719,
+                                                  self.__obtainGenomeReader())
+        self.assertEqual(len(evidFeatureMap.transcripts), 30)
+        overFeats = list(evidFeatureMap.overlapping("chr22", 18958026, 18982141))
         self.assertEqual(len(overFeats), 12)
 
 
