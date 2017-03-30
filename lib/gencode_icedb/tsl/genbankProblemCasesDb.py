@@ -35,7 +35,7 @@ class GenbankProblemCaseDbTable(HgLiteTable):
     __indexSql = """CREATE UNIQUE INDEX {table}_startAcc on {table} (startAcc);
                     CREATE UNIQUE INDEX {table}_endAcc on {table} (endAcc);"""
     columnNames = ("startAcc", "endAcc", "reason")
-    
+
     def __init__(self, conn, table, create=False):
         super(GenbankProblemCaseDbTable, self).__init__(conn, table)
         if create:

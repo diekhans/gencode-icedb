@@ -93,7 +93,7 @@ class AnnotTranscriptGenePredFactory(object):
                                          gp.exons[iBlkNext].start)
         spliceSites = spliceSitesClassifyStrand(gp.getQStrand(), startBases, endBases)
         return AnnotIntron(self, gp.exons[iBlkNext - 1].end, gp.exons[iBlkNext].start,
-                          startBases, endBases, spliceSites)
+                           startBases, endBases, spliceSites)
 
     def fromGenePred(self, gp):
         "convert a genePred to an AnnotTranscript"
@@ -101,19 +101,14 @@ class AnnotTranscriptGenePredFactory(object):
                                self.__buildFeatures(gp))
 
 
-class AnnotFeatureMap(list):
-    "map by exon coordinates of AnnotFeatures objects"
+class AnnotFeatures(list):
+    "table of AnnotTranscript objects"
 
     def __init__(self):
-        self.transcripts = []
-        self.exonRangeMap = RangeFinder()
-
-    def overlapping(self, chrom, start, end, strand=None):
-        "generator over ExonFeatures overlaping the specified range"
-        return self.exonRangeMap.overlapping(chrom, start, end, strand)
+        self.transcriptByName = []
 
     def addTranscript(self, annotTrans):
-        self.transcripts.append(annotTrans)
+        self.transcriptByName[annotTrans.name].append(annotTrans)
         for annotFeat in annotTrans:
             if isinstance(annotFeat, AnnotExon):
                 self.exonRangeMap.add(annotTrans.chrom, annotFeat.start, annotFeat.end, annotTrans, annotTrans.strand)
@@ -121,8 +116,8 @@ class AnnotFeatureMap(list):
     @staticmethod
     def dbFactory(conn, table, chrom, start, end, genomeReader):
         "constructor from a sqlite3 databases"
-        pslDbTable = PslDbTable(conn, table)
-        annotFactory = AnnotTranscriptPslFactory(genomeReader)
+        gpDbTable = GenePredDbTable(conn, table)
+        annotFactory = AnnotTranscriptGenePredFactory(genomeReader)
         annotFeatureMap = AnnotFeatureMap()
         for psl in pslDbTable.getTRangeOverlap(chrom, start, end):
             annotFeatureMap.addTranscript(annotFactory.fromPsl(psl))
