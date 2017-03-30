@@ -20,10 +20,15 @@ import sqlite3
 twoBitHg19 = "/hive/data/genomes/hg19/hg19.2bit"
 mockReaderHg19PslTsv = "mockReaderHg19Psl.tsv"
 mockReaderHg19GpTsv = "mockReaderHg19Gp.tsv"
-updateMockReader = False   # set this to update from a real run
 
+updateMockReader = False   # set this to update from a real run
+forceMockReader = False  # set this to check mock data
 debugResults = False   # print out results for updated expected
 
+if updateMockReader or forceMockReader or debugResults:
+    print("Warning: debug variables set", file=sys.stderr)
+if updateMockReader and forceMockReader:
+    raise Exception("makes no sense to have both updateMockReader and forceMockReader set")
 
 class MockGenomeReader(object):
     """Fake GenomeReader when 2bit isn't there"""
@@ -50,8 +55,10 @@ class MockSeqWriter(object):
     def get(self, chrom, start, end, strand=None):
         if strand is None:
             strand = '+'
+        assert strand == '+'
         seq = self.genomeReader.get(chrom, start, end, strand)
         fileOps.prRowv(self.mockDataFh, chrom, start, end, strand, seq)
+        self.mockDataFh.flush()
         return seq
 
 
@@ -75,7 +82,7 @@ class GenomeReaderFactory(object):
 
     def obtain(self, testCase):
         if self.genomeReader is None:
-            if os.path.exists(twoBitHg19):
+            if os.path.exists(twoBitHg19) and not forceMockReader:
                 self.genomeReader = self.__getReal(testCase)
             else:
                 self.genomeReader = self.__getMock(testCase)
