@@ -1,62 +1,17 @@
 from __future__ import print_function
-from pycbio.hgdata.hgLite import PslDbTable
-from gencode_icedb.sequence import spliceSitesClassifyStrand
+from pycbio.hgdata.hgLite import GenePredDbTable
+from gencode_icedb.genome import spliceSitesClassifyStrand
 from gencode_icedb import minIntronSize
+from gencode_icedb.tsl.transFeatures import ExonFeature, IntronFeature, TranscriptFeatures
 
 
-class AnnotFeature(object):
-    "an annotation feature on the genome"
-    __slots__ = ("parent", "start", "end")
-
-    def __init__(self, parent, start, end):
-        self.parent, self.start, self.end = parent, start, end
-
-
-class AnnotExon(AnnotFeature):
-    "exon from annotation, with target deletions closed and counted"
-    __slots__ = ("tGapBases",)
-
-    def __init__(self, parent, start, end, tGapBases):
-        super(AnnotExon, self).__init__(parent, start, end)
-        self.tGapBases = tGapBases
-
-    def __str__(self):
-        return "exon {}-{} tGap={}".format(self.start, self.end, self.tGapBases)
-
-
-class AnnotIntron(AnnotFeature):
-    "intron from annotation"
-    __slots__ = ("startBases", "endBases", "spliceSites")
-
-    def __init__(self, parent, start, end, startBases, endBases, spliceSites):
-        super(AnnotIntron, self).__init__(parent, start, end)
-        self.startBases, self.endBases, self.spliceSites = startBases, endBases, spliceSites
-
-    def __str__(self):
-        return "intron {}-{} sjBases={}...{} ({})".format(self.start, self.end,
-                                                          self.startBases, self.endBases, self.spliceSites)
-
-
-class AnnotTranscript(list):
-    """
-    Set of features for a transcript annotation. Features are
-    kept in genomic order.
-    """
-
-    def __init__(self, name, chrom, strand, start, end, features):
-        self.name, self.chrom, self.strand, self.start, self.end = name, chrom, strand, start, end,
-        self.extend(features)
-
-    def __str__(self):
-        return "annot={} {}:{}-{} {}".format(self.name, self.chrom, self.start, self.end, self.strand)
-
-
-class AnnotTranscriptGenePredFactory(object):
+class AnnotationGenePredFactory(object):
     """
     factory to create annotation features from genePreds
     """
 
     def __init__(self, genomeReader):
+        """genomeReader maybe None if splice sites are not desired """
         self.genomeReader = genomeReader
 
     def __buildFeatures(self, gp):
@@ -83,24 +38,33 @@ class AnnotTranscriptGenePredFactory(object):
         gapBases = 0
         for iBlk in xrange(iBlkStart + 1, iBlkEnd):
             gapBases += gp.exons[iBlk].start - gp.exons[iBlk - 1].end
-        return AnnotExon(self, gp.exons[iBlkStart].start, gp.exons[iBlkEnd - 1].end, gapBases)
+        return ExonFeature(self, gp.exons[iBlkStart].start, gp.exons[iBlkEnd - 1].end, gapBases)
 
-    def __makeIntron(self, gp, iBlkNext):
+    def __getSpliceSites(self, gp, iBlkNext):
         startBases = self.genomeReader.get(gp.tName, gp.exons[iBlkNext - 1].end,
                                            gp.exons[iBlkNext - 1].end + 2)
         endBases = self.genomeReader.get(gp.tName, gp.exons[iBlkNext].start - 2,
                                          gp.exons[iBlkNext].start)
         spliceSites = spliceSitesClassifyStrand(gp.getQStrand(), startBases, endBases)
-        return AnnotIntron(self, gp.exons[iBlkNext - 1].end, gp.exons[iBlkNext].start,
-                           startBases, endBases, spliceSites)
+        return startBases, endBases, spliceSites
+
+    def __makeIntron(self, gp, iBlkNext):
+        if self.genomeReader is None:
+            startBases = endBases = spliceSites = None
+        else:
+            startBases, endBases, spliceSites = self.__getSpliceSites(gp, iBlkNext)
+        return IntronFeature(self, gp.exons[iBlkNext - 1].end, gp.exons[iBlkNext].start,
+                             0, startBases, endBases, spliceSites)
 
     def fromGenePred(self, gp):
         "convert a genePred to an AnnotTranscript"
-        return AnnotTranscript(gp.name, gp.chom, gp.strand, gp.txStart, gp.txEnd,
-                               self.__buildFeatures(gp))
+        qSize = gp.getLenExons()
+        return TranscriptFeatures(gp.chrom, gp.strand, gp.txStart, gp.txEnd, None,
+                                  gp.name, 0, qSize, qSize,
+                                  self.__buildFeatures(gp))
 
 
-class AnnotFeatures(list):
+class AnnotationFeatures(list):
     "table of AnnotTranscript objects"
 
     def __init__(self):
@@ -109,15 +73,15 @@ class AnnotFeatures(list):
     def addTranscript(self, annotTrans):
         self.transcriptByName[annotTrans.name].append(annotTrans)
         for annotFeat in annotTrans:
-            if isinstance(annotFeat, AnnotExon):
+            if isinstance(annotFeat, ExonFeature):
                 self.exonRangeMap.add(annotTrans.chrom, annotFeat.start, annotFeat.end, annotTrans, annotTrans.strand)
 
     @staticmethod
     def dbFactory(conn, table, chrom, start, end, genomeReader):
         "constructor from a sqlite3 databases"
         gpDbTable = GenePredDbTable(conn, table)
-        annotFactory = AnnotTranscriptGenePredFactory(genomeReader)
-        annotFeatureMap = AnnotFeatureMap()
-        for psl in pslDbTable.getTRangeOverlap(chrom, start, end):
-            annotFeatureMap.addTranscript(annotFactory.fromPsl(psl))
+        annotFactory = AnnotationGenePredFactory(genomeReader)
+        annotFeatureMap = AnnotationFeatures()
+        for gp in gpDbTable.getRangeOverlap(chrom, start, end):
+            annotFeatureMap.addTranscript(annotFactory.fromGenePred(gp))
         return annotFeatureMap

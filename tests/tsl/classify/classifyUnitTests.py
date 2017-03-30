@@ -9,8 +9,8 @@ import unittest
 from pycbio.sys.testCaseBase import TestCaseBase
 from pycbio.tsv import TsvReader
 from pycbio.sys import fileOps
-from gencode_icedb.sequence import SeqReader
-from gencode_icedb.tsl.evidFeatures import EvidFeatureMap, EvidTranscriptPslFactory
+from gencode_icedb.genome import GenomeReader
+from gencode_icedb.tsl.evidFeatures import EvidenceFeatureMap, EvidencePslFactory
 from twobitreader import TwoBitFile
 from pycbio.hgdata.hgLite import PslDbTable
 import sqlite3
@@ -23,8 +23,8 @@ updateMockReader = False   # set this to update from a real run
 debugResults = False   # print out results for updated expected
 
 
-class MockSeqReader(object):
-    """Fake SeqReader when 2bit isn't there"""
+class MockGenomeReader(object):
+    """Fake GenomeReader when 2bit isn't there"""
     def __init__(self, mockDataTsv):
         self.mockData = dict()
         for row in TsvReader(mockDataTsv,
@@ -39,16 +39,16 @@ class MockSeqReader(object):
 
 
 class MockSeqWriter(object):
-    """Wrapper around SeqReader that create mock data from twoBit """
-    def __init__(self, seqReader, mockDataTsv):
-        self.seqReader = seqReader
+    """Wrapper around GenomeReader that create mock data from twoBit """
+    def __init__(self, genomeReader, mockDataTsv):
+        self.genomeReader = genomeReader
         self.mockDataFh = open(mockDataTsv, "w")
         fileOps.prRowv(self.mockDataFh, "chrom", "start", "end", "strand", "seq")
 
     def get(self, chrom, start, end, strand=None):
         if strand is None:
             strand = '+'
-        seq = self.seqReader.get(chrom, start, end, strand)
+        seq = self.genomeReader.get(chrom, start, end, strand)
         fileOps.prRowv(self.mockDataFh, chrom, start, end, strand, seq)
         return seq
 
@@ -57,24 +57,24 @@ class EvidenceTests(TestCaseBase):
     genomeReader = None
     set1PslDbTbl = None
 
-    def __getRealSeqReader(self):
-        genomeReader = SeqReader(TwoBitFile(twoBitHg19))
+    def __getRealGenomeReader(self):
+        genomeReader = GenomeReader(TwoBitFile(twoBitHg19))
         if updateMockReader:
             genomeReader = MockSeqWriter(genomeReader,
                                          self.getInputFile(mockReaderHg19Tsv))
         return genomeReader
 
-    def __getMockSeqReader(self):
+    def __getMockGenomeReader(self):
         if updateMockReader:
             raise Exception("updateMockReader is True, however twobit {} is not available".format(twoBitHg19))
-        return MockSeqReader(self.getInputFile(mockReaderHg19Tsv))
+        return MockGenomeReader(self.getInputFile(mockReaderHg19Tsv))
 
     def __obtainGenomeReader(self):
         if EvidenceTests.genomeReader is None:
             if os.path.exists(twoBitHg19):
-                EvidenceTests.genomeReader = self.__getRealSeqReader()
+                EvidenceTests.genomeReader = self.__getRealGenomeReader()
             else:
-                EvidenceTests.genomeReader = self.__getMockSeqReader()
+                EvidenceTests.genomeReader = self.__getMockGenomeReader()
         return EvidenceTests.genomeReader
 
     def __obtainSetPslDbTbl(self):
@@ -92,7 +92,7 @@ class EvidenceTests(TestCaseBase):
         return psls[0]
 
     def __pslToEvidTranscript(self, psl):
-        factory = EvidTranscriptPslFactory(self.__obtainGenomeReader())
+        factory = EvidencePslFactory(self.__obtainGenomeReader())
         return factory.fromPsl(psl)
 
     def __assertFeatures(self, feats, expectFeatsStr, expectFeatStrs):
@@ -128,7 +128,7 @@ class EvidenceTests(TestCaseBase):
                                "exon 18899052-18899592 qIns=0 tIns=0"])
 
     def testX96484NoSJ(self):
-        factory = EvidTranscriptPslFactory(None)
+        factory = EvidencePslFactory(None)
         feats = factory.fromPsl(self.__getSet1Psl("X96484.1"))
         self.__assertFeatures(feats, "t=chr22:18893922-18899592 +, q=X96484.1:48=1067 1080",
                               ["exon 18893922-18893997 qIns=0 tIns=0",
@@ -144,9 +144,9 @@ class EvidenceTests(TestCaseBase):
     def testRangeMap1(self):
         # range is set1: chr22:18632931-19279166
         pslDbTbl = self.__obtainSetPslDbTbl()
-        evidFeatureMap = EvidFeatureMap.dbFactory(pslDbTbl.conn, pslDbTbl.table,
-                                                  "chr22", 18958026, 19109719,
-                                                  self.__obtainGenomeReader())
+        evidFeatureMap = EvidenceFeatureMap.dbFactory(pslDbTbl.conn, pslDbTbl.table,
+                                                      "chr22", 18958026, 19109719,
+                                                      self.__obtainGenomeReader())
         self.assertEqual(len(evidFeatureMap.transcripts), 30)
         overFeats = list(evidFeatureMap.overlapping("chr22", 18958026, 18982141))
         self.assertEqual(len(overFeats), 12)

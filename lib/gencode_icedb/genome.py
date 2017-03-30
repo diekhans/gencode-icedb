@@ -6,7 +6,7 @@ from pycbio.hgdata import dnaOps
 from pycbio.sys.symEnum import SymEnum
 
 
-class SeqReader(object):
+class GenomeReader(object):
     """
     Reads sequences from twoBitReader, which can be substituted with a mock
     version.
