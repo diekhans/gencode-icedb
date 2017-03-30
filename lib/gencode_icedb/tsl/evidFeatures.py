@@ -38,8 +38,11 @@ class EvidIntron(EvidFeature):
         self.qDeleteBases, self.startBases, self.endBases, self.spliceSites = qDeleteBases, startBases, endBases, spliceSites
 
     def __str__(self):
-        return "intron {}-{} qDel={} sjBases={}...{} ({})".format(self.start, self.end, self.qDeleteBases,
-                                                                  self.startBases, self.endBases, self.spliceSites)
+        if self.startBases is None:
+            sjDesc = None
+        else:
+            sjDesc = "{}...{} ({})".format(self.startBases, self.endBases, self.spliceSites)
+        return "intron {}-{} qDel={} sjBases={}".format(self.start, self.end, self.qDeleteBases, sjDesc)
 
 
 class EvidTranscript(list):
@@ -65,6 +68,7 @@ class EvidTranscriptPslFactory(object):
     """
 
     def __init__(self, genomeReader):
+        """genomeReader maybe None if splice sites are not desired """
         self.genomeReader = genomeReader
 
     def __buildFeatures(self, psl):
@@ -95,13 +99,20 @@ class EvidTranscriptPslFactory(object):
         return EvidExon(self, psl.blocks[iBlkStart].tStart, psl.blocks[iBlkEnd - 1].tEnd,
                         qInsertBases, tInsertBases)
 
-    def __makeIntron(self, psl, iBlkNext):
-        qDeleteBases = psl.blocks[iBlkNext].qStart - psl.blocks[iBlkNext - 1].qEnd
+    def __getSpliceSites(self, psl, iBlkNext):
         startBases = self.genomeReader.get(psl.tName, psl.blocks[iBlkNext - 1].tEnd,
                                            psl.blocks[iBlkNext - 1].tEnd + 2)
         endBases = self.genomeReader.get(psl.tName, psl.blocks[iBlkNext].tStart - 2,
                                          psl.blocks[iBlkNext].tStart)
         spliceSites = spliceSitesClassifyStrand(psl.getQStrand(), startBases, endBases)
+        return startBases, endBases, spliceSites
+        
+    def __makeIntron(self, psl, iBlkNext):
+        qDeleteBases = psl.blocks[iBlkNext].qStart - psl.blocks[iBlkNext - 1].qEnd
+        if self.genomeReader is None:
+            startBases = endBases = spliceSites = None
+        else:
+            startBases, endBases, spliceSites = self.__getSpliceSites(psl, iBlkNext)
         return EvidIntron(self, psl.blocks[iBlkNext - 1].tEnd, psl.blocks[iBlkNext].tStart,
                           qDeleteBases, startBases, endBases, spliceSites)
 

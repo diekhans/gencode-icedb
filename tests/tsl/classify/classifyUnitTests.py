@@ -127,6 +127,20 @@ class EvidenceTests(TestCaseBase):
                                "intron 18898541-18899052 qDel=0 sjBases=GT...AG (spliceGT_AG)",
                                "exon 18899052-18899592 qIns=0 tIns=0"])
 
+    def testX96484NoSJ(self):
+        factory = EvidTranscriptPslFactory(None)
+        feats = factory.fromPsl(self.__getSet1Psl("X96484.1"))
+        self.__assertFeatures(feats, "t=chr22:18893922-18899592 +, q=X96484.1:48=1067 1080",
+                              ["exon 18893922-18893997 qIns=0 tIns=0",
+                               "intron 18893997-18894077 qDel=0 sjBases=None",
+                               "exon 18894077-18894238 qIns=1 tIns=0",
+                               "intron 18894238-18897684 qDel=0 sjBases=None",
+                               "exon 18897684-18897785 qIns=0 tIns=0",
+                               "intron 18897785-18898400 qDel=0 sjBases=None",
+                               "exon 18898400-18898541 qIns=0 tIns=0",
+                               "intron 18898541-18899052 qDel=0 sjBases=None",
+                               "exon 18899052-18899592 qIns=0 tIns=0"])
+
     def testRangeMap1(self):
         # range is set1: chr22:18632931-19279166
         pslDbTbl = self.__obtainSetPslDbTbl()

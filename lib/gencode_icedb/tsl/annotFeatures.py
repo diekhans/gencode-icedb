@@ -1,5 +1,4 @@
 from __future__ import print_function
-from pycbio.hgdata.rangeFinder import RangeFinder
 from pycbio.hgdata.hgLite import PslDbTable
 from gencode_icedb.sequence import spliceSitesClassifyStrand
 from gencode_icedb import minIntronSize
