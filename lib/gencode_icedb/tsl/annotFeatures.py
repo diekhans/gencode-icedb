@@ -1,7 +1,7 @@
 from __future__ import print_function
 from pycbio.hgdata.hgLite import GenePredDbTable
 from gencode_icedb.genome import spliceSitesClassifyStrand
-from gencode_icedb import minIntronSize
+from gencode_icedb.tsl import minIntronSize
 from gencode_icedb.tsl.transFeatures import ExonFeature, IntronFeature, TranscriptFeatures
 
 
@@ -38,14 +38,14 @@ class AnnotationGenePredFactory(object):
         gapBases = 0
         for iBlk in xrange(iBlkStart + 1, iBlkEnd):
             gapBases += gp.exons[iBlk].start - gp.exons[iBlk - 1].end
-        return ExonFeature(self, gp.exons[iBlkStart].start, gp.exons[iBlkEnd - 1].end, gapBases)
+        return ExonFeature(self, gp.exons[iBlkStart].start, gp.exons[iBlkEnd - 1].end, 0, gapBases)
 
     def __getSpliceSites(self, gp, iBlkNext):
-        startBases = self.genomeReader.get(gp.tName, gp.exons[iBlkNext - 1].end,
+        startBases = self.genomeReader.get(gp.chrom, gp.exons[iBlkNext - 1].end,
                                            gp.exons[iBlkNext - 1].end + 2)
-        endBases = self.genomeReader.get(gp.tName, gp.exons[iBlkNext].start - 2,
+        endBases = self.genomeReader.get(gp.chrom, gp.exons[iBlkNext].start - 2,
                                          gp.exons[iBlkNext].start)
-        spliceSites = spliceSitesClassifyStrand(gp.getQStrand(), startBases, endBases)
+        spliceSites = spliceSitesClassifyStrand(gp.strand, startBases, endBases)
         return startBases, endBases, spliceSites
 
     def __makeIntron(self, gp, iBlkNext):
