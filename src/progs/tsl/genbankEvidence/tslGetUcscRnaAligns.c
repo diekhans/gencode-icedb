@@ -11,7 +11,7 @@
 
 /* usage message and abort */
 static void usage(char *msg) {
-    static char* usageMsg = "getUcscRnaAligns ucscDb type sqliteDb sqliteTable\n"
+    static char* usageMsg = "tslGetUcscRnaAligns ucscDb type sqliteDb sqliteTable\n"
         "\n"
         "Load PSL alignments from UCSC all_mrna or all_est tables into an SQLite\n"
         "database.  EST PSLs will be reverse-complement if estOrientInfo table\n"
@@ -232,7 +232,7 @@ static void storeSqliteDb(struct psl *psls, char *sqliteDb, char *table) {
 }
 
 /* get rna or est alignments */
-static void getUcscRnaAligns(char *ucscDb, char *type, char *sqliteDb, char *sqliteTable,
+static void tslGetUcscRnaAligns(char *ucscDb, char *type, char *sqliteDb, char *sqliteTable,
                              char *restrictChrom) {
     struct psl *psls = loadAligns(ucscDb, type, restrictChrom);
     storeSqliteDb(psls, sqliteDb, sqliteTable);
@@ -248,6 +248,6 @@ int main(int argc, char** argv) {
         usage("expected type of `rna' or `est'");
     }
     char *restrictChrom = optionVal("chrom", NULL);
-    getUcscRnaAligns(argv[1], argv[2], argv[3], argv[4], restrictChrom);
+    tslGetUcscRnaAligns(argv[1], argv[2], argv[3], argv[4], restrictChrom);
     return 0;
 }

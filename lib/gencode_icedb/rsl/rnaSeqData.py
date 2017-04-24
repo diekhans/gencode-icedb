@@ -3,10 +3,15 @@ Data associate with RNA seq database, store in an sqlite database
 """
 import os
 from peewee import Proxy, Model, IntegerField, CharField
-from gencode_icedb import dataOps
 from pycbio.sys.symEnum import SymEnum
+import pipettor
 
 database_proxy = Proxy()
+
+
+def rslEstimateReadLength(readsPath):
+    "run rslEstimateReadLength program to get read length from read data"
+    return int(pipettor.runout(["rslEstimateReadLength", readsPath, "/dev/stdout"]))
 
 
 def setDatabase(database):
@@ -100,5 +105,5 @@ class RnaSeqDataLoader(object):
                              description, tissue,
                              readsFileUrl, readsFile,
                              readsFile2Url, readsFile2,
-                             dataOps.estimateReadLength(readsPath))
+                             rslEstimateReadLength(readsPath))
             return RnaSeqDataLoader.Status.added

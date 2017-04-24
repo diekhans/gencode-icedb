@@ -14,7 +14,7 @@ import pipettor
 
 def parseArgs():
     desc = """Collect and combine splice junction support.  This
-    used the C program spliceJunctionCollectEvidence to do the real work.
+    used the C program rslSpliceJunctionCollectEvidence to do the real work.
     """
     parser = argparse.ArgumentParser(description=desc)
     loggingOps.addCmdOptions(parser)
@@ -49,7 +49,7 @@ def writeSjInfoRow(sjInfoFh, pathConfig, rnaSeqData):
 
 
 def makeSjInfoFile(pathConfig, organism):
-    "create input file for spliceJunctionCollectEvidence"
+    "create input file for rslSpliceJunctionCollectEvidence"
     sjInfoFile = fileOps.tmpFileGet("sjInfo")
     with open(sjInfoFile, "w") as sjInfoFh:
         fileOps.prRowv(sjInfoFh, "spliceJuncFile", "runname", "tissue")
@@ -62,7 +62,7 @@ def runSjCollectEvidence(pathConfig, minOverhang, sjInfoFile, gencodeGenePred, g
     supportTsv = pathConfig.rnaSeqSetSupportTsv()
     fileOps.ensureFileDir(supportTsv)
     supportTsvTmp = fileOps.atomicTmpFile(supportTsv)
-    pipettor.run(["spliceJunctionCollectEvidence",
+    pipettor.run(["rslSpliceJunctionCollectEvidence",
                   "-minOverhang={}".format(minOverhang),
                   gencodeGenePred, gencodeSpliceTsv, sjInfoFile, supportTsvTmp],
                  logger=logging.getLogger())

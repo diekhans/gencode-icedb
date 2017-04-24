@@ -1,7 +1,7 @@
 ROOT = ../../../..
 
-PROGS = getUcscRnaAligns
-getUcscRnaAligns_PROG_MODS = getUcscRnaAligns
+PROGS = tslGetUcscRnaAligns
+tslGetUcscRnaAligns_PROG_MODS = tslGetUcscRnaAligns
 
 include ${ROOT}/config.mk
 

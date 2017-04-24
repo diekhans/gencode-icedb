@@ -11,7 +11,7 @@ from pycbio.tsv import TsvReader
 from pycbio.sys import fileOps
 from gencode_icedb.genome import GenomeReader
 from gencode_icedb.tsl.evidFeatures import EvidenceFeatureMap, EvidencePslFactory
-from gencode_icedb.tsl.annotFeatures import AnnotationFeatures, AnnotationGenePredFactory
+from gencode_icedb.tsl.annotFeatures import AnnotationGenePredFactory
 from twobitreader import TwoBitFile
 from pycbio.hgdata.hgLite import PslDbTable, GenePredDbTable
 import sqlite3
@@ -29,6 +29,7 @@ if updateMockReader or forceMockReader or debugResults:
     print("Warning: debug variables set", file=sys.stderr)
 if updateMockReader and forceMockReader:
     raise Exception("makes no sense to have both updateMockReader and forceMockReader set")
+
 
 class MockGenomeReader(object):
     """Fake GenomeReader when 2bit isn't there"""
@@ -292,8 +293,7 @@ class AnnotationTests(TestCaseBase):
                                "intron 18913235-18918502 qDel=0 sjBases=None",
                                "exon 18918502-18918711 qIns=0 tIns=0",
                                "intron 18918711-18923902 qDel=0 sjBases=None",
-                               "exon 18923902-18923964 qIns=0 tIns=0",
-])
+                               "exon 18923902-18923964 qIns=0 tIns=0"])
 
 
 def suite():

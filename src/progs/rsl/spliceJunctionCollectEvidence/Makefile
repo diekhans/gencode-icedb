@@ -1,7 +1,7 @@
 ROOT = ../../../..
 
-PROGS = spliceJunctionCollectEvidence
-spliceJunctionCollectEvidence_PROG_MODS = spliceJunctionCollectEvidence intronCounts
+PROGS = rslSpliceJunctionCollectEvidence
+rslSpliceJunctionCollectEvidence_PROG_MODS = rslSpliceJunctionCollectEvidence intronCounts
 
 include ${ROOT}/config.mk
 

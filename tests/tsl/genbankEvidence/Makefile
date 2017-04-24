@@ -7,10 +7,10 @@ export LC_ALL=C
 export HGDB_CONF=hg.pub.conf
 
 binDir = ${ROOT}/bin
-getUcscRnaAligns = ${binDir}/getUcscRnaAligns
-getEnsemblRnaAligns = ${binDir}/getEnsemblRnaAligns
-gbffGetProblemCases = ${binDir}/gbffGetProblemCases
-genbankProblemCasesLoad = ${binDir}/genbankProblemCasesLoad
+tslGetUcscRnaAligns = ${binDir}/tslGetUcscRnaAligns
+tslGetEnsemblRnaAligns = ${binDir}/tslGetEnsemblRnaAligns
+tslGbffGetProblemCases = ${binDir}/tslGbffGetProblemCases
+tslGenbankProblemCasesLoad = ${binDir}/tslGenbankProblemCasesLoad
 
 gencodeOrg = human
 ensemblVer = 87_38
@@ -28,13 +28,13 @@ ucscTests: ucscRnaChrMTest ucscEstChrMTest
 
 ucscRnaChrMTest: mkdirs
 	rm -f output/$@.db
-	${getUcscRnaAligns} -chrom=chrM ${ucscGenomeDb} rna output/$@.db ucscRnaAligns
+	${tslGetUcscRnaAligns} -chrom=chrM ${ucscGenomeDb} rna output/$@.db ucscRnaAligns
 	sqlite3 --batch output/$@.db 'select * from ucscRnaAligns;' | cut -f 2- | sort > output/$@.sort.psl
 	diff expected/$@.sort.psl output/$@.sort.psl
 
 ucscEstChrMTest: mkdirs
 	rm -f output/$@.db
-	${getUcscRnaAligns} -chrom=chrM ${ucscGenomeDb} est output/$@.db ucscEstAligns
+	${tslGetUcscRnaAligns} -chrom=chrM ${ucscGenomeDb} est output/$@.db ucscEstAligns
 	sqlite3 --batch output/$@.db 'select * from ucscEstAligns;' | cut -f 2- | sort > output/$@.sort.psl
 	diff expected/$@.sort.psl output/$@.sort.psl
 
@@ -45,13 +45,13 @@ ensemblTests: ensemblChrMTest ensemblIdListTest
 
 ensemblChrMTest: mkdirs
 	@rm -f output/$@.db
-	${getEnsemblRnaAligns} --ensChrom=MT ${ensemblCDnaDb} ${grcRefAssemblyReport} output/$@.db ensemblCDnaAln
+	${tslGetEnsemblRnaAligns} --ensChrom=MT ${ensemblCDnaDb} ${grcRefAssemblyReport} output/$@.db ensemblCDnaAln
 	sqlite3 --batch output/$@.db 'select * from ensemblCDnaAln;' | cut -f 2- | sort > output/$@.sort.psl
 	diff expected/$@.sort.psl output/$@.sort.psl
 
 ensemblIdListTest: mkdirs
 	@rm -f output/$@.db
-	${getEnsemblRnaAligns} --accverList=input/ensembl-cdna.acc ${ensemblCDnaDb} ${grcRefAssemblyReport} output/$@.db ensemblCDnaAln
+	${tslGetEnsemblRnaAligns} --accverList=input/ensembl-cdna.acc ${ensemblCDnaDb} ${grcRefAssemblyReport} output/$@.db ensemblCDnaAln
 	sqlite3 --batch output/$@.db 'select * from ensemblCDnaAln;' | cut -f 2- | sort > output/$@.sort.psl
 	diff expected/$@.sort.psl output/$@.sort.psl
 
@@ -61,12 +61,12 @@ ensemblIdListTest: mkdirs
 problemCasesTests: problemCasesParseTest problemCasesLoadTest
 
 problemCasesParseTest: mkdirs
-	${gbffGetProblemCases} --maxProcess=2 output/hs.$@.tab output/mm.$@.tab input/problem.gbff input/problem2.gbff
+	${tslGbffGetProblemCases} --maxProcess=2 output/hs.$@.tab output/mm.$@.tab input/problem.gbff input/problem2.gbff
 	diff expected/hs.$@.tab output/hs.$@.tab
 	diff expected/mm.$@.tab output/mm.$@.tab
 
 problemCasesLoadTest: mkdirs
-	${genbankProblemCasesLoad} expected/hs.problemCasesParseTest.tab output/$@.db problemCases
+	${tslGenbankProblemCasesLoad} expected/hs.problemCasesParseTest.tab output/$@.db problemCases
 	sqlite3 --batch output/$@.db 'select * from problemCases;' > output/$@.tab
 	diff expected/hs.problemCasesParseTest.tab output/$@.tab
 

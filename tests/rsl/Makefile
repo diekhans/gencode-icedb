@@ -1,24 +1,24 @@
 ROOT = ../..
 
 binDir = ${ROOT}/bin
-starGenerateGenome = ${binDir}/starGenerateGenome
-starSpliceJunctionMap = ${binDir}/starSpliceJunctionMap
 faUcscToGencode = ${binDir}/faUcscToGencode
-estimateReadLength = ${binDir}/estimateReadLength
-rnaSeqDataRegister = ${binDir}/rnaSeqDataRegister
-spliceJunctionCollectEvidence = ${binDir}/spliceJunctionCollectEvidence
 genePredIntrons = ${binDir}/genePredIntrons
-encodeDccQuery = ${binDir}/encodeDccQuery
-rnaSeqIntronSupport = ${binDir}/rnaSeqIntronSupport
-rnaSeqIntronEvidBed = ${binDir}/rnaSeqIntronEvidBed
-rnaSeqIntronEvidStats = ${binDir}/rnaSeqIntronEvidStats
-sjCollectEvidence = ${binDir}/sjCollectEvidence
+rslStarGenerateGenome = ${binDir}/rslStarGenerateGenome
+rslStarSpliceJunctionMap = ${binDir}/rslStarSpliceJunctionMap
+rslEstimateReadLength = ${binDir}/rslEstimateReadLength
+rslRnaSeqDataRegister = ${binDir}/rslRnaSeqDataRegister
+rslSpliceJunctionCollectEvidence = ${binDir}/rslSpliceJunctionCollectEvidence
+rslEncodeDccQuery = ${binDir}/rslEncodeDccQuery
+rslRnaSeqIntronSupport = ${binDir}/rslRnaSeqIntronSupport
+rslRnaSeqIntronEvidBed = ${binDir}/rslRnaSeqIntronEvidBed
+rslRnaSeqIntronEvidStats = ${binDir}/rslRnaSeqIntronEvidStats
+rslSjCollectEvidence = ${binDir}/rslSjCollectEvidence
 
 .SECONDARY:
 
 numThreads=2
 test: smallTests readLenTests faTests rnaSeqDataRegisterTest genePredIntronsTest \
-	spliceJuncEvidenceTests sjCollectEvidenceTests encodeDccTests intronSupportTests \
+	spliceJuncEvidenceTests rslSjCollectEvidenceTests encodeDccTests intronSupportTests \
 	intronEvidBedTests intronEvidStatsTests
 
 ##
@@ -28,13 +28,13 @@ smallTests: smallGenomeTest smallGenomeCompressedTest smallMapSamTest smallMapBa
 
 smallGenomeTest: mkdirs
 	rm -rf output/$@.genome
-	nice ${starGenerateGenome} --numThreads=${numThreads} --tmpDir=output input/small-chr22.fa input/small-gencode.gtf 75 output/$@.genome
+	nice ${rslStarGenerateGenome} --numThreads=${numThreads} --tmpDir=output input/small-chr22.fa input/small-gencode.gtf 75 output/$@.genome
 
 smallGenomeCompressedTest: mkdirs
 	rm -rf output/$@.genome
 	gzip -c input/small-gencode.gtf > output/$@.gtf.gz
 	gzip -c input/small-chr22.fa > output/$@.fa.gz
-	nice ${starGenerateGenome} --numThreads=${numThreads} --tmpDir=output output/$@.fa.gz output/$@.gtf.gz 75 output/$@.genome
+	nice ${rslStarGenerateGenome} --numThreads=${numThreads} --tmpDir=output output/$@.fa.gz output/$@.gtf.gz 75 output/$@.genome
 
 
 # split test reads file into a pair of paried read fastq files
@@ -44,16 +44,16 @@ output/smallFastqPair.done:
 	touch $@
 
 smallMapSamTest: mkdirs smallGenomeTest
-	nice ${starSpliceJunctionMap} --numThreads=${numThreads} --tmpDir=output output/smallGenomeTest.genome input/small-rnaseq.sam output/$@.sj.tab
+	nice ${rslStarSpliceJunctionMap} --numThreads=${numThreads} --tmpDir=output output/smallGenomeTest.genome input/small-rnaseq.sam output/$@.sj.tab
 	diff expected/$@.sj.tab output/$@.sj.tab
 
 smallMapBamTest: mkdirs smallGenomeTest
 	samtools view -hb input/small-rnaseq.sam > output/$@.bam
-	nice ${starSpliceJunctionMap} --numThreads=${numThreads} --tmpDir=output output/smallGenomeTest.genome output/$@.bam output/$@.sj.tab
+	nice ${rslStarSpliceJunctionMap} --numThreads=${numThreads} --tmpDir=output output/smallGenomeTest.genome output/$@.bam output/$@.sj.tab
 	diff expected/smallMapSamTest.sj.tab output/$@.sj.tab
 
 smallMapPairFastqTest: mkdirs smallGenomeTest output/smallFastqPair.done
-	nice ${starSpliceJunctionMap} --numThreads=${numThreads} --tmpDir=output output/smallGenomeTest.genome output/smallFastqPair_1.fastq --readsFile2=output/smallFastqPair_2.fastq output/$@.sj.tab
+	nice ${rslStarSpliceJunctionMap} --numThreads=${numThreads} --tmpDir=output output/smallGenomeTest.genome output/smallFastqPair_1.fastq --readsFile2=output/smallFastqPair_2.fastq output/$@.sj.tab
 	diff expected/$@.sj.tab output/$@.sj.tab
 ##
 # rest obtaining average read lengths
@@ -61,11 +61,11 @@ smallMapPairFastqTest: mkdirs smallGenomeTest output/smallFastqPair.done
 readLenTests: readLenAllTest readLenSomeTest
 
 readLenAllTest: mkdirs
-	${estimateReadLength} input/small-rnaseq.sam output/$@.avelen
+	${rslEstimateReadLength} input/small-rnaseq.sam output/$@.avelen
 	diff expected/$@.avelen output/$@.avelen
 
 readLenSomeTest: mkdirs
-	${estimateReadLength} --sampleSize=5 input/small-rnaseq.sam > output/$@.avelen
+	${rslEstimateReadLength} --sampleSize=5 input/small-rnaseq.sam > output/$@.avelen
 	diff expected/$@.avelen output/$@.avelen
 ##
 # tests of creating genome fasta with genomes names
@@ -85,19 +85,19 @@ define dataTreeSetup
 	samtools view -hb input/small-rnaseq.sam > output/$@/data/human/rnaSeq/smallSet/small.bam
 	ln -f output/smallFastqPair_1.fastq output/smallFastqPair_2.fastq output/$@/data/human/rnaSeq/smallSet/
 	ln -f output/smallFastqPair_1.fastq output/smallFastqPair_2.fastq output/$@/data/human/rnaSeq/otherSet/
-	${rnaSeqDataRegister} --rootDir=output/$@ \
+	${rslRnaSeqDataRegister} --rootDir=output/$@ \
 		--readsFileUrl="http://fred.org/data/input/small-rnaseq.sam" \
 		--description="small RNA-Seq" \
 		--tissue="micro brain" \
 		human smallSet small1A small.sam
-	${rnaSeqDataRegister} --rootDir=output/$@ \
+	${rslRnaSeqDataRegister} --rootDir=output/$@ \
 		--readsFileUrl="http://fred.org/data/input/smallish-rnaseq.bam" \
 		--description="not so small RNA-Seq" \
 		--tissue="macro brain" \
 		human smallSet small1B small.bam
-	${rnaSeqDataRegister} --rootDir=output/$@ --skipExisting \
+	${rslRnaSeqDataRegister} --rootDir=output/$@ --skipExisting \
 		human smallSet small1B small.bam
-	${rnaSeqDataRegister} --rootDir=output/$@ --skipExisting \
+	${rslRnaSeqDataRegister} --rootDir=output/$@ --skipExisting \
 		--readsFileUrl="http://fred.org/data/input/smallFastqPair_1.fastq" \
 		--readsFile2Url="http://fred.org/data/input/smallFastqPair_2.fastq" \
 		--description="paired RNA-Seq" \
@@ -129,23 +129,23 @@ spliceJuncEvidenceTests: spliceJuncEvidBasicTest spliceJuncEvidMinOverhangTest \
 		spliceJuncEvidNoSupportTest
 
 spliceJuncEvidBasicTest: mkdirs
-	${spliceJunctionCollectEvidence} input/small-gencode.gp expected/genePredIntronsSet1Test.tsv input/small-sj.lst output/$@.evid.tsv
+	${rslSpliceJunctionCollectEvidence} input/small-gencode.gp expected/genePredIntronsSet1Test.tsv input/small-sj.lst output/$@.evid.tsv
 	diff expected/$@.evid.tsv output/$@.evid.tsv
 
 spliceJuncEvidMinOverhangTest: mkdirs
-	${spliceJunctionCollectEvidence} -minOverhang=20 input/small-gencode.gp expected/genePredIntronsSet1Test.tsv input/small-sj.lst output/$@.evid.tsv
+	${rslSpliceJunctionCollectEvidence} -minOverhang=20 input/small-gencode.gp expected/genePredIntronsSet1Test.tsv input/small-sj.lst output/$@.evid.tsv
 	diff expected/$@.evid.tsv output/$@.evid.tsv
 
 # edit to remove some evidence to check report on unsupport introns
 spliceJuncEvidNoSupportTest: mkdirs output/smallMapPairFastqTest-edit.sj.tab
-	${spliceJunctionCollectEvidence} input/small-gencode.gp expected/genePredIntronsSet1Test.tsv input/small-sj-edit.lst output/$@.evid.tsv
+	${rslSpliceJunctionCollectEvidence} input/small-gencode.gp expected/genePredIntronsSet1Test.tsv input/small-sj-edit.lst output/$@.evid.tsv
 	diff expected/$@.evid.tsv output/$@.evid.tsv
 
 ##
 # tests of program that runs splice junction evidence collection based on
 # database
 ##
-sjCollectEvidenceTests: sjCollectEvidMinOverhangTest
+rslSjCollectEvidenceTests: sjCollectEvidMinOverhangTest
 
 sjCollectEvidMinOverhangSjDir = output/sjCollectEvidMinOverhangTest/analysis/grch38/smallSet/rnaSeqEvid/smallSet
 sjCollectEvidMinOverhangTest: mkdirs output/smallFastqPair.done
@@ -154,7 +154,7 @@ sjCollectEvidMinOverhangTest: mkdirs output/smallFastqPair.done
 	cp expected/smallMapPairFastqTest.sj.tab ${sjCollectEvidMinOverhangSjDir}/small1A.sj.tab
 	cp expected/smallMapSamTest.sj.tab ${sjCollectEvidMinOverhangSjDir}/small1B.sj.tab
 	cp expected/smallMapPairFastqTest.sj.tab ${sjCollectEvidMinOverhangSjDir}/small1-2.sj.tab
-	${sjCollectEvidence} --rootDir=output/$@ --minOverhang=20 human grch38 smallSet input/small-gencode.gp expected/genePredIntronsSet1Test.tsv
+	${rslSjCollectEvidence} --rootDir=output/$@ --minOverhang=20 human grch38 smallSet input/small-gencode.gp expected/genePredIntronsSet1Test.tsv
 	diff expected/$@.evid.tsv output/sjCollectEvidMinOverhangTest/analysis/grch38/smallSet/rnaSeqSupport/intron.evid.tsv
 
 
@@ -170,41 +170,41 @@ encodeDccTests: encodeDcc10Tests
 # down the huge response to use it as fake input.  Can't verify
 # output.
 encodeDcc10Tests: mkdirs
-	${encodeDccQuery} "Mus musculus" --limit=10 output/encodeDcc10Tests.tsv output/encodeDcc10Tests.urls
+	${rslEncodeDccQuery} "Mus musculus" --limit=10 output/encodeDcc10Tests.tsv output/encodeDcc10Tests.urls
 
 ##
-# rnaSeqIntronSupport tests
+# rslRnaSeqIntronSupport tests
 ##
 intronSupportTests: intronSupport1Test
 
 intronSupport1Test: mkdirs
-	${rnaSeqIntronSupport} input/small-gencode.gp input/small-gencode.attrs \
+	${rslRnaSeqIntronSupport} input/small-gencode.gp input/small-gencode.attrs \
 		expected/spliceJuncEvidNoSupportTest.evid.tsv
 
 ##
-# rnaSeqIntronEvidBed
+# rslRnaSeqIntronEvidBed
 ##
 intronEvidBedTests: intronEvidBed1Test
 
 intronEvidBed1Test: mkdirs
-	${rnaSeqIntronEvidBed} input/hs.chr22-2k.evid.tsv output/$@.bed
+	${rslRnaSeqIntronEvidBed} input/hs.chr22-2k.evid.tsv output/$@.bed
 
 ##
-# rnaSeqIntronEvidStats
+# rslRnaSeqIntronEvidStats
 ##
 intronEvidStatsTests: intronEvidStatsAllTest intronEvidStatsMin30 \
 	intronEvidStatsConsensus
 
 intronEvidStatsAllTest: mkdirs
-	${rnaSeqIntronEvidStats} input/hs.chr22-2k.evid.tsv output/$@.stats.tsv
+	${rslRnaSeqIntronEvidStats} input/hs.chr22-2k.evid.tsv output/$@.stats.tsv
 	diff expected/$@.stats.tsv output/$@.stats.tsv
 
 intronEvidStatsMin30: mkdirs
-	${rnaSeqIntronEvidStats} --minIntronSize=30 input/hs.chr22-2k.evid.tsv output/$@.stats.tsv
+	${rslRnaSeqIntronEvidStats} --minIntronSize=30 input/hs.chr22-2k.evid.tsv output/$@.stats.tsv
 	diff expected/$@.stats.tsv output/$@.stats.tsv
 
 intronEvidStatsConsensus: mkdirs
-	${rnaSeqIntronEvidStats} --spliceJuncCat=consensus input/hs.chr22-2k.evid.tsv output/$@.stats.tsv
+	${rslRnaSeqIntronEvidStats} --spliceJuncCat=consensus input/hs.chr22-2k.evid.tsv output/$@.stats.tsv
 	diff expected/$@.stats.tsv output/$@.stats.tsv
 
 

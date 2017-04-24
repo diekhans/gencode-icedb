@@ -70,8 +70,3 @@ def getNewTmpDir(tmpDir):
         if not os.path.exists(path):
             return path
         cnt += 1
-
-
-def estimateReadLength(readsPath):
-    "run estimateReadLength program to get read length from read data"
-    return int(pipettor.runout(["estimateReadLength", readsPath, "/dev/stdout"]))

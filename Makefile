@@ -5,18 +5,18 @@ TSLCLTESTDIR = tests/tsl/classify
 
 pylibs = $(wildcard ${PYLIBDIR}/*.py) $(wildcard ${PYLIBDIR}/rsl/*.py) $(wildcard ${PYLIBDIR}/tsl/*.py)
 pytests = $(wildcard ${TSLCLTESTDIR}/*.py)
-progs = encodeDccQuery estimateReadLength gbffGetProblemCases genbankProblemCasesLoad \
-	getEnsemblRnaAligns icedbProgSetup.py mkRnaSeqSupportBatch rnaSeqDataRegister \
-	rnaSeqIntronEvidBed \
-	rnaSeqIntronSupport runRnaSeqSupport sjCollectEvidence starGenerateGenome \
-	starSpliceJunctionMap
+progs = icedbProgSetup.py \
+	tslGbffGetProblemCases tslGenbankProblemCasesLoad tslGetEnsemblRnaAligns \
+	rslEncodeDccQuery rslEstimateReadLength  rslMkRnaSeqSupportBatch rslRnaSeqDataRegister \
+	rslRnaSeqIntronEvidBed rslRnaSeqIntronSupport rslRunRnaSeqSupport rslSjCollectEvidence \
+	rslStarGenerateGenome rslStarSpliceJunctionMap
 
-# not done:  rnaSeqIntronEvidPlot rnaSeqIntronEvidStats
+# not done:  rslRnaSeqIntronEvidPlot rslRnaSeqIntronEvidStats
 
 all::
 	(cd src && ${MAKE})
 
-test::
+test:: all
 	(cd tests && ${MAKE} test)
 
 lint:

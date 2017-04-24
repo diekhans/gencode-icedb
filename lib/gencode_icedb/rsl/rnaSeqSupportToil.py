@@ -10,21 +10,21 @@ import pipettor
 import logging
 
 
-def starGenerateGenome(refGeneomeName, refGeneomeFa, readLength, geneAnnotationSetName,
-                       geneAnnotationSetGtf, numThreads):
+def rslStarGenerateGenome(refGeneomeName, refGeneomeFa, readLength, geneAnnotationSetName,
+                          geneAnnotationSetGtf, numThreads):
     """Generate STAR genome given reference genome, read, and annotation set.
     Create a flag file to indicate it is complete.
     """
     pass
-    # cmd = ["starGenerateGenome", "--numThreads={}".format(numThreads), "refGeneomeFa",
+    # cmd = ["rslStarGenerateGenome", "--numThreads={}".format(numThreads), "refGeneomeFa",
     #        geneAnnotationSetGtf, readLength, genomeDir]
     # NOT IMPLEMENTED YET
 
 
-def starSpliceJunctionMapFn(job, genomeDir, readsFile, readsFile2, numThreads, sjOut):
+def rslStarSpliceJunctionMapFn(job, genomeDir, readsFile, readsFile2, numThreads, sjOut):
     """Run STAR to map reads to splice junctions.
     """
-    cmd = ["starSpliceJunctionMap", "--numThreads={}".format(numThreads),
+    cmd = ["rslStarSpliceJunctionMap", "--numThreads={}".format(numThreads),
            genomeDir, readsFile]
     if readsFile2 is not None:
         cmd.append("--readsFile2={}".format(+readsFile2))
@@ -47,7 +47,7 @@ def maybeMakeSplitJunctionJob(job, pathConfig, rnaSeqData, numThreads):
     if not os.path.exists(sjOut):
         readsPath = pathConfig.rnaSeqSetDataFile(rnaSeqData.setname, rnaSeqData.readsfile)
         readsPath2 = pathConfig.rnaSeqSetDataFile(rnaSeqData.setname, rnaSeqData.readsfile2) if rnaSeqData.readsfile2 is not None else None
-        job.addChildJobFn(starSpliceJunctionMapFn,
+        job.addChildJobFn(rslStarSpliceJunctionMapFn,
                           pathConfig.starGenomeDir(rnaSeqData.readlength),
                           readsPath, readsPath2, numThreads, sjOut)
 

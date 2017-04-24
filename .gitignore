@@ -8,5 +8,5 @@ extern
 # compiled programs
 bin/faUcscToGencode
 bin/genePredIntrons
-bin/getUcscRnaAligns
-bin/spliceJunctionCollectEvidence
+bin/tslGetUcscRnaAligns
+bin/tslSpliceJunctionCollectEvidence
