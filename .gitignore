@@ -4,3 +4,9 @@ output
 objs
 extern
 .*.depend
+
+# compiled programs
+bin/faUcscToGencode
+bin/genePredIntrons
+bin/getUcscRnaAligns
+bin/spliceJunctionCollectEvidence
