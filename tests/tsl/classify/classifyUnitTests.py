@@ -89,8 +89,20 @@ class GenomeReaderFactory(object):
                 self.genomeReader = self.__getMock(testCase)
         return self.genomeReader
 
+class FeatureTestBase(TestCaseBase):
+    def _assertFeatures(self, feats, expectFeatsStr, expectFeatStrs):
+        if debugResults:
+            print(self.id())
+            print('  "{}"'.format(feats))
+            for f in feats:
+                print('    "{}",'.format(f))
+            print("")
+        self.assertEqual(str(feats), expectFeatsStr)
+        self.assertEqual([str(f) for f in feats], expectFeatStrs)
 
-class EvidenceTests(TestCaseBase):
+    
+
+class EvidenceTests(FeatureTestBase):
     genomeReaderFactory = GenomeReaderFactory(mockReaderHg19PslTsv)
     set1PslDbTbl = None
 
@@ -115,51 +127,43 @@ class EvidenceTests(TestCaseBase):
         factory = EvidencePslFactory(self.__obtainGenomeReader())
         return factory.fromPsl(psl)
 
-    def __assertFeatures(self, feats, expectFeatsStr, expectFeatStrs):
-        if debugResults:
-            print('"{}"'.format(feats))
-            for f in feats:
-                print('"{}",'.format(f))
-        self.assertEqual(str(feats), expectFeatsStr)
-        self.assertEqual([str(f) for f in feats], expectFeatStrs)
-
     def testAF010310(self):
         feats = self.__pslToEvidTranscript(self.__getSet1Psl("AF010310.1"))
-        self.__assertFeatures(feats, "t=chr22:18900294-18905926 -, q=AF010310.1:0=888 901",
-                              ["exon 18900294-18900875 qIns=32 tIns=8",
-                               "intron 18900875-18900950 qDel=0 sjBases=CT...AC (spliceGT_AG)",
-                               "exon 18900950-18901039 qIns=0 tIns=0",
-                               "intron 18901039-18904402 qDel=0 sjBases=CT...AC (spliceGT_AG)",
-                               "exon 18904402-18904501 qIns=0 tIns=0",
-                               "intron 18904501-18905828 qDel=0 sjBases=CT...AC (spliceGT_AG)",
-                               "exon 18905828-18905926 qIns=1 tIns=4"])
+        self._assertFeatures(feats, "t=chr22:18900294-18905926 -, q=AF010310.1:0-888 901",
+                             ["exon 18900294-18900875 q=(13-618) qIns=32 tIns=8",
+    "intron 18900875-18900950 qDel=0 sjBases=CT...AC (spliceGT_AG)",
+    "exon 18900950-18901039 q=(618-707) qIns=0 tIns=0",
+    "intron 18901039-18904402 qDel=0 sjBases=CT...AC (spliceGT_AG)",
+    "exon 18904402-18904501 q=(707-806) qIns=0 tIns=0",
+    "intron 18904501-18905828 qDel=0 sjBases=CT...AC (spliceGT_AG)",
+    "exon 18905828-18905926 q=(806-901) qIns=1 tIns=4",])
 
     def testX96484(self):
         feats = self.__pslToEvidTranscript(self.__getSet1Psl("X96484.1"))
-        self.__assertFeatures(feats, "t=chr22:18893922-18899592 +, q=X96484.1:48=1067 1080",
-                              ["exon 18893922-18893997 qIns=0 tIns=0",
-                               "intron 18893997-18894077 qDel=0 sjBases=GT...AG (spliceGT_AG)",
-                               "exon 18894077-18894238 qIns=1 tIns=0",
-                               "intron 18894238-18897684 qDel=0 sjBases=GT...AG (spliceGT_AG)",
-                               "exon 18897684-18897785 qIns=0 tIns=0",
-                               "intron 18897785-18898400 qDel=0 sjBases=GT...AG (spliceGT_AG)",
-                               "exon 18898400-18898541 qIns=0 tIns=0",
-                               "intron 18898541-18899052 qDel=0 sjBases=GT...AG (spliceGT_AG)",
-                               "exon 18899052-18899592 qIns=0 tIns=0"])
+        self._assertFeatures(feats, "t=chr22:18893922-18899592 +, q=X96484.1:48-1067 1080",
+                              ["exon 18893922-18893997 q=(48-123) qIns=0 tIns=0",
+    "intron 18893997-18894077 qDel=0 sjBases=GT...AG (spliceGT_AG)",
+    "exon 18894077-18894238 q=(123-285) qIns=1 tIns=0",
+    "intron 18894238-18897684 qDel=0 sjBases=GT...AG (spliceGT_AG)",
+    "exon 18897684-18897785 q=(285-386) qIns=0 tIns=0",
+    "intron 18897785-18898400 qDel=0 sjBases=GT...AG (spliceGT_AG)",
+    "exon 18898400-18898541 q=(386-527) qIns=0 tIns=0",
+    "intron 18898541-18899052 qDel=0 sjBases=GT...AG (spliceGT_AG)",
+    "exon 18899052-18899592 q=(527-1067) qIns=0 tIns=0",])
 
     def testX96484NoSJ(self):
         factory = EvidencePslFactory(None)
         feats = factory.fromPsl(self.__getSet1Psl("X96484.1"))
-        self.__assertFeatures(feats, "t=chr22:18893922-18899592 +, q=X96484.1:48=1067 1080",
-                              ["exon 18893922-18893997 qIns=0 tIns=0",
-                               "intron 18893997-18894077 qDel=0 sjBases=None",
-                               "exon 18894077-18894238 qIns=1 tIns=0",
-                               "intron 18894238-18897684 qDel=0 sjBases=None",
-                               "exon 18897684-18897785 qIns=0 tIns=0",
-                               "intron 18897785-18898400 qDel=0 sjBases=None",
-                               "exon 18898400-18898541 qIns=0 tIns=0",
-                               "intron 18898541-18899052 qDel=0 sjBases=None",
-                               "exon 18899052-18899592 qIns=0 tIns=0"])
+        self._assertFeatures(feats, "t=chr22:18893922-18899592 +, q=X96484.1:48-1067 1080",
+                              ["exon 18893922-18893997 q=(48-123) qIns=0 tIns=0",
+    "intron 18893997-18894077 qDel=0 sjBases=None",
+    "exon 18894077-18894238 q=(123-285) qIns=1 tIns=0",
+    "intron 18894238-18897684 qDel=0 sjBases=None",
+    "exon 18897684-18897785 q=(285-386) qIns=0 tIns=0",
+    "intron 18897785-18898400 qDel=0 sjBases=None",
+    "exon 18898400-18898541 q=(386-527) qIns=0 tIns=0",
+    "intron 18898541-18899052 qDel=0 sjBases=None",
+    "exon 18899052-18899592 q=(527-1067) qIns=0 tIns=0",])
 
     def testRangeMap1(self):
         # range is set1: chr22:18632931-19279166
@@ -172,7 +176,7 @@ class EvidenceTests(TestCaseBase):
         self.assertEqual(len(overFeats), 12)
 
 
-class AnnotationTests(TestCaseBase):
+class AnnotationTests(FeatureTestBase):
     genomeReaderFactory = GenomeReaderFactory(mockReaderHg19GpTsv)
     set1GpDbTbl = None
 
@@ -197,103 +201,96 @@ class AnnotationTests(TestCaseBase):
         factory = AnnotationGenePredFactory(self.__obtainGenomeReader())
         return factory.fromGenePred(gp)
 
-    def __assertFeatures(self, feats, expectFeatsStr, expectFeatStrs):
-        if debugResults:
-            print('"{}"'.format(feats))
-            for f in feats:
-                print('"{}",'.format(f))
-        self.assertEqual(str(feats), expectFeatsStr)
-        self.assertEqual([str(f) for f in feats], expectFeatStrs)
-
     def testENST00000215794(self):
         # + strand
         feats = self.__gpToEvidTranscript(self.__getSet1Gp("ENST00000215794.7"))
-        self.__assertFeatures(feats, "t=chr22:18632665-18660164 +, q=ENST00000215794.7:0=2129 2129",
-                              ["exon 18632665-18632989 qIns=0 tIns=0",
-                               "intron 18632989-18640324 qDel=0 sjBases=GC...AG (spliceGC_AG)",
-                               "exon 18640324-18640587 qIns=0 tIns=0",
-                               "intron 18640587-18642938 qDel=0 sjBases=GT...AG (spliceGT_AG)",
-                               "exon 18642938-18643035 qIns=0 tIns=0",
-                               "intron 18643035-18644556 qDel=0 sjBases=GT...AG (spliceGT_AG)",
-                               "exon 18644556-18644702 qIns=0 tIns=0",
-                               "intron 18644702-18650021 qDel=0 sjBases=GT...AG (spliceGT_AG)",
-                               "exon 18650021-18650101 qIns=0 tIns=0",
-                               "intron 18650101-18650656 qDel=0 sjBases=GT...AG (spliceGT_AG)",
-                               "exon 18650656-18650803 qIns=0 tIns=0",
-                               "intron 18650803-18652610 qDel=0 sjBases=GT...AG (spliceGT_AG)",
-                               "exon 18652610-18652706 qIns=0 tIns=0",
-                               "intron 18652706-18653519 qDel=0 sjBases=GT...AG (spliceGT_AG)",
-                               "exon 18653519-18653687 qIns=0 tIns=0",
-                               "intron 18653687-18655916 qDel=0 sjBases=GT...AG (spliceGT_AG)",
-                               "exon 18655916-18656048 qIns=0 tIns=0",
-                               "intron 18656048-18656559 qDel=0 sjBases=GT...AG (spliceGT_AG)",
-                               "exon 18656559-18656609 qIns=0 tIns=0",
-                               "intron 18656609-18659538 qDel=0 sjBases=GT...AG (spliceGT_AG)",
-                               "exon 18659538-18660164 qIns=0 tIns=0"])
+        self._assertFeatures(feats, "t=chr22:18632665-18660164 +, q=ENST00000215794.7:0-2129 2129",
+                             ["exon 18632665-18632989 q=(0-324) qIns=0 tIns=0",
+                              "intron 18632989-18640324 qDel=0 sjBases=GC...AG (spliceGC_AG)",
+                              "exon 18640324-18640587 q=(324-587) qIns=0 tIns=0",
+                              "intron 18640587-18642938 qDel=0 sjBases=GT...AG (spliceGT_AG)",
+                              "exon 18642938-18643035 q=(587-684) qIns=0 tIns=0",
+                              "intron 18643035-18644556 qDel=0 sjBases=GT...AG (spliceGT_AG)",
+                              "exon 18644556-18644702 q=(684-830) qIns=0 tIns=0",
+                              "intron 18644702-18650021 qDel=0 sjBases=GT...AG (spliceGT_AG)",
+                              "exon 18650021-18650101 q=(830-910) qIns=0 tIns=0",
+                              "intron 18650101-18650656 qDel=0 sjBases=GT...AG (spliceGT_AG)",
+                              "exon 18650656-18650803 q=(910-1057) qIns=0 tIns=0",
+                              "intron 18650803-18652610 qDel=0 sjBases=GT...AG (spliceGT_AG)",
+                              "exon 18652610-18652706 q=(1057-1153) qIns=0 tIns=0",
+                              "intron 18652706-18653519 qDel=0 sjBases=GT...AG (spliceGT_AG)",
+                              "exon 18653519-18653687 q=(1153-1321) qIns=0 tIns=0",
+                              "intron 18653687-18655916 qDel=0 sjBases=GT...AG (spliceGT_AG)",
+                              "exon 18655916-18656048 q=(1321-1453) qIns=0 tIns=0",
+                              "intron 18656048-18656559 qDel=0 sjBases=GT...AG (spliceGT_AG)",
+                              "exon 18656559-18656609 q=(1453-1503) qIns=0 tIns=0",
+                              "intron 18656609-18659538 qDel=0 sjBases=GT...AG (spliceGT_AG)",
+                              "exon 18659538-18660164 q=(1503-2129) qIns=0 tIns=0"])
 
     def testENST00000334029(self):
         # - strand
         feats = self.__gpToEvidTranscript(self.__getSet1Gp("ENST00000334029.2"))
-        self.__assertFeatures(feats, "t=chr22:18900294-18923964 -, q=ENST00000334029.2:0=1985 1985",
-                              ["exon 18900294-18900875 qIns=0 tIns=0",
-                               "intron 18900875-18900950 qDel=0 sjBases=CT...AC (spliceGT_AG)",
-                               "exon 18900950-18901039 qIns=0 tIns=0",
-                               "intron 18901039-18904402 qDel=0 sjBases=CT...AC (spliceGT_AG)",
-                               "exon 18904402-18904501 qIns=0 tIns=0",
-                               "intron 18904501-18905828 qDel=0 sjBases=CT...AC (spliceGT_AG)",
-                               "exon 18905828-18906004 qIns=0 tIns=0",
-                               "intron 18906004-18906963 qDel=0 sjBases=CT...GC (spliceGC_AG)",
-                               "exon 18906963-18907110 qIns=0 tIns=0",
-                               "intron 18907110-18907218 qDel=0 sjBases=CT...AC (spliceGT_AG)",
-                               "exon 18907218-18907311 qIns=0 tIns=0",
-                               "intron 18907311-18908854 qDel=0 sjBases=CT...AC (spliceGT_AG)",
-                               "exon 18908854-18908936 qIns=0 tIns=0",
-                               "intron 18908936-18909837 qDel=0 sjBases=CT...AC (spliceGT_AG)",
-                               "exon 18909837-18909917 qIns=0 tIns=0",
-                               "intron 18909917-18910329 qDel=0 sjBases=CT...AC (spliceGT_AG)",
-                               "exon 18910329-18910446 qIns=0 tIns=0",
-                               "intron 18910446-18910627 qDel=0 sjBases=CT...AC (spliceGT_AG)",
-                               "exon 18910627-18910692 qIns=0 tIns=0",
-                               "intron 18910692-18912563 qDel=0 sjBases=CT...AC (spliceGT_AG)",
-                               "exon 18912563-18912713 qIns=0 tIns=0",
-                               "intron 18912713-18913200 qDel=0 sjBases=CT...AC (spliceGT_AG)",
-                               "exon 18913200-18913235 qIns=0 tIns=0",
-                               "intron 18913235-18918502 qDel=0 sjBases=CT...AC (spliceGT_AG)",
-                               "exon 18918502-18918711 qIns=0 tIns=0",
-                               "intron 18918711-18923902 qDel=0 sjBases=CT...AC (spliceGT_AG)",
-                               "exon 18923902-18923964 qIns=0 tIns=0"])
+        self._assertFeatures(feats, "t=chr22:18900294-18923964 -, q=ENST00000334029.2:0-1985 1985",
+                             ["exon 18900294-18900875 q=(0-581) qIns=0 tIns=0",
+                              "intron 18900875-18900950 qDel=0 sjBases=CT...AC (spliceGT_AG)",
+                              "exon 18900950-18901039 q=(581-670) qIns=0 tIns=0",
+                              "intron 18901039-18904402 qDel=0 sjBases=CT...AC (spliceGT_AG)",
+                              "exon 18904402-18904501 q=(670-769) qIns=0 tIns=0",
+                              "intron 18904501-18905828 qDel=0 sjBases=CT...AC (spliceGT_AG)",
+                              "exon 18905828-18906004 q=(769-945) qIns=0 tIns=0",
+                              "intron 18906004-18906963 qDel=0 sjBases=CT...GC (spliceGC_AG)",
+                              "exon 18906963-18907110 q=(945-1092) qIns=0 tIns=0",
+                              "intron 18907110-18907218 qDel=0 sjBases=CT...AC (spliceGT_AG)",
+                              "exon 18907218-18907311 q=(1092-1185) qIns=0 tIns=0",
+                              "intron 18907311-18908854 qDel=0 sjBases=CT...AC (spliceGT_AG)",
+                              "exon 18908854-18908936 q=(1185-1267) qIns=0 tIns=0",
+                              "intron 18908936-18909837 qDel=0 sjBases=CT...AC (spliceGT_AG)",
+                              "exon 18909837-18909917 q=(1267-1347) qIns=0 tIns=0",
+                              "intron 18909917-18910329 qDel=0 sjBases=CT...AC (spliceGT_AG)",
+                              "exon 18910329-18910446 q=(1347-1464) qIns=0 tIns=0",
+                              "intron 18910446-18910627 qDel=0 sjBases=CT...AC (spliceGT_AG)",
+                              "exon 18910627-18910692 q=(1464-1529) qIns=0 tIns=0",
+                              "intron 18910692-18912563 qDel=0 sjBases=CT...AC (spliceGT_AG)",
+                              "exon 18912563-18912713 q=(1529-1679) qIns=0 tIns=0",
+                              "intron 18912713-18913200 qDel=0 sjBases=CT...AC (spliceGT_AG)",
+                              "exon 18913200-18913235 q=(1679-1714) qIns=0 tIns=0",
+                              "intron 18913235-18918502 qDel=0 sjBases=CT...AC (spliceGT_AG)",
+                              "exon 18918502-18918711 q=(1714-1923) qIns=0 tIns=0",
+                              "intron 18918711-18923902 qDel=0 sjBases=CT...AC (spliceGT_AG)",
+                              "exon 18923902-18923964 q=(1923-1985) qIns=0 tIns=0",
+                             ])
 
     def testENST00000334029NoSJ(self):
         factory = AnnotationGenePredFactory(None)
         feats = factory.fromGenePred(self.__getSet1Gp("ENST00000334029.2"))
-        self.__assertFeatures(feats, "t=chr22:18900294-18923964 -, q=ENST00000334029.2:0=1985 1985",
-                              ["exon 18900294-18900875 qIns=0 tIns=0",
-                               "intron 18900875-18900950 qDel=0 sjBases=None",
-                               "exon 18900950-18901039 qIns=0 tIns=0",
-                               "intron 18901039-18904402 qDel=0 sjBases=None",
-                               "exon 18904402-18904501 qIns=0 tIns=0",
-                               "intron 18904501-18905828 qDel=0 sjBases=None",
-                               "exon 18905828-18906004 qIns=0 tIns=0",
-                               "intron 18906004-18906963 qDel=0 sjBases=None",
-                               "exon 18906963-18907110 qIns=0 tIns=0",
-                               "intron 18907110-18907218 qDel=0 sjBases=None",
-                               "exon 18907218-18907311 qIns=0 tIns=0",
-                               "intron 18907311-18908854 qDel=0 sjBases=None",
-                               "exon 18908854-18908936 qIns=0 tIns=0",
-                               "intron 18908936-18909837 qDel=0 sjBases=None",
-                               "exon 18909837-18909917 qIns=0 tIns=0",
-                               "intron 18909917-18910329 qDel=0 sjBases=None",
-                               "exon 18910329-18910446 qIns=0 tIns=0",
-                               "intron 18910446-18910627 qDel=0 sjBases=None",
-                               "exon 18910627-18910692 qIns=0 tIns=0",
-                               "intron 18910692-18912563 qDel=0 sjBases=None",
-                               "exon 18912563-18912713 qIns=0 tIns=0",
-                               "intron 18912713-18913200 qDel=0 sjBases=None",
-                               "exon 18913200-18913235 qIns=0 tIns=0",
-                               "intron 18913235-18918502 qDel=0 sjBases=None",
-                               "exon 18918502-18918711 qIns=0 tIns=0",
-                               "intron 18918711-18923902 qDel=0 sjBases=None",
-                               "exon 18923902-18923964 qIns=0 tIns=0"])
+        self._assertFeatures(feats, "t=chr22:18900294-18923964 -, q=ENST00000334029.2:0-1985 1985",
+                             ["exon 18900294-18900875 q=(0-581) qIns=0 tIns=0",
+                              "intron 18900875-18900950 qDel=0 sjBases=None",
+                              "exon 18900950-18901039 q=(581-670) qIns=0 tIns=0",
+                              "intron 18901039-18904402 qDel=0 sjBases=None",
+                              "exon 18904402-18904501 q=(670-769) qIns=0 tIns=0",
+                              "intron 18904501-18905828 qDel=0 sjBases=None",
+                              "exon 18905828-18906004 q=(769-945) qIns=0 tIns=0",
+                              "intron 18906004-18906963 qDel=0 sjBases=None",
+                              "exon 18906963-18907110 q=(945-1092) qIns=0 tIns=0",
+                              "intron 18907110-18907218 qDel=0 sjBases=None",
+                              "exon 18907218-18907311 q=(1092-1185) qIns=0 tIns=0",
+                              "intron 18907311-18908854 qDel=0 sjBases=None",
+                              "exon 18908854-18908936 q=(1185-1267) qIns=0 tIns=0",
+                              "intron 18908936-18909837 qDel=0 sjBases=None",
+                              "exon 18909837-18909917 q=(1267-1347) qIns=0 tIns=0",
+                              "intron 18909917-18910329 qDel=0 sjBases=None",
+                              "exon 18910329-18910446 q=(1347-1464) qIns=0 tIns=0",
+                              "intron 18910446-18910627 qDel=0 sjBases=None",
+                              "exon 18910627-18910692 q=(1464-1529) qIns=0 tIns=0",
+                              "intron 18910692-18912563 qDel=0 sjBases=None",
+                              "exon 18912563-18912713 q=(1529-1679) qIns=0 tIns=0",
+                              "intron 18912713-18913200 qDel=0 sjBases=None",
+                              "exon 18913200-18913235 q=(1679-1714) qIns=0 tIns=0",
+                              "intron 18913235-18918502 qDel=0 sjBases=None",
+                              "exon 18918502-18918711 q=(1714-1923) qIns=0 tIns=0",
+                              "intron 18918711-18923902 qDel=0 sjBases=None",
+                              "exon 18923902-18923964 q=(1923-1985) qIns=0 tIns=0",])
 
 
 def suite():

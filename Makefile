@@ -25,5 +25,5 @@ lint:
 clean::
 	(cd src && ${MAKE} clean)
 	(cd tests && ${MAKE} clean)
-	rm -f  ${PYLIBDIR}/*.pyc ${BINDIR}/*.pyc ${TSLCLTESTDIR}/*.pyc
+	rm -f ${pylibs:%=%c} ${BINDIR}/*.pyc
 	rm -rf  ${OBJDIR}

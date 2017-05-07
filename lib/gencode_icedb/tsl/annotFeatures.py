@@ -16,11 +16,14 @@ class AnnotationGenePredFactory(object):
 
     def __buildFeatures(self, gp):
         iBlkStart = 0
+        qStart = 0
         while iBlkStart < len(gp.exons):
-            iBlkEnd = self.__findExonEnd(gp, iBlkStart)
-            yield self.__makeExon(gp, iBlkStart, iBlkEnd)
+            iBlkEnd, qCount = self.__findExonEnd(gp, iBlkStart)
+            qEnd = qStart + qCount
+            yield self.__makeExon(gp, iBlkStart, iBlkEnd, qStart, qEnd)
             if iBlkEnd < len(gp.exons):
                 yield self.__makeIntron(gp, iBlkEnd)
+            qStart = qEnd
             iBlkStart = iBlkEnd
 
     def __tGapSize(self, gp, iBlk):
@@ -28,17 +31,20 @@ class AnnotationGenePredFactory(object):
         return gp.exons[iBlk].start - gp.exons[iBlk - 1].end
 
     def __findExonEnd(self, gp, iBlkStart):
-        "finds half-open end of blocks covering current exon"
+        "finds half-open end of blocks covering current exon and total base, less closed gaps"
         iBlkEnd = iBlkStart + 1
+        qCount = gp.exons[iBlkStart].size()
         while (iBlkEnd < len(gp.exons)) and (self.__tGapSize(gp, iBlkEnd) < minIntronSize):
+            qCount = gp.exons[iBlkEnd].size()
             iBlkEnd += 1
-        return iBlkEnd
+        return iBlkEnd, qCount
 
-    def __makeExon(self, gp, iBlkStart, iBlkEnd):
+    def __makeExon(self, gp, iBlkStart, iBlkEnd, qStart, qEnd):
         gapBases = 0
         for iBlk in xrange(iBlkStart + 1, iBlkEnd):
             gapBases += gp.exons[iBlk].start - gp.exons[iBlk - 1].end
-        return ExonFeature(self, gp.exons[iBlkStart].start, gp.exons[iBlkEnd - 1].end, 0, gapBases)
+        return ExonFeature(self, gp.exons[iBlkStart].start, gp.exons[iBlkEnd - 1].end,
+                           qStart, qEnd, 0, gapBases)
 
     def __getSpliceSites(self, gp, iBlkNext):
         startBases = self.genomeReader.get(gp.chrom, gp.exons[iBlkNext - 1].end,

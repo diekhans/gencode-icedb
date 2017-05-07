@@ -12,16 +12,19 @@ class TransFeature(object):
 
 
 class ExonFeature(TransFeature):
-    "exon with target gaps closed"
-    __slots__ = ("qInsertBases", "tInsertBases")
+    """exon with target gaps closed.  query range is in genomic coordinates and
+    it's length may not match the length of the feature."""
+    __slots__ = ("qStart", "qEnd", "qInsertBases", "tInsertBases")
 
-    def __init__(self, parent, start, end, qInsertBases, tInsertBases):
+    def __init__(self, parent, start, end, qStart, qEnd, qInsertBases, tInsertBases):
         super(ExonFeature, self).__init__(parent, start, end)
+        self.qStart, self.qEnd = qStart, qEnd
         self.qInsertBases, self.tInsertBases = qInsertBases, tInsertBases
 
     def __str__(self):
-        return "exon {}-{} qIns={} tIns={}".format(self.start, self.end,
-                                                   self.qInsertBases, self.tInsertBases)
+        return "exon {}-{} q=({}-{}) qIns={} tIns={}".format(self.start, self.end,
+                                                              self.qStart, self.qEnd,
+                                                              self.qInsertBases, self.tInsertBases)
 
 
 class IntronFeature(TransFeature):
@@ -54,5 +57,5 @@ class TranscriptFeatures(list):
         self.extend(features)
 
     def __str__(self):
-        return "t={}:{}-{} {}, q={}:{}={} {}".format(self.chrom, self.start, self.end, self.strand,
+        return "t={}:{}-{} {}, q={}:{}-{} {}".format(self.chrom, self.start, self.end, self.strand,
                                                      self.qName, self.qStart, self.qEnd, self.qSize)

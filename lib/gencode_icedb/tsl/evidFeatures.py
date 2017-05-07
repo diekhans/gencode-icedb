@@ -1,5 +1,5 @@
 """
-Convert PSL to features, closing (and tracking gaps)
+Convert alignments (PSL) to features, closing and tracking gaps.
 """
 from __future__ import print_function
 from pycbio.hgdata.rangeFinder import RangeFinder
@@ -44,6 +44,7 @@ class EvidencePslFactory(object):
             qInsertBases += psl.blocks[iBlk].qStart - psl.blocks[iBlk - 1].qEnd
             tInsertBases += psl.blocks[iBlk].tStart - psl.blocks[iBlk - 1].tEnd
         return ExonFeature(self, psl.blocks[iBlkStart].tStart, psl.blocks[iBlkEnd - 1].tEnd,
+                           psl.blocks[iBlkStart].qStart, psl.blocks[iBlkEnd - 1].qEnd,
                            qInsertBases, tInsertBases)
 
     def __getSpliceSites(self, psl, iBlkNext):
