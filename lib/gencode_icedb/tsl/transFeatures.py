@@ -5,43 +5,51 @@ Features of a transcript annotation or alignment.
 
 class TransFeature(object):
     "a feature of annotation or alignment to the genome"
-    __slots__ = ("parent", "start", "end")
+    __slots__ = ("parent", "chromStart", "chromEnd")
 
-    def __init__(self, parent, start, end):
-        self.parent, self.start, self.end = parent, start, end
+    def __init__(self, parent, chromStart, chromEnd):
+        self.parent, self.chromStart, self.chromEnd = parent, chromStart, chromEnd
+
+    @property
+    def size(self):
+        return self.chromEnd - self.chromStart
 
 
 class ExonFeature(TransFeature):
-    """exon with target gaps closed.  query range is in genomic coordinates and
-    it's length may not match the length of the feature."""
-    __slots__ = ("qStart", "qEnd", "qInsertBases", "tInsertBases")
+    """exon with target gaps closed.  The query range is in genomic coordinates and
+    it's length may not match the length of the feature, due to gap closing."""
+    __slots__ = ("rnaStart", "rnaEnd", "rnaInsertCnt", "chromInsertCnt")
 
-    def __init__(self, parent, start, end, qStart, qEnd, qInsertBases, tInsertBases):
-        super(ExonFeature, self).__init__(parent, start, end)
-        self.qStart, self.qEnd = qStart, qEnd
-        self.qInsertBases, self.tInsertBases = qInsertBases, tInsertBases
+    def __init__(self, parent, chromStart, chromEnd, rnaStart, rnaEnd, rnaInsertCnt, chromInsertCnt):
+        super(ExonFeature, self).__init__(parent, chromStart, chromEnd)
+        self.rnaStart, self.rnaEnd = rnaStart, rnaEnd
+        self.rnaInsertCnt, self.chromInsertCnt = rnaInsertCnt, chromInsertCnt
 
     def __str__(self):
-        return "exon {}-{} q=({}-{}) qIns={} tIns={}".format(self.start, self.end,
-                                                              self.qStart, self.qEnd,
-                                                              self.qInsertBases, self.tInsertBases)
+        return "exon {}-{} q=({}-{}) qIns={} tIns={}".format(self.chromStart, self.chromEnd,
+                                                             self.rnaStart, self.rnaEnd,
+                                                             self.rnaInsertCnt, self.chromInsertCnt)
+
+    def rnaOverlaps(self, exon2):
+        "does RNA rnage overlap?"
+        return (self.rnaStart < exon2.rnaEnd) and (self.rnaEnd > exon2.rnaStart)
 
 
 class IntronFeature(TransFeature):
     """intron from annotation or alignment, splice junction information maybe
     None"""
-    __slots__ = ("qDeleteBases", "startBases", "endBases", "spliceSites")
+    __slots__ = ("rnaDeleteCnt", "donorSeq", "acceptorSeq", "spliceSites")
 
-    def __init__(self, parent, start, end, qDeleteBases, startBases, endBases, spliceSites):
-        super(IntronFeature, self).__init__(parent, start, end)
-        self.qDeleteBases, self.startBases, self.endBases, self.spliceSites = qDeleteBases, startBases, endBases, spliceSites
+    def __init__(self, parent, chromStart, chromEnd, rnaDeleteCnt, donorSeq, acceptorSeq, spliceSites):
+        super(IntronFeature, self).__init__(parent, chromStart, chromEnd)
+        self.rnaDeleteCnt, self.donorSeq, self.acceptorSeq, self.spliceSites = rnaDeleteCnt, donorSeq, acceptorSeq, spliceSites
 
     def __str__(self):
-        if self.startBases is None:
+        if self.donorSeq is None:
             sjDesc = None
         else:
-            sjDesc = "{}...{} ({})".format(self.startBases, self.endBases, self.spliceSites)
-        return "intron {}-{} qDel={} sjBases={}".format(self.start, self.end, self.qDeleteBases, sjDesc)
+            sjDesc = "{}...{} ({})".format(self.donorSeq, self.acceptorSeq, self.spliceSites)
+        return "intron {}-{} qDel={} sjBases={}".format(self.chromStart, self.chromEnd, self.rnaDeleteCnt, sjDesc)
 
 
 class TranscriptFeatures(list):
@@ -50,12 +58,22 @@ class TranscriptFeatures(list):
     features are kept in genomic order.
     """
 
-    def __init__(self, chrom, strand, start, end, size, qName, qStart, qEnd, qSize,
-                 features):
-        self.chrom, self.strand, self.start, self.end, self.size = chrom, strand, start, end, size
-        self.qName, self.qStart, self.qEnd, self.qSize = qName, qStart, qEnd, qSize
+    def __init__(self, chrom, chromStrand, chromStart, chromEnd, chromSize,
+                 rnaName, rnaStrand, rnaStart, rnaEnd, rnaSize,
+                 features, cdsChromStart=None, cdsChromEnd=None):
+        self.chrom, self.chromStrand, self.chromStart, self.chromEnd, self.chromSize = chrom, chromStrand, chromStart, chromEnd, chromSize
+        self.rnaName, self.rnaStrand, self.rnaStart, self.rnaEnd, self.rnaSize = rnaName, rnaStrand, rnaStart, rnaEnd, rnaSize
+        self.cdsChromStart, self.cdsChromEnd = cdsChromStart, cdsChromEnd
         self.extend(features)
 
     def __str__(self):
-        return "t={}:{}-{} {}, q={}:{}-{} {}".format(self.chrom, self.start, self.end, self.strand,
-                                                     self.qName, self.qStart, self.qEnd, self.qSize)
+        return "t={}:{}-{}/{}, q={}:{}-{}/{} {}".format(self.chrom, self.chromStart, self.chromEnd, self.chromStrand,
+                                                      self.rnaName, self.rnaStart, self.rnaEnd, self.rnaStrand, self.rnaSize)
+
+    @property
+    def alignedBases(self):
+        alignedCnt = 0
+        for feature in self:
+            if isinstance(feature, ExonFeature):
+                alignedCnt += (feature.rnaEnd - feature.rnaStart) - feature.rnaInsertCnt
+        return alignedCnt

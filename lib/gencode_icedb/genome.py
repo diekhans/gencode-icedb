@@ -30,6 +30,9 @@ class GenomeReader(object):
             seq = dnaOps.reverseComplement(seq)
         return seq
 
+    def getChromSize(self, chrom):
+        self.__obtainChrom(chrom)
+        return self.size
 
 SpliceSites = SymEnum("SpliceSite",
                       ("spliceGT_AG", "spliceGC_AG", "spliceAT_AC", "spliceOther"))
@@ -45,8 +48,8 @@ def spliceSitesClassify(donor, acceptor):
     return spliceSitesMap.get((donor.lower(), acceptor.lower()), SpliceSites.spliceOther)
 
 
-def spliceSitesClassifyStrand(strand, startBases, endBases):
+def spliceSitesClassifyStrand(strand, donorSeq, acceptorSeq):
     if strand == '+':
-        return spliceSitesClassify(startBases, endBases)
+        return spliceSitesClassify(donorSeq, acceptorSeq)
     else:
-        return spliceSitesClassify(dnaOps.reverseComplement(endBases), dnaOps.reverseComplement(startBases))
+        return spliceSitesClassify(dnaOps.reverseComplement(acceptorSeq), dnaOps.reverseComplement(donorSeq))

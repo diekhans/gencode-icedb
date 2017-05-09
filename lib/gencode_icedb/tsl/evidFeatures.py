@@ -39,37 +39,37 @@ class EvidencePslFactory(object):
         return iBlkEnd
 
     def __makeExon(self, psl, iBlkStart, iBlkEnd):
-        qInsertBases = tInsertBases = 0
+        rnaInsertCnt = chromInsertCnt = 0
         for iBlk in xrange(iBlkStart + 1, iBlkEnd):
-            qInsertBases += psl.blocks[iBlk].qStart - psl.blocks[iBlk - 1].qEnd
-            tInsertBases += psl.blocks[iBlk].tStart - psl.blocks[iBlk - 1].tEnd
+            rnaInsertCnt += psl.blocks[iBlk].qStart - psl.blocks[iBlk - 1].qEnd
+            chromInsertCnt += psl.blocks[iBlk].tStart - psl.blocks[iBlk - 1].tEnd
         return ExonFeature(self, psl.blocks[iBlkStart].tStart, psl.blocks[iBlkEnd - 1].tEnd,
                            psl.blocks[iBlkStart].qStart, psl.blocks[iBlkEnd - 1].qEnd,
-                           qInsertBases, tInsertBases)
+                           rnaInsertCnt, chromInsertCnt)
 
     def __getSpliceSites(self, psl, iBlkNext):
-        startBases = self.genomeReader.get(psl.tName, psl.blocks[iBlkNext - 1].tEnd,
-                                           psl.blocks[iBlkNext - 1].tEnd + 2)
-        endBases = self.genomeReader.get(psl.tName, psl.blocks[iBlkNext].tStart - 2,
-                                         psl.blocks[iBlkNext].tStart)
-        spliceSites = spliceSitesClassifyStrand(psl.getQStrand(), startBases, endBases)
-        return startBases, endBases, spliceSites
+        donorSeq = self.genomeReader.get(psl.tName, psl.blocks[iBlkNext - 1].tEnd,
+                                         psl.blocks[iBlkNext - 1].tEnd + 2)
+        acceptorSeq = self.genomeReader.get(psl.tName, psl.blocks[iBlkNext].tStart - 2,
+                                            psl.blocks[iBlkNext].tStart)
+        spliceSites = spliceSitesClassifyStrand(psl.getQStrand(), donorSeq, acceptorSeq)
+        return donorSeq, acceptorSeq, spliceSites
 
     def __makeIntron(self, psl, iBlkNext):
         qDeleteBases = psl.blocks[iBlkNext].qStart - psl.blocks[iBlkNext - 1].qEnd
         if self.genomeReader is None:
-            startBases = endBases = spliceSites = None
+            donorSeq = acceptorSeq = spliceSites = None
         else:
-            startBases, endBases, spliceSites = self.__getSpliceSites(psl, iBlkNext)
+            donorSeq, acceptorSeq, spliceSites = self.__getSpliceSites(psl, iBlkNext)
         return IntronFeature(self, psl.blocks[iBlkNext - 1].tEnd, psl.blocks[iBlkNext].tStart,
-                             qDeleteBases, startBases, endBases, spliceSites)
+                             qDeleteBases, donorSeq, acceptorSeq, spliceSites)
 
     def fromPsl(self, psl):
         "convert a psl to an TranscriptFeatures object"
         if psl.getTStrand() != '+':
             raise Exception("unexpected target `-' strand on {} ".format(psl.qName))
-        return TranscriptFeatures(psl.tName, psl.getQStrand(), psl.tStart, psl.tEnd, psl.tSize,
-                                  psl.qName, psl.qStart, psl.qEnd, psl.qSize,
+        return TranscriptFeatures(psl.tName, psl.getTStrand(), psl.tStart, psl.tEnd, psl.tSize,
+                                  psl.qName, psl.getQStrand(), psl.qStart, psl.qEnd, psl.qSize,
                                   self.__buildFeatures(psl))
 
 
@@ -88,7 +88,7 @@ class EvidenceFeatureMap(list):
         self.transcripts.append(transFeatures)
         for evidFeat in transFeatures:
             if isinstance(evidFeat, ExonFeature):
-                self.exonRangeMap.add(transFeatures.chrom, evidFeat.start, evidFeat.end, transFeatures, transFeatures.strand)
+                self.exonRangeMap.add(transFeatures.chrom, evidFeat.chromStart, evidFeat.chromEnd, transFeatures, transFeatures.chromStrand)
 
     @staticmethod
     def dbFactory(conn, table, chrom, start, end, genomeReader):
