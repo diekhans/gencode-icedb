@@ -34,33 +34,42 @@ if updateMockReader and forceMockReader:
 class MockGenomeReader(object):
     """Fake GenomeReader when 2bit isn't there"""
     def __init__(self, mockDataTsv):
-        self.mockData = dict()
+        self.mockDataSizes = dict()
+        self.mockDataSeqs = dict()
         for row in TsvReader(mockDataTsv,
                              typeMap={"start": int,
-                                      "end": int}):
-            self.mockData[(row.chrom, row.start, row.end, row.strand)] = row.seq
+                                      "end": int,
+                                      "size": int}):
+            self.mockDataSizes[row.chrom] = row.size
+            self.mockDataSeqs[(row.chrom, row.start, row.end, row.strand)] = row.seq
 
     def get(self, chrom, start, end, strand=None):
         if strand is None:
             strand = '+'
-        return self.mockData[(chrom, start, end, strand)]
+        return self.mockDataSeqs[(chrom, start, end, strand)]
+
+    def getChromSize(self, chrom):
+        return self.mockDataSizes[chrom]
 
 class MockSeqWriter(object):
     """Wrapper around GenomeReader that create mock data from twoBit """
     def __init__(self, genomeReader, mockDataTsv):
         self.genomeReader = genomeReader
         self.mockDataFh = open(mockDataTsv, "w")
-        fileOps.prRowv(self.mockDataFh, "chrom", "start", "end", "strand", "seq")
+        fileOps.prRowv(self.mockDataFh, "chrom", "start", "end", "size", "strand", "seq")
 
     def get(self, chrom, start, end, strand=None):
         if strand is None:
             strand = '+'
         assert strand == '+'
+        size = self.genomeReader.getChromSize(chrom)
         seq = self.genomeReader.get(chrom, start, end, strand)
-        fileOps.prRowv(self.mockDataFh, chrom, start, end, strand, seq)
+        fileOps.prRowv(self.mockDataFh, chrom, start, end, size, strand, seq)
         self.mockDataFh.flush()
         return seq
 
+    def getChromSize(self, chrom):
+        return self.genomeReader.getChromSize(chrom)
 
 class GenomeReaderFactory(object):
     """obtain the appropriate genome reader"""
