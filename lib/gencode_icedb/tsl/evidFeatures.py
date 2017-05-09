@@ -18,13 +18,13 @@ class EvidencePslFactory(object):
         """genomeReader maybe None if splice sites are not desired """
         self.genomeReader = genomeReader
 
-    def __buildFeatures(self, psl):
+    def __buildFeatures(self, psl, trans):
         iBlkStart = 0
         while iBlkStart < len(psl.blocks):
             iBlkEnd = self.__findExonEnd(psl, iBlkStart)
-            yield self.__makeExon(psl, iBlkStart, iBlkEnd)
+            yield self.__makeExon(psl, iBlkStart, iBlkEnd, trans)
             if iBlkEnd < len(psl.blocks):
-                yield self.__makeIntron(psl, iBlkEnd)
+                yield self.__makeIntron(psl, iBlkEnd, trans)
             iBlkStart = iBlkEnd
 
     def __tGapSize(self, psl, iBlk):
@@ -38,12 +38,12 @@ class EvidencePslFactory(object):
             iBlkEnd += 1
         return iBlkEnd
 
-    def __makeExon(self, psl, iBlkStart, iBlkEnd):
+    def __makeExon(self, psl, iBlkStart, iBlkEnd, trans):
         rnaInsertCnt = chromInsertCnt = 0
         for iBlk in xrange(iBlkStart + 1, iBlkEnd):
             rnaInsertCnt += psl.blocks[iBlk].qStart - psl.blocks[iBlk - 1].qEnd
             chromInsertCnt += psl.blocks[iBlk].tStart - psl.blocks[iBlk - 1].tEnd
-        return ExonFeature(self, psl.blocks[iBlkStart].tStart, psl.blocks[iBlkEnd - 1].tEnd,
+        return ExonFeature(trans, psl.blocks[iBlkStart].tStart, psl.blocks[iBlkEnd - 1].tEnd,
                            psl.blocks[iBlkStart].qStart, psl.blocks[iBlkEnd - 1].qEnd,
                            rnaInsertCnt, chromInsertCnt)
 
@@ -55,22 +55,23 @@ class EvidencePslFactory(object):
         spliceSites = spliceSitesClassifyStrand(psl.getQStrand(), donorSeq, acceptorSeq)
         return donorSeq, acceptorSeq, spliceSites
 
-    def __makeIntron(self, psl, iBlkNext):
+    def __makeIntron(self, psl, iBlkNext, trans):
         qDeleteBases = psl.blocks[iBlkNext].qStart - psl.blocks[iBlkNext - 1].qEnd
         if self.genomeReader is None:
             donorSeq = acceptorSeq = spliceSites = None
         else:
             donorSeq, acceptorSeq, spliceSites = self.__getSpliceSites(psl, iBlkNext)
-        return IntronFeature(self, psl.blocks[iBlkNext - 1].tEnd, psl.blocks[iBlkNext].tStart,
+        return IntronFeature(trans, psl.blocks[iBlkNext - 1].tEnd, psl.blocks[iBlkNext].tStart,
                              qDeleteBases, donorSeq, acceptorSeq, spliceSites)
 
     def fromPsl(self, psl):
         "convert a psl to an TranscriptFeatures object"
         if psl.getTStrand() != '+':
             raise Exception("unexpected target `-' strand on {} ".format(psl.qName))
-        return TranscriptFeatures(psl.tName, psl.getTStrand(), psl.tStart, psl.tEnd, psl.tSize,
-                                  psl.qName, psl.getQStrand(), psl.qStart, psl.qEnd, psl.qSize,
-                                  self.__buildFeatures(psl))
+        trans = TranscriptFeatures(psl.tName, psl.getTStrand(), psl.tStart, psl.tEnd, psl.tSize,
+                                   psl.qName, psl.getQStrand(), psl.qStart, psl.qEnd, psl.qSize)
+        trans.features = tuple(self.__buildFeatures(psl, trans))
+        return trans
 
 
 class EvidenceFeatureMap(list):
@@ -84,11 +85,11 @@ class EvidenceFeatureMap(list):
         "generator over ExonFeatures overlaping the specified range"
         return self.exonRangeMap.overlapping(chrom, start, end, strand)
 
-    def addTranscript(self, transFeatures):
-        self.transcripts.append(transFeatures)
-        for evidFeat in transFeatures:
-            if isinstance(evidFeat, ExonFeature):
-                self.exonRangeMap.add(transFeatures.chrom, evidFeat.chromStart, evidFeat.chromEnd, transFeatures, transFeatures.chromStrand)
+    def addTranscript(self, trans):
+        self.transcripts.append(trans)
+        for feat in trans.features:
+            if isinstance(feat, ExonFeature):
+                self.exonRangeMap.add(trans.chrom, feat.chromStart, feat.chromEnd, trans, trans.chromStrand)
 
     @staticmethod
     def dbFactory(conn, table, chrom, start, end, genomeReader):

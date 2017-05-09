@@ -15,17 +15,23 @@ class AnnotationGenePredFactory(object):
         None if splice sites are reverse complement will not be done. To get chrom sizes
         without splice sites, provide the chromSizeFunc(chrom) function."""
         self.genomeReader = genomeReader
-        self.chromSizeFunc = chromSizeFunc
+        # set chromSizeFunc to return size or None if not available
+        if chromSizeFunc is not None:
+            self.chromSizeFunc = chromSizeFunc
+        elif self.genomeReader is not None:
+            self.chromSizeFunc = genomeReader.getChromSize
+        else:
+            self.chromSizeFunc = lambda chrom: None
 
-    def __buildFeatures(self, gp):
+    def __buildFeatures(self, gp, trans):
         iBlkStart = 0
         qStart = 0
         while iBlkStart < len(gp.exons):
             iBlkEnd, qCount = self.__findExonEnd(gp, iBlkStart)
             qEnd = qStart + qCount
-            yield self.__makeExon(gp, iBlkStart, iBlkEnd, qStart, qEnd)
+            yield self.__makeExon(gp, iBlkStart, iBlkEnd, qStart, qEnd, trans)
             if iBlkEnd < len(gp.exons):
-                yield self.__makeIntron(gp, iBlkEnd)
+                yield self.__makeIntron(gp, iBlkEnd, trans)
             qStart = qEnd
             iBlkStart = iBlkEnd
 
@@ -48,8 +54,8 @@ class AnnotationGenePredFactory(object):
             gapBases += gp.exons[iBlk].start - gp.exons[iBlk - 1].end
         return gapBases
 
-    def __makeExon(self, gp, iBlkStart, iBlkEnd, qStart, qEnd):
-        return ExonFeature(self, gp.exons[iBlkStart].start, gp.exons[iBlkEnd - 1].end,
+    def __makeExon(self, gp, iBlkStart, iBlkEnd, qStart, qEnd, trans):
+        return ExonFeature(trans, gp.exons[iBlkStart].start, gp.exons[iBlkEnd - 1].end,
                            qStart, qEnd, 0, self.__countGap(gp, iBlkStart, iBlkEnd))
 
     def __getSpliceSites(self, gp, iBlkNext):
@@ -60,20 +66,14 @@ class AnnotationGenePredFactory(object):
         spliceSites = spliceSitesClassifyStrand(gp.strand, donorSeq, acceptorSeq)
         return donorSeq, acceptorSeq, spliceSites
 
-    def __makeIntron(self, gp, iBlkNext):
+    def __makeIntron(self, gp, iBlkNext, trans):
         if self.genomeReader is None:
             donorSeq = acceptorSeq = spliceSites = None
         else:
             donorSeq, acceptorSeq, spliceSites = self.__getSpliceSites(gp, iBlkNext)
-        return IntronFeature(self, gp.exons[iBlkNext - 1].end, gp.exons[iBlkNext].start,
+        return IntronFeature(trans, gp.exons[iBlkNext - 1].end, gp.exons[iBlkNext].start,
                              0, donorSeq, acceptorSeq, spliceSites)
 
-    def __getOptionalChromSize(self, chrom):
-        if self.genomeReader is not None:
-            return self.genomeReader.getChromSize(chrom)
-        else:
-            return None
-    
     def fromGenePred(self, gp):
         "convert a genePred to an AnnotTranscript"
         rnaSize = gp.getLenExons()
@@ -82,9 +82,11 @@ class AnnotationGenePredFactory(object):
         else:
             cdsChromStart = cdsChromEnd = None
 
-        return TranscriptFeatures(gp.chrom, '+', gp.txStart, gp.txEnd, self.__getOptionalChromSize(gp.chrom),
-                                  gp.name, gp.strand, 0, rnaSize, rnaSize, self.__buildFeatures(gp),
-                                  cdsChromStart, cdsChromEnd)
+        trans = TranscriptFeatures(gp.chrom, '+', gp.txStart, gp.txEnd, self.chromSizeFunc(gp.chrom),
+                                   gp.name, gp.strand, 0, rnaSize, rnaSize,
+                                   cdsChromStart, cdsChromEnd)
+        trans.features = tuple(self.__buildFeatures(gp, trans))
+        return trans
 
 
 class AnnotationFeatures(list):
