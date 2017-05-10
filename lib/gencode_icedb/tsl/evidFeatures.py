@@ -62,6 +62,7 @@ class EvidencePslFactory(object):
         else:
             donorSeq, acceptorSeq, spliceSites = self.__getSpliceSites(psl, iBlkNext)
         return IntronFeature(trans, psl.blocks[iBlkNext - 1].tEnd, psl.blocks[iBlkNext].tStart,
+                             psl.blocks[iBlkNext - 1].qEnd, psl.blocks[iBlkNext].qStart,
                              qDeleteBases, donorSeq, acceptorSeq, spliceSites)
 
     def fromPsl(self, psl):

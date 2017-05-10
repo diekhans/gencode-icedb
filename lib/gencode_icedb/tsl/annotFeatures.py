@@ -31,7 +31,7 @@ class AnnotationGenePredFactory(object):
             qEnd = qStart + qCount
             yield self.__makeExon(gp, iBlkStart, iBlkEnd, qStart, qEnd, trans)
             if iBlkEnd < len(gp.exons):
-                yield self.__makeIntron(gp, iBlkEnd, trans)
+                yield self.__makeIntron(gp, iBlkEnd, qEnd, trans)
             qStart = qEnd
             iBlkStart = iBlkEnd
 
@@ -66,13 +66,13 @@ class AnnotationGenePredFactory(object):
         spliceSites = spliceSitesClassifyStrand(gp.strand, donorSeq, acceptorSeq)
         return donorSeq, acceptorSeq, spliceSites
 
-    def __makeIntron(self, gp, iBlkNext, trans):
+    def __makeIntron(self, gp, iBlkNext, qEnd, trans):
         if self.genomeReader is None:
             donorSeq = acceptorSeq = spliceSites = None
         else:
             donorSeq, acceptorSeq, spliceSites = self.__getSpliceSites(gp, iBlkNext)
         return IntronFeature(trans, gp.exons[iBlkNext - 1].end, gp.exons[iBlkNext].start,
-                             0, donorSeq, acceptorSeq, spliceSites)
+                             qEnd, qEnd, 0, donorSeq, acceptorSeq, spliceSites)
 
     def fromGenePred(self, gp):
         "convert a genePred to an AnnotTranscript"

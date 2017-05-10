@@ -6,11 +6,17 @@ from pycbio.hgdata import dnaOps
 
 
 class TransFeature(object):
-    "a feature of annotation or alignment to the genome"
-    __slots__ = ("trans", "chromStart", "chromEnd")
+    """A feature of annotation or alignment to the genome.  The RNA range is
+    in genomic coordinates and it's length may not match the length of the
+    feature, due to gap closing.  For introns, are the interbase coordinates
+    of the intron, which might not be equal if there are unaligned bases in
+    the intron"""
+    __slots__ = ("trans", "chromStart", "chromEnd", "rnaStart", "rnaEnd", )
 
-    def __init__(self, trans, chromStart, chromEnd):
-        self.trans, self.chromStart, self.chromEnd = trans, chromStart, chromEnd
+    def __init__(self, trans, chromStart, chromEnd, rnaStart, rnaEnd):
+        self.trans = trans
+        self.chromStart, self.chromEnd = chromStart, chromEnd
+        self.rnaStart, self.rnaEnd = rnaStart, rnaEnd
 
     @property
     def size(self):
@@ -18,13 +24,11 @@ class TransFeature(object):
 
 
 class ExonFeature(TransFeature):
-    """exon with target gaps closed.  The query range is in genomic coordinates and
-    it's length may not match the length of the feature, due to gap closing."""
-    __slots__ = ("rnaStart", "rnaEnd", "rnaInsertCnt", "chromInsertCnt")
+    """exon with target gaps closed.."""
+    __slots__ = ("rnaInsertCnt", "chromInsertCnt")
 
     def __init__(self, trans, chromStart, chromEnd, rnaStart, rnaEnd, rnaInsertCnt, chromInsertCnt):
-        super(ExonFeature, self).__init__(trans, chromStart, chromEnd)
-        self.rnaStart, self.rnaEnd = rnaStart, rnaEnd
+        super(ExonFeature, self).__init__(trans, chromStart, chromEnd, rnaStart, rnaEnd)
         self.rnaInsertCnt, self.chromInsertCnt = rnaInsertCnt, chromInsertCnt
 
     def __str__(self):
@@ -47,8 +51,9 @@ class IntronFeature(TransFeature):
     None"""
     __slots__ = ("rnaDeleteCnt", "donorSeq", "acceptorSeq", "spliceSites")
 
-    def __init__(self, trans, chromStart, chromEnd, rnaDeleteCnt, donorSeq, acceptorSeq, spliceSites):
-        super(IntronFeature, self).__init__(trans, chromStart, chromEnd)
+    def __init__(self, trans, chromStart, chromEnd, rnaStart, rnaEnd, rnaDeleteCnt, donorSeq, acceptorSeq, spliceSites):
+        assert (rnaEnd - rnaStart) == rnaDeleteCnt
+        super(IntronFeature, self).__init__(trans, chromStart, chromEnd, rnaStart, rnaEnd)
         self.rnaDeleteCnt, self.donorSeq, self.acceptorSeq, self.spliceSites = rnaDeleteCnt, donorSeq, acceptorSeq, spliceSites
 
     def __str__(self):
@@ -56,12 +61,16 @@ class IntronFeature(TransFeature):
             sjDesc = None
         else:
             sjDesc = "{}...{} ({})".format(self.donorSeq, self.acceptorSeq, self.spliceSites)
-        return "intron {}-{} rDel={} sjBases={}".format(self.chromStart, self.chromEnd, self.rnaDeleteCnt, sjDesc)
+        return "intron {}-{} rna={}-{} rDel={} sjBases={}".format(self.chromStart, self.chromEnd,
+                                                                  self.rnaStart, self.rnaEnd,
+                                                                  self.rnaDeleteCnt, sjDesc)
 
     def reverseComplement(self, rcTrans):
         rcChromStart, rcChromEnd = dnaOps.reverseCoords(self.chromStart, self.chromEnd, self.trans.chromSize)
+        rcRnaStart, rcRnaEnd = dnaOps.reverseCoords(self.rnaStart, self.rnaEnd, self.trans.rnaSize)
         rcDonorSeq, rcAcceptorSeq = (None, None) if self.donorSeq is None else (dnaOps.reverseComplement(self.acceptorSeq), dnaOps.reverseComplement(self.donorSeq))
-        return IntronFeature(rcTrans, rcChromStart, rcChromEnd, self.rnaDeleteCnt, rcDonorSeq, rcAcceptorSeq, self.spliceSites)
+        return IntronFeature(rcTrans, rcChromStart, rcChromEnd, rcRnaStart, rcRnaEnd,
+                             self.rnaDeleteCnt, rcDonorSeq, rcAcceptorSeq, self.spliceSites)
 
 
 class TranscriptFeatures(object):
