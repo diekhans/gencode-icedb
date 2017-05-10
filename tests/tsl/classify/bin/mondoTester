@@ -1,0 +1,61 @@
+#!/usr/bin/env python
+"""run a mondo from ucsc browser database"""
+from __future__ import print_function
+import argparse
+import sys
+import os
+rootDir = "../../.."
+sys.path = [os.path.join(rootDir, "lib"),
+            os.path.join(rootDir, "extern/pycbio/lib")] + sys.path
+from pycbio.hgdata import hgDb
+from pycbio.hgdata.psl import PslDbReader
+from pycbio.hgdata.genePred import GenePredDbReader
+from gencode_icedb.genome import GenomeReader
+from gencode_icedb.tsl.evidFeatures import EvidencePslFactory
+from gencode_icedb.tsl.annotFeatures import AnnotationGenePredFactory
+from twobitreader import TwoBitFile
+
+
+def parseArgs():
+    desc = """Run a test from all data in one genome browser database table,
+    either PSL or genePred"""
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument("hgdb",
+                        help="genome browser database")
+    parser.add_argument("table", 
+                        help="table to convert")
+    parser.add_argument("tableFormat", choices=("psl", "genepred"),
+                        help="table format")
+    return parser.parse_args()
+
+def getGenomeReader(hgdb):
+    return GenomeReader(TwoBitFile("/hive/data/genomes/{hgdb}/{hgdb}.2bit".format(hgdb=hgdb)))
+
+def pslMondoTest(conn, table, genomeReader):
+    factory = EvidencePslFactory(genomeReader)
+    cnt = 0
+    for psl in PslDbReader(conn, "SELECT * FROM {}".format(table)):
+        trans = factory.fromPsl(psl)
+        cnt += 1
+    return cnt
+        
+def genePredMondoTest(conn, table, genomeReader):
+    factory = AnnotationGenePredFactory(genomeReader)
+    cnt = 0
+    for genePred in GenePredDbReader(conn, "SELECT * FROM {}".format(table)):
+        trans = factory.fromGenePred(genePred)
+        cnt += 1
+    return cnt
+        
+def mondoTester(opts):
+    conn = hgDb.connect(opts.hgdb)
+    genomeReader = getGenomeReader(opts.hgdb)
+    if opts.tableFormat == "psl":
+        cnt = pslMondoTest(conn, opts.table, genomeReader)
+    else:
+        cnt = genePredMondoTest(conn, opts.table, genomeReader)
+    print("{} records converted from {} table {}.{}".format(cnt, opts.tableFormat, opts.hgdb, opts.table))
+    conn.close()
+
+
+mondoTester(parseArgs())
