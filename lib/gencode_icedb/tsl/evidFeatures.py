@@ -6,7 +6,7 @@ from pycbio.hgdata.rangeFinder import RangeFinder
 from pycbio.hgdata.hgLite import PslDbTable
 from gencode_icedb.genome import spliceSitesClassifyStrand
 from gencode_icedb.tsl import minIntronSize
-from gencode_icedb.tsl.transFeatures import ExonFeature, IntronFeature, TranscriptFeatures
+from gencode_icedb.tsl.transFeatures import ExonFeature, IntronFeature, TranscriptFeatures, AlignBlockFeature
 
 
 class EvidencePslFactory(object):
@@ -38,14 +38,31 @@ class EvidencePslFactory(object):
             iBlkEnd += 1
         return iBlkEnd
 
+    def __addAlignedFeature(self, psl, iBlk, exon, alignFeatures):
+        blk = psl.blocks[iBlk]
+        alignFeatures.append(AlignBlockFeature(exon, blk.tStart, blk.tEnd, blk.qStart, blk.qEnd))
+
+    def __addUnalignedFeatures(self, psl, iBlk, exon, alignFeatures):
+        prevBlk = psl.blocks[iBlk-1]
+        blk = psl.blocks[iBlk]
+        if blk.qStart > prevBlk.qEnd:
+            alignFeatures.append(AlignBlockFeature(exon, None, None, prevBlk.qEnd, blk.qStart))
+        if blk.tStart > prevBlk.tEnd:
+            alignFeatures.append(AlignBlockFeature(exon, prevBlk.tEnd, blk.tStart, None, None))
+
+    def __addAlignFeatures(self, psl, iBlkStart, iBlkEnd, exon):
+        alignFeatures = []
+        for iBlk in xrange(iBlkStart, iBlkEnd):
+            if iBlk > iBlkStart:
+                self.__addUnalignedFeatures(psl, iBlk, exon, alignFeatures)
+            self.__addAlignedFeature(psl, iBlk, exon, alignFeatures)  # after since unaligned is before block
+        exon.alignFeatures = tuple(alignFeatures)
+        
     def __makeExon(self, psl, iBlkStart, iBlkEnd, trans):
-        rnaInsertCnt = chromInsertCnt = 0
-        for iBlk in xrange(iBlkStart + 1, iBlkEnd):
-            rnaInsertCnt += psl.blocks[iBlk].qStart - psl.blocks[iBlk - 1].qEnd
-            chromInsertCnt += psl.blocks[iBlk].tStart - psl.blocks[iBlk - 1].tEnd
-        return ExonFeature(trans, psl.blocks[iBlkStart].tStart, psl.blocks[iBlkEnd - 1].tEnd,
-                           psl.blocks[iBlkStart].qStart, psl.blocks[iBlkEnd - 1].qEnd,
-                           rnaInsertCnt, chromInsertCnt)
+        exon = ExonFeature(trans, psl.blocks[iBlkStart].tStart, psl.blocks[iBlkEnd - 1].tEnd,
+                           psl.blocks[iBlkStart].qStart, psl.blocks[iBlkEnd - 1].qEnd)
+        self.__addAlignFeatures(psl, iBlkStart, iBlkEnd, exon)
+        return exon
 
     def __getSpliceSites(self, psl, iBlkNext):
         donorSeq = self.genomeReader.get(psl.tName, psl.blocks[iBlkNext - 1].tEnd,
@@ -56,14 +73,13 @@ class EvidencePslFactory(object):
         return donorSeq, acceptorSeq, spliceSites
 
     def __makeIntron(self, psl, iBlkNext, trans):
-        qDeleteBases = psl.blocks[iBlkNext].qStart - psl.blocks[iBlkNext - 1].qEnd
         if self.genomeReader is None:
             donorSeq = acceptorSeq = spliceSites = None
         else:
             donorSeq, acceptorSeq, spliceSites = self.__getSpliceSites(psl, iBlkNext)
         return IntronFeature(trans, psl.blocks[iBlkNext - 1].tEnd, psl.blocks[iBlkNext].tStart,
                              psl.blocks[iBlkNext - 1].qEnd, psl.blocks[iBlkNext].qStart,
-                             qDeleteBases, donorSeq, acceptorSeq, spliceSites)
+                             donorSeq, acceptorSeq, spliceSites)
 
     def fromPsl(self, psl):
         "convert a psl to an TranscriptFeatures object"
