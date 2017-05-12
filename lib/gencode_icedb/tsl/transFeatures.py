@@ -5,12 +5,13 @@ from __future__ import print_function
 from pycbio.hgdata import dnaOps
 from pycbio.hgdata.frame import Frame
 
+
 def _reverseComplementChildren(rcParent, features):
     "reverse complement a list of child TransFeatures, return None if features is None"
     if features is None:
         return None
     rcFeatures = []
-    for i in xrange(len(features)-1, -1, -1):
+    for i in xrange(len(features) - 1, -1, -1):
         rcFeatures.append(features[i].reverseComplement(rcParent))
     return tuple(rcFeatures)
 
@@ -32,10 +33,11 @@ class TransFeature(object):
     def __str__(self):
         return "{}-{} rna={}-{}".format(self.chromStart, self.chromEnd,
                                         self.rnaStart, self.rnaEnd)
+
     def _baseStr(self):
         "get base object string, easier than using super"
         return TransFeature.__str__(self)
-        
+
     @property
     def transcript(self):
         "get the transcript feature by walking the parents"
@@ -58,13 +60,14 @@ class TransFeature(object):
         else:
             rcRnaStart, rcRnaEnd = None, None
         return (rcChromStart, rcChromEnd, rcRnaStart, rcRnaEnd)
-        
+
     @property
     def chromSize(self):
         if self.chromStart is None:
             return 0
         else:
             return self.chromEnd - self.chromStart
+
 
 class AlignBlockFeature(TransFeature):
     """Ungapped alignment block, or unaligned region.  Insertions will have None for the
@@ -74,23 +77,23 @@ class AlignBlockFeature(TransFeature):
     def reverseComplement(self, rcParent):
         rcCoords = self.reverseCoords()
         return AlignBlockFeature(rcParent, rcCoords[0], rcCoords[1], rcCoords[2], rcCoords[3])
-    
-    
+
+
 class Utr5RegionFeature(TransFeature):
     "A un-gapped 5'UTR region in an exon"
     __slots__ = ()
 
     def __init__(self, parent, chromStart, chromEnd, rnaStart, rnaEnd):
         super(Utr5RegionFeature, self).__init__(parent, chromStart, chromEnd, rnaStart, rnaEnd)
-    
+
     def __str__(self):
         return "5'UTR {}".format(self._baseStr())
 
     def reverseComplement(self, rcParent):
         rcCoords = self.reverseCoords()
         return Utr5RegionFeature(rcParent, rcCoords[0], rcCoords[1], rcCoords[2], rcCoords[3])
-    
-    
+
+
 class CdsRegionFeature(TransFeature):
     "A un-gapped CDS region in an exon"
     __slots__ = ("frame")
@@ -99,7 +102,7 @@ class CdsRegionFeature(TransFeature):
         assert(isinstance(frame, Frame))
         super(CdsRegionFeature, self).__init__(parent, chromStart, chromEnd, rnaStart, rnaEnd)
         self.frame = frame
-    
+
     def __str__(self):
         return "CDS {} {}".format(self._baseStr(), self.frame)
 
@@ -107,24 +110,23 @@ class CdsRegionFeature(TransFeature):
         rcCoords = self.reverseCoords()
         rcFrame = self.frame + (rcCoords[3] - rcCoords[2])
         return CdsRegionFeature(rcParent, rcCoords[0], rcCoords[1], rcCoords[2], rcCoords[3], rcFrame)
-    
-    
+
+
 class Utr3RegionFeature(TransFeature):
     "A un-gapped 3'UTR region in an exon"
     __slots__ = ()
 
     def __init__(self, parent, chromStart, chromEnd, rnaStart, rnaEnd):
         super(Utr3RegionFeature, self).__init__(parent, chromStart, chromEnd, rnaStart, rnaEnd)
-    
+
     def __str__(self):
         return "3'UTR {}".format(self._baseStr())
 
     def reverseComplement(self, rcParent):
-        trans = self.transcript
         rcCoords = self.reverseCoords()
         return Utr3RegionFeature(rcParent, rcCoords[0], rcCoords[1], rcCoords[2], rcCoords[3])
-    
-    
+
+
 class ExonFeature(TransFeature):
     """exon with target gaps closed."""
     __slots__ = ("codingFeatures", "alignFeatures")
@@ -172,7 +174,6 @@ class IntronFeature(TransFeature):
                                  rcDonorSeq, rcAcceptorSeq, self.spliceSites)
         rcIntron.alignFeatures = _reverseComplementChildren(rcParent, self.alignFeatures)
         return rcIntron
-                                        
 
     def rnaIntersect(self, exon2):
         "does RNA interbase range intersect another intron? (overlap allowing zero length)"

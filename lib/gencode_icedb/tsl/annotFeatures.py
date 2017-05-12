@@ -53,17 +53,17 @@ class AnnotationGenePredFactory(object):
         utr5 = Utr5RegionFeature(exon, annot.start, annot.end, rnaNext, rnaNext + annot.size())
         codingFeatures.append(utr5)
         return utr5.rnaEnd
-    
+
     def __getCdsAnnot(self, annot, rnaNext, exon, frame, codingFeatures):
         cds = CdsRegionFeature(exon, annot.start, annot.end, rnaNext, rnaNext + annot.size(), frame)
         codingFeatures.append(cds)
         return cds.rnaEnd
-    
+
     def __getUtr3Annot(self, annot, rnaNext, exon, codingFeatures):
-        utr3 = Utr5RegionFeature(exon, annot.start, annot.end, rnaNext, rnaNext + annot.size())
+        utr3 = Utr3RegionFeature(exon, annot.start, annot.end, rnaNext, rnaNext + annot.size())
         codingFeatures.append(utr3)
         return utr3.rnaEnd
-    
+
     def __getCodingFeatures(self, blk, rnaNext, exon, codingFeatures):
         annot = blk.featureSplit()
         if blk.gene.strand == '+':
@@ -81,7 +81,7 @@ class AnnotationGenePredFactory(object):
             if annot.utr5 is not None:
                 rnaNext = self.__getUtr5Annot(annot.utr5, rnaNext, exon, codingFeatures)
         return rnaNext
-        
+
     def __addCodingFeatures(self, gp, iBlkStart, iBlkEnd, rnaStart, rnaEnd, exon):
         codingFeatures = []
         rnaNext = rnaStart
@@ -89,7 +89,7 @@ class AnnotationGenePredFactory(object):
             rnaNext = self.__getCodingFeatures(gp.exons[iBlk], rnaNext, exon, codingFeatures)
         assert rnaNext == rnaEnd
         exon.codingFeatures = tuple(codingFeatures)
-    
+
     def __makeExon(self, gp, iBlkStart, iBlkEnd, rnaStart, rnaEnd, trans):
         exon = ExonFeature(trans, gp.exons[iBlkStart].start, gp.exons[iBlkEnd - 1].end,
                            rnaStart, rnaEnd)

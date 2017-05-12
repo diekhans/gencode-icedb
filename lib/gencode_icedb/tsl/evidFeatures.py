@@ -43,7 +43,7 @@ class EvidencePslFactory(object):
         alignFeatures.append(AlignBlockFeature(exon, blk.tStart, blk.tEnd, blk.qStart, blk.qEnd))
 
     def __addUnalignedFeatures(self, psl, iBlk, exon, alignFeatures):
-        prevBlk = psl.blocks[iBlk-1]
+        prevBlk = psl.blocks[iBlk - 1]
         blk = psl.blocks[iBlk]
         if blk.qStart > prevBlk.qEnd:
             alignFeatures.append(AlignBlockFeature(exon, None, None, prevBlk.qEnd, blk.qStart))
@@ -57,7 +57,7 @@ class EvidencePslFactory(object):
                 self.__addUnalignedFeatures(psl, iBlk, exon, alignFeatures)
             self.__addAlignedFeature(psl, iBlk, exon, alignFeatures)  # after since unaligned is before block
         exon.alignFeatures = tuple(alignFeatures)
-        
+
     def __makeExon(self, psl, iBlkStart, iBlkEnd, trans):
         exon = ExonFeature(trans, psl.blocks[iBlkStart].tStart, psl.blocks[iBlkEnd - 1].tEnd,
                            psl.blocks[iBlkStart].qStart, psl.blocks[iBlkEnd - 1].qEnd)

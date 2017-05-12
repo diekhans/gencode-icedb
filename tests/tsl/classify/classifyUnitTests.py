@@ -111,7 +111,7 @@ class FeatureTestBase(TestCaseBase):
                 if (children is not None) and (len(children) > 0):
                     r.append(self.__getFeaturesStrTuple(children))
         return tuple(r)
-            
+
     def _assertFeatures(self, trans, expect):
         if debugResults:
             print("==== {} ==== ".format(self.id()))
@@ -384,7 +384,7 @@ class AnnotationTests(FeatureTestBase):
                                'intron 18656609-18659538 rna=1503-1503 sjBases=GT...AG (spliceGT_AG)',
                                'exon 18659538-18660164 rna=1503-2129',
                                ('CDS 18659538-18659584 rna=1503-1549 2',
-                                "5'UTR 18659584-18660164 rna=1549-2129"))))
+                                "3'UTR 18659584-18660164 rna=1549-2129"))))
 
     def testENST00000334029(self):
         # - strand
@@ -392,7 +392,7 @@ class AnnotationTests(FeatureTestBase):
         self._assertFeatures(trans,
                              ('t=chr22:18900294-18923964/+, rna=ENST00000334029.2:0-1985/- 1985',
                               ('exon 18900294-18900875 rna=0-581',
-                               ("5'UTR 18900294-18900687 rna=0-393",
+                               ("3'UTR 18900294-18900687 rna=0-393",
                                 'CDS 18900687-18900875 rna=393-581 2'),
                                'intron 18900875-18900950 rna=581-581 sjBases=CT...AC (spliceGT_AG)',
                                'exon 18900950-18901039 rna=581-670',
@@ -441,7 +441,7 @@ class AnnotationTests(FeatureTestBase):
         self._assertFeatures(trans,
                              ('t=chr22:18900294-18923964/+, rna=ENST00000334029.2:0-1985/- 1985',
                               ('exon 18900294-18900875 rna=0-581',
-                               ("5'UTR 18900294-18900687 rna=0-393",
+                               ("3'UTR 18900294-18900687 rna=0-393",
                                 'CDS 18900687-18900875 rna=393-581 2'),
                                'intron 18900875-18900950 rna=581-581 sjBases=None',
                                'exon 18900950-18901039 rna=581-670',
@@ -483,7 +483,6 @@ class AnnotationTests(FeatureTestBase):
                                'intron 18918711-18923902 rna=1923-1923 sjBases=None',
                                'exon 18923902-18923964 rna=1923-1985',
                                ("5'UTR 18923902-18923964 rna=1923-1985",))))
-
 
     def testENST00000334029Rc(self):
         # - strand
@@ -534,7 +533,7 @@ class AnnotationTests(FeatureTestBase):
                                'intron 32403616-32403691 rna=1404-1404 sjBases=GT...AG (spliceGT_AG)',
                                'exon 32403691-32404272 rna=1404-1985',
                                ('CDS 32403691-32403879 rna=1404-1592 1',
-                                "5'UTR 32403879-32404272 rna=1592-1985"))))
+                                "3'UTR 32403879-32404272 rna=1592-1985"))))
 
     def testENST00000334029NoSJRc(self):
         # no splice sites, just sizes
@@ -586,7 +585,7 @@ class AnnotationTests(FeatureTestBase):
                                'intron 32403616-32403691 rna=1404-1404 sjBases=None',
                                'exon 32403691-32404272 rna=1404-1985',
                                ('CDS 32403691-32403879 rna=1404-1592 1',
-                                "5'UTR 32403879-32404272 rna=1592-1985"))))
+                                "3'UTR 32403879-32404272 rna=1592-1985"))))
 
 
 def suite():
