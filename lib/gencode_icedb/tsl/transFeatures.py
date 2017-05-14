@@ -62,11 +62,18 @@ class TransFeature(object):
         return (rcChromStart, rcChromEnd, rcRnaStart, rcRnaEnd)
 
     @property
-    def chromSize(self):
+    def chromLength(self):
         if self.chromStart is None:
             return 0
         else:
             return self.chromEnd - self.chromStart
+
+    @property
+    def rnaLength(self):
+        if self.rnaStart is None:
+            return 0
+        else:
+            return self.rnaEnd - self.rnaStart
 
 
 class AlignBlockFeature(TransFeature):
@@ -77,6 +84,10 @@ class AlignBlockFeature(TransFeature):
     def reverseComplement(self, rcParent):
         rcCoords = self.reverseCoords()
         return AlignBlockFeature(rcParent, rcCoords[0], rcCoords[1], rcCoords[2], rcCoords[3])
+
+    @property
+    def isAligned(self):
+        return (self.chromStart is not None) and (self.rnaStart is not None)
 
 
 class Utr5RegionFeature(TransFeature):
@@ -149,6 +160,23 @@ class ExonFeature(TransFeature):
         "does RNA range overlap another exon?"
         return (self.rnaStart < exon2.rnaEnd) and (self.rnaEnd > exon2.rnaStart)
 
+    def __countAlignedBases(self):
+        alignedCnt = 0
+        for blk in self.alignFeatures:
+            if blk.isAligned:
+                alignedCnt += blk.rnaLength
+        return alignedCnt
+                
+            
+    @property
+    def alignedBases(self):
+        """if there are alignment subfeatures, return the actual number of
+        aligned bases, otherwise, the RNA for an annotation"""
+        if len(self.alignFeatures) > 0:
+            return self.__countAlignedBases()
+        else:
+            return self.rnaLength
+
 
 class IntronFeature(TransFeature):
     """intron from annotation or alignment, splice junction information maybe
@@ -204,9 +232,9 @@ class TranscriptFeatures(TransFeature):
     @property
     def alignedBases(self):
         alignedCnt = 0
-        for feature in self:
+        for feature in self.features:
             if isinstance(feature, ExonFeature):
-                alignedCnt += (feature.rnaEnd - feature.rnaStart) - feature.rnaInsertCnt
+                alignedCnt += feature.alignedBases
         return alignedCnt
 
     def reverseComplement(self):
