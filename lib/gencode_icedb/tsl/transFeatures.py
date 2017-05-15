@@ -38,6 +38,18 @@ class TransFeature(object):
         "get base object string, easier than using super"
         return TransFeature.__str__(self)
 
+    def toStrTree(self):
+        """recursively convert to a recursive tuple of strings representing
+        the feature tree"""
+        return (str(self),)
+    
+    def _getChildrenStrTree(self, features):
+        "build tuple for a list of children"
+        r = []
+        for feat in features:
+            r.append(feat.toStrTree())
+        return tuple(r)
+
     @property
     def transcript(self):
         "get the transcript feature by walking the parents"
@@ -89,6 +101,15 @@ class AlignBlockFeature(TransFeature):
     def isAligned(self):
         return (self.chromStart is not None) and (self.rnaStart is not None)
 
+    def __str__(self):
+        if self.chromStart is None:
+            blkType = "rins"
+        elif self.rnaStart is None:
+            blkType = "cins"
+        else:
+            blkType = "aln"
+        return "{} {}".format(blkType, self._baseStr())
+
 
 class Utr5RegionFeature(TransFeature):
     "A un-gapped 5'UTR region in an exon"
@@ -137,22 +158,46 @@ class Utr3RegionFeature(TransFeature):
         rcCoords = self.reverseCoords()
         return Utr3RegionFeature(rcParent, rcCoords[0], rcCoords[1], rcCoords[2], rcCoords[3])
 
+class NonCodingRegionFeature(TransFeature):
+    "An un-gapped non-coding region in an exon"
+    __slots__ = ()
+
+    def __init__(self, parent, chromStart, chromEnd, rnaStart, rnaEnd):
+        super(NonCodingRegionFeature, self).__init__(parent, chromStart, chromEnd, rnaStart, rnaEnd)
+
+    def __str__(self):
+        return "NC {}".format(self._baseStr())
+
+    def reverseComplement(self, rcParent):
+        rcCoords = self.reverseCoords()
+        return NonCodingRegionFeature(rcParent, rcCoords[0], rcCoords[1], rcCoords[2], rcCoords[3])
+
 
 class ExonFeature(TransFeature):
     """exon with target gaps closed."""
-    __slots__ = ("codingFeatures", "alignFeatures")
+    __slots__ = ("rnaFeatures", "alignFeatures")
 
     def __init__(self, parent, chromStart, chromEnd, rnaStart, rnaEnd):
         super(ExonFeature, self).__init__(parent, chromStart, chromEnd, rnaStart, rnaEnd)
-        self.codingFeatures, self.alignFeatures = None, None
+        self.rnaFeatures, self.alignFeatures = None, None
 
     def __str__(self):
         return "exon {}".format(self._baseStr())
 
+    def toStrTree(self):
+        """recursively convert to a recursive tuple of strings representing
+        the feature tree"""
+        r = [str(self)]
+        if self.rnaFeatures is not None:
+            r.append(self._getChildrenStrTree(self.rnaFeatures))
+        if self.alignFeatures is not None:
+            r.append(self._getChildrenStrTree(self.alignFeatures))
+        return tuple(r)
+    
     def reverseComplement(self, rcParent):
         rcCoords = self.reverseCoords()
         rcExon = ExonFeature(rcParent, rcCoords[0], rcCoords[1], rcCoords[2], rcCoords[3])
-        rcExon.codingFeatures = _reverseComplementChildren(rcExon, self.codingFeatures)
+        rcExon.rnaFeatures = _reverseComplementChildren(rcExon, self.rnaFeatures)
         rcExon.alignFeatures = _reverseComplementChildren(rcExon, self.alignFeatures)
         return rcExon
 
@@ -195,6 +240,14 @@ class IntronFeature(TransFeature):
             sjDesc = "{}...{} ({})".format(self.donorSeq, self.acceptorSeq, self.spliceSites)
         return "intron {} sjBases={}".format(self._baseStr(), sjDesc)
 
+    def toStrTree(self):
+        """recursively convert to a recursive tuple of strings representing
+        the feature tree"""
+        r = [str(self)]
+        if self.alignFeatures is not None:
+            r.append(self._getChildrenStrTree(self.alignFeatures))
+        return tuple(r)
+    
     def reverseComplement(self, rcParent):
         rcCoords = self.reverseCoords()
         rcDonorSeq, rcAcceptorSeq = (None, None) if self.donorSeq is None else (dnaOps.reverseComplement(self.acceptorSeq), dnaOps.reverseComplement(self.donorSeq))
@@ -229,6 +282,14 @@ class TranscriptFeatures(TransFeature):
         return "t={}:{}-{}/{}, rna={}:{}-{}/{} {}".format(self.chrom, self.chromStart, self.chromEnd, self.chromStrand,
                                                           self.rnaName, self.rnaStart, self.rnaEnd, self.rnaStrand, self.rnaSize)
 
+    def toStrTree(self):
+        """recursively convert to a recursive tuple of strings representing
+        the feature tree"""
+        r = [str(self)]
+        if self.features is not None:
+            r.append(self._getChildrenStrTree(self.features))
+        return tuple(r)
+    
     @property
     def alignedBases(self):
         alignedCnt = 0

@@ -49,46 +49,57 @@ class AnnotationGenePredFactory(object):
             iBlkEnd += 1
         return iBlkEnd, qCount
 
-    def __getUtr5Annot(self, annot, rnaNext, exon, codingFeatures):
+    def __getUtr5Annot(self, annot, rnaNext, exon, rnaFeatures):
         utr5 = Utr5RegionFeature(exon, annot.start, annot.end, rnaNext, rnaNext + annot.size())
-        codingFeatures.append(utr5)
+        rnaFeatures.append(utr5)
         return utr5.rnaEnd
 
-    def __getCdsAnnot(self, annot, rnaNext, exon, frame, codingFeatures):
+    def __getCdsAnnot(self, annot, rnaNext, exon, frame, rnaFeatures):
         cds = CdsRegionFeature(exon, annot.start, annot.end, rnaNext, rnaNext + annot.size(), frame)
-        codingFeatures.append(cds)
+        rnaFeatures.append(cds)
         return cds.rnaEnd
 
-    def __getUtr3Annot(self, annot, rnaNext, exon, codingFeatures):
+    def __getUtr3Annot(self, annot, rnaNext, exon, rnaFeatures):
         utr3 = Utr3RegionFeature(exon, annot.start, annot.end, rnaNext, rnaNext + annot.size())
-        codingFeatures.append(utr3)
+        rnaFeatures.append(utr3)
         return utr3.rnaEnd
 
-    def __getCodingFeatures(self, blk, rnaNext, exon, codingFeatures):
+    def __getCodingFeatures(self, blk, rnaNext, exon, rnaFeatures):
         annot = blk.featureSplit()
         if blk.gene.strand == '+':
             if annot.utr5 is not None:
-                rnaNext = self.__getUtr5Annot(annot.utr5, rnaNext, exon, codingFeatures)
+                rnaNext = self.__getUtr5Annot(annot.utr5, rnaNext, exon, rnaFeatures)
             if annot.cds is not None:
-                rnaNext = self.__getCdsAnnot(annot.cds, rnaNext, exon, Frame(blk.frame), codingFeatures)
+                rnaNext = self.__getCdsAnnot(annot.cds, rnaNext, exon, Frame(blk.frame), rnaFeatures)
             if annot.utr3 is not None:
-                rnaNext = self.__getUtr3Annot(annot.utr3, rnaNext, exon, codingFeatures)
+                rnaNext = self.__getUtr3Annot(annot.utr3, rnaNext, exon, rnaFeatures)
         else:
             if annot.utr3 is not None:
-                rnaNext = self.__getUtr3Annot(annot.utr3, rnaNext, exon, codingFeatures)
+                rnaNext = self.__getUtr3Annot(annot.utr3, rnaNext, exon, rnaFeatures)
             if annot.cds is not None:
-                rnaNext = self.__getCdsAnnot(annot.cds, rnaNext, exon, Frame(blk.frame) - blk.size(), codingFeatures)
+                rnaNext = self.__getCdsAnnot(annot.cds, rnaNext, exon, Frame(blk.frame) - blk.size(), rnaFeatures)
             if annot.utr5 is not None:
-                rnaNext = self.__getUtr5Annot(annot.utr5, rnaNext, exon, codingFeatures)
+                rnaNext = self.__getUtr5Annot(annot.utr5, rnaNext, exon, rnaFeatures)
         return rnaNext
 
     def __addCodingFeatures(self, gp, iBlkStart, iBlkEnd, rnaStart, rnaEnd, exon):
-        codingFeatures = []
+        rnaFeatures = []
         rnaNext = rnaStart
         for iBlk in xrange(iBlkStart, iBlkEnd):
-            rnaNext = self.__getCodingFeatures(gp.exons[iBlk], rnaNext, exon, codingFeatures)
+            rnaNext = self.__getCodingFeatures(gp.exons[iBlk], rnaNext, exon, rnaFeatures)
         assert rnaNext == rnaEnd
-        exon.codingFeatures = tuple(codingFeatures)
+        exon.rnaFeatures = tuple(rnaFeatures)
+
+    def __addNonCodingFeatures(self, gp, iBlkStart, iBlkEnd, rnaStart, rnaEnd, exon):
+        nonCodingFeatures = []
+        rnaNext = rnaStart
+        for iBlk in xrange(iBlkStart, iBlkEnd):
+            exon = gp.exons[iBlk]
+            nonCodingFeatures.append(NonCodingRegionFeature(exon, exon.start, exon.end,
+                                                            rnaNext, rnaNext + exon.size()))
+            rnaNext += exon.size()
+        assert rnaNext == rnaEnd
+        exon.rnaFeatures = tuple(nonCodingFeatures)
 
     def __makeExon(self, gp, iBlkStart, iBlkEnd, rnaStart, rnaEnd, trans):
         exon = ExonFeature(trans, gp.exons[iBlkStart].start, gp.exons[iBlkEnd - 1].end,
