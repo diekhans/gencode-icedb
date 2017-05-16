@@ -22,7 +22,7 @@ twoBitHg19 = "/hive/data/genomes/hg19/hg19.2bit"
 mockReaderHg19PslTsv = "mockReaderHg19Psl.tsv"
 mockReaderHg19GpTsv = "mockReaderHg19Gp.tsv"
 
-updateMockReader = False   # set this to update from a real run
+updateMockReader = True   # set this to update from a real run
 forceMockReader = False  # set this to check mock data
 debugResults = False   # print out results for updated expected
 noCheckResults = False  # don't check results
