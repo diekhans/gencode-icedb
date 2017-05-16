@@ -31,12 +31,13 @@ class TransFeature(object):
         self.rnaStart, self.rnaEnd = rnaStart, rnaEnd
 
     def __str__(self):
+        "default str(), uses name"
+        return "{} {}".format(self.name, self.coordsStr())
+
+    def coordsStr(self):
+        "get coordinates string"
         return "{}-{} rna={}-{}".format(self.chromStart, self.chromEnd,
                                         self.rnaStart, self.rnaEnd)
-
-    def _baseStr(self):
-        "get base object string, easier than using super"
-        return TransFeature.__str__(self)
 
     def toStrTree(self):
         """recursively convert to a recursive tuple of strings representing
@@ -73,6 +74,11 @@ class TransFeature(object):
             rcRnaStart, rcRnaEnd = None, None
         return (rcChromStart, rcChromEnd, rcRnaStart, rcRnaEnd)
 
+    def reverseComplement(self, rcParent):
+        "default reverseComplement when __init__ takes just coordinates"
+        rcCoords = self.reverseCoords()
+        return self.__class__(rcParent, rcCoords[0], rcCoords[1], rcCoords[2], rcCoords[3])
+
     @property
     def chromLength(self):
         if self.chromStart is None:
@@ -88,46 +94,47 @@ class TransFeature(object):
             return self.rnaEnd - self.rnaStart
 
 
-class AlignBlockFeature(TransFeature):
-    """Ungapped alignment block, or unaligned region.  Insertions will have None for the
-    other side of the pairwise alignment"""
+class AlignedFeature(TransFeature):
+    """Ungapped alignment block."""
+    name = "aln"
     __slots__ = ()
+
+
+class ChromInsertFeature(TransFeature):
+    """Chromosome insert region (or RNA deletion)."""
+    name = "cins"
+    __slots__ = ()
+
+    def __init__(self, parent, chromStart, chromEnd):
+        super(ChromInsertFeature, self).__init__(parent, chromStart, chromEnd, None, None)
 
     def reverseComplement(self, rcParent):
         rcCoords = self.reverseCoords()
-        return AlignBlockFeature(rcParent, rcCoords[0], rcCoords[1], rcCoords[2], rcCoords[3])
+        return ChromInsertFeature(rcParent, rcCoords[0], rcCoords[1])
 
-    @property
-    def isAligned(self):
-        return (self.chromStart is not None) and (self.rnaStart is not None)
 
-    def __str__(self):
-        if self.chromStart is None:
-            blkType = "rins"
-        elif self.rnaStart is None:
-            blkType = "cins"
-        else:
-            blkType = "aln"
-        return "{} {}".format(blkType, self._baseStr())
+class RnaInsertFeature(TransFeature):
+    """RNA insert region (or chrom deletion)."""
+    name = "rins"
+    __slots__ = ()
+
+    def __init__(self, parent, rnaStart, rnaEnd):
+        super(RnaInsertFeature, self).__init__(parent, None, None, rnaStart, rnaEnd)
+
+    def reverseComplement(self, rcParent):
+        rcCoords = self.reverseCoords()
+        return RnaInsertFeature(rcParent, rcCoords[2], rcCoords[3])
 
 
 class Utr5RegionFeature(TransFeature):
     "A un-gapped 5'UTR region in an exon"
+    name = "5'UTR"
     __slots__ = ()
-
-    def __init__(self, parent, chromStart, chromEnd, rnaStart, rnaEnd):
-        super(Utr5RegionFeature, self).__init__(parent, chromStart, chromEnd, rnaStart, rnaEnd)
-
-    def __str__(self):
-        return "5'UTR {}".format(self._baseStr())
-
-    def reverseComplement(self, rcParent):
-        rcCoords = self.reverseCoords()
-        return Utr5RegionFeature(rcParent, rcCoords[0], rcCoords[1], rcCoords[2], rcCoords[3])
 
 
 class CdsRegionFeature(TransFeature):
     "A un-gapped CDS region in an exon"
+    name = "CDS"
     __slots__ = ("frame")
 
     def __init__(self, parent, chromStart, chromEnd, rnaStart, rnaEnd, frame):
@@ -136,7 +143,7 @@ class CdsRegionFeature(TransFeature):
         self.frame = frame
 
     def __str__(self):
-        return "CDS {} {}".format(self._baseStr(), self.frame)
+        return "{} {} {}".format(self.name, self.coordsStr(), self.frame)
 
     def reverseComplement(self, rcParent):
         rcCoords = self.reverseCoords()
@@ -146,43 +153,24 @@ class CdsRegionFeature(TransFeature):
 
 class Utr3RegionFeature(TransFeature):
     "A un-gapped 3'UTR region in an exon"
+    name = "3'UTR"
     __slots__ = ()
 
-    def __init__(self, parent, chromStart, chromEnd, rnaStart, rnaEnd):
-        super(Utr3RegionFeature, self).__init__(parent, chromStart, chromEnd, rnaStart, rnaEnd)
-
-    def __str__(self):
-        return "3'UTR {}".format(self._baseStr())
-
-    def reverseComplement(self, rcParent):
-        rcCoords = self.reverseCoords()
-        return Utr3RegionFeature(rcParent, rcCoords[0], rcCoords[1], rcCoords[2], rcCoords[3])
 
 class NonCodingRegionFeature(TransFeature):
     "An un-gapped non-coding region in an exon"
+    name = "NC"
     __slots__ = ()
-
-    def __init__(self, parent, chromStart, chromEnd, rnaStart, rnaEnd):
-        super(NonCodingRegionFeature, self).__init__(parent, chromStart, chromEnd, rnaStart, rnaEnd)
-
-    def __str__(self):
-        return "NC {}".format(self._baseStr())
-
-    def reverseComplement(self, rcParent):
-        rcCoords = self.reverseCoords()
-        return NonCodingRegionFeature(rcParent, rcCoords[0], rcCoords[1], rcCoords[2], rcCoords[3])
 
 
 class ExonFeature(TransFeature):
     """exon with target gaps closed."""
+    name = "exon"
     __slots__ = ("rnaFeatures", "alignFeatures")
 
     def __init__(self, parent, chromStart, chromEnd, rnaStart, rnaEnd):
         super(ExonFeature, self).__init__(parent, chromStart, chromEnd, rnaStart, rnaEnd)
         self.rnaFeatures, self.alignFeatures = None, None
-
-    def __str__(self):
-        return "exon {}".format(self._baseStr())
 
     def toStrTree(self):
         """recursively convert to a recursive tuple of strings representing
@@ -226,6 +214,7 @@ class ExonFeature(TransFeature):
 class IntronFeature(TransFeature):
     """intron from annotation or alignment, splice junction information maybe
     None. alignFeatures are for query insertions in intron, and maybe None"""
+    name = "intron"
     __slots__ = ("donorSeq", "acceptorSeq", "spliceSites", "alignFeatures")
 
     def __init__(self, parent, chromStart, chromEnd, rnaStart, rnaEnd, donorSeq, acceptorSeq, spliceSites):
@@ -238,7 +227,7 @@ class IntronFeature(TransFeature):
             sjDesc = None
         else:
             sjDesc = "{}...{} ({})".format(self.donorSeq, self.acceptorSeq, self.spliceSites)
-        return "intron {} sjBases={}".format(self._baseStr(), sjDesc)
+        return "intron {} sjBases={}".format(self.coordsStr(), sjDesc)
 
     def toStrTree(self):
         """recursively convert to a recursive tuple of strings representing
@@ -266,6 +255,7 @@ class TranscriptFeatures(TransFeature):
     Set of features for a transcript derived from an alignment or annotation,
     features are kept in chrom strand order.
     """
+    name = "trans"
     __slots__ = ("chrom", "chromStrand", "chromSize", "rnaName", "rnaStrand", "rnaSize",
                  "cdsChromStart", "cdsChromEnd", "features")
 

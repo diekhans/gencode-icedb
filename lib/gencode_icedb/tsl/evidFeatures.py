@@ -6,7 +6,7 @@ from pycbio.hgdata.rangeFinder import RangeFinder
 from pycbio.hgdata.hgLite import PslDbTable
 from gencode_icedb.genome import spliceSitesClassifyStrand
 from gencode_icedb.tsl import minIntronSize
-from gencode_icedb.tsl.transFeatures import ExonFeature, IntronFeature, TranscriptFeatures, AlignBlockFeature
+from gencode_icedb.tsl.transFeatures import ExonFeature, IntronFeature, TranscriptFeatures, AlignedFeature, ChromInsertFeature, RnaInsertFeature
 
 
 class EvidencePslFactory(object):
@@ -40,15 +40,15 @@ class EvidencePslFactory(object):
 
     def __addAlignedFeature(self, psl, iBlk, exon, alignFeatures):
         blk = psl.blocks[iBlk]
-        alignFeatures.append(AlignBlockFeature(exon, blk.tStart, blk.tEnd, blk.qStart, blk.qEnd))
+        alignFeatures.append(AlignedFeature(exon, blk.tStart, blk.tEnd, blk.qStart, blk.qEnd))
 
     def __addUnalignedFeatures(self, psl, iBlk, exon, alignFeatures):
         prevBlk = psl.blocks[iBlk - 1]
         blk = psl.blocks[iBlk]
         if blk.qStart > prevBlk.qEnd:
-            alignFeatures.append(AlignBlockFeature(exon, None, None, prevBlk.qEnd, blk.qStart))
+            alignFeatures.append(RnaInsertFeature(exon, prevBlk.qEnd, blk.qStart))
         if blk.tStart > prevBlk.tEnd:
-            alignFeatures.append(AlignBlockFeature(exon, prevBlk.tEnd, blk.tStart, None, None))
+            alignFeatures.append(ChromInsertFeature(exon, prevBlk.tEnd, blk.tStart))
 
     def __addAlignFeatures(self, psl, iBlkStart, iBlkEnd, exon):
         alignFeatures = []
