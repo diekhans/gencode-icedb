@@ -3,7 +3,7 @@ from pycbio.hgdata.hgLite import GenePredDbTable
 from pycbio.hgdata.frame import Frame
 from gencode_icedb.genome import spliceSitesClassifyStrand
 from gencode_icedb.tsl import minIntronSize
-from gencode_icedb.tsl.transFeatures import ExonFeature, IntronFeature, TranscriptFeatures, Utr5RegionFeature, CdsRegionFeature, Utr3RegionFeature
+from gencode_icedb.tsl.transFeatures import ExonFeature, IntronFeature, TranscriptFeatures, Utr5RegionFeature, CdsRegionFeature, Utr3RegionFeature, NonCodingRegionFeature
 
 
 class AnnotationGenePredFactory(object):
@@ -94,10 +94,10 @@ class AnnotationGenePredFactory(object):
         nonCodingFeatures = []
         rnaNext = rnaStart
         for iBlk in xrange(iBlkStart, iBlkEnd):
-            exon = gp.exons[iBlk]
-            nonCodingFeatures.append(NonCodingRegionFeature(exon, exon.start, exon.end,
-                                                            rnaNext, rnaNext + exon.size()))
-            rnaNext += exon.size()
+            gpExon = gp.exons[iBlk]
+            nonCodingFeatures.append(NonCodingRegionFeature(exon, gpExon.start, gpExon.end,
+                                                            rnaNext, rnaNext + gpExon.size()))
+            rnaNext += gpExon.size()
         assert rnaNext == rnaEnd
         exon.rnaFeatures = tuple(nonCodingFeatures)
 
@@ -106,6 +106,8 @@ class AnnotationGenePredFactory(object):
                            rnaStart, rnaEnd)
         if trans.cdsChromStart < trans.cdsChromEnd:
             self.__addCodingFeatures(gp, iBlkStart, iBlkEnd, rnaStart, rnaEnd, exon)
+        else:
+            self.__addNonCodingFeatures(gp, iBlkStart, iBlkEnd, rnaStart, rnaEnd, exon)
         return exon
 
     def __getSpliceSites(self, gp, iBlkNext):

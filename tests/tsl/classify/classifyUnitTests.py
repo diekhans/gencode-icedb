@@ -585,7 +585,33 @@ class AnnotationTests(FeatureTestBase):
         rcTrans = trans.reverseComplement()
         self.assertEqual(len(rcTrans.features), len(trans.features))
         self._assertFeatures(rcTrans,
-                             ())
+                             (('t=chr22:32615884-32643762/-, rna=ENST00000434390.1:0-1859/+ 1859',
+                               (('exon 32615884-32616025 rna=0-141',
+                                 (('NC 32615884-32616025 rna=0-141',),)),
+                                ('intron 32616025-32622058 rna=141-141 sjBases=gt...AG (spliceGT_AG)',),
+                                ('exon 32622058-32622117 rna=141-200',
+                                 (('NC 32622058-32622117 rna=141-200',),)),
+                                ('intron 32622117-32622585 rna=200-200 sjBases=GT...AG (spliceGT_AG)',),
+                                ('exon 32622585-32622610 rna=200-225',
+                                 (('NC 32622585-32622610 rna=200-225',),)),
+                                ('intron 32622610-32625556 rna=225-225 sjBases=GT...AG (spliceGT_AG)',),
+                                ('exon 32625556-32625643 rna=225-312',
+                                 (('NC 32625556-32625643 rna=225-312',),)),
+                                ('intron 32625643-32630551 rna=312-312 sjBases=GT...AG (spliceGT_AG)',),
+                                ('exon 32630551-32630617 rna=312-378',
+                                 (('NC 32630551-32630617 rna=312-378',),)),
+                                ('intron 32630617-32632616 rna=378-378 sjBases=GT...AG (spliceGT_AG)',),
+                                ('exon 32632616-32632678 rna=378-440',
+                                 (('NC 32632616-32632678 rna=378-440',),)),
+                                ('intron 32632678-32633143 rna=440-440 sjBases=GT...AG (spliceGT_AG)',),
+                                ('exon 32633143-32633177 rna=440-474',
+                                 (('NC 32633143-32633177 rna=440-474',),)),
+                                ('intron 32633177-32637733 rna=474-474 sjBases=GT...AG (spliceGT_AG)',),
+                                ('exon 32637733-32638690 rna=474-1431',
+                                 (('NC 32637733-32638690 rna=474-1431',),)),
+                                ('intron 32638690-32643334 rna=1431-1431 sjBases=GT...AG (spliceGT_AG)',),
+                                ('exon 32643334-32643762 rna=1431-1859',
+                                 (('NC 32643334-32643762 rna=1431-1859',),))))))
 
 def suite():
     ts = unittest.TestSuite()
