@@ -579,6 +579,13 @@ class AnnotationTests(FeatureTestBase):
                                 (('CDS 32403691-32403879 rna=1404-1592 1',),
                                  ("3'UTR 32403879-32404272 rna=1592-1985",))))))
 
+    def testENST00000434390(self):
+        # non-coding, - strand
+        trans = self.__gpToEvidTranscript(self.__getSet1Gp("ENST00000434390.1"))
+        rcTrans = trans.reverseComplement()
+        self.assertEqual(len(rcTrans.features), len(trans.features))
+        self._assertFeatures(rcTrans,
+                             ())
 
 def suite():
     ts = unittest.TestSuite()
