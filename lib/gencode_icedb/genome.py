@@ -34,18 +34,29 @@ class GenomeReader(object):
         self.__obtainChrom(chrom)
         return self.size
 
-SpliceSites = SymEnum("SpliceSite",
-                      ("spliceGT_AG", "spliceGC_AG", "spliceAT_AC", "spliceOther"))
 
+    # FIXME: move to a different module
+# FIXME: base classification on splicing mechanism, not base-pairs
+SpliceSites = SymEnum("SpliceSite",
+                      ("GT_AG", "GC_AG", "AT_AC", "unknown"))
 spliceSitesMap = {
-    ("gt", "ag"): SpliceSites.spliceGT_AG,
-    ("gc", "ag"): SpliceSites.spliceGC_AG,
-    ("at", "ac"): SpliceSites.spliceAT_AC,
+    ("gt", "ag"): SpliceSites.GT_AG,
+    ("gc", "ag"): SpliceSites.GC_AG,
+    ("at", "ac"): SpliceSites.AT_AC,
+}
+
+Spliceosome = SymEnum("Spliceosome",
+                      ("major", "minor", "unknown"))
+
+spliceosomeMap = {
+    SpliceSites.GT_AG: Spliceosome.major,
+    SpliceSites.GC_AG: Spliceosome.minor,
+    SpliceSites.AT_AC: Spliceosome.minor,
 }
 
 
 def spliceSitesClassify(donor, acceptor):
-    return spliceSitesMap.get((donor.lower(), acceptor.lower()), SpliceSites.spliceOther)
+    return spliceSitesMap.get((donor.lower(), acceptor.lower()), SpliceSites.unknown)
 
 
 def spliceSitesClassifyStrand(strand, donorSeq, acceptorSeq):
@@ -53,3 +64,8 @@ def spliceSitesClassifyStrand(strand, donorSeq, acceptorSeq):
         return spliceSitesClassify(donorSeq, acceptorSeq)
     else:
         return spliceSitesClassify(dnaOps.reverseComplement(acceptorSeq), dnaOps.reverseComplement(donorSeq))
+
+
+def spliceosomeClassify(spliceSites):
+    assert isinstance(spliceSites, SpliceSites)
+    return spliceosomeMap.get(spliceSites, Spliceosome.unknown)

@@ -43,7 +43,7 @@ class TransFeature(object):
         """recursively convert to a recursive tuple of strings representing
         the feature tree"""
         return (str(self),)
-    
+
     def _getChildrenStrTree(self, features):
         "build tuple for a list of children"
         r = []
@@ -181,7 +181,7 @@ class ExonFeature(TransFeature):
         if self.alignFeatures is not None:
             r.append(self._getChildrenStrTree(self.alignFeatures))
         return tuple(r)
-    
+
     def reverseComplement(self, rcParent):
         rcCoords = self.reverseCoords()
         rcExon = ExonFeature(rcParent, rcCoords[0], rcCoords[1], rcCoords[2], rcCoords[3])
@@ -196,11 +196,10 @@ class ExonFeature(TransFeature):
     def __countAlignedBases(self):
         alignedCnt = 0
         for blk in self.alignFeatures:
-            if blk.isAligned:
+            if isinstance(blk, AlignedFeature):
                 alignedCnt += blk.rnaLength
         return alignedCnt
-                
-            
+
     @property
     def alignedBases(self):
         """if there are alignment subfeatures, return the actual number of
@@ -236,7 +235,7 @@ class IntronFeature(TransFeature):
         if self.alignFeatures is not None:
             r.append(self._getChildrenStrTree(self.alignFeatures))
         return tuple(r)
-    
+
     def reverseComplement(self, rcParent):
         rcCoords = self.reverseCoords()
         rcDonorSeq, rcAcceptorSeq = (None, None) if self.donorSeq is None else (dnaOps.reverseComplement(self.acceptorSeq), dnaOps.reverseComplement(self.donorSeq))
@@ -279,7 +278,7 @@ class TranscriptFeatures(TransFeature):
         if self.features is not None:
             r.append(self._getChildrenStrTree(self.features))
         return tuple(r)
-    
+
     @property
     def alignedBases(self):
         alignedCnt = 0
