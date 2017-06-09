@@ -72,8 +72,11 @@ class Spliceosome(SymEnum):
 
 spliceosomeMap = {
     SpliceJunc.GT_AG: Spliceosome.major,
+    SpliceJunc.CT_AC: Spliceosome.minor,
     SpliceJunc.GC_AG: Spliceosome.minor,
+    SpliceJunc.CT_GC: Spliceosome.minor,
     SpliceJunc.AT_AC: Spliceosome.minor,
+    SpliceJunc.GT_AT: Spliceosome.minor
 }
 
 
