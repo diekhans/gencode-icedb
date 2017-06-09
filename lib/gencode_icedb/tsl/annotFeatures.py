@@ -1,7 +1,7 @@
 from __future__ import print_function
 from pycbio.hgdata.hgLite import GenePredDbTable
 from pycbio.hgdata.frame import Frame
-from gencode_icedb.genome import spliceSitesClassifyStrand
+from gencode_icedb.genome import spliceJuncClassifyStrand
 from gencode_icedb.tsl import minIntronSize
 from gencode_icedb.tsl.transFeatures import ExonFeature, IntronFeature, TranscriptFeatures, Utr5RegionFeature, CdsRegionFeature, Utr3RegionFeature, NonCodingRegionFeature
 
@@ -110,21 +110,21 @@ class AnnotationGenePredFactory(object):
             self.__addNonCodingFeatures(gp, iBlkStart, iBlkEnd, rnaStart, rnaEnd, exon)
         return exon
 
-    def __getSpliceSites(self, gp, iBlkNext):
+    def __getSpliceJunc(self, gp, iBlkNext):
         donorSeq = self.genomeReader.get(gp.chrom, gp.exons[iBlkNext - 1].end,
                                          gp.exons[iBlkNext - 1].end + 2)
         acceptorSeq = self.genomeReader.get(gp.chrom, gp.exons[iBlkNext].start - 2,
                                             gp.exons[iBlkNext].start)
-        spliceSites = spliceSitesClassifyStrand(gp.strand, donorSeq, acceptorSeq)
-        return donorSeq, acceptorSeq, spliceSites
+        spliceJunc = spliceJuncClassifyStrand(gp.strand, donorSeq, acceptorSeq)
+        return donorSeq, acceptorSeq, spliceJunc
 
     def __makeIntron(self, gp, iBlkNext, rnaEnd, trans):
         if self.genomeReader is None:
-            donorSeq = acceptorSeq = spliceSites = None
+            donorSeq = acceptorSeq = spliceJunc = None
         else:
-            donorSeq, acceptorSeq, spliceSites = self.__getSpliceSites(gp, iBlkNext)
+            donorSeq, acceptorSeq, spliceJunc = self.__getSpliceJunc(gp, iBlkNext)
         return IntronFeature(trans, gp.exons[iBlkNext - 1].end, gp.exons[iBlkNext].start,
-                             rnaEnd, rnaEnd, donorSeq, acceptorSeq, spliceSites)
+                             rnaEnd, rnaEnd, donorSeq, acceptorSeq, spliceJunc)
 
     def fromGenePred(self, gp):
         "convert a genePred to an AnnotTranscript"

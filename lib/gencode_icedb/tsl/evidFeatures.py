@@ -4,7 +4,7 @@ Convert alignments (PSL) to features, closing and tracking gaps.
 from __future__ import print_function
 from pycbio.hgdata.rangeFinder import RangeFinder
 from pycbio.hgdata.hgLite import PslDbTable
-from gencode_icedb.genome import spliceSitesClassifyStrand
+from gencode_icedb.genome import spliceJuncClassifyStrand
 from gencode_icedb.tsl import minIntronSize
 from gencode_icedb.tsl.transFeatures import ExonFeature, IntronFeature, TranscriptFeatures, AlignedFeature, ChromInsertFeature, RnaInsertFeature
 
@@ -69,17 +69,17 @@ class EvidencePslFactory(object):
                                          psl.blocks[iBlkNext - 1].tEnd + 2)
         acceptorSeq = self.genomeReader.get(psl.tName, psl.blocks[iBlkNext].tStart - 2,
                                             psl.blocks[iBlkNext].tStart)
-        spliceSites = spliceSitesClassifyStrand(psl.getQStrand(), donorSeq, acceptorSeq)
-        return donorSeq, acceptorSeq, spliceSites
+        spliceJunc = spliceJuncClassifyStrand(psl.getQStrand(), donorSeq, acceptorSeq)
+        return donorSeq, acceptorSeq, spliceJunc
 
     def __makeIntron(self, psl, iBlkNext, trans):
         if self.genomeReader is None:
-            donorSeq = acceptorSeq = spliceSites = None
+            donorSeq = acceptorSeq = spliceJunc = None
         else:
-            donorSeq, acceptorSeq, spliceSites = self.__getSpliceSites(psl, iBlkNext)
+            donorSeq, acceptorSeq, spliceJunc = self.__getSpliceSites(psl, iBlkNext)
         return IntronFeature(trans, psl.blocks[iBlkNext - 1].tEnd, psl.blocks[iBlkNext].tStart,
                              psl.blocks[iBlkNext - 1].qEnd, psl.blocks[iBlkNext].qStart,
-                             donorSeq, acceptorSeq, spliceSites)
+                             donorSeq, acceptorSeq, spliceJunc)
 
     def fromPsl(self, psl):
         "convert a psl to an TranscriptFeatures object"

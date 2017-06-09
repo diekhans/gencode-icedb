@@ -36,36 +36,58 @@ class GenomeReader(object):
 
 
     # FIXME: move to a different module
-# FIXME: base classification on splicing mechanism, not base-pairs
-SpliceSites = SymEnum("SpliceSite",
-                      ("GT_AG", "GC_AG", "AT_AC", "unknown"))
-spliceSitesMap = {
-    ("gt", "ag"): SpliceSites.GT_AG,
-    ("gc", "ag"): SpliceSites.GC_AG,
-    ("at", "ac"): SpliceSites.AT_AC,
+class SpliceJunc(SymEnum):
+    "symbolic names for known splice junction patterns"
+    unknown = 0
+    GT_AG   = 1
+    CT_AC   = 2
+    GC_AG   = 3
+    CT_GC   = 4
+    AT_AC   = 5
+    GT_AT   = 6
+
+spliceJuncMap = {
+    ("gt", "ag"): SpliceJunc.GT_AG,
+    ("ct", "ac"): SpliceJunc.CT_AC,
+    ("gc", "ag"): SpliceJunc.GC_AG,
+    ("ct", "gc"): SpliceJunc.CT_GC,
+    ("at", "ac"): SpliceJunc.AT_AC,
+    ("gt", "at"): SpliceJunc.GT_AT
 }
 
-Spliceosome = SymEnum("Spliceosome",
-                      ("major", "minor", "unknown"))
+# mapping of star splice code, 0 is unknown
+starSpliceJuncMap = {
+    1: SpliceJunc.GT_AG,
+    2: SpliceJunc.CT_AC,
+    3: SpliceJunc.GC_AG,
+    4: SpliceJunc.CT_GC,
+    5: SpliceJunc.AT_AC,
+    6: SpliceJunc.GT_AT
+}
+
+class Spliceosome(SymEnum):
+    unknown = 0
+    major   = 1
+    minor   = 2
 
 spliceosomeMap = {
-    SpliceSites.GT_AG: Spliceosome.major,
-    SpliceSites.GC_AG: Spliceosome.minor,
-    SpliceSites.AT_AC: Spliceosome.minor,
+    SpliceJunc.GT_AG: Spliceosome.major,
+    SpliceJunc.GC_AG: Spliceosome.minor,
+    SpliceJunc.AT_AC: Spliceosome.minor,
 }
 
 
-def spliceSitesClassify(donor, acceptor):
-    return spliceSitesMap.get((donor.lower(), acceptor.lower()), SpliceSites.unknown)
+def spliceJuncClassify(donor, acceptor):
+    return spliceJuncMap.get((donor.lower(), acceptor.lower()), SpliceJunc.unknown)
 
 
-def spliceSitesClassifyStrand(strand, donorSeq, acceptorSeq):
+def spliceJuncClassifyStrand(strand, donorSeq, acceptorSeq):
     if strand == '+':
-        return spliceSitesClassify(donorSeq, acceptorSeq)
+        return spliceJuncClassify(donorSeq, acceptorSeq)
     else:
-        return spliceSitesClassify(dnaOps.reverseComplement(acceptorSeq), dnaOps.reverseComplement(donorSeq))
+        return spliceJuncClassify(dnaOps.reverseComplement(acceptorSeq), dnaOps.reverseComplement(donorSeq))
 
 
-def spliceosomeClassify(spliceSites):
-    assert isinstance(spliceSites, SpliceSites)
-    return spliceosomeMap.get(spliceSites, Spliceosome.unknown)
+def spliceosomeClassify(spliceJunc):
+    assert isinstance(spliceJunc, SpliceJunc), type(spliceJunc)
+    return spliceosomeMap.get(spliceJunc, Spliceosome.unknown)
