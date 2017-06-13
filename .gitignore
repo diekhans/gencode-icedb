@@ -9,4 +9,4 @@ extern
 bin/faUcscToGencode
 bin/genePredIntrons
 bin/tslGetUcscRnaAligns
-bin/tslSpliceJunctionCollectEvidence
+bin/rslSpliceJunctionCollectEvidence
