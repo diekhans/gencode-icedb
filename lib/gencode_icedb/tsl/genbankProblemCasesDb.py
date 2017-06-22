@@ -19,6 +19,7 @@ class GenbankProblemCase(namedtuple("GenbankProblemCase",
     __slots__ = ()
     pass
 
+
 sqlite3.register_adapter(GenbankProblemReason, str)
 sqlite3.register_converter("reason", GenbankProblemReason)
 

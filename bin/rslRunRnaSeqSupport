@@ -40,5 +40,6 @@ def main():
     masterJob = rnaSeqSupportToil.createJobs(opts)
     Job.Runner.startToil(masterJob, opts)
 
-if __name__ == "__main__":
+
+if __name__ == "__main__":   # needed for toil
     main()

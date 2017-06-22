@@ -13,6 +13,8 @@ def _addExtern(module, relDir):
     if not os.path.exists(modDir):
         raise Exception("can't find {} directory: {}".format(module, modDir))
     sys.path.insert(0, modDir)
+
+
 _addExtern("pycbio", "lib")
 _addExtern("pipettor", "build/lib")
 _addExtern("ccds2", "output/lib/py")

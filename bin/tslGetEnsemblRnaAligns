@@ -265,5 +265,6 @@ def cdnaEnsemblAligns(opts):
     pslDbTable.loads(psls)
     conn.close()
 
+
 dbOps.mySqlSetErrorOnWarn()
 cdnaEnsemblAligns(parseArgs())

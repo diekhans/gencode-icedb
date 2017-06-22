@@ -36,6 +36,7 @@ def parseArgs():
     loggingOps.setupFromCmd(opts, sys.argv[0])
     return opts
 
+
 selectedTsvHeader = ("runname", "organism", "tissue", "description",
                      "readsfileurl", "readsfile", "md5sum", "readlength",
                      "readsfile2url", "readsfile2", "md5sum2")
@@ -176,5 +177,6 @@ def encodeDccQuery(opts):
         saveToJson(opts.response, response)
     with open(opts.selectedTsv, "w") as selectedTsvFh, open(opts.selectedUrls, "w") as selectedUrlsFh:
         processExprs(response, opts.minReadLength, selectedTsvFh, selectedUrlsFh)
+
 
 encodeDccQuery(parseArgs())

@@ -29,4 +29,5 @@ def genbankProblemCasesLoad(opts):
     problemTable.loads(rows)
     conn.close()
 
+
 genbankProblemCasesLoad(parseArgs())

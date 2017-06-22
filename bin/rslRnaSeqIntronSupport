@@ -44,4 +44,5 @@ def rnaSeqIntronSupport(opts):
     gis = GencodeIntronSupport(opts.gencodeGenePred, opts.gencodeAttrTsv, opts.spliceJunctionEvidTsv)
     print(gis)  # FIXME: program not done
 
+
 rnaSeqIntronSupport(parseArgs())

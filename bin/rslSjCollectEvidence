@@ -77,4 +77,5 @@ def sjCollectEvidence(opts):
     runSjCollectEvidence(pathConfig, opts.minOverhang, sjInfoFile, opts.gencodeGenePred, opts.gencodeSpliceTsv)
     os.unlink(sjInfoFile)
 
+
 sjCollectEvidence(parseArgs())

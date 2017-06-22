@@ -83,4 +83,5 @@ def estimateReadLength(opts):
         with open(opts.outfile, "w") as fh:
             writeReadLen(fh, aveLen)
 
+
 estimateReadLength(parseArgs())

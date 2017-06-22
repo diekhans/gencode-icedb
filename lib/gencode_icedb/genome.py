@@ -35,16 +35,18 @@ class GenomeReader(object):
         return self.size
 
 
-    # FIXME: move to a different module
+# FIXME: move to a different module
+
 class SpliceJunc(SymEnum):
     "symbolic names for known splice junction patterns"
     unknown = 0
-    GT_AG   = 1
-    CT_AC   = 2
-    GC_AG   = 3
-    CT_GC   = 4
-    AT_AC   = 5
-    GT_AT   = 6
+    GT_AG = 1
+    CT_AC = 2
+    GC_AG = 3
+    CT_GC = 4
+    AT_AC = 5
+    GT_AT = 6
+
 
 spliceJuncMap = {
     ("gt", "ag"): SpliceJunc.GT_AG,
@@ -65,10 +67,12 @@ starSpliceJuncMap = {
     6: SpliceJunc.GT_AT
 }
 
+
 class Spliceosome(SymEnum):
     unknown = 0
-    major   = 1
-    minor   = 2
+    major = 1
+    minor = 2
+
 
 spliceosomeMap = {
     SpliceJunc.GT_AG: Spliceosome.major,

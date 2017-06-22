@@ -104,4 +104,5 @@ def rnaSeqIntronEvidBed(opts):
     with open(opts.bedOut, "w") as bedFh:
         gieb.writeBed(bedFh)
 
+
 rnaSeqIntronEvidBed(parseArgs())
