@@ -1,0 +1,93 @@
+#!/usr/bin/env python
+
+from __future__ import print_function
+import icedbProgSetup  # noqa: F401
+import os
+import sys
+import csv
+import argparse
+import gzip
+import bz2
+
+
+def parseArgs():
+    desc = """
+    filter a SRA TSV for desired
+
+    https://www.ncbi.nlm.nih.gov/sra/advanced:
+      (Homo sapiens[Organism]) AND "transcriptomic"[Source] 
+      (Mus musculus[Organism]) AND "transcriptomic"[Source] 
+    Format: runinfo
+    """
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument("--full", action="store_true", default=False,
+                        help="output full TSV, not subset needed for experiments")
+    parser.add_argument("--csv", action="store_true", default=False,
+                        help="input is a CSV")
+    parser.add_argument("--gtex", action="store_true", default=False,
+                        help="output GTEx rows instead of public ones")
+    parser.add_argument("inTsv",
+                        help="input TSV (or CSV if --csv is specified), maybe compressed")
+    parser.add_argument("outTsv",
+                        help="output TSV, may have compression extensions")
+    return parser.parse_args()
+
+def compressOpen(path):
+    "get callable to read/write file with compression or not"
+    if path.endswith(".Z") or path.endswith(".gz"):
+        return gzip.GzipFile
+    elif path.endswith(".bz2"):
+        return bz2.BZ2File
+    else:
+        return file
+
+
+def opengz(fileName, mode="r"):
+    """open a file, if it ends in an extension indicating compression, open
+    with a compression or decompression pipe."""
+    opener = compressOpen(fileName)
+    return opener(fileName, mode)
+
+
+# Run	ReleaseDate	LoadDate	spots	bases	spots_with_mates	avgLength	size_MB	AssemblyName	download_path	Experiment	LibraryName	LibraryStrategy	LibrarySelection	LibrarySource	LibraryLayout	InsertSize	InsertDev	Platform	Model	SRAStudy	BioProject	Study_Pubmed_id	ProjectID	Sample	BioSample	SampleType	TaxID	ScientificName	SampleName	g1k_pop_code	source	g1k_analysis_group	Subject_ID	Sex	Disease	Tumor	Affection_Status	Analyte_Type	Histological_Type	Body_Site	CenterName	Submission	dbgap_study_accession	Consent	RunHash	ReadHash
+pipelineHeader = ("ProjectID", "Run", "LibraryLayout")
+
+gtexStudy = "SRP012682"
+sourceFilter = frozenset(["TRANSCRIPTOMIC"])
+strategyFilter = frozenset(["AMPLICON", "EST", "FL-cDNA", "ncRNA-Seq", "RNA-Seq"])
+# platformFilter = frozenset(["CAPILLARY", "HELICOS", "ILLUMINA", "ION_TORRENT", "LS454"])
+platformFilter = frozenset(["ILLUMINA"])
+consentFilter = frozenset(["public"])
+minRunLength = 40
+
+def publicRowFilter(row):
+    # avgLength of more than zero will check if for rows with no data 
+    return ((int(row["avgLength"]) >= minRunLength)
+            and (row["LibrarySource"] in sourceFilter)
+            and (row["LibraryStrategy"] in strategyFilter)
+            and (row["Consent"] in consentFilter)
+            and (row["Platform"] in platformFilter))
+
+def gtexRowFilter(row):
+    # avgLength check if for rows with no data 
+    return ((int(row["avgLength"]) > 0)
+            and (row["SRAStudy"] == gtexStudy))
+
+def filterTsv(rowFilter, tsvReader, tsvWriter):
+    tsvWriter.writeheader()
+    for row in tsvReader:
+        if rowFilter(row):
+            tsvWriter.writerow(row)
+
+
+def main(opts):
+    rowFilter = gtexRowFilter if opts.gtex else publicRowFilter 
+    with opengz(opts.inTsv) as tsvFh:
+        tsvReader = csv.DictReader(tsvFh, dialect=csv.excel if opts.csv else csv.excel_tab)
+        fields = tsvReader.fieldnames if opts.full else pipelineHeader
+        with opengz(opts.outTsv, "w") as tsvFh:
+            tsvWriter = csv.DictWriter(tsvFh, fields, dialect=csv.excel_tab, quoting=csv.QUOTE_MINIMAL,
+                                       extrasaction="ignore", lineterminator="\n")
+            filterTsv(rowFilter, tsvReader, tsvWriter)
+
+main(parseArgs())
