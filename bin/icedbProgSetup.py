@@ -5,7 +5,8 @@ automatically on the path.
 """
 import sys
 import os
-rootDir = os.path.dirname(os.path.abspath(os.path.dirname(sys.argv[0])))
+# using __file__ allows programs to be symlinked
+rootDir = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 
 
 def _addExtern(module, relDir):
