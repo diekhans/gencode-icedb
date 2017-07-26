@@ -12,7 +12,7 @@ import bz2
 
 def parseArgs():
     desc = """
-    filter a SRA TSV for desired
+    filter a SRA RunInfo CSV/TSV for desired RNA-Seq runs
 
     https://www.ncbi.nlm.nih.gov/sra/advanced:
       (Homo sapiens[Organism]) AND "transcriptomic"[Source] 
