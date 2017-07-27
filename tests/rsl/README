@@ -26,3 +26,6 @@ wgEncodeCaltechRnaSeqMcf7R2x75Il200AlignsRep2V2.bam
       hs.chr22-2k.evid.tsv
   - these are all from hg38 gencode V24 
   
+---
+- set1.hs.*:
+  From CZI human STAR mappings in range chr1:2000000-8000000
