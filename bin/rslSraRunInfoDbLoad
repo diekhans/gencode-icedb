@@ -1,0 +1,68 @@
+#!/usr/bin/env python
+
+from __future__ import print_function
+import icedbProgSetup  # noqa: F401
+import sys
+import argparse
+from gencode_icedb.rsl.dbModel import sqliteConnect, RunMetadata
+from pycbio.sys import loggingOps
+from pycbio.tsv import TsvReader
+
+bulk_size = 5012   # size of each bulk insert
+
+
+def parseArgs():
+    desc = """Load run metadata from runinfo TSV files into a database.
+    """
+    parser = argparse.ArgumentParser(description=desc)
+    loggingOps.addCmdOptions(parser)
+    parser.add_argument('--srcname', default="SRA",
+                        help="""source name to use in records""")
+    parser.add_argument('rsldb',
+                        help="""sqllite3 database, tables are created as needed""")
+    parser.add_argument('runinfoTsv',
+                        help="""SRA runinfo TSV (see rslSraRunInfoFilter program)""")
+    opts = parser.parse_args()
+    loggingOps.setupFromCmd(opts, sys.argv[0])
+    return opts
+
+
+def orgToOrgCode(org):
+    if org == "Homo sapiens":
+        return "hs"
+    elif org.startswith("Mus musculus"):
+        return "mm"
+    else:
+        raise Exception("unsupported organism: {}".format(org))
+
+
+def noneIfEmpty(s):
+    return s if len(s) > 0 else None
+
+
+def makeRunMetaRec(srcname, row):
+    return {"srcname": srcname,
+            "acc": row.Run,
+            "orgcode": orgToOrgCode(row.ScientificName),
+            "tissue": noneIfEmpty(row.Body_Site)}
+
+
+def readRunInfo(srcname, runinfoTsv):
+    "load RunMetadata fields for bulk load"
+    return [makeRunMetaRec(srcname, row) for row in TsvReader(runinfoTsv)]
+
+
+def dbLoad(dbconn, recs):
+    with dbconn.atomic():
+        for idx in xrange(0, len(recs), bulk_size):
+            RunMetadata.insert_many(recs[idx:idx + bulk_size]).execute()
+
+
+def rslSraRunInfoDbLoad(opts):
+    recs = readRunInfo(opts.srcname, opts.runinfoTsv)
+    dbconn = sqliteConnect(opts.rsldb)
+    RunMetadata.create_table(fail_silently=True)
+    dbLoad(dbconn, recs)
+
+
+rslSraRunInfoDbLoad(parseArgs())

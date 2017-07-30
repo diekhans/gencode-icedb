@@ -14,10 +14,76 @@ rslRnaSeqIntronEvidBed = ${binDir}/rslRnaSeqIntronEvidBed
 rslRnaSeqIntronEvidStats = ${binDir}/rslRnaSeqIntronEvidStats
 rslSjCollectEvidence = ${binDir}/rslSjCollectEvidence
 
+rslSraRunInfoFilter = ${binDir}/rslSraRunInfoFilter
+rslSraRunInfoDbLoad = ${binDir}/rslSraRunInfoDbLoad
+rslStarIntronDbLoad = ${binDir}/rslStarIntronDbLoad
+
+diff = diff -u
+
 .SECONDARY:
 
+
+test: dataConvertTests dbLoadTests
+
+##
+# conversion of data
+##
+dataConvertTests: sraRunInfoFilterStdTest \
+		  sraRunInfoFilterFullTest \
+		  sraRunInfoFilterSubsetTest \
+		  sraRunInfoFilterMissingTest
+
+sraRunInfoFilterStdTest: mkdirs
+	${rslSraRunInfoFilter} input/runinfo.hs.csv output/$@.tsv
+	${diff} expected/$@.tsv output/$@.tsv
+
+sraRunInfoFilterFullTest: mkdirs
+	${rslSraRunInfoFilter} --full input/runinfo.hs.csv output/$@.tsv
+	${diff} expected/$@.tsv output/$@.tsv
+
+sraRunInfoFilterSubsetTest: mkdirs
+	${rslSraRunInfoFilter} --selectSubsetTsv=input/runinfo.hs.subset.tsv input/runinfo.hs.csv output/$@.tsv
+	${diff} expected/$@.tsv output/$@.tsv
+
+# missing because of filter and just not there
+sraRunInfoFilterMissingTest: mkdirs
+	if ${rslSraRunInfoFilter} --selectSubsetTsv=input/runinfo.hs.missing.tsv input/runinfo.hs.csv output/$@.tsv 2>output/$@.err ; then echo "expected failure" >&2; exit 1 ; fi
+	${diff} expected/$@.err output/$@.err
+
+
+##
+# loading of database
+##
+dbLoadTests: sraRunInfoDbLoad1Test starIntronAllDbLoad starIntronIncrDbLoad
+
+# test loading run-info from SRA
+sraRunInfoDbLoad1Test: mkdirs
+	rm -f output/$@.db
+	${rslSraRunInfoDbLoad} output/$@.db input/set1.hs.run-info.tsv
+	sqlite3 -header -batch output/$@.db 'select * from RunMetadata' > output/$@.tsv
+	${diff} expected/$@.tsv output/$@.tsv
+
+# tests loading STAR introns, all at once and incrementally
+starIntronAllDbLoad: mkdirs
+	rm -f output/$@.db
+	${rslStarIntronDbLoad} output/$@.db input/set1.hs.stardir.tsv
+	sqlite3 -header -batch output/$@.db 'select * from PutativeIntron' > output/$@.tsv
+	${diff} expected/$@.tsv output/$@.tsv
+
+starIntronIncrDbLoad: mkdirs
+	rm -f output/$@.db
+	${rslStarIntronDbLoad} output/$@.db input/set1.hs.incr.stardir.tsv
+	sqlite3 -header -batch output/$@.db 'select * from PutativeIntron' > output/$@.part.tsv
+	${rslStarIntronDbLoad} output/$@.db input/set1.hs.stardir.tsv
+	sqlite3 -header -batch output/$@.db 'select * from PutativeIntron' > output/$@.tsv
+	${diff} expected/$@.part.tsv output/$@.part.tsv
+
+
+
+## FIXME: most below will go away
+
 numThreads=2
-test: smallTests readLenTests faTests rnaSeqDataRegisterTest genePredIntronsTest \
+oldtest: smallTests readLenTests faTests rnaSeqDataRegisterTest genePredIntronsTest \
 	spliceJuncEvidenceTests rslSjCollectEvidenceTests encodeDccTests intronSupportTests \
 	intronEvidBedTests intronEvidStatsTests
 

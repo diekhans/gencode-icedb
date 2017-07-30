@@ -2,12 +2,10 @@
 
 from __future__ import print_function
 import icedbProgSetup  # noqa: F401
-import os
-import sys
 import csv
 import argparse
-import gzip
-import bz2
+from pycbio.sys import fileOps
+from pycbio.tsv import TsvReader
 
 
 def parseArgs():
@@ -15,79 +13,88 @@ def parseArgs():
     filter a SRA RunInfo CSV/TSV for desired RNA-Seq runs
 
     https://www.ncbi.nlm.nih.gov/sra/advanced:
-      (Homo sapiens[Organism]) AND "transcriptomic"[Source] 
-      (Mus musculus[Organism]) AND "transcriptomic"[Source] 
+      (Homo sapiens[Organism]) AND "transcriptomic"[Source]
+      (Mus musculus[Organism]) AND "transcriptomic"[Source]
     Format: runinfo
     """
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument("--full", action="store_true", default=False,
                         help="output full TSV, not subset needed for experiments")
-    parser.add_argument("--csv", action="store_true", default=False,
-                        help="input is a CSV")
+    parser.add_argument("--tsv", action="store_true", default=False,
+                        help="input is a TSV instead of CVS")
     parser.add_argument("--gtex", action="store_true", default=False,
                         help="output GTEx rows instead of public ones")
-    parser.add_argument("inTsv",
-                        help="input TSV (or CSV if --csv is specified), maybe compressed")
+    parser.add_argument("--selectSubsetTsv", action="store", default=None,
+                        help="""TSV file with column `Run' to specify subset of records to obtain. Error if all are not found.""")
+    parser.add_argument("inCsv",
+                        help="input CSV (or TSV if --tsv is specified), maybe compressed")
     parser.add_argument("outTsv",
                         help="output TSV, may have compression extensions")
     return parser.parse_args()
 
-def compressOpen(path):
-    "get callable to read/write file with compression or not"
-    if path.endswith(".Z") or path.endswith(".gz"):
-        return gzip.GzipFile
-    elif path.endswith(".bz2"):
-        return bz2.BZ2File
-    else:
-        return file
 
-
-def opengz(fileName, mode="r"):
-    """open a file, if it ends in an extension indicating compression, open
-    with a compression or decompression pipe."""
-    opener = compressOpen(fileName)
-    return opener(fileName, mode)
-
-
-# Run	ReleaseDate	LoadDate	spots	bases	spots_with_mates	avgLength	size_MB	AssemblyName	download_path	Experiment	LibraryName	LibraryStrategy	LibrarySelection	LibrarySource	LibraryLayout	InsertSize	InsertDev	Platform	Model	SRAStudy	BioProject	Study_Pubmed_id	ProjectID	Sample	BioSample	SampleType	TaxID	ScientificName	SampleName	g1k_pop_code	source	g1k_analysis_group	Subject_ID	Sex	Disease	Tumor	Affection_Status	Analyte_Type	Histological_Type	Body_Site	CenterName	Submission	dbgap_study_accession	Consent	RunHash	ReadHash
 pipelineHeader = ("ProjectID", "Run", "LibraryLayout")
 
 gtexStudy = "SRP012682"
 sourceFilter = frozenset(["TRANSCRIPTOMIC"])
 strategyFilter = frozenset(["AMPLICON", "EST", "FL-cDNA", "ncRNA-Seq", "RNA-Seq"])
-# platformFilter = frozenset(["CAPILLARY", "HELICOS", "ILLUMINA", "ION_TORRENT", "LS454"])
 platformFilter = frozenset(["ILLUMINA"])
 consentFilter = frozenset(["public"])
 minRunLength = 40
 
+
+def loadSelectSubset(selectSubsetTsv):
+    return frozenset([row.Run for row in TsvReader(selectSubsetTsv)])
+
+
 def publicRowFilter(row):
-    # avgLength of more than zero will check if for rows with no data 
+    # avgLength of more than zero will check if for rows with no data
     return ((int(row["avgLength"]) >= minRunLength)
             and (row["LibrarySource"] in sourceFilter)
             and (row["LibraryStrategy"] in strategyFilter)
             and (row["Consent"] in consentFilter)
             and (row["Platform"] in platformFilter))
 
+
 def gtexRowFilter(row):
-    # avgLength check if for rows with no data 
+    # avgLength check if for rows with no data
     return ((int(row["avgLength"]) > 0)
             and (row["SRAStudy"] == gtexStudy))
 
-def filterTsv(rowFilter, tsvReader, tsvWriter):
+
+def keepRow(rowFilter, selectSubset, row):
+    return rowFilter(row) and ((selectSubset is None) or (row["Run"] in selectSubset))
+
+
+def filterTsv(rowFilter, selectSubset, csvReader, tsvWriter):
+    selectedRuns = set()
     tsvWriter.writeheader()
-    for row in tsvReader:
-        if rowFilter(row):
+    for row in csvReader:
+        if keepRow(rowFilter, selectSubset, row):
             tsvWriter.writerow(row)
+            selectedRuns.add(row["Run"])
+    return selectedRuns
 
 
-def main(opts):
-    rowFilter = gtexRowFilter if opts.gtex else publicRowFilter 
-    with opengz(opts.inTsv) as tsvFh:
-        tsvReader = csv.DictReader(tsvFh, dialect=csv.excel if opts.csv else csv.excel_tab)
-        fields = tsvReader.fieldnames if opts.full else pipelineHeader
-        with opengz(opts.outTsv, "w") as tsvFh:
+def checkForMissingSubset(selectSubset, selectedRuns):
+    missing = selectSubset - selectedRuns
+    if len(missing) > 0:
+        exit("Error: {} select runs not found in runinfo file: {}".format(len(missing), " ".join(sorted(missing))))
+
+
+def rslSraRunInfoFilter(opts):
+    selectSubset = loadSelectSubset(opts.selectSubsetTsv) if opts.selectSubsetTsv is not None else None
+    rowFilter = gtexRowFilter if opts.gtex else publicRowFilter
+    with fileOps.opengz(opts.inCsv) as csvFh:
+        csvReader = csv.DictReader(csvFh, dialect=csv.excel if not opts.tsv else csv.excel_tab)
+        fields = csvReader.fieldnames if opts.full else pipelineHeader
+        with fileOps.opengz(opts.outTsv, "w") as tsvFh:
             tsvWriter = csv.DictWriter(tsvFh, fields, dialect=csv.excel_tab, quoting=csv.QUOTE_MINIMAL,
                                        extrasaction="ignore", lineterminator="\n")
-            filterTsv(rowFilter, tsvReader, tsvWriter)
+            selectedRuns = filterTsv(rowFilter, selectSubset, csvReader, tsvWriter)
 
-main(parseArgs())
+    if selectSubset is not None:
+        checkForMissingSubset(selectSubset, selectedRuns)
+
+
+rslSraRunInfoFilter(parseArgs())

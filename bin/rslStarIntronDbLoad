@@ -1,0 +1,114 @@
+#!/usr/bin/env python
+
+from __future__ import print_function
+import icedbProgSetup  # noqa: F401
+import sys
+import os
+import argparse
+from collections import namedtuple
+from gencode_icedb.rsl.dbModel import sqliteConnect, PutativeIntron
+from gencode_icedb.rsl.dbModelCache import PutativeIntronCache
+from gencode_icedb.rsl.starResultsDir import StarResultsDir
+from gencode_icedb.rsl import starOps
+from pycbio.tsv import TabFileReader
+from pycbio.sys import fileOps
+from pycbio.sys import loggingOps
+from pycbio.hgdata.rangeFinder import Binner
+import pipettor
+
+bulk_size = 5120   # size of each bulk insert
+
+
+def parseArgs():
+    desc = """Load putative introns from STAR splice junctions into the
+    PutativeIntron table.  This must be done before loaded the actual SJ
+    structures.  By loading all introns in advance, it allows for
+    parallelizing load of read counts and sorting introns.  New putativ
+    introns can be incrementally added, however they will not be sorted with
+    existing ones..
+    """
+    parser = argparse.ArgumentParser(description=desc)
+    loggingOps.addCmdOptions(parser)
+    parser.add_argument('rsldb',
+                        help="""sqllite3 database, tables are created as needed""")
+    parser.add_argument('starResultsDirTsv',
+                        help="""TSV file with column `sjout', which has the path to the splice junction file, which maybe compressed."""
+                        """The path is relative to the directory containing starResultsTsv""")
+    opts = parser.parse_args()
+    loggingOps.setupFromCmd(opts, sys.argv[0])
+    return opts
+
+
+class StarSjIntronRow(namedtuple("StarSjIntronRow",
+                                 ("chrom", "start", "end", "strand", "motif"))):
+    """Subset of columns from a STAR sjout file, with coordinates as-is (1-based, closed)"""
+    __slots__ = ()
+
+    @staticmethod
+    def factory(row):
+        "construct named tuple from row"
+        return StarSjIntronRow(row[0], int(row[1]), int(row[2]), int(row[3]), int(row[4]))
+
+
+def mkUniqueIntrons(starResultsDir):
+    "generates tmp tab file with sorted introns"
+    tmpIntronFile = fileOps.tmpFileGet("pintrons")
+    cmds = [("xargs", fileOps.decompressCmd(starResultsDir[0].sjoutPath)),
+            ("cut", "-f", "1-5"),
+            ("sort", "-u", "-k1,1", "-k2,2n", "-k3,3n", "-k4,4n", "-k5,5n")]
+    intronSortFh = pipettor.Popen(cmds, "w", stdout=tmpIntronFile)
+    for sr in starResultsDir:
+        print(sr.sjoutPath, file=intronSortFh)
+    intronSortFh.close()
+    return tmpIntronFile
+
+
+def intronRowReader(tmpIntronFile):
+    for row in TabFileReader(tmpIntronFile):
+        yield StarSjIntronRow.factory(row)
+
+
+def makeIntronRec(intronRow):
+    return {"bin": Binner.calcBin(intronRow.start - 1, intronRow.end),
+            "chrom": intronRow.chrom,
+            "start": intronRow.start - 1,
+            "end": intronRow.end,
+            "strand": starOps.starStrandCodeToChar(intronRow.strand),
+            "motif": starOps.starMotifCodeToStr(intronRow.motif)}
+
+
+def haveIntron(intronRow, pintronCache):
+    if len(pintronCache) == 0:
+        return False
+    else:
+        key = pintronCache.mkLocKey(intronRow.chrom, intronRow.start - 1, intronRow.end, starOps.starStrandCodeToChar(intronRow.strand))
+        return key in pintronCache.byLoc
+
+
+def makeNewIntronRecs(tmpIntronFile,
+                      pintronCache):
+    recs = []
+    for intronRow in intronRowReader(tmpIntronFile):
+        if not haveIntron(intronRow, pintronCache):
+            recs.append(makeIntronRec(intronRow))
+    return recs
+
+
+def dbLoad(dbconn, recs):
+    with dbconn.atomic():
+        for idx in xrange(0, len(recs), bulk_size):
+            PutativeIntron.insert_many(recs[idx:idx + bulk_size]).execute()
+
+
+def rslStarIntronDbLoad(opts):
+    starResultsDir = StarResultsDir(opts.starResultsDirTsv)
+    dbconn = sqliteConnect(opts.rsldb)
+    PutativeIntron.create_table(fail_silently=True)
+    pintronCache = PutativeIntronCache(dbconn)
+    tmpIntronFile = mkUniqueIntrons(starResultsDir)
+    recs = makeNewIntronRecs(tmpIntronFile, pintronCache)
+    dbLoad(dbconn, recs)
+    os.unlink(tmpIntronFile)
+
+
+rslStarIntronDbLoad(parseArgs())

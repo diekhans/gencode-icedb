@@ -2,3 +2,4 @@ peewee
 requests
 eutils
 pytz
+pipettor
