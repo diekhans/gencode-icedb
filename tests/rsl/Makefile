@@ -46,9 +46,9 @@ sraRunInfoFilterSubsetTest: mkdirs
 	${rslSraRunInfoFilter} --selectSubsetTsv=input/runinfo.hs.subset.tsv input/runinfo.hs.csv output/$@.tsv
 	${diff} expected/$@.tsv output/$@.tsv
 
-# missing because of filter and just not there
+# missing because of filter or just not there
 sraRunInfoFilterMissingTest: mkdirs
-	if ${rslSraRunInfoFilter} --selectSubsetTsv=input/runinfo.hs.missing.tsv input/runinfo.hs.csv output/$@.tsv 2>output/$@.err ; then echo "expected failure" >&2; exit 1 ; fi
+	if ${rslSraRunInfoFilter} --subsetRequired --selectSubsetTsv=input/runinfo.hs.missing.tsv input/runinfo.hs.csv output/$@.tsv 2>output/$@.err ; then echo "expected failure" >&2; exit 1 ; fi
 	${diff} expected/$@.err output/$@.err
 
 ##

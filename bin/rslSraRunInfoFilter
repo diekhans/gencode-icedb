@@ -27,7 +27,9 @@ def parseArgs():
     parser.add_argument("--public", action="store_true", default=False,
                         help="output public rows, specify with --gtex to get both")
     parser.add_argument("--selectSubsetTsv", action="store", default=None,
-                        help="""TSV file with column `run_acc' to specify subset of records to obtain. Error if all are not found.""")
+                        help="""TSV file with column `run_acc' to specify subset of records to obtain.""")
+    parser.add_argument("--subsetRequired", action="store_true", default=False,
+                        help="If specified, an error if not all of the runs in --selectSubsetTsv are in input.")
     parser.add_argument("inCsv",
                         help="input CSV (or TSV if --tsv is specified), maybe compressed")
     parser.add_argument("outTsv",
@@ -105,7 +107,7 @@ def rslSraRunInfoFilter(opts):
                                        extrasaction="ignore", lineterminator="\n")
             selectedRuns = filterTsv(rowFilter, csvReader, tsvWriter)
 
-    if rowFilter.selectSubset is not None:
+    if opts.subsetRequired and (rowFilter.selectSubset is not None):
         checkForMissingSubset(rowFilter.selectSubset, selectedRuns)
 
 
