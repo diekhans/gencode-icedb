@@ -12,9 +12,12 @@ def setDatabaseConn(dbconn):
     _database_proxy.initialize(dbconn)
 
 
-def sqliteConnect(rsldb):
+def sqliteConnect(rsldb, timeout=None):
     "connect to sqlite3 database and bind to model"
-    dbconn = SqliteDatabase(rsldb)
+    kwargs = {}
+    if timeout is not None:
+        kwargs["timeout"] = timeout
+    dbconn = SqliteDatabase(rsldb, **kwargs)
     setDatabaseConn(dbconn)
     return dbconn
 
@@ -66,6 +69,7 @@ class MappingMetadata(Model):
 
     class Meta:
         database = _database_proxy
+
 
 class PutativeIntron(Model):
     """Location of a putative intron"""

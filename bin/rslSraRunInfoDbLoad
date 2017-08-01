@@ -8,7 +8,7 @@ from gencode_icedb.rsl.rslModel import sqliteConnect, RunMetadata
 from pycbio.sys import loggingOps
 from pycbio.tsv import TsvReader
 
-bulk_size = 5012   # size of each bulk insert
+bulk_size = 200   # size of each bulk insert
 
 
 def parseArgs():

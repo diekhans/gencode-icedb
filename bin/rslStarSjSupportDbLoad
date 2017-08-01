@@ -11,8 +11,7 @@ from gencode_icedb.rsl import starOps
 from pycbio.sys import loggingOps
 from pycbio.tsv import TabFile
 
-
-bulk_size = 5120   # size of each bulk insert
+bulk_size = 100   # size of each bulk insert
 
 
 def parseArgs():
@@ -20,6 +19,8 @@ def parseArgs():
     """
     parser = argparse.ArgumentParser(description=desc)
     loggingOps.addCmdOptions(parser)
+    parser.add_argument('--numprocs', type=int, default=4,
+                        help="""number of process uses to load database in parallel.""")
     parser.add_argument('rsldb',
                         help="""sqllite3 database, tables are created as needed""")
     parser.add_argument("mappingParamsTsv",
@@ -42,46 +43,50 @@ def dbLoadMappingParameters(dbconn, mappingParamsTsv):
     return mappingParamsCache
 
 
-def createMappingMetadata(starResult, mappingParams):
-    runMetadata = RunMetadata.get(run_acc=starResult.run_acc)
-    mappingMetadata = MappingMetadata(run_metadata_id=runMetadata.id,
-                                      mapping_symid=starResult.mapping_symid,
-                                      mapping_parameters_id=mappingParams.id)
-    mappingMetadata.save()
-    return mappingMetadata
+class SjSupportLoader(object):
+    """Load sjout files from one STAR run."""
+    # tried running this is with multiprocessing, but it was not faster
+    def __init__(self, dbconn, mappingParamsCache, pintronCache):
+        self.dbconn = dbconn
+        self.mappingParamsCache = mappingParamsCache
+        self.pintronCache = pintronCache
 
+    def __createMappingMetadata(self, starResult, mappingParams):
+        runMetadata = RunMetadata.get(run_acc=starResult.run_acc)
+        mappingMetadata = MappingMetadata(run_metadata_id=runMetadata.id,
+                                          mapping_symid=starResult.mapping_symid,
+                                          mapping_parameters_id=mappingParams.id)
+        mappingMetadata.save()
+        return mappingMetadata
 
-def starOutToSjSupportDict(sjOutRow, mappingMetadata, pintronCache):
-    "construct dict for bulk insert"
-    pintron = pintronCache.fetchByLoc(sjOutRow.chrom, sjOutRow.start - 1, sjOutRow.end,
-                                      starOps.starStrandCodeToChar(sjOutRow.strand))
-    return {"mapping_metadata_id": mappingMetadata.id,
-            "putative_intron_id": pintron.id,
-            "annotated": sjOutRow.annotated,
-            "num_uniq_reads": sjOutRow.num_uniq_reads,
-            "num_multi_reads": sjOutRow.num_multi_reads,
-            "max_overhang": sjOutRow.max_overhang}
+    def __makeSjSupportDict(self, sjOutRow, mappingMetadata):
+        "construct dict for bulk insert"
+        pintron = self.pintronCache.fetchByLoc(sjOutRow.chrom, sjOutRow.start - 1, sjOutRow.end,
+                                               starOps.starStrandCodeToChar(sjOutRow.strand))
+        return {"mapping_metadata_id": mappingMetadata.id,
+                "putative_intron_id": pintron.id,
+                "annotated": sjOutRow.annotated,
+                "num_uniq_reads": sjOutRow.num_uniq_reads,
+                "num_multi_reads": sjOutRow.num_multi_reads,
+                "max_overhang": sjOutRow.max_overhang}
 
+    def __makeSjSupportDicts(self, sjOutFile, mappingMetadata):
+        "build dict for all rows for bulk insert"
+        return [self.__makeSjSupportDict(sjOutRow, mappingMetadata)
+                for sjOutRow in TabFile(sjOutFile, rowClass=starOps.StarSjOutRow.factory)]
 
-def starSjOutToSjSupportDicts(sjOutFile, mappingMetadata, pintronCache):
-    "build dict for all rows for bulk insert"
-    return [starOutToSjSupportDict(sjOutRow, mappingMetadata, pintronCache)
-            for sjOutRow in TabFile(sjOutFile, rowClass=starOps.StarSjOutRow.factory)]
+    def __dbLoad(self, recs):
+        with self.dbconn.atomic():
+            for idx in xrange(0, len(recs), bulk_size):
+                SpliceJuncSupport.insert_many(recs[idx:idx + bulk_size]).execute()
 
-
-def dbLoad(dbconn, recs):
-    with dbconn.atomic():
-        for idx in xrange(0, len(recs), bulk_size):
-            SpliceJuncSupport.insert_many(recs[idx:idx + bulk_size]).execute()
-
-
-def dbLoadSjSupport(dbconn, starResult, mappingParamsCache, pintronCache):
-    """Load sjout files from one STAR run.  This can run in another
-    multiprocessing process"""
-    mappingParams = mappingParamsCache.fetchBySymId(starResult.mapping_param_symid)
-    mappingMetadata = createMappingMetadata(starResult, mappingParams)
-    sjSupportsDicts = starSjOutToSjSupportDicts(starResult.sjoutPath, mappingMetadata, pintronCache)
-    dbLoad(dbconn, sjSupportsDicts)
+    def load(self, starResult):
+        """Load sjout files from one STAR run.  This can run in another
+        multiprocessing process"""
+        mappingParams = self.mappingParamsCache.fetchBySymId(starResult.mapping_param_symid)
+        mappingMetadata = self.__createMappingMetadata(starResult, mappingParams)
+        sjSupportsDicts = self.__makeSjSupportDicts(starResult.sjoutPath, mappingMetadata)
+        self.__dbLoad(sjSupportsDicts)
 
 
 def rslSraRunInfoDbLoad(opts):
@@ -92,8 +97,10 @@ def rslSraRunInfoDbLoad(opts):
     MappingMetadata.create_table(fail_silently=True)
     SpliceJuncSupport.create_table(fail_silently=True)
 
+    loader = SjSupportLoader(dbconn, mappingParamsCache, pintronCache)
+
     for starResult in starResultsDir:
-        dbLoadSjSupport(dbconn, starResult, mappingParamsCache, pintronCache)
+        loader.load(starResult)
 
 
 rslSraRunInfoDbLoad(parseArgs())

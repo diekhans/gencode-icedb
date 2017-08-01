@@ -16,7 +16,7 @@ from pycbio.sys import loggingOps
 from pycbio.hgdata.rangeFinder import Binner
 import pipettor
 
-bulk_size = 5120   # size of each bulk insert
+bulk_size = 100   # size of each bulk insert
 
 
 def parseArgs():

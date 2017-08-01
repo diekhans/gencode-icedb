@@ -36,6 +36,7 @@ class StarMappingParameters(list):
     def getBySymId(self, mapping_param_symid):
         return self.byMappingParamSymId[mapping_param_symid]
 
+
 class StarResultsDir(list):
     """load results directory TSV, add sjoutPath field for abs path to sjout file"""
     headers = ("run_acc", "mapping_param_symid", "mapping_symid", "sjout",)
