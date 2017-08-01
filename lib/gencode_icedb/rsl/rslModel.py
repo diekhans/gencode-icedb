@@ -1,7 +1,7 @@
 """
 PeeWee data models for RNA-Seq metadata and splice junctions.
 """
-from peewee import Proxy, Model, ForeignKeyField, IntegerField, CharField, TextField
+from peewee import Proxy, Model, PrimaryKeyField, ForeignKeyField, IntegerField, CharField, TextField
 from peewee import SqliteDatabase
 
 _database_proxy = Proxy()
@@ -23,13 +23,13 @@ class RunMetadata(Model):
     """Metadata associated with an RNA-Seq sequencing run.  This
     is obtained from source database (e.g. SRA)
     """
-    id = IntegerField(primary_key=True)
-    srcname = CharField(index=True,
-                        help_text="""name of source""")
-    acc = CharField(unique=True,
-                    help_text="""sequencing run accession""")
-    orgcode = CharField(index=True, max_length=2,
-                        help_text="""two-character organism code: 'hs' or 'mm'""")
+    id = PrimaryKeyField()
+    src_symid = CharField(index=True,
+                          help_text="""name of source (e.g. SRA)""")
+    run_acc = CharField(unique=True,
+                        help_text="""sequencing run accession""")
+    org_code = CharField(index=True, max_length=2,
+                         help_text="""two-character organism code: 'hs' or 'mm'""")
     tissue = CharField(null=True,
                        help_text="""Tissue or body site, if available.  This is not normalized and maybe hard to interpret.""")
 
@@ -39,11 +39,13 @@ class RunMetadata(Model):
 
 class MappingParameters(Model):
     """Mapping parameters, stored into a separate table due to use of same parameters for many runs"""
-    id = IntegerField(primary_key=True)
-    name = CharField(unique=True,
-                     help_text="""name of the parameter set""")
+    id = PrimaryKeyField()
+    mapping_param_symid = CharField(unique=True,
+                                    help_text="""symbolic name of the parameter set""")
+    assembly = CharField(help_text="""genome assemble""")
+    gene_set = CharField(help_text="""gene annotations used in mapping""")
     commands = TextField(help_text="""commands used to do mapping""")
-    annotations = CharField(help_text="""gene annotations used in mapping""")
+    comments = TextField(help_text="""comments""")
 
     class Meta:
         database = _database_proxy
@@ -52,20 +54,22 @@ class MappingParameters(Model):
 class MappingMetadata(Model):
     """Metadata associated with of an RNA-Seq mapping and splice junction STAR run.
     """
-    id = IntegerField(primary_key=True)
+    id = PrimaryKeyField()
     run_metadata_id = ForeignKeyField(RunMetadata,
                                       help_text="""sequencing run metadata""")
-    name = CharField(unique=True,
-                     help_text="""name of the mapping, this is defined locally""")
-    acc = CharField(unique=True, null=True,
-                    help_text="""mapping analysis accession, only available if results have been submitted to an archive""")
+    mapping_symid = CharField(unique=True,
+                              help_text="""symbolic name of the mapping, this is defined locally""")
+    mapping_acc = CharField(unique=True, null=True,
+                            help_text="""mapping analysis accession, only available if results have been submitted to an archive""")
     mapping_parameters_id = ForeignKeyField(MappingParameters,
                                             help_text="""parameters used in mapping""")
 
+    class Meta:
+        database = _database_proxy
 
 class PutativeIntron(Model):
     """Location of a putative intron"""
-    id = IntegerField(primary_key=True)
+    id = PrimaryKeyField()
     bin = IntegerField(index=True,
                        help_text="""spacial indexing bin""")
     chrom = CharField(index=True,
@@ -73,7 +77,7 @@ class PutativeIntron(Model):
     start = IntegerField(index=True,
                          help_text="""zero-based, half-open start of intron""")
     end = IntegerField(help_text="""zero-based, half-open end of intron""")
-    strand = CharField(help_text="""apparent strand (`. if undefined)""")
+    strand = CharField(help_text="""apparent strand (`.' if undefined)""")
     motif = CharField(help_text="""motif for intron (??/?? for non-canonical)""")
 
     class Meta:
@@ -82,7 +86,7 @@ class PutativeIntron(Model):
 
 class SpliceJuncSupport(Model):
     """support for a splice junction from a STAR run"""
-    id = IntegerField(primary_key=True)
+    id = PrimaryKeyField()
     mapping_metadata_id = ForeignKeyField(MappingMetadata,
                                           help_text="""metadata describing mapping""")
     putative_intron_id = ForeignKeyField(PutativeIntron,

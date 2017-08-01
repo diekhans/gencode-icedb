@@ -1,4 +1,4 @@
-sjout	recordcnt
-set1.hs.SRR1700176.sjout	52
-set1.hs.SRR3555865.sjout	28
-set1.hs.SRR4055854.sjout	8
+run_acc	mapping_param_symid	mapping_symid	sjout
+SRR1700176	czi_human	czi-hs-SRR1700176	set1.hs.SRR1700176.sjout
+SRR3555865	czi_human	czi-hs-SRR3555865	set1.hs.SRR3555865.sjout
+SRR4055854	czi_human	czi-hs-SRR4055854	set1.hs.SRR4055854.sjout

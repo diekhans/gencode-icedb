@@ -4,68 +4,96 @@ from __future__ import print_function
 import icedbProgSetup  # noqa: F401
 import sys
 import argparse
-from gencode_icedb.rsl.dbModel import setDatabaseConn, RunMetadata
-from peewee import SqliteDatabase
+from gencode_icedb.rsl.rslModel import sqliteConnect, RunMetadata, MappingMetadata, MappingParameters, SpliceJuncSupport
+from gencode_icedb.rsl.rslModelCache import MappingParametersCache, PutativeIntronCache
+from gencode_icedb.rsl.starResultsDir import StarMappingParameters, StarResultsDir
+from gencode_icedb.rsl import starOps
 from pycbio.sys import loggingOps
-from pycbio.tsv import TsvReader
+from pycbio.tsv import TabFile
+
 
 bulk_size = 5120   # size of each bulk insert
 
 
 def parseArgs():
-    desc = """Load putative introns from STAR splice junctions into the database.
-    This must be done before loaded the actual SJ structures.
+    desc = """Load introns support from STAR splice junctions into the database.
     """
     parser = argparse.ArgumentParser(description=desc)
     loggingOps.addCmdOptions(parser)
-    parser.add_argument('--srcname', default="SRA",
-                        help="""source name to use in records""")
     parser.add_argument('rsldb',
                         help="""sqllite3 database, tables are created as needed""")
-    parser.add_argument('runinfoTsv',
-                        help="""SRA runinfo TSV (see rslSraRunInfoFilter program)""")
+    parser.add_argument("mappingParamsTsv",
+                        help="""mapping parameters TSV""")
+    parser.add_argument('starResultsDirTsv',
+                        help="""TSV file with column `sjout', which has the path to the splice junction file, which maybe compressed."""
+                        """The path is relative to the directory containing starResultsTsv""")
     opts = parser.parse_args()
     loggingOps.setupFromCmd(opts, sys.argv[0])
     return opts
 
 
-def orgToOrgCode(org):
-    if org == "Homo sapiens":
-        return "hs"
-    elif org.startswith("Mus musculus"):
-        return "mm"
-    else:
-        raise Exception("unsupported organism: {}".format(org))
+def dbLoadMappingParameters(dbconn, mappingParamsTsv):
+    """load mapping parameters into database if they don't already exist,
+    return cache of MappingParameters objects."""
+    MappingParameters.create_table(fail_silently=True)
+    mappingParamsCache = MappingParametersCache()
+    with dbconn.atomic():
+        StarMappingParameters(mappingParamsTsv).updateDatabase(mappingParamsCache)
+    return mappingParamsCache
 
 
-def noneIfEmpty(s):
-    return s if len(s) > 0 else None
+def createMappingMetadata(starResult, mappingParams):
+    runMetadata = RunMetadata.get(run_acc=starResult.run_acc)
+    mappingMetadata = MappingMetadata(run_metadata_id=runMetadata.id,
+                                      mapping_symid=starResult.mapping_symid,
+                                      mapping_parameters_id=mappingParams.id)
+    mappingMetadata.save()
+    return mappingMetadata
 
 
-def makeRunMetaRec(srcname, row):
-    return {"srcname": srcname,
-            "acc": row.Run,
-            "orgcode": orgToOrgCode(row.ScientificName),
-            "tissue": noneIfEmpty(row.Body_Site)}
+def starOutToSjSupportDict(sjOutRow, mappingMetadata, pintronCache):
+    "construct dict for bulk insert"
+    pintron = pintronCache.fetchByLoc(sjOutRow.chrom, sjOutRow.start - 1, sjOutRow.end,
+                                      starOps.starStrandCodeToChar(sjOutRow.strand))
+    return {"mapping_metadata_id": mappingMetadata.id,
+            "putative_intron_id": pintron.id,
+            "annotated": sjOutRow.annotated,
+            "num_uniq_reads": sjOutRow.num_uniq_reads,
+            "num_multi_reads": sjOutRow.num_multi_reads,
+            "max_overhang": sjOutRow.max_overhang}
 
 
-def readRunInfo(srcname, runinfoTsv):
-    "load RunMetadata fields for bulk load"
-    return [makeRunMetaRec(srcname, row) for row in TsvReader(runinfoTsv)]
+def starSjOutToSjSupportDicts(sjOutFile, mappingMetadata, pintronCache):
+    "build dict for all rows for bulk insert"
+    return [starOutToSjSupportDict(sjOutRow, mappingMetadata, pintronCache)
+            for sjOutRow in TabFile(sjOutFile, rowClass=starOps.StarSjOutRow.factory)]
 
 
 def dbLoad(dbconn, recs):
     with dbconn.atomic():
         for idx in xrange(0, len(recs), bulk_size):
-            RunMetadata.insert_many(recs[idx:idx + bulk_size]).execute()
+            SpliceJuncSupport.insert_many(recs[idx:idx + bulk_size]).execute()
+
+
+def dbLoadSjSupport(dbconn, starResult, mappingParamsCache, pintronCache):
+    """Load sjout files from one STAR run.  This can run in another
+    multiprocessing process"""
+    mappingParams = mappingParamsCache.fetchBySymId(starResult.mapping_param_symid)
+    mappingMetadata = createMappingMetadata(starResult, mappingParams)
+    sjSupportsDicts = starSjOutToSjSupportDicts(starResult.sjoutPath, mappingMetadata, pintronCache)
+    dbLoad(dbconn, sjSupportsDicts)
 
 
 def rslSraRunInfoDbLoad(opts):
-    recs = readRunInfo(opts.srcname, opts.runinfoTsv)
-    dbconn = SqliteDatabase(opts.rsldb)
-    setDatabaseConn(dbconn)
-    RunMetadata.create_table(fail_silently=True)
-    dbLoad(dbconn, recs)
+    dbconn = sqliteConnect(opts.rsldb)
+    mappingParamsCache = dbLoadMappingParameters(dbconn, opts.mappingParamsTsv)
+    starResultsDir = StarResultsDir(opts.starResultsDirTsv)
+    pintronCache = PutativeIntronCache(dbconn)  # load all into memory
+    MappingMetadata.create_table(fail_silently=True)
+    SpliceJuncSupport.create_table(fail_silently=True)
+
+    for starResult in starResultsDir:
+        dbLoadSjSupport(dbconn, starResult, mappingParamsCache, pintronCache)
 
 
 rslSraRunInfoDbLoad(parseArgs())

@@ -1,0 +1,2 @@
+mapping_param_symid	assembly	gene_set	commands	comments
+czi_human	GRCh38	hg38-plus	--outFilterType BySJout --outFilterMultimapNmax 20 --alignSJoverhangMin 8 --alignSJDBoverhangMin 1 --outFilterMismatchNmax 999 --outFilterMismatchNoverLmax 0.04 --alignIntronMin 20 --alignIntronMax 1000000 --alignMatesGapMax 1000000 --outSAMstrandField intronMotif --outSAMtype BAM Unsorted --outSAMattributes NH HI NM MD --genomeLoad LoadAndKeep --outReadsUnmapped Fastx --readFilesCommand zcat	provided by CZI

@@ -23,14 +23,19 @@ def parseArgs():
     parser.add_argument("--tsv", action="store_true", default=False,
                         help="input is a TSV instead of CVS")
     parser.add_argument("--gtex", action="store_true", default=False,
-                        help="output GTEx rows instead of public ones")
+                        help="output GTEx rows, default is only public")
+    parser.add_argument("--public", action="store_true", default=False,
+                        help="output public rows, specify with --gtex to get both")
     parser.add_argument("--selectSubsetTsv", action="store", default=None,
-                        help="""TSV file with column `Run' to specify subset of records to obtain. Error if all are not found.""")
+                        help="""TSV file with column `run_acc' to specify subset of records to obtain. Error if all are not found.""")
     parser.add_argument("inCsv",
                         help="input CSV (or TSV if --tsv is specified), maybe compressed")
     parser.add_argument("outTsv",
                         help="output TSV, may have compression extensions")
-    return parser.parse_args()
+    opts = parser.parse_args()
+    if not (opts.gtex or opts.public):
+        opts.public = True
+    return opts
 
 
 pipelineHeader = ("ProjectID", "Run", "LibraryLayout")
@@ -44,33 +49,41 @@ minRunLength = 40
 
 
 def loadSelectSubset(selectSubsetTsv):
-    return frozenset([row.Run for row in TsvReader(selectSubsetTsv)])
+    return frozenset([row.run_acc for row in TsvReader(selectSubsetTsv)])
 
 
-def publicRowFilter(row):
-    # avgLength of more than zero will check if for rows with no data
-    return ((int(row["avgLength"]) >= minRunLength)
-            and (row["LibrarySource"] in sourceFilter)
-            and (row["LibraryStrategy"] in strategyFilter)
-            and (row["Consent"] in consentFilter)
-            and (row["Platform"] in platformFilter))
+class RowFilter(object):
+    def __init__(self, public, gtex, selectSubsetTsv):
+        self.public = public
+        self.gtex = gtex
+        self.selectSubset = loadSelectSubset(selectSubsetTsv) if selectSubsetTsv is not None else None
+
+    @staticmethod
+    def __publicRowFilter(row):
+        # avgLength of more than zero will check if for rows with no data
+        return ((int(row["avgLength"]) >= minRunLength)
+                and (row["LibrarySource"] in sourceFilter)
+                and (row["LibraryStrategy"] in strategyFilter)
+                and (row["Consent"] in consentFilter)
+                and (row["Platform"] in platformFilter))
+
+    @staticmethod
+    def __gtexRowFilter(row):
+        # avgLength check is for rows with no data
+        return ((int(row["avgLength"]) > 0)
+                and (row["SRAStudy"] == gtexStudy))
+
+    def __call__(self, row):
+        return (((self.public and self.__publicRowFilter(row))
+                 or (self.gtex and self.__gtexRowFilter(row)))
+                and ((self.selectSubset is None) or (row["Run"] in self.selectSubset)))
 
 
-def gtexRowFilter(row):
-    # avgLength check if for rows with no data
-    return ((int(row["avgLength"]) > 0)
-            and (row["SRAStudy"] == gtexStudy))
-
-
-def keepRow(rowFilter, selectSubset, row):
-    return rowFilter(row) and ((selectSubset is None) or (row["Run"] in selectSubset))
-
-
-def filterTsv(rowFilter, selectSubset, csvReader, tsvWriter):
+def filterTsv(rowFilter, csvReader, tsvWriter):
     selectedRuns = set()
     tsvWriter.writeheader()
     for row in csvReader:
-        if keepRow(rowFilter, selectSubset, row):
+        if rowFilter(row):
             tsvWriter.writerow(row)
             selectedRuns.add(row["Run"])
     return selectedRuns
@@ -83,18 +96,17 @@ def checkForMissingSubset(selectSubset, selectedRuns):
 
 
 def rslSraRunInfoFilter(opts):
-    selectSubset = loadSelectSubset(opts.selectSubsetTsv) if opts.selectSubsetTsv is not None else None
-    rowFilter = gtexRowFilter if opts.gtex else publicRowFilter
+    rowFilter = RowFilter(opts.public, opts.gtex, opts.selectSubsetTsv)
     with fileOps.opengz(opts.inCsv) as csvFh:
         csvReader = csv.DictReader(csvFh, dialect=csv.excel if not opts.tsv else csv.excel_tab)
         fields = csvReader.fieldnames if opts.full else pipelineHeader
         with fileOps.opengz(opts.outTsv, "w") as tsvFh:
             tsvWriter = csv.DictWriter(tsvFh, fields, dialect=csv.excel_tab, quoting=csv.QUOTE_MINIMAL,
                                        extrasaction="ignore", lineterminator="\n")
-            selectedRuns = filterTsv(rowFilter, selectSubset, csvReader, tsvWriter)
+            selectedRuns = filterTsv(rowFilter, csvReader, tsvWriter)
 
-    if selectSubset is not None:
-        checkForMissingSubset(selectSubset, selectedRuns)
+    if rowFilter.selectSubset is not None:
+        checkForMissingSubset(rowFilter.selectSubset, selectedRuns)
 
 
 rslSraRunInfoFilter(parseArgs())

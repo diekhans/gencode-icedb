@@ -6,8 +6,8 @@ import sys
 import os
 import argparse
 from collections import namedtuple
-from gencode_icedb.rsl.dbModel import sqliteConnect, PutativeIntron
-from gencode_icedb.rsl.dbModelCache import PutativeIntronCache
+from gencode_icedb.rsl.rslModel import sqliteConnect, PutativeIntron
+from gencode_icedb.rsl.rslModelCache import PutativeIntronCache
 from gencode_icedb.rsl.starResultsDir import StarResultsDir
 from gencode_icedb.rsl import starOps
 from pycbio.tsv import TabFileReader

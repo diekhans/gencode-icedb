@@ -4,7 +4,7 @@ from __future__ import print_function
 import icedbProgSetup  # noqa: F401
 import sys
 import argparse
-from gencode_icedb.rsl.dbModel import sqliteConnect, RunMetadata
+from gencode_icedb.rsl.rslModel import sqliteConnect, RunMetadata
 from pycbio.sys import loggingOps
 from pycbio.tsv import TsvReader
 
@@ -16,7 +16,7 @@ def parseArgs():
     """
     parser = argparse.ArgumentParser(description=desc)
     loggingOps.addCmdOptions(parser)
-    parser.add_argument('--srcname', default="SRA",
+    parser.add_argument('--srcsymid', default="SRA",
                         help="""source name to use in records""")
     parser.add_argument('rsldb',
                         help="""sqllite3 database, tables are created as needed""")
@@ -40,16 +40,16 @@ def noneIfEmpty(s):
     return s if len(s) > 0 else None
 
 
-def makeRunMetaRec(srcname, row):
-    return {"srcname": srcname,
-            "acc": row.Run,
-            "orgcode": orgToOrgCode(row.ScientificName),
+def makeRunMetaRec(srcsymid, row):
+    return {"src_symid": srcsymid,
+            "run_acc": row.Run,
+            "org_code": orgToOrgCode(row.ScientificName),
             "tissue": noneIfEmpty(row.Body_Site)}
 
 
-def readRunInfo(srcname, runinfoTsv):
+def readRunInfo(srcsymid, runinfoTsv):
     "load RunMetadata fields for bulk load"
-    return [makeRunMetaRec(srcname, row) for row in TsvReader(runinfoTsv)]
+    return [makeRunMetaRec(srcsymid, row) for row in TsvReader(runinfoTsv)]
 
 
 def dbLoad(dbconn, recs):
@@ -59,7 +59,7 @@ def dbLoad(dbconn, recs):
 
 
 def rslSraRunInfoDbLoad(opts):
-    recs = readRunInfo(opts.srcname, opts.runinfoTsv)
+    recs = readRunInfo(opts.srcsymid, opts.runinfoTsv)
     dbconn = sqliteConnect(opts.rsldb)
     RunMetadata.create_table(fail_silently=True)
     dbLoad(dbconn, recs)

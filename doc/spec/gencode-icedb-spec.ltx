@@ -98,6 +98,28 @@ https://bioconductor.org/packages/release/bioc/html/SRAdb.html
 
 http://metasra.biostat.wisc.edu/ (uses SRAmetadb) [only human]
 
+Loading STAR splice junction information:
+\item Obtain SRA runinfo CVS from the SRA browser.
+\item Filter SRA runinfo using \texttt{rslSraRunInfoFilter --full} to obtain
+  run information.  You may need to filter using the \texttt{--selectSubsetTsv}
+  option.
+\item Create a STAR results directory TSV file.  This list STAR sjout files,
+  relative to the TSV file.  It maps them to run accessions and assigns unique
+  names.  See \texttt{lib/gencode_icedb/rsl/starResultsDir.py} for definition of
+  columns
+\item Create a mapping parameters TSV file (see \texttt{starResultsDir.py}), that defines
+  mapping parameters for STAR results.
+\item Load run info into database using \texttt{rslSraRunInfoDbLoad}.
+\item Load putative intron information into database using \texttt{rslStarIntronDbLoad}.
+  This can be repeated for new data, only new putative introns definitions are
+  added.
+\item Load splice junction intron support with \texttt{rslStarSjSupportDbLoad}.
+
+  
+Notes
+\item By loading introns in a separate step, primary keys are defined in advance,
+  aand locality of introns is improved.
+
 \fi
 \iffalse
 - md5 for versions

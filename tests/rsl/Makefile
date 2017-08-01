@@ -17,6 +17,7 @@ rslSjCollectEvidence = ${binDir}/rslSjCollectEvidence
 rslSraRunInfoFilter = ${binDir}/rslSraRunInfoFilter
 rslSraRunInfoDbLoad = ${binDir}/rslSraRunInfoDbLoad
 rslStarIntronDbLoad = ${binDir}/rslStarIntronDbLoad
+rslStarSjSupportDbLoad = ${binDir}/rslStarSjSupportDbLoad
 
 diff = diff -u
 
@@ -50,34 +51,51 @@ sraRunInfoFilterMissingTest: mkdirs
 	if ${rslSraRunInfoFilter} --selectSubsetTsv=input/runinfo.hs.missing.tsv input/runinfo.hs.csv output/$@.tsv 2>output/$@.err ; then echo "expected failure" >&2; exit 1 ; fi
 	${diff} expected/$@.err output/$@.err
 
-
 ##
 # loading of database
-##
-dbLoadTests: sraRunInfoDbLoad1Test starIntronAllDbLoad starIntronIncrDbLoad
+##f
+dbLoadTests: sraRunInfoDbLoad1Test \
+		starIntronAllDbLoad \
+		starIntronIncrDbLoad \
+		starSjSupportFullLoadTest
+
+sqldumpcmd = sqlite3 -header -batch output/$@.db
+
+# call function with table as argument.
+sqldump = ${sqldumpcmd} 'select * from $(1)' > output/$@.$(1).tsv && ${diff} expected/$@.$(1).tsv output/$@.$(1).tsv
 
 # test loading run-info from SRA
 sraRunInfoDbLoad1Test: mkdirs
 	rm -f output/$@.db
 	${rslSraRunInfoDbLoad} output/$@.db input/set1.hs.run-info.tsv
-	sqlite3 -header -batch output/$@.db 'select * from RunMetadata' > output/$@.tsv
-	${diff} expected/$@.tsv output/$@.tsv
+	$(call sqldump,RunMetadata)
 
 # tests loading STAR introns, all at once and incrementally
 starIntronAllDbLoad: mkdirs
 	rm -f output/$@.db
 	${rslStarIntronDbLoad} output/$@.db input/set1.hs.stardir.tsv
-	sqlite3 -header -batch output/$@.db 'select * from PutativeIntron' > output/$@.tsv
-	${diff} expected/$@.tsv output/$@.tsv
+	$(call sqldump,PutativeIntron)
 
 starIntronIncrDbLoad: mkdirs
 	rm -f output/$@.db
 	${rslStarIntronDbLoad} output/$@.db input/set1.hs.incr.stardir.tsv
-	sqlite3 -header -batch output/$@.db 'select * from PutativeIntron' > output/$@.part.tsv
+	${sqldumpcmd} 'select * from PutativeIntron' > output/$@.PutativeIntron.part.tsv
 	${rslStarIntronDbLoad} output/$@.db input/set1.hs.stardir.tsv
-	sqlite3 -header -batch output/$@.db 'select * from PutativeIntron' > output/$@.tsv
-	${diff} expected/$@.part.tsv output/$@.part.tsv
+	$(call sqldump,PutativeIntron) > output/$@.tsv
+	${diff} expected/$@.PutativeIntron.part.tsv output/$@.PutativeIntron.part.tsv
 
+
+# full load
+starSjSupportFullLoadTest: mkdirs
+	rm -f output/$@.db
+	${rslSraRunInfoDbLoad} output/$@.db input/set1.hs.run-info.tsv
+	${rslStarIntronDbLoad} output/$@.db input/set1.hs.stardir.tsv
+	${rslStarSjSupportDbLoad} output/$@.db input/set1.hs.mapping-params.tsv input/set1.hs.stardir.tsv
+	$(call sqldump,MappingMetadata)
+	$(call sqldump,PutativeIntron)
+	$(call sqldump,SpliceJuncSupport)
+	$(call sqldump,MappingParameters)
+	$(call sqldump,RunMetadata)
 
 
 ## FIXME: most below will go away
