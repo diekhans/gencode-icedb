@@ -12,15 +12,26 @@ def setDatabaseConn(dbconn):
     _database_proxy.initialize(dbconn)
 
 
-def sqliteConnect(rsldb, timeout=None):
+def sqliteConnect(rsldb, readonly=False, timeout=None, synchronous=None):
     "connect to sqlite3 database and bind to model"
     kwargs = {}
     if timeout is not None:
         kwargs["timeout"] = timeout
+    if readonly:
+        kwargs["flags"] = apsw.SQLITE_OPEN_READONLY
     dbconn = APSWDatabase(rsldb, **kwargs)
     setDatabaseConn(dbconn)
+    if synchronous is not None:
+        sqliteSetSynchronous(dbconn, synchronous)
     return dbconn
 
+
+def sqliteSetSynchronous(dbconn, mode):
+    if mode == False:
+        mode = "OFF"
+    elif mode == True:
+        mode = "NORMAL"
+    dbconn.execute_sql("PRAGMA synchronous={}".format(mode))
 
 class RunMetadata(Model):
     """Metadata associated with an RNA-Seq sequencing run.  This
