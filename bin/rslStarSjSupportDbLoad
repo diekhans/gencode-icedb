@@ -90,7 +90,7 @@ class SjSupportLoader(object):
 
 
 def rslStarSjSupportDbLoad(opts):
-    dbconn = sqliteConnect(opts.rsldb, synchronous=False)
+    dbconn = sqliteConnect(opts.rsldb)
     mappingParamsCache = dbLoadMappingParameters(dbconn, opts.mappingParamsTsv)
     starResultsDir = StarResultsDir(opts.starResultsDirTsv)
     pintronCache = PutativeIntronCache(dbconn)  # load all into memory

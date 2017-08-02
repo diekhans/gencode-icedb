@@ -102,7 +102,7 @@ def dbLoad(dbconn, recs):
 
 def rslStarIntronDbLoad(opts):
     starResultsDir = StarResultsDir(opts.starResultsDirTsv)
-    dbconn = sqliteConnect(opts.rsldb, synchronous=False)
+    dbconn = sqliteConnect(opts.rsldb)
     PutativeIntron.create_table(fail_silently=True)
     pintronCache = PutativeIntronCache(dbconn)
     tmpIntronFile = mkUniqueIntrons(starResultsDir)

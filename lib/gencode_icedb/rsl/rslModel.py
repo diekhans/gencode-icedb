@@ -3,6 +3,7 @@ PeeWee data models for RNA-Seq metadata and splice junctions.
 """
 from peewee import Proxy, Model, PrimaryKeyField, ForeignKeyField, IntegerField, CharField, TextField
 from playhouse.apsw_ext import APSWDatabase
+import apsw
 
 _database_proxy = Proxy()
 
@@ -27,11 +28,12 @@ def sqliteConnect(rsldb, readonly=False, timeout=None, synchronous=None):
 
 
 def sqliteSetSynchronous(dbconn, mode):
-    if mode == False:
+    if mode is False:
         mode = "OFF"
-    elif mode == True:
+    elif mode is True:
         mode = "NORMAL"
     dbconn.execute_sql("PRAGMA synchronous={}".format(mode))
+
 
 class RunMetadata(Model):
     """Metadata associated with an RNA-Seq sequencing run.  This
