@@ -57,9 +57,12 @@ def mkUniqueIntrons(starResultsDir):
             ("cut", "-f", "1-5"),
             ("sort", "-u", "-k1,1", "-k2,2n", "-k3,3n", "-k4,4n", "-k5,5n")]
     intronSortFh = pipettor.Popen(cmds, "w", stdout=tmpIntronFile)
-    for sr in starResultsDir:
-        print(sr.sjoutPath, file=intronSortFh)
-    intronSortFh.close()
+    try:
+        for sr in starResultsDir:
+            print(sr.sjoutPath, file=intronSortFh)
+    finally:
+        # this will raise error from pipeline
+        intronSortFh.close()
     return tmpIntronFile
 
 
