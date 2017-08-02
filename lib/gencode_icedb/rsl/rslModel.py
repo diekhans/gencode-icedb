@@ -2,7 +2,7 @@
 PeeWee data models for RNA-Seq metadata and splice junctions.
 """
 from peewee import Proxy, Model, PrimaryKeyField, ForeignKeyField, IntegerField, CharField, TextField
-from peewee import SqliteDatabase
+from playhouse.apsw_ext import APSWDatabase
 
 _database_proxy = Proxy()
 
@@ -17,7 +17,7 @@ def sqliteConnect(rsldb, timeout=None):
     kwargs = {}
     if timeout is not None:
         kwargs["timeout"] = timeout
-    dbconn = SqliteDatabase(rsldb, **kwargs)
+    dbconn = APSWDatabase(rsldb, **kwargs)
     setDatabaseConn(dbconn)
     return dbconn
 
