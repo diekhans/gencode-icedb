@@ -61,5 +61,6 @@ struct rslAnalysisSet *rslAnalysisSetLoad(char *tsvFile,
         loadRslAnalysis(rslAnalysisSet, tsvFile, row[0], row[1], row[2]);
     }
     slReverse(&rslAnalysisSet->analyses);
+    lineFileClose(&lf);
     return rslAnalysisSet;
 }

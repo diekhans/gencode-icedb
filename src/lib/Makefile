@@ -1,6 +1,6 @@
 ROOT = ../..
 
-LIB_MODS =  intronMap starSpliceJunction rslAnalysisSet sqliteEz
+LIB_MODS =  intronMap starResultsDir starSpliceJunction rslAnalysisSet sqliteEz
 
 include ${ROOT}/config.mk
 

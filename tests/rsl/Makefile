@@ -19,12 +19,15 @@ rslSraRunInfoDbLoad = ${binDir}/rslSraRunInfoDbLoad
 rslStarIntronDbLoad = ${binDir}/rslStarIntronDbLoad
 rslStarSjSupportDbLoad = ${binDir}/rslStarSjSupportDbLoad
 
+rslStarSjOutSplit = ${binDir}/rslStarSjOutSplit
+
+
 diff = diff -u
 
 .SECONDARY:
 
 
-test: dataConvertTests dbLoadTests
+test: dataConvertTests dbLoadTests sjsupBuildTests
 
 ##
 # conversion of data
@@ -97,6 +100,25 @@ starSjSupportFullLoadTest: mkdirs
 	$(call sqldump,MappingParameters)
 	$(call sqldump,RunMetadata)
 
+
+##
+# build of tabix database
+##
+sjsupBuildTests: sjoutSplitTest \
+		sjoutSplitSomeTest
+
+# md5 is saved to avoid having lots of expected files
+sjoutSplitTest: mkdirs
+	rm -rf output/$@.split
+	${rslStarSjOutSplit} input/set1.hs.stardir.tsv output/$@.split
+	openssl md5 output/$@.split/*/*.sjsup > output/$@.md5
+	${diff} expected/$@.md5 output/$@.md5
+
+sjoutSplitSomeTest: mkdirs
+	rm -rf output/$@.split
+	${rslStarSjOutSplit} -startDirLine=1 -endDirLine=2 input/set1.hs.stardir.tsv output/$@.split
+	openssl md5 output/$@.split/*/*.sjsup > output/$@.md5
+	${diff} expected/$@.md5 output/$@.md5
 
 ## FIXME: most below will go away
 

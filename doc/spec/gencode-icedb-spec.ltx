@@ -118,22 +118,22 @@ Loading STAR splice junction information:
   
 Notes
 \item By loading introns in a separate step, primary keys are defined in advance,
-  aand locality of introns is improved.
+  and locality of introns is improved.
 
+above is way too slow
+
+\item Split all STAR splice junction files by chromosome, adding mapping
+  metadata symbolic ids to each row and converting to zero-based coordinates.
+\item Merge each per-chromosomes into a single file.  Since each file is
+  already sorted within a chromosome, the merge can be done with a hierarchical
+  series of UNIX \texttt{sort} command merge runs.
+\item Concatenate all per-chromosomes splice-junction files, in chromosome
+  sorted order, into a single file and \texttt{bgzip} it.  Chromosome sorted order
+  is required for \texttt{tabix}
+
+  
 \fi
 \iffalse
-- md5 for versions
-ORM:
-  - hybernate hannes - more active
-  - open jpa
-- lowtech ORM
-
-   - spring DAO - 
-http://stackoverflow.com/questions/296587/light-weight-alternative-to-hibernate
-http://stackoverflow.com/questions/9665036/alternatives-to-hibernate
-http://ormlite.com/
-http://sourceforge.net/projects/sormula/
-
 how to detect:
   ENST00000359597.4 (TP53)
   ENST00000413465.2 (TP53)

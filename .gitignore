@@ -10,3 +10,4 @@ bin/faUcscToGencode
 bin/genePredIntrons
 bin/tslGetUcscRnaAligns
 bin/rslSpliceJunctionCollectEvidence
+bin/rslStarSjOutSplit
