@@ -81,7 +81,7 @@ starIntronIncrDbLoad: mkdirs
 	${rslStarIntronDbLoad} output/$@.db input/set1.hs.incr.stardir.tsv
 	${sqldumpcmd} 'select * from PutativeIntron' > output/$@.PutativeIntron.part.tsv
 	${rslStarIntronDbLoad} output/$@.db input/set1.hs.stardir.tsv
-	$(call sqldump,PutativeIntron) > output/$@.tsv
+	$(call sqldump,PutativeIntron)
 	${diff} expected/$@.PutativeIntron.part.tsv output/$@.PutativeIntron.part.tsv
 
 
