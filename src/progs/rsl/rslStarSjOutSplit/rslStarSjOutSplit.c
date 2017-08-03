@@ -97,6 +97,7 @@ static void starSjOutSplit(struct starResults *starResults,
         }
         starSpliceJunctionFree(&sjout);
     }
+    lineFileClose(&lf);
     carefulClose(&chromOutFh);
 }
 
