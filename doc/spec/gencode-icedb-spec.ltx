@@ -102,7 +102,7 @@ Loading STAR splice junction information:
 \item Obtain SRA runinfo CVS from the SRA browser.
 \item Filter SRA runinfo using \texttt{rslSraRunInfoFilter --full} to obtain
   run information.  You may need to filter using the \texttt{--selectSubsetTsv}
-  option.
+  option for available runs.
 \item Create a STAR results directory TSV file.  This list STAR sjout files,
   relative to the TSV file.  It maps them to run accessions and assigns unique
   names.  See \texttt{lib/gencode_icedb/rsl/starResultsDir.py} for definition of
@@ -110,6 +110,20 @@ Loading STAR splice junction information:
 \item Create a mapping parameters TSV file (see \texttt{starResultsDir.py}), that defines
   mapping parameters for STAR results.
 \item Load run info into database using \texttt{rslSraRunInfoDbLoad}.
+
+\item FIXME: need to load mapping metadata 
+
+\item Split all STAR splice junction files by chromosome, adding mapping
+  metadata symbolic ids to each row and converting to zero-based coordinates.
+\item Merge each per-chromosomes into a single file.  Since each file is
+  already sorted within a chromosome, the merge can be done with a hierarchical
+  series of UNIX \texttt{sort} command merge runs.
+\item Concatenate all per-chromosomes splice-junction files, in chromosome
+  sorted order, into a single file and \texttt{bgzip} it.  Chromosome sorted order
+  is required for \texttt{tabix}
+
+
+
 \item Load putative intron information into database using \texttt{rslStarIntronDbLoad}.
   This can be repeated for new data, only new putative introns definitions are
   added.
@@ -121,15 +135,6 @@ Notes
   and locality of introns is improved.
 
 above is way too slow
-
-\item Split all STAR splice junction files by chromosome, adding mapping
-  metadata symbolic ids to each row and converting to zero-based coordinates.
-\item Merge each per-chromosomes into a single file.  Since each file is
-  already sorted within a chromosome, the merge can be done with a hierarchical
-  series of UNIX \texttt{sort} command merge runs.
-\item Concatenate all per-chromosomes splice-junction files, in chromosome
-  sorted order, into a single file and \texttt{bgzip} it.  Chromosome sorted order
-  is required for \texttt{tabix}
 
   
 \fi
