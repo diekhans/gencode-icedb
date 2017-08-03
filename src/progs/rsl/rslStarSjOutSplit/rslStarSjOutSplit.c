@@ -8,8 +8,8 @@
 #define CHROM_MAX 512
 
 static struct optionSpec optionSpecs[] = {
-    {"startDirLine", OPTION_INT},
-    {"endDirLine", OPTION_INT},
+    {"startDirRec", OPTION_INT},
+    {"endDirRec", OPTION_INT},
     {"minOverhang", OPTION_INT},
     {NULL, 0}
 };
@@ -28,10 +28,10 @@ static void usage(char *msg) {
         "    with file paths relative to location of list file.\n"
         "    A file header is skipped, but not used; columns must be in this order\n"
         "Options:\n"
-        "   -startDirLine=n - Zero based line number of the first line in starResultsDirTsv\n"
-        "    to process.  The TSV header is line zero.  If not specified, process all lines.\n"
+        "   -startDirRec=n - Zero based record number of the first line in starResultsDirTsv\n"
+        "    to process.  The TSV header is not include.  If not specified, process all lines.\n"
         "    Used to parallelize splitting.\n"
-        "   -endDirLine=n - Half-open line number of the last line in starResultsDirTsv\n"
+        "   -endDirRec=n - Half-open record number of the last line in starResultsDirTsv\n"
         "    to process.\n"
         "   -minOverhang=n - minimum overhang for a STAR splice junction to include.\n"
         ;
@@ -104,19 +104,19 @@ static void starSjOutSplit(struct starResults *starResults,
 static void rslStarSjOutSplit(char* starResultsDirTsv,
                               char* chromOutDir,
                               int minOverhang,
-                              int startDirLine,
-                              int endDirLine) {
+                              int startDirRec,
+                              int endDirRec) {
     struct starResults *starResultsDir = starResultsDirLoad(starResultsDirTsv);
-    if (startDirLine < 0) {
+    if (startDirRec < 0) {
         // default to whole file
-        startDirLine = 1;  // skip header
-        endDirLine = slCount(starResultsDir) + 1;
+        startDirRec = 0;
+        endDirRec = slCount(starResultsDir);
     }
     makeDir(chromOutDir);
 
-    int iDirLine = 1; // header already skipped
+    int iDirLine = 0;
     for (struct starResults *starResults = starResultsDir; starResults != NULL; starResults = starResults->next) {
-        if ((startDirLine <= iDirLine) && (iDirLine < endDirLine)) {
+        if ((startDirRec <= iDirLine) && (iDirLine < endDirRec)) {
             starSjOutSplit(starResults, minOverhang, chromOutDir);
         }
         iDirLine++;
@@ -131,13 +131,13 @@ int main(int argc, char** argv) {
         usage("wrong # args");
     }
     int minOverhang = optionInt("minOverhang", 0);
-    if (optionExists("startDirLine") != optionExists("endDirLine")) {
-        errAbort("must specify either both or neither of -startDirLine and -endDirLine");
+    if (optionExists("startDirRec") != optionExists("endDirRec")) {
+        errAbort("must specify either both or neither of -startDirRec and -endDirRec");
     }
-    int startDirLine = optionInt("startDirLine", -1);
-    int endDirLine = optionInt("endDirLine", -1);
+    int startDirRec = optionInt("startDirRec", -1);
+    int endDirRec = optionInt("endDirRec", -1);
 
-    rslStarSjOutSplit(argv[1], argv[2], minOverhang, startDirLine, endDirLine);
+    rslStarSjOutSplit(argv[1], argv[2], minOverhang, startDirRec, endDirRec);
     return 0;
 }
 

@@ -20,7 +20,7 @@ rslStarIntronDbLoad = ${binDir}/rslStarIntronDbLoad
 rslStarSjSupportDbLoad = ${binDir}/rslStarSjSupportDbLoad
 
 rslStarSjOutSplit = ${binDir}/rslStarSjOutSplit
-
+rslMkStarSjOutSplits = ${binDir}/rslMkStarSjOutSplits
 
 diff = diff -u
 
@@ -108,6 +108,7 @@ starSjSupportFullLoadTest: mkdirs
 ##
 sjsupBuildTests: sjoutSplitTest \
 		sjoutSplitSomeTest
+		mkStarSplitsTest
 
 # md5 is saved to avoid having lots of expected files
 sjoutSplitTest: mkdirs
@@ -118,8 +119,14 @@ sjoutSplitTest: mkdirs
 
 sjoutSplitSomeTest: mkdirs
 	rm -rf output/$@.split
-	${rslStarSjOutSplit} -startDirLine=1 -endDirLine=2 input/set1.hs.stardir.tsv output/$@.split
+	${rslStarSjOutSplit} -startDirRec=0 -endDirRec=1 input/set1.hs.stardir.tsv output/$@.split
 	openssl md5 output/$@.split/*/*.sjsup > output/$@.md5
+	${diff} expected/$@.md5 output/$@.md5
+
+mkStarSplitsTest: mkdirs
+	rm -rf output/$@.mergework
+	${rslMkStarSjOutSplits} --numprocs=2 input/set1.hs.stardir.tsv output/$@.mergework
+	openssl md5 output/$@.mergework/byChrom/*/*.sjsup > output/$@.md5
 	${diff} expected/$@.md5 output/$@.md5
 
 ## FIXME: most below will go away
