@@ -107,7 +107,7 @@ starSjSupportFullLoadTest: mkdirs
 # build of tabix database
 ##
 sjsupBuildTests: sjoutSplitTest \
-		sjoutSplitSomeTest
+		sjoutSplitSomeTest \
 		mkStarSplitsTest
 
 # md5 is saved to avoid having lots of expected files
