@@ -113,5 +113,6 @@ def rslStarIntronDbLoad(opts):
     dbLoad(dbconn, recs)
     os.unlink(tmpIntronFile)
 
+os.environ["LC_ALL"] = "C"
 
 rslStarIntronDbLoad(parseArgs())

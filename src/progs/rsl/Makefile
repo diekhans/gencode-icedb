@@ -1,6 +1,7 @@
 ROOT = ../..
 
-SUBDIRS = spliceJunctionCollectEvidence
+SUBDIRS = spliceJunctionCollectEvidence \
+	rslStarSjOutSplit
 
 all: ${SUBDIRS:%=%.all}
 

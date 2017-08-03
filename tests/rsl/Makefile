@@ -24,6 +24,8 @@ rslStarSjOutSplit = ${binDir}/rslStarSjOutSplit
 
 diff = diff -u
 
+export LC_ALL=C
+
 .SECONDARY:
 
 
