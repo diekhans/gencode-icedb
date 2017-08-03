@@ -21,6 +21,7 @@ rslStarSjSupportDbLoad = ${binDir}/rslStarSjSupportDbLoad
 
 rslStarSjOutSplit = ${binDir}/rslStarSjOutSplit
 rslMkStarSjOutSplits = ${binDir}/rslMkStarSjOutSplits
+rslMkStarSjSupMergeJobs = ${binDir}/rslMkStarSjSupMergeJobs
 
 diff = diff -u
 
@@ -108,7 +109,8 @@ starSjSupportFullLoadTest: mkdirs
 ##
 sjsupBuildTests: sjoutSplitTest \
 		sjoutSplitSomeTest \
-		mkStarSplitsTest
+		mkStarSplitsTest \
+		mkStarMergeTest
 
 # md5 is saved to avoid having lots of expected files
 sjoutSplitTest: mkdirs
@@ -128,6 +130,16 @@ mkStarSplitsTest: mkdirs
 	${rslMkStarSjOutSplits} --numprocs=2 input/set1.hs.stardir.tsv output/$@.mergework
 	openssl md5 output/$@.mergework/byChrom/*/*.sjsup > output/$@.md5
 	${diff} expected/$@.md5 output/$@.md5
+
+# path in job file varies, just check for existance
+mkStarMergeTest: mkdirs
+	rm -rf output/$@.mergework
+	${rslMkStarSjOutSplits} --numprocs=2 input/set1.hs.stardir.tsv output/$@.mergework
+	${rslMkStarSjSupMergeJobs} output/$@.mergework
+	wc -l output/$@.mergework/*.merge.jobs > output/$@.jobs.cnt
+	${diff} expected/$@.jobs.cnt output/$@.jobs.cnt
+	bash -e output/mkStarMergeTest.mergework/000.merge.jobs
+	${diff} expected/$@.merged.sjsup output/mkStarMergeTest.mergework/000.merged/000.sjsup 
 
 ## FIXME: most below will go away
 

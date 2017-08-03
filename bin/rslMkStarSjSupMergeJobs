@@ -1,0 +1,63 @@
+#!/usr/bin/env python
+
+from __future__ import print_function
+import icedbProgSetup  # noqa: F401
+import os
+import sys
+import argparse
+import logging
+import glob
+from pycbio.sys import loggingOps, fileOps
+
+
+filesPerJob = 100
+rslStarSjSupMergeJob = os.path.join(icedbProgSetup.rootDir, "bin", "rslStarSjSupMergeJob")
+
+def parseArgs():
+    desc = """generate a series of parasol batches to merge splice split
+    splice junction files."""
+    parser = argparse.ArgumentParser(description=desc)
+    loggingOps.addCmdOptions(parser)
+    parser.add_argument('mergeWorkDir',
+                        help="""Directory for doing split and merge.  Chrom splits should be in mergeWorkDir/byChrom""")
+    opts = parser.parse_args()
+    loggingOps.setupFromCmd(opts, sys.argv[0])
+    return opts
+
+def getByChromSplits(byChromDir):
+    "return list of split sjsup files, in chrom sorted order"
+    sjsupSplits = []
+    for chromDir in glob.glob(os.path.join(byChromDir, "*")):
+        for sjsupSplit in glob.glob(os.path.join(chromDir, "*.sjsup")):
+            sjsupSplits.append(sjsupSplit)
+    if len(sjsupSplits) == 0:
+        exit("Error: no sjsup fies found in under: {}".format(byChromDir))
+    return sjsupSplits
+
+
+def writeMergeBatch(sjsupSplits, mergeBatchFh, mergeBatchDir):
+    sjsupMerges = []
+    iMerge = 0
+    for i in xrange(0, len(sjsupSplits), filesPerJob):
+        mergeJobOut = os.path.join(mergeBatchDir, "{:03}.sjsup".format(iMerge))
+        iMerge += 1
+        print(rslStarSjSupMergeJob, mergeJobOut, " ".join(sjsupSplits[i:filesPerJob]), file=mergeBatchFh)
+        sjsupMerges.append(mergeJobOut)
+    return sjsupMerges
+
+def mkMergeBatch(sjsupSplits, mergeBatchFile, mergeBatchDir):
+    """for a list of input files, generate a merge batch, return list of merge
+    output"""
+    with open(mergeBatchFile, "w") as mergeBatchFh:
+        return writeMergeBatch(sjsupSplits, mergeBatchFh, mergeBatchDir)
+
+def rslMkStarSjOutSplits(opts):
+    byChromDir = os.path.join(opts.mergeWorkDir, "byChrom")
+    sjsupSplits = getByChromSplits(byChromDir)
+    mergeBatchNum = 0
+    while len(sjsupSplits) > 1:
+        mergeBatchDir = os.path.join(opts.mergeWorkDir, "{:03}.merged".format(mergeBatchNum))
+        mergeBatchFile = os.path.join(opts.mergeWorkDir, "{:03}.merge.jobs".format(mergeBatchNum))
+        sjsupSplits = mkMergeBatch(sjsupSplits, mergeBatchFile, mergeBatchDir)
+
+rslMkStarSjOutSplits(parseArgs())

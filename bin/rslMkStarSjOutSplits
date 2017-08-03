@@ -55,7 +55,7 @@ def rslMkStarSjOutSplits(opts):
     starResultsDir = StarResultsDir(opts.starResultsDirTsv)
     byChromDir = os.path.join(opts.mergeWorkDir, "byChrom")
     if os.path.exists(byChromDir):
-        exit("chrome split directory should not exist: {}".format(byChromDir))
+        exit("Error: chrome split directory should not exist: {}".format(byChromDir))
     fileOps.ensureDir(opts.mergeWorkDir)
     procs = mkProcs(opts.starResultsDirTsv, len(starResultsDir), opts.numprocs,
                     byChromDir)
