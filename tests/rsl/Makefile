@@ -135,11 +135,10 @@ mkStarSplitsTest: mkdirs
 mkStarMergeTest: mkdirs
 	rm -rf output/$@.mergework
 	${rslMkStarSjOutSplits} --numprocs=2 input/set1.hs.stardir.tsv output/$@.mergework
-	${rslMkStarSjSupMergeJobs} output/$@.mergework
+	${rslMkStarSjSupMergeJobs} --filesPerJob=5 output/$@.mergework
 	wc -l output/$@.mergework/*.merge.jobs | tawko '{print $$2,$$1}' > output/$@.jobs.cnt
 	${diff} expected/$@.jobs.cnt output/$@.jobs.cnt
-	bash -e output/mkStarMergeTest.mergework/000.merge.jobs
-	bash -e output/mkStarMergeTest.mergework/001.merge.jobs
+	for j in output/mkStarMergeTest.mergework/*.merge.jobs ; do bash -e $$j ; done
 	${diff} expected/$@.merged.sjsup output/mkStarMergeTest.mergework/001.merged/000.sjsup 
 
 ## FIXME: most below will go away

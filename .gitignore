@@ -11,3 +11,5 @@ bin/genePredIntrons
 bin/tslGetUcscRnaAligns
 bin/rslSpliceJunctionCollectEvidence
 bin/rslStarSjOutSplit
+bin/getUcscRnaAligns
+bin/spliceJunctionCollectEvidence
