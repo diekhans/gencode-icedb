@@ -10,7 +10,8 @@ import glob
 from pycbio.sys import loggingOps, fileOps
 
 
-filesPerJob = 100
+filesPerJob = 25
+maxParasolAddJobCmd = 1420
 rslStarSjSupMergeJob = os.path.join(icedbProgSetup.rootDir, "bin", "rslStarSjSupMergeJob")
 
 def parseArgs():
@@ -34,15 +35,42 @@ def getByChromSplits(byChromDir):
         exit("Error: no sjsup fies found in under: {}".format(byChromDir))
     return sjsupSplits
 
+def calcParaAddJobOverhead(mergeBatchDir):
+    """calculate the overhead of for a parasol addJob2 internal message"""
+    # overhead includs username current directory, the string "/dev/null" twiice
+    # and the path to the results file. This is a guess
+    return 200 + len(os.getcwd()) + len(mergeBatchDir)
+
+
+def writeMergeBatchJob(sjsupSplits, mergeBatchFh, mergeBatchDir, cmdOverhead, iSplit, iJob, sjsupMerges):
+    mergeJobOut = os.path.join(mergeBatchDir, "{:03}.sjsup".format(iJob))
+    cmd = [rslStarSjSupMergeJob, mergeJobOut]
+    cmdLen = cmdOverhead + sum(map(lambda w: len(w)+1, cmd))  # include space separator
+    fileCnt = 0
+    while (fileCnt < filesPerJob) and (iSplit < len(sjsupSplits)):
+        argLen = len(sjsupSplits[iSplit]) + 1
+        if cmdLen + argLen > maxParasolAddJobCmd:
+            break  # parasol max command length exceeded
+        cmd.append(sjsupSplits[iSplit])
+        cmdLen += argLen
+        iSplit += 1
+        fileCnt += 1
+        
+    if fileCnt == 0:
+        raise Exception("no file added to job, maybe paths exceed parasol max")
+    print(" ".join(cmd), file=mergeBatchFh)
+    sjsupMerges.append(mergeJobOut)
+    return iSplit
+
 
 def writeMergeBatch(sjsupSplits, mergeBatchFh, mergeBatchDir):
+    cmdOverhead = calcParaAddJobOverhead(mergeBatchDir)
     sjsupMerges = []
-    iMerge = 0
-    for i in xrange(0, len(sjsupSplits), filesPerJob):
-        mergeJobOut = os.path.join(mergeBatchDir, "{:03}.sjsup".format(iMerge))
-        iMerge += 1
-        print(rslStarSjSupMergeJob, mergeJobOut, " ".join(sjsupSplits[i:filesPerJob]), file=mergeBatchFh)
-        sjsupMerges.append(mergeJobOut)
+    iSplit = 0
+    iJob = 0
+    while iSplit < len(sjsupSplits):
+        iSplit = writeMergeBatchJob(sjsupSplits, mergeBatchFh, mergeBatchDir, cmdOverhead, iSplit, iJob, sjsupMerges)
+        iJob += 1
     return sjsupMerges
 
 def mkMergeBatch(sjsupSplits, mergeBatchFile, mergeBatchDir):
@@ -59,5 +87,6 @@ def rslMkStarSjOutSplits(opts):
         mergeBatchDir = os.path.join(opts.mergeWorkDir, "{:03}.merged".format(mergeBatchNum))
         mergeBatchFile = os.path.join(opts.mergeWorkDir, "{:03}.merge.jobs".format(mergeBatchNum))
         sjsupSplits = mkMergeBatch(sjsupSplits, mergeBatchFile, mergeBatchDir)
+        mergeBatchNum += 1
 
 rslMkStarSjOutSplits(parseArgs())

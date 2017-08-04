@@ -139,7 +139,8 @@ mkStarMergeTest: mkdirs
 	wc -l output/$@.mergework/*.merge.jobs | tawko '{print $$2,$$1}' > output/$@.jobs.cnt
 	${diff} expected/$@.jobs.cnt output/$@.jobs.cnt
 	bash -e output/mkStarMergeTest.mergework/000.merge.jobs
-	${diff} expected/$@.merged.sjsup output/mkStarMergeTest.mergework/000.merged/000.sjsup 
+	bash -e output/mkStarMergeTest.mergework/001.merge.jobs
+	${diff} expected/$@.merged.sjsup output/mkStarMergeTest.mergework/001.merged/000.sjsup 
 
 ## FIXME: most below will go away
 
