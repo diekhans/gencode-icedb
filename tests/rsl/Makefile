@@ -16,8 +16,10 @@ rslSjCollectEvidence = ${binDir}/rslSjCollectEvidence
 
 rslSraRunInfoFilter = ${binDir}/rslSraRunInfoFilter
 rslSraRunInfoDbLoad = ${binDir}/rslSraRunInfoDbLoad
-rslStarIntronDbLoad = ${binDir}/rslStarIntronDbLoad
-rslStarSjSupportDbLoad = ${binDir}/rslStarSjSupportDbLoad
+rslMappingMetadataDbLoad = ${binDir}/rslMappingMetadataDbLoad
+
+#rslStarIntronDbLoad = ${binDir}/rslStarIntronDbLoad
+#rslStarSjSupportDbLoad = ${binDir}/rslStarSjSupportDbLoad
 
 rslStarSjOutSplit = ${binDir}/rslStarSjOutSplit
 rslMkStarSjOutSplits = ${binDir}/rslMkStarSjOutSplits
@@ -61,9 +63,7 @@ sraRunInfoFilterMissingTest: mkdirs
 # loading of database
 ##f
 dbLoadTests: sraRunInfoDbLoad1Test \
-		starIntronAllDbLoad \
-		starIntronIncrDbLoad \
-		starSjSupportFullLoadTest
+		mappingMetadataDbLoadTest
 
 sqldumpcmd = sqlite3 -header -batch output/$@.db
 
@@ -76,33 +76,13 @@ sraRunInfoDbLoad1Test: mkdirs
 	${rslSraRunInfoDbLoad} output/$@.db input/set1.hs.run-info.tsv
 	$(call sqldump,RunMetadata)
 
-# tests loading STAR introns, all at once and incrementally
-starIntronAllDbLoad: mkdirs
-	rm -f output/$@.db
-	${rslStarIntronDbLoad} output/$@.db input/set1.hs.stardir.tsv
-	$(call sqldump,PutativeIntron)
-
-starIntronIncrDbLoad: mkdirs
-	rm -f output/$@.db
-	${rslStarIntronDbLoad} output/$@.db input/set1.hs.incr.stardir.tsv
-	${sqldumpcmd} 'select * from PutativeIntron' > output/$@.PutativeIntron.part.tsv
-	${rslStarIntronDbLoad} output/$@.db input/set1.hs.stardir.tsv
-	$(call sqldump,PutativeIntron)
-	${diff} expected/$@.PutativeIntron.part.tsv output/$@.PutativeIntron.part.tsv
-
-
-# full load
-starSjSupportFullLoadTest: mkdirs
+mappingMetadataDbLoadTest: mkdirs
 	rm -f output/$@.db
 	${rslSraRunInfoDbLoad} output/$@.db input/set1.hs.run-info.tsv
-	${rslStarIntronDbLoad} output/$@.db input/set1.hs.stardir.tsv
-	${rslStarSjSupportDbLoad} output/$@.db input/set1.hs.mapping-params.tsv input/set1.hs.stardir.tsv
-	$(call sqldump,MappingMetadata)
-	$(call sqldump,PutativeIntron)
-	$(call sqldump,SpliceJuncSupport)
-	$(call sqldump,MappingParameters)
+	${rslMappingMetadataDbLoad} output/$@.db input/set1.hs.mapping-params.tsv input/set1.hs.stardir.tsv
 	$(call sqldump,RunMetadata)
-
+	$(call sqldump,MappingParameters)
+	$(call sqldump,MappingMetadata)
 
 ##
 # build of tabix database

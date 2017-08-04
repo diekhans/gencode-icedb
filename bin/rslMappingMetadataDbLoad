@@ -1,0 +1,75 @@
+#!/usr/bin/env python
+
+from __future__ import print_function
+import icedbProgSetup  # noqa: F401
+import sys
+import argparse
+from gencode_icedb.rsl.rslModel import sqliteConnect, RunMetadata, MappingMetadata, MappingParameters
+from gencode_icedb.rsl.rslModelCache import MappingParametersCache
+from gencode_icedb.rsl.starResultsDir import StarMappingParameters, StarResultsDir
+from pycbio.sys import loggingOps
+
+bulk_size = 100   # size of each bulk insert
+
+
+def parseArgs():
+    desc = """Load mapping metadata into database
+    """
+    parser = argparse.ArgumentParser(description=desc)
+    loggingOps.addCmdOptions(parser)
+    parser.add_argument('rsldb',
+                        help="""sqllite3 database, tables are created as needed""")
+    parser.add_argument("mappingParamsTsv",
+                        help="""mapping parameters TSV""")
+    parser.add_argument('starResultsDirTsv',
+                        help="""TSV file with column `sjout', which has the path to the splice junction file, which maybe compressed."""
+                        """The path is relative to the directory containing starResultsTsv""")
+    opts = parser.parse_args()
+    loggingOps.setupFromCmd(opts, sys.argv[0])
+    return opts
+
+
+def ensureMappingParam(params, mappingParamsCache):
+    mappingParams = mappingParamsCache.getBySymId(params.mapping_param_symid)
+    if mappingParams is None:
+        mappingParamsCache.create(params.mapping_param_symid, params.assembly, params.gene_set, params.commands, params.comments)
+
+
+def dbLoadMappingParameters(dbconn, starMappingParams):
+    """load mapping parameters into database if they don't already exist,
+    return cache of MappingParameters objects."""
+    MappingParameters.create_table(fail_silently=True)
+    mappingParamsCache = MappingParametersCache()
+    with dbconn.atomic():
+        for params in starMappingParams:
+            ensureMappingParam(params, mappingParamsCache)
+    return mappingParamsCache
+
+
+def createMappingMetadata(starResult, mappingParamsCache):
+    mappingParams = mappingParamsCache.fetchBySymId(starResult.mapping_param_symid)
+    runMetadata = RunMetadata.get(run_acc=starResult.run_acc)
+    mappingMetadata = MappingMetadata(run_metadata_id=runMetadata.id,
+                                      mapping_symid=starResult.mapping_symid,
+                                      mapping_parameters_id=mappingParams.id)
+    mappingMetadata.save()
+
+
+def dbLoadMappingMetadata(dbconn, mappingParamsCache, starResultsDir):
+    """load mapping metadata"""
+    MappingMetadata.create_table(fail_silently=True)
+    with dbconn.atomic():
+        for starResult in starResultsDir:
+            createMappingMetadata(starResult, mappingParamsCache)
+
+
+def rslStarSjSupportDbLoad(opts):
+    starMappingParams = StarMappingParameters(opts.mappingParamsTsv)
+    starResultsDir = StarResultsDir(opts.starResultsDirTsv)
+
+    dbconn = sqliteConnect(opts.rsldb)
+    mappingParamsCache = dbLoadMappingParameters(dbconn, starMappingParams)
+    dbLoadMappingMetadata(dbconn, mappingParamsCache, starResultsDir)
+
+
+rslStarSjSupportDbLoad(parseArgs())

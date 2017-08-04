@@ -18,20 +18,9 @@ class StarMappingParameters(list):
 
     def __loadRow(self, row):
         if row.mapping_param_symid in self.byMappingParamSymId:
-            raise Exception("supplicated mapping_param_symid: {}".format(row.mapping_param_symid))
+            raise Exception("duplicate mapping_param_symid: {}".format(row.mapping_param_symid))
         self.byMappingParamSymId[row.mapping_param_symid] = row
         self.append(row)
-
-    def updateDatabase(self, mappingParamsCache):
-        """update the database from the TSV via a MappingParametersCache
-        object."""
-        for row in self:
-            self.__updateDatabaseEntry(mappingParamsCache, row)
-
-    def __updateDatabaseEntry(self, mappingParamsCache, row):
-        mappingParams = mappingParamsCache.getBySymId(row.mapping_param_symid)
-        if mappingParams is None:
-            mappingParamsCache.create(row.mapping_param_symid, row.assembly, row.gene_set, row.commands, row.comments)
 
     def getBySymId(self, mapping_param_symid):
         return self.byMappingParamSymId[mapping_param_symid]
