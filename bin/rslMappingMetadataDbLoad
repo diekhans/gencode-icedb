@@ -63,7 +63,7 @@ def dbLoadMappingMetadata(dbconn, mappingParamsCache, starResultsDir):
             createMappingMetadata(starResult, mappingParamsCache)
 
 
-def rslStarSjSupportDbLoad(opts):
+def rslMappingMetadataDbLoad(opts):
     starMappingParams = StarMappingParameters(opts.mappingParamsTsv)
     starResultsDir = StarResultsDir(opts.starResultsDirTsv)
 
@@ -72,4 +72,4 @@ def rslStarSjSupportDbLoad(opts):
     dbLoadMappingMetadata(dbconn, mappingParamsCache, starResultsDir)
 
 
-rslStarSjSupportDbLoad(parseArgs())
+rslMappingMetadataDbLoad(parseArgs())

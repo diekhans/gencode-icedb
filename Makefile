@@ -7,13 +7,9 @@ pylibs = $(wildcard ${PYLIBDIR}/*.py) $(wildcard ${PYLIBDIR}/rsl/*.py) $(wildcar
 pytests = $(wildcard ${TSLCLTESTDIR}/*.py)
 progs = icedbProgSetup.py \
 	tslGbffGetProblemCases tslGenbankProblemCasesLoad tslGetEnsemblRnaAligns \
+	rslEncodeDccQuery \
 	rslSraRunInfoFilter rslSraRunInfoDbLoad rslMappingMetadataDbLoad \
 	rslMkStarSjOutSplits
-
-FIXME_old = \
-	rslEncodeDccQuery rslEstimateReadLength  rslMkRnaSeqSupportBatch rslRnaSeqDataRegister \
-	rslRnaSeqIntronEvidBed rslRnaSeqIntronSupport rslRunRnaSeqSupport rslSjCollectEvidence \
-	rslStarGenerateGenome rslStarSpliceJunctionMap
 
 # not done:  rslRnaSeqIntronEvidPlot rslRnaSeqIntronEvidStats
 

@@ -1,7 +1,7 @@
 """
 PeeWee data models for RNA-Seq metadata and splice junctions.
 """
-from peewee import Proxy, Model, PrimaryKeyField, ForeignKeyField, IntegerField, CharField, TextField
+from peewee import Proxy, Model, PrimaryKeyField, ForeignKeyField, CharField, TextField
 from playhouse.apsw_ext import APSWDatabase
 import apsw
 
@@ -79,39 +79,6 @@ class MappingMetadata(Model):
                             help_text="""mapping analysis accession, only available if results have been submitted to an archive""")
     mapping_parameters_id = ForeignKeyField(MappingParameters,
                                             help_text="""parameters used in mapping""")
-
-    class Meta:
-        database = _database_proxy
-
-
-class PutativeIntron(Model):
-    """Location of a putative intron"""
-    id = PrimaryKeyField()
-    bin = IntegerField(index=True,
-                       help_text="""spacial indexing bin""")
-    chrom = CharField(index=True,
-                      help_text="""name of the mapping, this is defined locally""")
-    start = IntegerField(index=True,
-                         help_text="""zero-based, half-open start of intron""")
-    end = IntegerField(help_text="""zero-based, half-open end of intron""")
-    strand = CharField(help_text="""apparent strand (`.' if undefined)""")
-    motif = CharField(help_text="""motif for intron (??/?? for non-canonical)""")
-
-    class Meta:
-        database = _database_proxy
-
-
-class SpliceJuncSupport(Model):
-    """support for a splice junction from a STAR run"""
-    id = PrimaryKeyField()
-    mapping_metadata_id = ForeignKeyField(MappingMetadata,
-                                          help_text="""metadata describing mapping""")
-    putative_intron_id = ForeignKeyField(PutativeIntron,
-                                         help_text="""putative intron these counts are associated with""")
-    annotated = IntegerField(help_text="""0: unannotated, 1: annotated""")
-    num_uniq_reads = IntegerField(help_text="""number of uniquely mapping reads crossing the junction""")
-    num_multi_reads = IntegerField(help_text="""number of multi-mapping reads crossing the junction""")
-    max_overhang = IntegerField(help_text="""maximum spliced alignment overhang""")
 
     class Meta:
         database = _database_proxy
