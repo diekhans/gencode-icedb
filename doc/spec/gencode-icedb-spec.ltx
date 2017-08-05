@@ -121,7 +121,7 @@ Build STAR splice junction support database from STAR resuts
 \item Compress final file with  \texttt{bgzip} and index with \texttt{tabix}.
 
 \item Summary
-  \begin{itemize}
+  \begin{tightitemize}
   \item create \texttt{etc/czi.hs.star-results.all.tsv} for all available results 
   \item \texttt{rslSraRunInfoFilter --full --selectSubsetTsv=etc/czi.hs.star-results.all.tsv SraRunInfo.human.transcriptomics.cvs.bz2 etc/czi.hs.run-info.tsv}
   \item \texttt{selectById -tsv 1 etc/czi.hs.run-info.tsv 1 etc/czi.hs.star-results.all.tsv > etc/czi.hs.star-results.tsv}
@@ -134,7 +134,7 @@ Build STAR splice junction support database from STAR resuts
   \item \texttt{tabix -0 -p bed sjdb/czi.hs.sjsup.gz}
   \item \texttt{chmod a-w sjdb/*}
   \item \texttt{rm -rf merge.tmp}
-  \end{itemize}
+  \end{tightitemize}
 
 \item Load putative intron information into database using \texttt{rslStarIntronDbLoad}.
   This can be repeated for new data, only new putative introns definitions are
