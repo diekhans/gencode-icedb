@@ -126,7 +126,7 @@ Build STAR splice junction support database from STAR resuts
   \item \texttt{rslSraRunInfoFilter --full --selectSubsetTsv=etc/czi.hs.star-results.all.tsv SraRunInfo.human.transcriptomics.cvs.bz2 etc/czi.hs.run-info.tsv}
   \item \texttt{selectById -tsv 1 etc/czi.hs.run-info.tsv 1 etc/czi.hs.star-results.all.tsv > etc/czi.hs.star-results.tsv}
   \item \texttt{rslSraRunInfoDbLoad sjdb/czi.hs.db etc/czi.hs.run-info.tsv}
-  \item \texttt{rslMappingMetadataDbLoad sjdb/czi.hs.db etc/czi.hs.mapping_params.tsv etc/czi.hs.run-info.tsv}
+  \item \texttt{rslMappingMetadataDbLoad sjdb/czi.hs.db etc/czi.hs.mapping_params.tsv etc/czi.hs.star-results.tsv}
   \item \texttt{rslMkStarSjOutSplits --numprocs=8 etc/czi.hs.star-results.tsv merge.tmp}
   \item \texttt{rslMkStarSjSupMergeJobs merge.tmp}
   \item \texttt{./merge.tmp/run-batches}
