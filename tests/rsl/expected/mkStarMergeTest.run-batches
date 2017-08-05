@@ -1,0 +1,4 @@
+#!/bin/bash -x
+set -beEu -o pipefail
+para make -batch=output/mkStarMergeTest.mergework/000.batch output/mkStarMergeTest.mergework/000.jobs
+para make -batch=output/mkStarMergeTest.mergework/001.batch output/mkStarMergeTest.mergework/001.jobs

@@ -35,6 +35,15 @@ def getByChromSplits(byChromDir):
         exit("Error: no sjsup fies found in under: {}".format(byChromDir))
     return sjsupSplits
 
+def createRunBatches(mergeWorkDir):
+    fileOps.ensureDir(mergeWorkDir)
+    runBatchesScript = os.path.join(mergeWorkDir, "run-batches")
+    fh = open(runBatchesScript, "w")
+    print("#!/bin/bash -x", file=fh)
+    print("set -beEu -o pipefail", file=fh)
+    os.chmod(runBatchesScript, 0o755)
+    return fh
+    
 def writeInFile(sjsups, inFileFh):
     for sjsup in sjsups:
         print(sjsup, file=inFileFh)
@@ -67,20 +76,25 @@ def writeMergeBatch(sjsupSplits, filesPerJob, mergeBatchFh, mergeBatchDir):
         iJob += 1
     return sjsupMerges
 
-def mkMergeBatch(sjsupSplits, filesPerJob, mergeBatchFile, mergeBatchDir):
+def mkMergeBatch(sjsupSplits, filesPerJob, mergeWorkDir, mergeBatchNum, runBatchesFh):
     """for a list of input files, generate a merge batch, return list of merge
     output"""
+    mergeBatchDir = os.path.join(mergeWorkDir, "{:03}.merged".format(mergeBatchNum))
+    mergeBatchFile = os.path.join(mergeWorkDir, "{:03}.jobs".format(mergeBatchNum))
+    mergeBatchName = os.path.join(mergeWorkDir, "{:03}.batch".format(mergeBatchNum))
+    print("para make -batch={} {}".format(mergeBatchName, mergeBatchFile), file=runBatchesFh)
     with open(mergeBatchFile, "w") as mergeBatchFh:
         return writeMergeBatch(sjsupSplits, filesPerJob, mergeBatchFh, mergeBatchDir)
+
 
 def rslMkStarSjOutSplits(opts):
     byChromDir = os.path.join(opts.mergeWorkDir, "byChrom")
     sjsupSplits = getByChromSplits(byChromDir)
     mergeBatchNum = 0
+    runBatchesFh = createRunBatches(opts.mergeWorkDir)
     while len(sjsupSplits) > 1:
-        mergeBatchDir = os.path.join(opts.mergeWorkDir, "{:03}.merged".format(mergeBatchNum))
-        mergeBatchFile = os.path.join(opts.mergeWorkDir, "{:03}.merge.jobs".format(mergeBatchNum))
-        sjsupSplits = mkMergeBatch(sjsupSplits, opts.filesPerJob, mergeBatchFile, mergeBatchDir)
+        sjsupSplits = mkMergeBatch(sjsupSplits, opts.filesPerJob, opts.mergeWorkDir, mergeBatchNum, runBatchesFh)
         mergeBatchNum += 1
+    runBatchesFh.close()
 
 rslMkStarSjOutSplits(parseArgs())

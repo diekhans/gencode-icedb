@@ -98,7 +98,7 @@ https://bioconductor.org/packages/release/bioc/html/SRAdb.html
 
 http://metasra.biostat.wisc.edu/ (uses SRAmetadb) [only human]
 
-Loading STAR splice junction information:
+Build STAR splice junction support database from STAR resuts
 \item Obtain SRA runinfo CVS from the SRA browser.
 \item Filter SRA runinfo using \texttt{rslSraRunInfoFilter --full} to obtain
   run information.  You may need to filter using the \texttt{--selectSubsetTsv}
@@ -110,19 +110,31 @@ Loading STAR splice junction information:
 \item Create a mapping parameters TSV file (see \texttt{starResultsDir.py}), that defines
   mapping parameters for STAR results.
 \item Load run info into database using \texttt{rslSraRunInfoDbLoad}.
-
-\item FIXME: need to load mapping metadata 
+\item Load run info into database using \texttt{rslMappingMetadataDbLoad}.
 
 \item Split all STAR splice junction files by chromosome, adding mapping
-  metadata symbolic ids to each row and converting to zero-based coordinates.
-\item Merge each per-chromosomes into a single file.  Since each file is
-  already sorted within a chromosome, the merge can be done with a hierarchical
-  series of UNIX \texttt{sort} command merge runs.
-\item Concatenate all per-chromosomes splice-junction files, in chromosome
-  sorted order, into a single file and \texttt{bgzip} it.  Chromosome sorted order
-  is required for \texttt{tabix}
+  metadata symbolic ids to each row and converting to zero-based coordinates
+  (\textit{*.sjsup} files).  This is done using \texttt{rslMkStarSjOutSplits} 
+\item Generate a series of batch to merge split \textit{sjsup} files
+  with \textit{rslMkStarSjSupMergeJobs}.
+\item Sequentially run parasol batches on cluster using generated script.
+\item Compress final file with  \texttt{bgzip} and index with \texttt{tabix}.
 
-
+\item Summary
+  \begin{itemize}
+  \item create \texttt{etc/czi.hs.star-results.all.tsv} for all available results 
+  \item \texttt{rslSraRunInfoFilter --full --selectSubsetTsv=etc/czi.hs.star-results.all.tsv SraRunInfo.human.transcriptomics.cvs.bz2 etc/czi.hs.run-info.tsv}
+  \item \texttt{selectById -tsv 1 etc/czi.hs.run-info.tsv 1 etc/czi.hs.star-results.all.tsv > etc/czi.hs.star-results.tsv}
+  \item \texttt{rslSraRunInfoDbLoad sjdb/czi.hs.db etc/czi.hs.run-info.tsv}
+  \item \texttt{rslMappingMetadataDbLoad sjdb/czi.hs.db etc/czi.hs.mapping_params.tsv etc/czi.hs.run-info.tsv}
+  \item \texttt{rslMkStarSjOutSplits --numprocs=8 etc/czi.hs.star-results.tsv merge.tmp}
+  \item \texttt{rslMkStarSjSupMergeJobs merge.tmp}
+  \item \texttt{./merge.tmp/run-batches}
+  \item \texttt{bgzip -c merge.tmp/004.merged/000.sjsup > sjdb/czi.hs.sjsup.gz}
+  \item \texttt{tabix -0 -p bed sjdb/czi.hs.sjsup.gz}
+  \item \texttt{chmod a-w sjdb/*}
+  \item \texttt{rm -rf merge.tmp}
+  \end{itemize}
 
 \item Load putative intron information into database using \texttt{rslStarIntronDbLoad}.
   This can be repeated for new data, only new putative introns definitions are

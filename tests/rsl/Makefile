@@ -115,10 +115,11 @@ mkStarMergeTest: mkdirs
 	rm -rf output/$@.mergework
 	${rslMkStarSjOutSplits} --numprocs=2 input/set1.hs.stardir.tsv output/$@.mergework
 	${rslMkStarSjSupMergeJobs} --filesPerJob=5 output/$@.mergework
-	wc -l output/$@.mergework/*.merge.jobs | tawko '{print $$2,$$1}' > output/$@.jobs.cnt
+	wc -l output/$@.mergework/*.jobs | tawko '{print $$2,$$1}' > output/$@.jobs.cnt
 	${diff} expected/$@.jobs.cnt output/$@.jobs.cnt
-	for j in output/mkStarMergeTest.mergework/*.merge.jobs ; do bash -e $$j ; done
-	${diff} expected/$@.merged.sjsup output/mkStarMergeTest.mergework/001.merged/000.sjsup 
+	${diff} expected/$@.run-batches output/$@.mergework/run-batches
+	for j in output/mkStarMergeTest.mergework/*.jobs ; do bash -e $$j ; done
+	${diff} expected/$@.merged.sjsup output/mkStarMergeTest.mergework/001.merged/000.sjsup
 
 ##
 # tests of creating genome fasta with genomes names
