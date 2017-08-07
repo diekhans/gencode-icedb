@@ -8,7 +8,7 @@ from gencode_icedb.rsl.rslModel import sqliteConnect, RunMetadata
 from pycbio.sys import loggingOps
 from pycbio.tsv import TsvReader
 
-bulk_size = 200   # size of each bulk insert
+bulk_size = 150   # size of each bulk insert
 
 
 def parseArgs():
@@ -44,6 +44,7 @@ def makeRunMetaRec(srcsymid, row):
     return {"src_symid": srcsymid,
             "run_acc": row.Run,
             "org_code": orgToOrgCode(row.ScientificName),
+            "tumor": noneIfEmpty(row.Tumor),
             "tissue": noneIfEmpty(row.Body_Site)}
 
 

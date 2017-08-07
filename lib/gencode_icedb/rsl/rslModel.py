@@ -46,7 +46,9 @@ class RunMetadata(Model):
                         help_text="""sequencing run accession""")
     org_code = CharField(index=True, max_length=2,
                          help_text="""two-character organism code: 'hs' or 'mm'""")
-    tissue = CharField(null=True,
+    tumor = CharField(null=True, default=None,
+                      help_text="""yes for tumor, no for normal, null if unknown """)
+    tissue = CharField(null=True, default=None,
                        help_text="""Tissue or body site, if available.  This is not normalized and maybe hard to interpret.""")
 
     class Meta:
@@ -75,7 +77,7 @@ class MappingMetadata(Model):
                                       help_text="""sequencing run metadata""")
     mapping_symid = CharField(unique=True,
                               help_text="""symbolic name of the mapping, this is defined locally""")
-    mapping_acc = CharField(unique=True, null=True,
+    mapping_acc = CharField(unique=True, null=True, default=None,
                             help_text="""mapping analysis accession, only available if results have been submitted to an archive""")
     mapping_parameters_id = ForeignKeyField(MappingParameters,
                                             help_text="""parameters used in mapping""")
