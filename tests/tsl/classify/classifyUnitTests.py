@@ -14,6 +14,7 @@ from gencode_icedb.tsl.evidFeatures import EvidenceFeatureMap, EvidencePslFactor
 from gencode_icedb.tsl.annotFeatures import AnnotationGenePredFactory
 from twobitreader import TwoBitFile
 from pycbio.hgdata.hgLite import PslDbTable, GenePredDbTable
+from pycbio.hgdata.genePred import GenePredReader
 import sqlite3
 import pprint
 
@@ -612,6 +613,16 @@ class AnnotationTests(FeatureTestBase):
                                 ('intron 32638690-32643334 rna=1431-1431 sjBases=GT...AG (GT_AG)',),
                                 ('exon 32643334-32643762 rna=1431-1859',
                                  (('NC 32643334-32643762 rna=1431-1859',),))))))
+        
+    def testGencodeV26Regress(self):
+        "regression test for gencodeV26"
+        factory = AnnotationGenePredFactory()
+        names = ("ENST00000610542.1", # 4-base gap that caused error
+                 )
+        i = 0
+        for gp in GenePredReader(self.getInputFile("gencodeV26.gp")):
+            trans = factory.fromGenePred(gp)
+            self.assertEqual(trans.rnaName, names[i])
 
 
 def suite():

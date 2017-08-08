@@ -89,10 +89,10 @@ class MappingMetadata(Model):
         database = _database_proxy
 
 
-class SjSupport(namedtuple("SjSupport", "chrom", "chromStart", "chromEnd",
+class SjSupport(namedtuple("SjSupport", ("chrom", "chromStart", "chromEnd",
                            "strand", "intronMotif", "annotated",
                            "numUniqueMapReads", "numMultiMapReads",
-                           "maxOverhang", "mapping_symid")):
+                           "maxOverhang", "mapping_symid"))):
     """SjSupport record.  These are loaded from a tabix indexed table file.
     strand and motif are converted to strings, annotated to a boolean."""
 

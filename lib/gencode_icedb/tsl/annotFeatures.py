@@ -45,7 +45,7 @@ class AnnotationGenePredFactory(object):
         iBlkEnd = iBlkStart + 1
         qCount = gp.exons[iBlkStart].size()
         while (iBlkEnd < len(gp.exons)) and (self.__tGapSize(gp, iBlkEnd) < minIntronSize):
-            qCount = gp.exons[iBlkEnd].size()
+            qCount += gp.exons[iBlkEnd].size()
             iBlkEnd += 1
         return iBlkEnd, qCount
 
@@ -98,7 +98,7 @@ class AnnotationGenePredFactory(object):
             nonCodingFeatures.append(NonCodingRegionFeature(exon, gpExon.start, gpExon.end,
                                                             rnaNext, rnaNext + gpExon.size()))
             rnaNext += gpExon.size()
-        assert rnaNext == rnaEnd
+        assert rnaNext == rnaEnd, "rnaNext={}, rnaEnd={}".format(rnaNext, rnaEnd)
         exon.rnaFeatures = tuple(nonCodingFeatures)
 
     def __makeExon(self, gp, iBlkStart, iBlkEnd, rnaStart, rnaEnd, trans):
