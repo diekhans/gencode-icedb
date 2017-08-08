@@ -1,7 +1,7 @@
 object starSpliceJunction
 "Splice junction output from STAR"
     (
-    string chrom;             "chromsome"
+    string chrom;             "chromosome"
     uint   chromStart;        "first base of the intron (1-based in file, converted in memory)"
     uint   chromEnd;          "last base of the intron"
     uint   strand;            "strand 0: undefined, 1: +, 2: -"

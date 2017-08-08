@@ -3,7 +3,10 @@ PeeWee data models for RNA-Seq metadata and splice junctions.
 """
 from peewee import Proxy, Model, PrimaryKeyField, ForeignKeyField, CharField, TextField
 from playhouse.apsw_ext import APSWDatabase
+from collections import namedtuple
+from gencode_icedb.rsl import starOps
 import apsw
+import tabix
 
 _database_proxy = Proxy()
 
@@ -84,3 +87,41 @@ class MappingMetadata(Model):
 
     class Meta:
         database = _database_proxy
+
+
+class SjSupport(namedtuple("SjSupport", "chrom", "chromStart", "chromEnd",
+                           "strand", "intronMotif", "annotated",
+                           "numUniqueMapReads", "numMultiMapReads",
+                           "maxOverhang", "mapping_symid")):
+    """SjSupport record.  These are loaded from a tabix indexed table file.
+    strand and motif are converted to strings, annotated to a boolean."""
+
+    @staticmethod
+    def factory(row):
+        return SjSupport(row[0], int(row[1]), int(row[2]),
+                         starOps.starStrandCodeToChar(int(row[3])),
+                         starOps.starMotifCodeToStr(int(row[4])),
+                         False if row[5] == "0" else True,
+                         int(row[6]), int(row[7]), int(row[8]), row[9])
+
+
+class SjSupportReader(object):
+    """reader for SjSupport from a tabix-indexed file"""
+    def __init__(self, tabFile):
+        self.tb = tabix.open(tabFile)
+
+    def close(self):
+        if self.tb is not None:
+            try:
+                self.tb.close()
+            finally:
+                self.tb = None
+
+    def __del__(self):
+        if self.tb is not None:
+            self.close()
+
+    def query(self, chrom, start, end):
+        "Query returning SjSupport.  Use zero-based, half open coordinates"
+        for row in self.tb.query(chrom, start, end):
+            return SjSupport.factory(row)

@@ -36,6 +36,7 @@ class GenomeReader(object):
 
 
 # FIXME: move to a different module
+# FIXME: duplicated in star ops
 
 class SpliceJunc(SymEnum):
     "symbolic names for known splice junction patterns"

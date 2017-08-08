@@ -1,0 +1,76 @@
+#!/usr/bin/env python
+
+from __future__ import print_function
+import icedbProgSetup  # noqa: F401
+import argparse
+from pycbio.hgdata.hgLite import GencodeAttrsDbTable, GenePredDbTable
+from pycbio.hgdata import hgDb
+from pycbio.hgdata.genePred import GenePredDbReader
+import sqlite3
+from gencode_icedb import gencodeDb
+
+
+def parseArgs():
+    desc = """Load GENCODE genePreds and attributes into sqlite databases."""
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument('--hgdb',
+                        help="""load from mysql hgdb instead of files""")
+    parser.add_argument('sqliteDb',
+                        help="""database to load""")
+    parser.add_argument('attrsSrc',
+                        help="""TSV file or table of GENCODE attributes""")
+    parser.add_argument('genePredSrc',
+                        help="""file or table of genePreds to load""")
+    parser.add_argument('pseudoPredSrc', nargs='?', default=None,
+                        help="""optional file or table of pseudo genePreds to load""")
+    return parser.parse_args()
+
+
+def loadGenePredTable(hgdbConn, genePredSrc):
+    gpr = GenePredDbReader(hgdbConn, "SELECT * FROM {}".format(genePredSrc))
+    return list(gpr)
+
+
+def loadAnnotations(conn, hgdbConn, genePredSrc, pseudoPredSrc):
+    annDbTable = GenePredDbTable(conn, gencodeDb.gencode_ann_table, create=True)
+    if hgdbConn is not None:
+        annDbTable.loadsWithBin(loadGenePredTable(hgdbConn, genePredSrc))
+        if pseudoPredSrc is not None:
+            annDbTable.loadsWithBin(loadGenePredTable(hgdbConn, genePredSrc))
+    else:
+        annDbTable.loadGenePredFile(genePredSrc)
+        if pseudoPredSrc is not None:
+            annDbTable.loadGenePredFile(pseudoPredSrc)
+
+
+def loadAttrsTable(hgdbConn, attrsSrc):
+    cur = hgdbConn.cursor()
+    try:
+        cur.execute("SELECT * from {}".format(attrsSrc))
+        return cur.fetchall()
+    finally:
+        cur.close()
+
+
+def loadAttrs(conn, hgdbConn, attrsSrc):
+    attrsDbTable = GencodeAttrsDbTable(conn, gencodeDb.gencode_attrs_table, create=True)
+    if hgdbConn is not None:
+        attrsDbTable.loads(loadAttrsTable(hgdbConn, attrsSrc))
+    else:
+        attrsDbTable.loadTsv(attrsSrc)
+
+
+def gencodeDbLoad(opts):
+    "main function"
+    conn = sqlite3.connect(opts.sqliteDb)
+    hgdbConn = None
+    if opts.hgdb is not None:
+        hgdbConn = hgDb.connect(opts.hgdb)
+    loadAnnotations(conn, hgdbConn, opts.genePredSrc, opts.pseudoPredSrc)
+    loadAttrs(conn, hgdbConn, opts.attrsSrc)
+    if hgdbConn is not None:
+        hgdbConn.close()
+    conn.close()
+
+
+gencodeDbLoad(parseArgs())

@@ -6,6 +6,7 @@ TSLCLTESTDIR = tests/tsl/classify
 pylibs = $(wildcard ${PYLIBDIR}/*.py) $(wildcard ${PYLIBDIR}/rsl/*.py) $(wildcard ${PYLIBDIR}/tsl/*.py)
 pytests = $(wildcard ${TSLCLTESTDIR}/*.py)
 progs = icedbProgSetup.py \
+	gencodeDbLoad \
 	tslGbffGetProblemCases tslGenbankProblemCasesLoad tslGetEnsemblRnaAligns \
 	rslEncodeDccQuery \
 	rslSraRunInfoFilter rslSraRunInfoDbLoad rslMappingMetadataDbLoad \

@@ -120,9 +120,11 @@ mkStarMergeTest: mkdirs
 	${diff} expected/$@.run-batches output/$@.mergework/run-batches
 	for j in output/mkStarMergeTest.mergework/*.jobs ; do bash -e $$j ; done
 	${diff} expected/$@.merged.sjsup output/mkStarMergeTest.mergework/001.merged/000.sjsup
+	bgzip -c output/mkStarMergeTest.mergework/001.merged/000.sjsup >output/$@.sjsup.gz
+	tabix -0 -p bed output/$@.sjsup.gz
 
 ##
-# tests of creating genome fasta with genomes names
+# tests of creating genome fasta with gencode names
 ##
 faTests: ucscGencodeFaTest
 
