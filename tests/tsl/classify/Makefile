@@ -14,7 +14,7 @@ test:: unitTests gencodeDbLoadTest
 unitTests:
 	python classifyUnitTests.py
 
-gencodeDbLoadTests: mkdirs
+gencodeDbLoadTest: mkdirs
 	rm -f output/$@.db
 	${gencodeDbLoad} output/$@.db input/set1.gencodeAttrsV19.tsv input/set1.gencodeCompV19.gp
 	sqlite3 -header -batch output/$@.db 'SELECT * FROM gencode_ann' >output/$@.gencode_ann.gp
@@ -31,6 +31,7 @@ gpMondoTest: mkdirs
 	./bin/mondoTester hg38 wgEncodeGencodeCompV26 genepred
 
 gencodeDbMondoTest: mkdirs
+	rm -f output/$@.db
 	${gencodeDbLoad} --hgdb=hg38 output/$@.db wgEncodeGencodeAttrsV26 wgEncodeGencodeCompV26 wgEncodeGencodePseudoGeneV26
 
 mkdirs:
