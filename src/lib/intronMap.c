@@ -285,7 +285,7 @@ struct intronInfo* intronMapGetSorted(struct intronMap* intronMap) {
 static const int spliceTsvWidth = 6;
 static char* spliceTsvHeader[] = {
     "chrom", "chromStart", "chromEnd",
-    "strand", "donor", "acceptor", NULL
+    "strand", "donor", "acceptor", "transcripts", NULL
 };
 
 /* write intron splice site TSV header */
@@ -302,12 +302,19 @@ static void intronMapWriteSpliceTsvHeader(FILE* spliceTsvFh) {
 /* write a row of intron splice site TSV */
 void intronMapWriteSpliceTsvRow(FILE* spliceTsvFh,
                                 struct intronInfo* intronInfo) {
-    fprintf(spliceTsvFh, "%s\t%d\t%d\t%s\t%s\t%s\n",
+    fprintf(spliceTsvFh, "%s\t%d\t%d\t%s\t%s\t%s\t",
             intronInfo->chrom, 
             intronInfo->chromStart, intronInfo->chromEnd,
             intronInfo->transStrand,
             intronInfo->transDonor,
             intronInfo->transAcceptor);
+    for (struct intronTransLink *transLink = intronInfo->intronTranses; transLink != NULL; transLink = transLink->next) {
+        if (transLink != intronInfo->intronTranses) {
+            fputc(',', spliceTsvFh);
+        }
+        fputs(transLink->transcript->name, spliceTsvFh);
+    }
+    fputc('\n', spliceTsvFh);
 }
 
 /* save splice sites obtained from transcripts to a TSV */
