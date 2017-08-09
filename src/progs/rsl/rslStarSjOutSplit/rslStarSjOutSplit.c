@@ -2,6 +2,7 @@
 #include "options.h"
 #include "starResultsDir.h"
 #include "starSpliceJunction.h"
+#include "starOps.h"
 #include "linefile.h"
 #include "portable.h"
 
@@ -19,7 +20,7 @@ static void usage(char *msg) {
     static char* usageMsg = "rslStarSjOutSplit starResultsDirTsv chromOutDir\n\n"
         "Split STAR sjout files into per-chromosome files, converting to zero-based\n"
         "coordinates and adding the mapping_symid. Output files are named in the form:\n"
-        "  chromOutDir/chrom.mapping_symid.sjsup\n"
+        "  chromOutDir/chrom/mapping_symid.sjsup\n"
         "\n"
         "The output files must not exist.\n"
         "\n"
@@ -66,12 +67,12 @@ static void starSjSupportWrite(char *chromOutDir,
         safecpy(currentChrom, CHROM_MAX, sjout->chrom);
     }
     fprintf(*chromOutFhPtr,
-            "%s\t%u\t%u\t%u\t%u\t%u\t%u\t%u\t%u\t%s\n",
+            "%s\t%u\t%u\t%c\t%s\t%u\t%u\t%u\t%u\t%s\n",
             sjout->chrom,
-            sjout->chromStart - 1,
+            sjout->chromStart,
             sjout->chromEnd,
-            sjout->strand,
-            sjout->intronMotif,
+            starStrandCodeToChar(sjout->strand),
+            starMotifCodeToStr(sjout->intronMotif),
             sjout->annotated,
             sjout->numUniqueMapReads,
             sjout->numMultiMapReads,

@@ -7,7 +7,6 @@ from peewee import Proxy, Model, PrimaryKeyField, ForeignKeyField, CharField, Te
 from playhouse.apsw_ext import APSWDatabase
 import apsw
 from collections import namedtuple
-from gencode_icedb.rsl import starOps
 import tabix
 
 _database_proxy = Proxy()
@@ -95,15 +94,12 @@ class SjSupport(namedtuple("SjSupport", ("chrom", "chromStart", "chromEnd",
                                          "strand", "intronMotif", "annotated",
                                          "numUniqueMapReads", "numMultiMapReads",
                                          "maxOverhang", "mapping_symid"))):
-    """SjSupport record.  These are loaded from a tabix indexed table file.
-    strand and motif are converted to strings, annotated to a boolean."""
-
+    """SjSupport record created from STAR sjout files.  These are loaded from
+    a tabix indexed tab file."""
     @staticmethod
     def factory(row):
         return SjSupport(row[0], int(row[1]), int(row[2]),
-                         starOps.starStrandCodeToChar(int(row[3])),
-                         starOps.starMotifCodeToStr(int(row[4])),
-                         False if row[5] == "0" else True,
+                         row[3], row[4], bool(row[5]),
                          int(row[6]), int(row[7]), int(row[8]), row[9])
 
 
@@ -117,6 +113,7 @@ class SjSupportReader(object):
     def __init__(self, tabFile=None, sjDbConn=None, sjDbPath=None):
         """can open by tab file name, a APSWDatabase object, or path to that
         the database files"""
+        self.tb = None
         if tabFile is None:
             if sjDbPath is None:
                 sjDbPath = sjDbConn.database
@@ -125,7 +122,8 @@ class SjSupportReader(object):
 
     def close(self):
         if self.tb is not None:
-            self.tb = None  # doesn't have close method (FIXME)
+            del self.tb  # doesn't have a close method
+            self.tb = None
 
     def __del__(self):
         if self.tb is not None:

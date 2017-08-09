@@ -20,7 +20,7 @@ struct starSpliceJunction *ret;
 
 AllocVar(ret);
 ret->chrom = cloneString(row[0]);
-ret->chromStart = sqlUnsigned(row[1]) - 1;
+ret->chromStart = sqlUnsigned(row[1]) - 1;  /* CUSTOMIZED */
 ret->chromEnd = sqlUnsigned(row[2]);
 ret->strand = sqlUnsigned(row[3]);
 ret->intronMotif = sqlUnsigned(row[4]);
@@ -140,20 +140,3 @@ fputc(lastSep,f);
 }
 
 /* -------------------------------- End autoSql Generated Code -------------------------------- */
-
-/* convert STAR intron motif code to a string.  non-canonical
- * is returned as ??/?? */
-char* starSpliceJunctionMotifStr(struct starSpliceJunction *ssj) {
-    switch (ssj->intronMotif) {
-        case 0: return "\?\?/\?\?"; 
-        case 1: return "GT/AG";
-        case 2: return "CT/AC";
-        case 3: return "GC/AG";
-        case 4: return "CT/GC";
-        case 5: return "AT/AC";
-        case 6: return "GT/AT";
-        default:
-            errAbort("unknown intron motif code: %d", ssj->intronMotif);
-            return NULL;
-    }
-}

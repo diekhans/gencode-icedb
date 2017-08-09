@@ -30,6 +30,7 @@ export LC_ALL=C
 test:   dataConvertTests \
 	dbLoadTests \
 	sjsupBuildTests \
+	gencodeSupportTests \
 	faTests \
 	genePredIntronsTests \
 	encodeDccTests \
@@ -129,21 +130,34 @@ mkStarMergeTest: mkdirs
 ##
 # Test of support
 ##
-gencodeSupportTests: supportCollectTest
+gencodeSupportTests: supportCollectAllTest \
+			supportCollectGenesTest \
+			supportCollectTransTest
 
 define gencodeSupportTestSetup
 rm -rf output/$@
 mkdir -p output/$@
 ${gencodeDbLoad} output/$@/gencode.db input/set1.hs.attrs.v26.tsv input/set1.hs.comp.v26.gp input/set1.hs.pseudo.v26.gp
-${rslSraRunInfoDbLoad} output/$@/sup.db input/set1.hs.run-info.tsv
-${rslMappingMetadataDbLoad} output/$@/sup.db input/set1.hs.mapping-params.tsv input/set1.hs.stardir.tsv
-bgzip -c expected/mkStarMergeTest.merged.sjsup > output/$@/sup.sjsup.gz
-tabix -0 -p bed output/$@/sup.sjsup.gz
+${rslSraRunInfoDbLoad} output/$@/rnaseq.db input/set1.hs.run-info.tsv
+${rslMappingMetadataDbLoad} output/$@/rnaseq.db input/set1.hs.mapping-params.tsv input/set1.hs.stardir.tsv
+bgzip -c expected/mkStarMergeTest.merged.sjsup > output/$@/rnaseq.sjsup.gz
+tabix -0 -p bed output/$@/rnaseq.sjsup.gz
 endef
 
-supportCollectTest: mkdirs
+supportCollectAllTest: mkdirs
 	${gencodeSupportTestSetup}
-	${rslGencodeCollectSupport} output/$@/gencode.db output/$@/sup.db output/$@.supp.tsv ENSG00000142609.17 ENSG00000187730.8 ENSG00000226944.1
+	${rslGencodeCollectSupport} output/$@/gencode.db output/$@/rnaseq.db output/$@.supp.tsv
+	${diff} expected/$@.supp.tsv output/$@.supp.tsv
+
+supportCollectGenesTest: mkdirs
+	${gencodeSupportTestSetup}
+	${rslGencodeCollectSupport} output/$@/gencode.db output/$@/rnaseq.db output/$@.supp.tsv ENSG00000235169.7
+	${diff} expected/$@.supp.tsv output/$@.supp.tsv
+
+supportCollectTransTest: mkdirs
+	${gencodeSupportTestSetup}
+	${rslGencodeCollectSupport} output/$@/gencode.db output/$@/rnaseq.db output/$@.supp.tsv ENST00000444870.6 ENST00000462356.5
+	${diff} expected/$@.supp.tsv output/$@.supp.tsv
 
 
 ##

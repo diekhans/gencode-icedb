@@ -9,8 +9,6 @@
 
 extern char *starSpliceJunctionCommaSepFieldNames;
 
-struct rslAnalysisLink;
-
 struct starSpliceJunction
 /* Splice junction output from STAR */
     {
@@ -68,10 +66,5 @@ void starSpliceJunctionOutput(struct starSpliceJunction *el, FILE *f, char sep, 
 /* Print out starSpliceJunction as a comma separated list including final comma. */
 
 /* -------------------------------- End autoSql Generated Code -------------------------------- */
-
-/* convert STAR intron motif code to a string.  non-canonical
- * is returned as ??/?? */
-char* starSpliceJunctionMotifStr(struct starSpliceJunction *ssj);
-
 #endif /* STARSPLICEJUNCTION_H */
 

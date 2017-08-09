@@ -27,7 +27,7 @@ def parseArgs():
     return parser.parse_args()
 
 
-resultsHeader = ("geneId", "transcriptId", "geneName", "transcriptBiotype",
+resultsHeader = ("geneId", "geneName", "transcriptId", "transcriptType",
                  "chrom", "intronStart", "intronEnd", "strand", "intronMotif",
                  "numUniqueMapReads", "numMultiMapReads")
 
@@ -38,6 +38,11 @@ class IntronCoords(namedtuple("Intron", ("chrom", "chromStart", "chromEnd",
     def fromSjSupport(sjSupp):
         return IntronCoords(sjSupp.chrom, sjSupp.chromStart, sjSupp.chromEnd, sjSupp.strand)
 
+    @staticmethod
+    def fromIntronFeat(intronFeat):
+        transFeat = intronFeat.transcript
+        return IntronCoords(transFeat.chrom, intronFeat.chromStart, intronFeat.chromEnd, transFeat.rnaStrand)
+
 
 class SjCounts(object):
     __slots__ = ("intronMotif", "numUniqueMapReads", "numMultiMapReads")
@@ -45,6 +50,9 @@ class SjCounts(object):
     def __init__(self, intronMotif):
         self.intronMotif = intronMotif
         self.numUniqueMapReads = self.numMultiMapReads = 0
+
+    def __str__(self):
+        return "{} {} {}".format(self.intronMotif, self.numUniqueMapReads, self.numMultiMapReads)
 
     def sum(self, cnts):
         "can sum with SjCounts or SjSupport objects"
@@ -69,20 +77,20 @@ class SupportCounter(object):
             return [attr]
         raise Exception("can't find GENCODE gene or transcript with id {}".format(gencodeId))
 
-    def __getAnnotations(self, attrs):
-        """return list of annotations, which would be empty if the annotations
+    def __getTranscripts(self, attrs):
+        """return list of transcripts annotations, which would be empty if the annotations
         were on alts that were not aligned"""
-        anns = []
+        transes = []
         for attr in attrs:
             for gp in self.annDbTable.getByName(attr.transcriptId):
-                anns.append(self.annFactory.fromGenePred(gp))
-        return anns
+                transes.append(self.annFactory.fromGenePred(gp))
+        return transes
 
-    def __getPrimaryAnns(self, anns):
-        "get primary annotations, dropping PAR, alts, etc"
+    def __getPrimaryTranscript(self, transes):
+        "get primary transcript, dropping PAR, alts, etc"
         byChrom = defaultdict(list)
-        for ann in anns:
-            byChrom[ann.chrom].append(ann)
+        for trans in transes:
+            byChrom[trans.chrom].append(trans)
         chroms = list(byChrom.keys())
         if len(chroms) == 1:
             return byChrom[chroms[0]]
@@ -99,9 +107,9 @@ class SupportCounter(object):
             attrsByTrans[attr.transcriptId] = attr
         return attrsByTrans
 
-    def __getBounds(self, anns):
-        start = min([a.chromStart for a in anns])
-        end = min([a.chromEnd for a in anns])
+    def __getBounds(self, transes):
+        start = min([a.chromStart for a in transes])
+        end = min([a.chromEnd for a in transes])
         return start, end
 
     def __sumSupport(self, byIntronSjSupp, sjSupp):
@@ -110,32 +118,61 @@ class SupportCounter(object):
         if cnts is None:
             byIntronSjSupp[intron] = cnts = SjCounts(sjSupp.intronMotif)
         cnts.sum(sjSupp)
-        
+
     def __sumSupportsByIntron(self, chrom, start, end):
         byIntronSjSupp = dict()
         for sjSupp in self.sjSupportReader.query(chrom, start, end):
             self.__sumSupport(byIntronSjSupp, sjSupp)
+        return byIntronSjSupp
 
-    def __reportTransIntronSupport(self, ann, attrs, intronSjSupp, resultsWriter):
-        pass
+    def __sumSupportForRange(self, transes, attrsByTrans):
+        """Sums support by introns for SJ in the range, so transcripts should be a locus,
+        either transcripts in one gene locus or one transcript.  Collecting all upfront
+        prevents multiple queries for shared introns."""
+        start, end = self.__getBounds(transes)
+        return self.__sumSupportsByIntron(transes[0].chrom, start, end)
 
-    def __reportTransSupport(self, ann, attrs, byIntronSjSupp, resultsWriter):
-        pass
+    def __makeZeroSjSupp(self, intronFeat):
+        if intronFeat.donorSeq is not None:
+            intronMotif = "{}/{}".format(intronFeat.donorSeq, intronFeat.acceptorSeq)
+        else:
+            intronMotif = "##/##"
+        return SjCounts(intronMotif)
 
-    def __collectSupportAnns(self, anns, attrsByTrans, resultsWriter):
-        start, end = self.__getBounds(anns)
-        print(anns[0].chrom, start, end)
-        byIntronSjSupp = self.__sumSupportsByIntron(anns[0].chrom, start, end)
+    def __reportTransIntronSupport(self, trans, transAttrs, intronFeat, byIntronSjSupp, resultsWriter):
+        sjSupp = byIntronSjSupp.get(IntronCoords.fromIntronFeat(intronFeat))
+        if sjSupp is None:
+            sjSupp = self.__makeZeroSjSupp(intronFeat)
+        resultsWriter.writerow([transAttrs.geneId, transAttrs.geneName,
+                                transAttrs.transcriptId,
+                                transAttrs.transcriptType,
+                                intronFeat.transcript.chrom,
+                                intronFeat.chromStart, intronFeat.chromEnd,
+                                intronFeat.transcript.rnaStrand, sjSupp.intronMotif,
+                                sjSupp.numUniqueMapReads,
+                                sjSupp.numMultiMapReads])
+
+    def __reportTranscriptSupport(self, trans, transAttrs, byIntronSjSupp, resultsWriter):
+        for feat in trans.features:
+            if isinstance(feat, IntronFeature):
+                self.__reportTransIntronSupport(trans, transAttrs, feat, byIntronSjSupp, resultsWriter)
+
+    def __collectTranscriptsSupport(self, transes, attrsByTrans, resultsWriter):
+        byIntronSjSupp = self.__sumSupportForRange(transes, resultsWriter)
+        for trans in transes:
+            self.__reportTranscriptSupport(trans, attrsByTrans[trans.rnaName], byIntronSjSupp, resultsWriter)
 
     def __collectSupportId(self, gencodeId, resultsWriter):
         attrs = self.__getAttrsById(gencodeId)
-        anns = self.__getAnnotations(attrs)
-        if anns is not None:
-            self.__collectSupportAnns(self.__getPrimaryAnns(anns),
-                                      self.__splitAttrsByTrans(attrs),
-                                      resultsWriter)
+        transes = self.__getTranscripts(attrs)
+        if transes is not None:
+            self.__collectTranscriptsSupport(self.__getPrimaryTranscript(transes),
+                                             self.__splitAttrsByTrans(attrs),
+                                             resultsWriter)
 
     def collectSupport(self, gencodeIds, resultsWriter):
+        if len(gencodeIds) == 0:
+            gencodeIds = self.attrsDbTable.getAllGeneIds()
         resultsWriter.writerow(resultsHeader)
         for gencodeId in gencodeIds:
             self.__collectSupportId(gencodeId, resultsWriter)
@@ -148,7 +185,8 @@ def rslGencodeCollectSupport(opts):
     supportCounter = SupportCounter(gencodeConn, sjConn)
 
     with open(opts.resultsTsv, "w") as fh:
-        supportCounter.collectSupport(opts.gencodeIds, csv.writer(fh, dialect=csv.excel_tab))
+        supportCounter.collectSupport(opts.gencodeIds, csv.writer(fh, dialect=csv.excel_tab,
+                                                                  lineterminator='\n'))
 
     gencodeConn.close()
     if not sjConn.is_closed():  # FIXME: not sure why its in the is_closed state, maybe lazy open?

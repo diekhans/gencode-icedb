@@ -17,3 +17,6 @@ git@github.com:maasha/biopieces.git
     in relatively few transcripts.
 
 
+2017-08-09:
+     issues: no file name: tabix.TabixError: Can't open the index file.
+             taxix no close method

@@ -1,6 +1,7 @@
 #include "common.h"
 #include "intronMap.h"
 #include "starSpliceJunction.h"
+#include "starOps.h"
 #include "hash.h"
 #include "sqlNum.h"
 #include "genePred.h"
@@ -117,7 +118,7 @@ char* intronInfoMotifStr(struct intronInfo* intronInfo) {
         safef(motif, sizeof(motif), "%s/%s", intronInfo->transDonor, intronInfo->transAcceptor);
         return motif;
     } else if (intronInfo->mappingsSum != NULL) {
-        return starSpliceJunctionMotifStr(intronInfo->mappingsSum);
+        return starMotifCodeToStr(intronInfo->mappingsSum->intronMotif);
     } else {
         return "\?\?/\?\?"; 
     }
