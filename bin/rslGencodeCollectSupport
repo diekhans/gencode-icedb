@@ -1,0 +1,158 @@
+#!/usr/bin/env python
+
+from __future__ import print_function
+import icedbProgSetup  # noqa: F401
+import argparse
+import csv
+import sqlite3
+from collections import defaultdict, namedtuple
+from pycbio.hgdata.hgLite import GencodeAttrsDbTable, GenePredDbTable
+from gencode_icedb import gencodeDb
+from gencode_icedb.rsl.rslModel import sqliteConnect, SjSupportReader
+from gencode_icedb.tsl.transFeatures import IntronFeature
+from gencode_icedb.tsl.annotFeatures import AnnotationGenePredFactory
+
+
+def parseArgs():
+    desc = """Collect splice site evidence for some GENCODE annotations."""
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument('gencodeDb',
+                        help="""GENCODE sqlite3 database from gencodeDbLoad""")
+    parser.add_argument('sjDb',
+                        help="""splice junction evidence sqlite3 database, a correspond *.sjsup.gz and tabix index file must exist""")
+    parser.add_argument('resultsTsv',
+                        help="""TSV file for results""")
+    parser.add_argument('gencodeIds', nargs='*',
+                        help="""GENCODE gene or transcript ids, including versions.  If not are specified, all transcript are processed""")
+    return parser.parse_args()
+
+
+resultsHeader = ("geneId", "transcriptId", "geneName", "transcriptBiotype",
+                 "chrom", "intronStart", "intronEnd", "strand", "intronMotif",
+                 "numUniqueMapReads", "numMultiMapReads")
+
+
+class IntronCoords(namedtuple("Intron", ("chrom", "chromStart", "chromEnd",
+                                         "strand"))):
+    @staticmethod
+    def fromSjSupport(sjSupp):
+        return IntronCoords(sjSupp.chrom, sjSupp.chromStart, sjSupp.chromEnd, sjSupp.strand)
+
+
+class SjCounts(object):
+    __slots__ = ("intronMotif", "numUniqueMapReads", "numMultiMapReads")
+
+    def __init__(self, intronMotif):
+        self.intronMotif = intronMotif
+        self.numUniqueMapReads = self.numMultiMapReads = 0
+
+    def sum(self, cnts):
+        "can sum with SjCounts or SjSupport objects"
+        self.numUniqueMapReads += cnts.numUniqueMapReads
+        self.numMultiMapReads += cnts.numMultiMapReads
+
+
+class SupportCounter(object):
+    def __init__(self, gencodeConn, sjConn):
+        self.attrsDbTable = GencodeAttrsDbTable(gencodeConn, gencodeDb.gencode_attrs_table)
+        self.annDbTable = GenePredDbTable(gencodeConn, gencodeDb.gencode_ann_table)
+        self.sjSupportReader = SjSupportReader(sjDbConn=sjConn)
+        self.annFactory = AnnotationGenePredFactory()
+
+    def __getAttrsById(self, gencodeId):
+        "try gene, then transcript id"
+        attrs = self.attrsDbTable.getByGeneId(gencodeId)
+        if len(attrs) > 0:
+            return attrs
+        attr = self.attrsDbTable.getByTranscriptId(gencodeId)
+        if attr is not None:
+            return [attr]
+        raise Exception("can't find GENCODE gene or transcript with id {}".format(gencodeId))
+
+    def __getAnnotations(self, attrs):
+        """return list of annotations, which would be empty if the annotations
+        were on alts that were not aligned"""
+        anns = []
+        for attr in attrs:
+            for gp in self.annDbTable.getByName(attr.transcriptId):
+                anns.append(self.annFactory.fromGenePred(gp))
+        return anns
+
+    def __getPrimaryAnns(self, anns):
+        "get primary annotations, dropping PAR, alts, etc"
+        byChrom = defaultdict(list)
+        for ann in anns:
+            byChrom[ann.chrom].append(ann)
+        chroms = list(byChrom.keys())
+        if len(chroms) == 1:
+            return byChrom[chroms[0]]
+        if "chrY" in chroms:
+            # ignored Y
+            chroms.remove("chrY")
+        # use shortest
+        chroms.sort(key=lambda c: len(c))
+        return chroms[0]
+
+    def __splitAttrsByTrans(self, attrs):
+        attrsByTrans = dict()
+        for attr in attrs:
+            attrsByTrans[attr.transcriptId] = attr
+        return attrsByTrans
+
+    def __getBounds(self, anns):
+        start = min([a.chromStart for a in anns])
+        end = min([a.chromEnd for a in anns])
+        return start, end
+
+    def __sumSupport(self, byIntronSjSupp, sjSupp):
+        intron = IntronCoords.fromSjSupport(sjSupp)
+        cnts = byIntronSjSupp.get(intron)
+        if cnts is None:
+            byIntronSjSupp[intron] = cnts = SjCounts(sjSupp.intronMotif)
+        cnts.sum(sjSupp)
+        
+    def __sumSupportsByIntron(self, chrom, start, end):
+        byIntronSjSupp = dict()
+        for sjSupp in self.sjSupportReader.query(chrom, start, end):
+            self.__sumSupport(byIntronSjSupp, sjSupp)
+
+    def __reportTransIntronSupport(self, ann, attrs, intronSjSupp, resultsWriter):
+        pass
+
+    def __reportTransSupport(self, ann, attrs, byIntronSjSupp, resultsWriter):
+        pass
+
+    def __collectSupportAnns(self, anns, attrsByTrans, resultsWriter):
+        start, end = self.__getBounds(anns)
+        print(anns[0].chrom, start, end)
+        byIntronSjSupp = self.__sumSupportsByIntron(anns[0].chrom, start, end)
+
+    def __collectSupportId(self, gencodeId, resultsWriter):
+        attrs = self.__getAttrsById(gencodeId)
+        anns = self.__getAnnotations(attrs)
+        if anns is not None:
+            self.__collectSupportAnns(self.__getPrimaryAnns(anns),
+                                      self.__splitAttrsByTrans(attrs),
+                                      resultsWriter)
+
+    def collectSupport(self, gencodeIds, resultsWriter):
+        resultsWriter.writerow(resultsHeader)
+        for gencodeId in gencodeIds:
+            self.__collectSupportId(gencodeId, resultsWriter)
+
+
+def rslGencodeCollectSupport(opts):
+    "main function"
+    gencodeConn = sqlite3.connect(opts.gencodeDb)  # FIXME: switch to APSW read-only
+    sjConn = sqliteConnect(opts.sjDb, readonly=True)
+    supportCounter = SupportCounter(gencodeConn, sjConn)
+
+    with open(opts.resultsTsv, "w") as fh:
+        supportCounter.collectSupport(opts.gencodeIds, csv.writer(fh, dialect=csv.excel_tab))
+
+    gencodeConn.close()
+    if not sjConn.is_closed():  # FIXME: not sure why its in the is_closed state, maybe lazy open?
+        sjConn.close()
+
+
+rslGencodeCollectSupport(parseArgs())

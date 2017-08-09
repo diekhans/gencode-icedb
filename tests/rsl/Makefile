@@ -17,6 +17,9 @@ rslStarSjOutSplit = ${binDir}/rslStarSjOutSplit
 rslMkStarSjOutSplits = ${binDir}/rslMkStarSjOutSplits
 rslMkStarSjSupMergeJobs = ${binDir}/rslMkStarSjSupMergeJobs
 
+gencodeDbLoad = ${binDir}/gencodeDbLoad
+rslGencodeCollectSupport = ${binDir}/rslGencodeCollectSupport
+
 diff = diff -u
 
 export LC_ALL=C
@@ -119,9 +122,29 @@ mkStarMergeTest: mkdirs
 	${diff} expected/$@.jobs.cnt output/$@.jobs.cnt
 	${diff} expected/$@.run-batches output/$@.mergework/run-batches
 	for j in output/mkStarMergeTest.mergework/*.jobs ; do bash -e $$j ; done
-	${diff} expected/$@.merged.sjsup output/mkStarMergeTest.mergework/001.merged/000.sjsup
+	${diff} expected/$@.merged.sjsup output/$@.mergework/001.merged/000.sjsup
 	bgzip -c output/mkStarMergeTest.mergework/001.merged/000.sjsup >output/$@.sjsup.gz
 	tabix -0 -p bed output/$@.sjsup.gz
+
+##
+# Test of support
+##
+gencodeSupportTests: supportCollectTest
+
+define gencodeSupportTestSetup
+rm -rf output/$@
+mkdir -p output/$@
+${gencodeDbLoad} output/$@/gencode.db input/set1.hs.attrs.v26.tsv input/set1.hs.comp.v26.gp input/set1.hs.pseudo.v26.gp
+${rslSraRunInfoDbLoad} output/$@/sup.db input/set1.hs.run-info.tsv
+${rslMappingMetadataDbLoad} output/$@/sup.db input/set1.hs.mapping-params.tsv input/set1.hs.stardir.tsv
+bgzip -c expected/mkStarMergeTest.merged.sjsup > output/$@/sup.sjsup.gz
+tabix -0 -p bed output/$@/sup.sjsup.gz
+endef
+
+supportCollectTest: mkdirs
+	${gencodeSupportTestSetup}
+	${rslGencodeCollectSupport} output/$@/gencode.db output/$@/sup.db output/$@.supp.tsv ENSG00000142609.17 ENSG00000187730.8 ENSG00000226944.1
+
 
 ##
 # tests of creating genome fasta with gencode names
@@ -134,6 +157,7 @@ ucscGencodeFaTest: mkdirs
 
 ##
 # tests of program to get introns for genePreds
+# FIXME: drop
 ##
 genePredIntronsTests: genePredIntronsSet1Test
 

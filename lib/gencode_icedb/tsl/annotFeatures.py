@@ -13,7 +13,7 @@ class AnnotationGenePredFactory(object):
 
     def __init__(self, genomeReader=None, chromSizeFunc=None):
         """genomeReader is used to obtain splice sites and chrom size, maybe
-        None if splice sites are reverse complement will not be done. To get chrom sizes
+        None if splice sites and reverse complement will not be done. To get chrom sizes
         without splice sites, provide the chromSizeFunc(chrom) function."""
         self.genomeReader = genomeReader
         # set chromSizeFunc to return size or None if not available

@@ -15,7 +15,7 @@ from pycbio.ncbi.assembly import AssemblyReport
 import eutils.client
 import MySQLdb
 import MySQLdb.cursors
-import sqlite3
+import apsw
 import logging
 
 
@@ -260,7 +260,7 @@ def cdnaEnsemblAligns(opts):
                                      AssemblyReport(opts.assemblyReport))
     accverSubset = fileOps.readFileLines(opts.accverList) if opts.accverList is not None else None
     psls = converter.ensemblCDnasToPsls(opts.ensemblCDnaDb, opts.limit, accverSubset, opts.ensChroms)
-    conn = sqlite3.connect(opts.sqliteDb)
+    conn = apsw.APSWDatabase(opts.sqliteDb)
     pslDbTable = PslDbTable(conn, opts.table, create=True)
     pslDbTable.loads(psls)
     conn.close()

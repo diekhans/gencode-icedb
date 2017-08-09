@@ -1,11 +1,13 @@
 """
 PeeWee data models for RNA-Seq metadata and splice junctions.
 """
+from __future__ import print_function
+import os
 from peewee import Proxy, Model, PrimaryKeyField, ForeignKeyField, CharField, TextField
 from playhouse.apsw_ext import APSWDatabase
+import apsw
 from collections import namedtuple
 from gencode_icedb.rsl import starOps
-import apsw
 import tabix
 
 _database_proxy = Proxy()
@@ -90,9 +92,9 @@ class MappingMetadata(Model):
 
 
 class SjSupport(namedtuple("SjSupport", ("chrom", "chromStart", "chromEnd",
-                           "strand", "intronMotif", "annotated",
-                           "numUniqueMapReads", "numMultiMapReads",
-                           "maxOverhang", "mapping_symid"))):
+                                         "strand", "intronMotif", "annotated",
+                                         "numUniqueMapReads", "numMultiMapReads",
+                                         "maxOverhang", "mapping_symid"))):
     """SjSupport record.  These are loaded from a tabix indexed table file.
     strand and motif are converted to strings, annotated to a boolean."""
 
@@ -107,15 +109,23 @@ class SjSupport(namedtuple("SjSupport", ("chrom", "chromStart", "chromEnd",
 
 class SjSupportReader(object):
     """reader for SjSupport from a tabix-indexed file"""
-    def __init__(self, tabFile):
+    @staticmethod
+    def sjTabFromSjDb(sjDbPath):
+        "deduce tab file name from sjDbPath"
+        return os.path.splitext(sjDbPath)[0] + ".sjsup.gz"
+
+    def __init__(self, tabFile=None, sjDbConn=None, sjDbPath=None):
+        """can open by tab file name, a APSWDatabase object, or path to that
+        the database files"""
+        if tabFile is None:
+            if sjDbPath is None:
+                sjDbPath = sjDbConn.database
+            tabFile = self.sjTabFromSjDb(sjDbPath)
         self.tb = tabix.open(tabFile)
 
     def close(self):
         if self.tb is not None:
-            try:
-                self.tb.close()
-            finally:
-                self.tb = None
+            self.tb = None  # doesn't have close method (FIXME)
 
     def __del__(self):
         if self.tb is not None:
@@ -124,4 +134,4 @@ class SjSupportReader(object):
     def query(self, chrom, start, end):
         "Query returning SjSupport.  Use zero-based, half open coordinates"
         for row in self.tb.query(chrom, start, end):
-            return SjSupport.factory(row)
+            yield SjSupport.factory(row)

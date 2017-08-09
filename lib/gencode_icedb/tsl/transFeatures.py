@@ -5,6 +5,8 @@ from __future__ import print_function
 from pycbio.hgdata import dnaOps
 from pycbio.hgdata.frame import Frame
 
+# FIXME: moved to a common module
+
 
 def _reverseComplementChildren(rcParent, features):
     "reverse complement a list of child TransFeatures, return None if features is None"
@@ -252,7 +254,7 @@ class IntronFeature(TransFeature):
 class TranscriptFeatures(TransFeature):
     """
     Set of features for a transcript derived from an alignment or annotation,
-    features are kept in chrom strand order.
+    features are kept in chromosome order (positive strand).
     """
     name = "trans"
     __slots__ = ("chrom", "chromStrand", "chromSize", "rnaName", "rnaStrand", "rnaSize",

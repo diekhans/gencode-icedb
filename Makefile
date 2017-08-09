@@ -10,7 +10,8 @@ progs = icedbProgSetup.py \
 	tslGbffGetProblemCases tslGenbankProblemCasesLoad tslGetEnsemblRnaAligns \
 	rslEncodeDccQuery \
 	rslSraRunInfoFilter rslSraRunInfoDbLoad rslMappingMetadataDbLoad \
-	rslMkStarSjOutSplits
+	rslMkStarSjOutSplits \
+	rslGencodeCollectSupport
 
 # not done:  rslRnaSeqIntronEvidPlot rslRnaSeqIntronEvidStats
 
