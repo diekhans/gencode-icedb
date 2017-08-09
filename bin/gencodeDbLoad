@@ -6,7 +6,7 @@ import argparse
 from pycbio.hgdata.hgLite import GencodeAttrsDbTable, GenePredDbTable
 from pycbio.hgdata import hgDb
 import sqlite3
-from gencode_icedb import gencodeDb
+from gencode_icedb.general import gencodeDb
 
 
 def parseArgs():

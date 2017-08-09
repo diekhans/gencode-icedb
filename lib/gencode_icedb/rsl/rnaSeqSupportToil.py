@@ -9,6 +9,8 @@ from toil.job import Job
 import pipettor
 import logging
 
+# FIXME: not needed
+
 
 def rslStarGenerateGenome(refGeneomeName, refGeneomeFa, readLength, geneAnnotationSetName,
                           geneAnnotationSetGtf, numThreads):

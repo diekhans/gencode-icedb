@@ -3,8 +3,6 @@ ROOT = ../..
 binDir = ${ROOT}/bin
 
 rslEncodeDccQuery = ${binDir}/rslEncodeDccQuery
-faUcscToGencode = ${binDir}/faUcscToGencode
-genePredIntrons = ${binDir}/genePredIntrons
 
 rslRnaSeqIntronEvidBed = ${binDir}/rslRnaSeqIntronEvidBed
 rslRnaSeqIntronEvidStats = ${binDir}/rslRnaSeqIntronEvidStats
@@ -31,8 +29,6 @@ test:   dataConvertTests \
 	dbLoadTests \
 	sjsupBuildTests \
 	gencodeSupportTests \
-	faTests \
-	genePredIntronsTests \
 	encodeDccTests \
 	intronEvidBedTests \
 	intronEvidStatsTests
@@ -159,27 +155,8 @@ supportCollectTransTest: mkdirs
 	${rslGencodeCollectSupport} output/$@/gencode.db output/$@/rnaseq.db output/$@.supp.tsv ENST00000444870.6 ENST00000462356.5
 	${diff} expected/$@.supp.tsv output/$@.supp.tsv
 
-
 ##
-# tests of creating genome fasta with gencode names
-##
-faTests: ucscGencodeFaTest
-
-ucscGencodeFaTest: mkdirs
-	${faUcscToGencode} input/ucscGenome.fa input/ucsc2GencodeNames.tsv output/$@.fa
-	diff expected/$@.fa output/$@.fa
-
-##
-# tests of program to get introns for genePreds
-# FIXME: drop
-##
-genePredIntronsTests: genePredIntronsSet1Test
-
-genePredIntronsSet1Test: mkdirs
-	faToTwoBit  input/small-chr22.fa output/$@.2bit
-	${genePredIntrons} input/small-gencode.gp output/$@.2bit output/$@.tsv
-	diff expected/$@.tsv output/$@.tsv
-
+# data from encode3 DCC
 ##
 encodeDccTests: encodeDcc10Tests
 

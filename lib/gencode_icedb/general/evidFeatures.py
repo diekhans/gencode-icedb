@@ -4,9 +4,9 @@ Convert alignments (PSL) to features, closing and tracking gaps.
 from __future__ import print_function
 from pycbio.hgdata.rangeFinder import RangeFinder
 from pycbio.hgdata.hgLite import PslDbTable
-from gencode_icedb.genome import spliceJuncClassifyStrand
+from gencode_icedb.general.spliceJuncs import spliceJuncClassifyStrand
 from gencode_icedb.tsl import minIntronSize
-from gencode_icedb.tsl.transFeatures import ExonFeature, IntronFeature, TranscriptFeatures, AlignedFeature, ChromInsertFeature, RnaInsertFeature
+from gencode_icedb.general.transFeatures import ExonFeature, IntronFeature, TranscriptFeatures, AlignedFeature, ChromInsertFeature, RnaInsertFeature
 
 
 class EvidencePslFactory(object):

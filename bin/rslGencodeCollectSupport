@@ -7,10 +7,10 @@ import csv
 import sqlite3
 from collections import defaultdict, namedtuple
 from pycbio.hgdata.hgLite import GencodeAttrsDbTable, GenePredDbTable
-from gencode_icedb import gencodeDb
+from gencode_icedb.general import gencodeDb
 from gencode_icedb.rsl.rslModel import sqliteConnect, SjSupportReader
-from gencode_icedb.tsl.transFeatures import IntronFeature
-from gencode_icedb.tsl.annotFeatures import AnnotationGenePredFactory
+from gencode_icedb.general.transFeatures import IntronFeature
+from gencode_icedb.general.annotFeatures import AnnotationGenePredFactory
 
 
 def parseArgs():
@@ -189,7 +189,7 @@ def rslGencodeCollectSupport(opts):
                                                                   lineterminator='\n'))
 
     gencodeConn.close()
-    if not sjConn.is_closed():  # FIXME: not sure why its in the is_closed state, maybe lazy open?
+    if not sjConn.is_closed():  # FIXME: not sure why it is in the is_closed state, maybe lazy open?
         sjConn.close()
 
 

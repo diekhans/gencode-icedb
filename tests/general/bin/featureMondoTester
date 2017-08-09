@@ -11,8 +11,8 @@ from pycbio.hgdata import hgDb
 from pycbio.hgdata.psl import PslDbReader
 from pycbio.hgdata.genePred import GenePredDbReader
 from gencode_icedb.genome import GenomeReader
-from gencode_icedb.tsl.evidFeatures import EvidencePslFactory
-from gencode_icedb.tsl.annotFeatures import AnnotationGenePredFactory
+from gencode_icedb.general.evidFeatures import EvidencePslFactory
+from gencode_icedb.general.annotFeatures import AnnotationGenePredFactory
 from twobitreader import TwoBitFile
 
 

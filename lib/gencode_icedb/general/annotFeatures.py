@@ -1,9 +1,9 @@
 from __future__ import print_function
 from pycbio.hgdata.hgLite import GenePredDbTable
 from pycbio.hgdata.frame import Frame
-from gencode_icedb.genome import spliceJuncClassifyStrand
+from gencode_icedb.general.spliceJuncs import spliceJuncClassifyStrand
 from gencode_icedb.tsl import minIntronSize
-from gencode_icedb.tsl.transFeatures import ExonFeature, IntronFeature, TranscriptFeatures, Utr5RegionFeature, CdsRegionFeature, Utr3RegionFeature, NonCodingRegionFeature
+from gencode_icedb.general.transFeatures import ExonFeature, IntronFeature, TranscriptFeatures, Utr5RegionFeature, CdsRegionFeature, Utr3RegionFeature, NonCodingRegionFeature
 
 
 class AnnotationGenePredFactory(object):

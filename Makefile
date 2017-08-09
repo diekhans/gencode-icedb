@@ -1,10 +1,8 @@
 ROOT = .
 include ${ROOT}/config.mk
 
-TSLCLTESTDIR = tests/tsl/classify
-
 pylibs = $(wildcard ${PYLIBDIR}/*.py) $(wildcard ${PYLIBDIR}/rsl/*.py) $(wildcard ${PYLIBDIR}/tsl/*.py)
-pytests = $(wildcard ${TSLCLTESTDIR}/*.py)
+pytests = $(wildcard tests/general/*.py)
 progs = icedbProgSetup.py \
 	gencodeDbLoad \
 	tslGbffGetProblemCases tslGenbankProblemCasesLoad tslGetEnsemblRnaAligns \
@@ -20,6 +18,9 @@ all::
 
 test:: all
 	(cd tests && ${MAKE} test)
+
+mondoTest::
+	(cd tests && ${MAKE} mondoTest)
 
 lint:
 	flake8 ${pylibs} ${progs:%=bin/%} ${pytests}

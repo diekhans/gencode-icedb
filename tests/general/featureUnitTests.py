@@ -2,16 +2,16 @@ from __future__ import print_function
 import sys
 import os
 if __name__ == '__main__':
-    rootDir = "../../.."
+    rootDir = "../.."
     sys.path = [os.path.join(rootDir, "lib"),
                 os.path.join(rootDir, "extern/pycbio/lib")] + sys.path
 import unittest
 from pycbio.sys.testCaseBase import TestCaseBase
 from pycbio.tsv import TsvReader
 from pycbio.sys import fileOps
-from gencode_icedb.genome import GenomeReader
-from gencode_icedb.tsl.evidFeatures import EvidenceFeatureMap, EvidencePslFactory
-from gencode_icedb.tsl.annotFeatures import AnnotationGenePredFactory
+from gencode_icedb.general.genome import GenomeReader
+from gencode_icedb.general.evidFeatures import EvidenceFeatureMap, EvidencePslFactory
+from gencode_icedb.general.annotFeatures import AnnotationGenePredFactory
 from twobitreader import TwoBitFile
 from pycbio.hgdata.hgLite import PslDbTable, GenePredDbTable
 from pycbio.hgdata.genePred import GenePredReader

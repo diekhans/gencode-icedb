@@ -1,14 +1,22 @@
 ROOT = ..
 include ${ROOT}/config.mk
 
+subdirs = general rsl tsl
+
 all::
 
-test:: rsl.test tsl.test
+test:: ${subdirs:%=%.test}
 
 %.test:
 	(cd $* && ${MAKE} test)
 
-clean:: rsl.clean tsl.clean
+mondoTest: general.mondoTest
+
+%.mondoTest:
+	(cd $* && ${MAKE} mondoTest)
+
+
+clean:: ${subdirs:%=%.clean}
 
 %.clean:
 	(cd $* && ${MAKE} clean)

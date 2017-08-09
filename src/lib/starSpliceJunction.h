@@ -22,7 +22,7 @@ struct starSpliceJunction
     unsigned numUniqueMapReads;	/* number of uniquely mapping reads crossing the junction */
     unsigned numMultiMapReads;	/* number of multi-mapping reads crossing the junction */
     unsigned maxOverhang;	/* maximum spliced alignment overhang */
-    /* extra data (FIXME drop) */ 
+    /* extra data */ 
     struct rslAnalysisLink* srcAnalyses;  /* links to analysis that were the source of this object.
                                            * it maybe a list when summed.  This is not in the file,
                                            * will be freed when object is freed. */

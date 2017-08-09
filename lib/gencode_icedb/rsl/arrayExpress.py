@@ -6,6 +6,8 @@ from collections import defaultdict
 from gencode_icedb import rnaSeqData
 from peewee import SqliteDatabase
 
+# FIXME: broken??
+
 
 class ArrayExpressSdrfMapper(object):
     """Object to TSV column names to field names.  Counting occurrences of

@@ -7,7 +7,7 @@ import os
 import argparse
 import math
 from pycbio.sys import fileOps
-from gencode_icedb import dataOps
+from gencode_icedb.general import dataOps
 from gencode_icedb.rsl.gencodeIntronEvid import GencodeIntronEvidReader
 import numpy as np
 import matplotlib
