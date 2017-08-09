@@ -5,6 +5,7 @@ binDir = ${ROOT}/bin
 faUcscToGencode = ${binDir}/faUcscToGencode
 genePredIntrons = ${binDir}/genePredIntrons
 gencodeDbLoad = ${binDir}/gencodeDbLoad
+featureMondoTester = ./bin/featureMondoTester
 
 diff = diff -u
 
@@ -59,14 +60,14 @@ genePredIntronsSet1Test: mkdirs
 mondoTest: pslMondoTest gpMondoTest gencodeDbMondoTest
 
 pslMondoTest: mkdirs
-	./bin/featureMondoTester hg38 all_mrna psl
+	time ${featureMondoTester} hg38 all_mrna psl
 
 gpMondoTest: mkdirs
-	./bin/featureMondoTester hg38 wgEncodeGencodeCompV26 genepred
+	time ${featureMondoTester} hg38 wgEncodeGencodeCompV26 genepred
 
 gencodeDbMondoTest: mkdirs
 	rm -f output/$@.db
-	${gencodeDbLoad} --hgdb=hg38 output/$@.db wgEncodeGencodeAttrsV26 wgEncodeGencodeCompV26 wgEncodeGencodePseudoGeneV26
+	time ${gencodeDbLoad} --hgdb=hg38 output/$@.db wgEncodeGencodeAttrsV26 wgEncodeGencodeCompV26 wgEncodeGencodePseudoGeneV26
 
 mkdirs:
 	@mkdir -p output

@@ -4,7 +4,7 @@ from __future__ import print_function
 import argparse
 import sys
 import os
-rootDir = "../../.."
+rootDir = "../.."
 sys.path = [os.path.join(rootDir, "lib"),
             os.path.join(rootDir, "extern/pycbio/lib")] + sys.path
 from pycbio.hgdata import hgDb
