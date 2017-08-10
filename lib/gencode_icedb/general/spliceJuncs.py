@@ -2,7 +2,7 @@ from pycbio.sys.symEnum import SymEnum
 from pycbio.hgdata import dnaOps
 
 
-class SpliceJunc(SymEnum):
+class SpliceJuncs(SymEnum):
     "symbolic names for known splice junction patterns"
     unknown = 0
     GT_AG = 1
@@ -13,23 +13,23 @@ class SpliceJunc(SymEnum):
     GT_AT = 6
 
 
-spliceJuncMap = {
-    ("gt", "ag"): SpliceJunc.GT_AG,
-    ("ct", "ac"): SpliceJunc.CT_AC,
-    ("gc", "ag"): SpliceJunc.GC_AG,
-    ("ct", "gc"): SpliceJunc.CT_GC,
-    ("at", "ac"): SpliceJunc.AT_AC,
-    ("gt", "at"): SpliceJunc.GT_AT
+spliceJuncsMap = {
+    ("gt", "ag"): SpliceJuncs.GT_AG,
+    ("ct", "ac"): SpliceJuncs.CT_AC,
+    ("gc", "ag"): SpliceJuncs.GC_AG,
+    ("ct", "gc"): SpliceJuncs.CT_GC,
+    ("at", "ac"): SpliceJuncs.AT_AC,
+    ("gt", "at"): SpliceJuncs.GT_AT
 }
 
 # mapping of star splice code, 0 is unknown
-starSpliceJuncMap = {
-    1: SpliceJunc.GT_AG,
-    2: SpliceJunc.CT_AC,
-    3: SpliceJunc.GC_AG,
-    4: SpliceJunc.CT_GC,
-    5: SpliceJunc.AT_AC,
-    6: SpliceJunc.GT_AT
+starSpliceJuncsMap = {
+    1: SpliceJuncs.GT_AG,
+    2: SpliceJuncs.CT_AC,
+    3: SpliceJuncs.GC_AG,
+    4: SpliceJuncs.CT_GC,
+    5: SpliceJuncs.AT_AC,
+    6: SpliceJuncs.GT_AT
 }
 
 
@@ -40,26 +40,33 @@ class Spliceosome(SymEnum):
 
 
 spliceosomeMap = {
-    SpliceJunc.GT_AG: Spliceosome.major,
-    SpliceJunc.CT_AC: Spliceosome.minor,
-    SpliceJunc.GC_AG: Spliceosome.minor,
-    SpliceJunc.CT_GC: Spliceosome.minor,
-    SpliceJunc.AT_AC: Spliceosome.minor,
-    SpliceJunc.GT_AT: Spliceosome.minor
+    SpliceJuncs.GT_AG: Spliceosome.major,
+    SpliceJuncs.CT_AC: Spliceosome.minor,
+    SpliceJuncs.GC_AG: Spliceosome.minor,
+    SpliceJuncs.CT_GC: Spliceosome.minor,
+    SpliceJuncs.AT_AC: Spliceosome.minor,
+    SpliceJuncs.GT_AT: Spliceosome.minor
 }
 
 
-def spliceJuncClassify(donor, acceptor):
-    return spliceJuncMap.get((donor.lower(), acceptor.lower()), SpliceJunc.unknown)
-
-
-def spliceJuncClassifyStrand(strand, donorSeq, acceptorSeq):
-    if strand == '+':
-        return spliceJuncClassify(donorSeq, acceptorSeq)
-    else:
-        return spliceJuncClassify(dnaOps.reverseComplement(acceptorSeq), dnaOps.reverseComplement(donorSeq))
+def spliceJuncsClassify(donorSeq, acceptorSeq):
+    return spliceJuncsMap.get((donorSeq.lower(), acceptorSeq.lower()), SpliceJuncs.unknown)
 
 
 def spliceosomeClassify(spliceJunc):
-    assert isinstance(spliceJunc, SpliceJunc), type(spliceJunc)
+    assert isinstance(spliceJunc, SpliceJuncs), type(spliceJunc)
     return spliceosomeMap.get(spliceJunc, Spliceosome.unknown)
+
+
+def spliceJuncsGetSeqs(genomeReader, chrom, intronStart, intronEnd, strand):
+    """get the donor and acceptor sequences for the intron, considering
+    strand.  If the motif is not a know one, make lower case, otherwise
+    upper case if known"""
+    donorSeq = genomeReader.get(chrom, intronStart, intronStart + 2)
+    acceptorSeq = genomeReader.get(chrom, intronEnd - 2, intronEnd)
+    if strand == '-':
+        donorSeq, acceptorSeq = dnaOps.reverseComplement(acceptorSeq), dnaOps.reverseComplement(donorSeq)
+    if spliceJuncsClassify(acceptorSeq, donorSeq) == SpliceJuncs.unknown:
+        return (donorSeq.lower(), acceptorSeq.lower())
+    else:
+        return (donorSeq.upper(), acceptorSeq.upper())

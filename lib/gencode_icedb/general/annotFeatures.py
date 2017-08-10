@@ -1,7 +1,7 @@
 from __future__ import print_function
 from pycbio.hgdata.hgLite import GenePredDbTable
 from pycbio.hgdata.frame import Frame
-from gencode_icedb.general.spliceJuncs import spliceJuncClassifyStrand
+from gencode_icedb.general.spliceJuncs import spliceJuncsGetSeqs
 from gencode_icedb.tsl import minIntronSize
 from gencode_icedb.general.transFeatures import ExonFeature, IntronFeature, TranscriptFeatures, Utr5RegionFeature, CdsRegionFeature, Utr3RegionFeature, NonCodingRegionFeature
 
@@ -110,21 +110,18 @@ class AnnotationGenePredFactory(object):
             self.__addNonCodingFeatures(gp, iBlkStart, iBlkEnd, rnaStart, rnaEnd, exon)
         return exon
 
-    def __getSpliceJunc(self, gp, iBlkNext):
-        donorSeq = self.genomeReader.get(gp.chrom, gp.exons[iBlkNext - 1].end,
-                                         gp.exons[iBlkNext - 1].end + 2)
-        acceptorSeq = self.genomeReader.get(gp.chrom, gp.exons[iBlkNext].start - 2,
-                                            gp.exons[iBlkNext].start)
-        spliceJunc = spliceJuncClassifyStrand(gp.strand, donorSeq, acceptorSeq)
-        return donorSeq, acceptorSeq, spliceJunc
+    def __getSpliceSites(self, gp, iBlkNext):
+        if self.genomeReader is None:
+            return (None, None)
+        else:
+            return spliceJuncsGetSeqs(self.genomeReader, gp.chrom,
+                                      gp.exons[iBlkNext - 1].end,
+                                      gp.exons[iBlkNext].start, gp.strand)
 
     def __makeIntron(self, gp, iBlkNext, rnaEnd, trans):
-        if self.genomeReader is None:
-            donorSeq = acceptorSeq = spliceJunc = None
-        else:
-            donorSeq, acceptorSeq, spliceJunc = self.__getSpliceJunc(gp, iBlkNext)
+        donorSeq, acceptorSeq = self.__getSpliceSites(gp, iBlkNext)
         return IntronFeature(trans, gp.exons[iBlkNext - 1].end, gp.exons[iBlkNext].start,
-                             rnaEnd, rnaEnd, donorSeq, acceptorSeq, spliceJunc)
+                             rnaEnd, rnaEnd, donorSeq, acceptorSeq)
 
     def fromGenePred(self, gp):
         "convert a genePred to an AnnotTranscript"

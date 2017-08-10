@@ -20,6 +20,8 @@ rslGencodeCollectSupport = ${binDir}/rslGencodeCollectSupport
 rslGencodeCollectSupportMkJobs = ${binDir}/rslGencodeCollectSupportMkJobs
 rslGencodeCollectSupportFinishJobs = ${binDir}/rslGencodeCollectSupportFinishJobs
 
+genomeSeqsHg38 = /hive/data/genomes/hg38/hg38.2bit
+
 diff = diff -u
 
 export LC_ALL=C
@@ -143,25 +145,28 @@ bgzip -c expected/mkStarMergeTest.merged.sjsup > output/$@/rnaseq.sjsup.gz
 tabix -0 -p bed output/$@/rnaseq.sjsup.gz
 endef
 
+genomeSeqsSpecs = --genomeSeqs=${genomeSeqsHg38} --mockGenomeSeqs=input/set1.hs.mock-genome.tsv
+
 supportCollectAllTest: mkdirs
 	${gencodeSupportTestSetup}
-	${rslGencodeCollectSupport} output/$@/gencode.db output/$@/rnaseq.db output/$@.supp.tsv
+	${rslGencodeCollectSupport} ${genomeSeqsSpecs} output/$@/gencode.db output/$@/rnaseq.db output/$@.supp.tsv
 	${diff} expected/$@.supp.tsv output/$@.supp.tsv
 
 supportCollectGenesTest: mkdirs
 	${gencodeSupportTestSetup}
-	${rslGencodeCollectSupport} output/$@/gencode.db output/$@/rnaseq.db output/$@.supp.tsv ENSG00000235169.7
+	${rslGencodeCollectSupport} ${genomeSeqsSpecs} output/$@/gencode.db output/$@/rnaseq.db output/$@.supp.tsv ENSG00000235169.7
 	${diff} expected/$@.supp.tsv output/$@.supp.tsv
 
 supportCollectTransTest: mkdirs
 	${gencodeSupportTestSetup}
-	${rslGencodeCollectSupport} output/$@/gencode.db output/$@/rnaseq.db output/$@.supp.tsv ENST00000444870.6 ENST00000462356.5
+	${rslGencodeCollectSupport} ${genomeSeqsSpecs} output/$@/gencode.db output/$@/rnaseq.db output/$@.supp.tsv ENST00000444870.6 ENST00000462356.5
 	${diff} expected/$@.supp.tsv output/$@.supp.tsv
 
 supportCollectMkJobsTest: mkdirs
 	${gencodeSupportTestSetup}
-	${rslGencodeCollectSupportMkJobs} --maxgenes=10 output/$@/gencode.db output/$@/rnaseq.db output/$@.work
-	${diff} expected/$@.batch.jobs output/$@.work/batch.jobs
+	${rslGencodeCollectSupportMkJobs} --maxgenes=10 ${genomeSeqsSpecs} output/$@/gencode.db output/$@/rnaseq.db output/$@.work
+	sed -Ee 's#^.*(/bin/rslGencodeCollectSupport)#??\1#' output/$@.work/batch.jobs > output/$@.work/batch.jobs.cleaned
+	${diff} expected/$@.batch.jobs.cleaned output/$@.work/batch.jobs.cleaned
 	bash -e output/$@.work/batch.jobs
 	ls -1 output/$@.work/results/ > output/$@.results.lst
 	${diff} expected/$@.results.lst output/$@.results.lst

@@ -1,7 +1,10 @@
 ROOT = .
 include ${ROOT}/config.mk
 
-pylibs = $(wildcard ${PYLIBDIR}/*.py) $(wildcard ${PYLIBDIR}/rsl/*.py) $(wildcard ${PYLIBDIR}/tsl/*.py)
+pylibs = $(wildcard ${PYLIBDIR}/*.py) \
+	$(wildcard ${PYLIBDIR}/general/*.py) \
+	$(wildcard ${PYLIBDIR}/rsl/*.py) \
+	$(wildcard ${PYLIBDIR}/tsl/*.py)
 pytests = $(wildcard tests/general/*.py)
 progs = icedbProgSetup.py \
 	gencodeDbLoad \

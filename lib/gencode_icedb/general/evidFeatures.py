@@ -4,7 +4,7 @@ Convert alignments (PSL) to features, closing and tracking gaps.
 from __future__ import print_function
 from pycbio.hgdata.rangeFinder import RangeFinder
 from pycbio.hgdata.hgLite import PslDbTable
-from gencode_icedb.general.spliceJuncs import spliceJuncClassifyStrand
+from gencode_icedb.general.spliceJuncs import spliceJuncsGetSeqs
 from gencode_icedb.tsl import minIntronSize
 from gencode_icedb.general.transFeatures import ExonFeature, IntronFeature, TranscriptFeatures, AlignedFeature, ChromInsertFeature, RnaInsertFeature
 
@@ -65,21 +65,17 @@ class EvidencePslFactory(object):
         return exon
 
     def __getSpliceSites(self, psl, iBlkNext):
-        donorSeq = self.genomeReader.get(psl.tName, psl.blocks[iBlkNext - 1].tEnd,
-                                         psl.blocks[iBlkNext - 1].tEnd + 2)
-        acceptorSeq = self.genomeReader.get(psl.tName, psl.blocks[iBlkNext].tStart - 2,
-                                            psl.blocks[iBlkNext].tStart)
-        spliceJunc = spliceJuncClassifyStrand(psl.getQStrand(), donorSeq, acceptorSeq)
-        return donorSeq, acceptorSeq, spliceJunc
+        if self.genomeReader is None:
+            return (None, None)
+        else:
+            return spliceJuncsGetSeqs(self.genomeReader, psl.tName, psl.blocks[iBlkNext - 1].tEnd,
+                                      psl.blocks[iBlkNext].tStart, psl.getQStrand())
 
     def __makeIntron(self, psl, iBlkNext, trans):
-        if self.genomeReader is None:
-            donorSeq = acceptorSeq = spliceJunc = None
-        else:
-            donorSeq, acceptorSeq, spliceJunc = self.__getSpliceSites(psl, iBlkNext)
+        donorSeq, acceptorSeq = self.__getSpliceSites(psl, iBlkNext)
         return IntronFeature(trans, psl.blocks[iBlkNext - 1].tEnd, psl.blocks[iBlkNext].tStart,
                              psl.blocks[iBlkNext - 1].qEnd, psl.blocks[iBlkNext].qStart,
-                             donorSeq, acceptorSeq, spliceJunc)
+                             donorSeq, acceptorSeq)
 
     def fromPsl(self, psl):
         "convert a psl to an TranscriptFeatures object"

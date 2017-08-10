@@ -9,6 +9,7 @@ from collections import defaultdict, namedtuple
 from pycbio.sys import fileOps
 from pycbio.hgdata.hgLite import GencodeAttrsDbTable, GenePredDbTable
 from gencode_icedb.general import gencodeDb
+from gencode_icedb.general.spliceJuncs import SpliceJuncs, spliceJuncsGetSeqs
 from gencode_icedb.general.genome import GenomeReaderFactory
 from gencode_icedb.general.transFeatures import IntronFeature
 from gencode_icedb.general.annotFeatures import AnnotationGenePredFactory
@@ -23,9 +24,9 @@ def parseArgs():
                         help="""Genome sequence twobit file to obtain splice sites""")
     parser.add_argument('--mockGenomeSeqs',
                         help="""Genome sequence TSV for mock reader for testing. This will be used if genomeSeqs is not specified or does not exist.""")
-    parser.add_argument('--updateMockGenomeSeqs',
+    parser.add_argument('--updateMockGenomeSeqs', action="store_true",
                         help="""update mock genome seqs.""")
-    parser.add_argument('--forceMockGenomeSeqs',
+    parser.add_argument('--forceMockGenomeSeqs', action="store_true",
                         help="""force using mock genome seqs, even if twobit exists""")
     parser.add_argument('gencodeDb',
                         help="""GENCODE sqlite3 database from gencodeDbLoad""")
@@ -123,11 +124,18 @@ class SupportCounter(object):
         end = max([a.chromEnd for a in transes])
         return transes[0].chrom, start, end
 
+    def __getIntronMotif(self, sjSupp):
+        "return motif, if it's not one known by STAR, look up"
+        if sjSupp.intronMotif == "??/??":
+            return spliceJuncsGetSeqs(self.genomeReader, sjSupp.chrom, sjSupp.intronStart, sjSupp.intronStart, sjSupp.strand)
+        else:
+            return sjSupp.intronMotif
+
     def __sumSupport(self, byIntronSjSupp, sjSupp):
         intron = IntronCoords.fromSjSupport(sjSupp)
         cnts = byIntronSjSupp.get(intron)
         if cnts is None:
-            byIntronSjSupp[intron] = cnts = SjCounts(sjSupp.intronMotif)
+            byIntronSjSupp[intron] = cnts = SjCounts(self.__getIntronMotif(sjSupp))
         cnts.sum(sjSupp)
 
     def __sumSupportsByIntron(self, chrom, start, end):
@@ -144,10 +152,12 @@ class SupportCounter(object):
         return self.__sumSupportsByIntron(chrom, start, end)
 
     def __makeZeroSjSupp(self, intronFeat):
-        if intronFeat.donorSeq is not None:
-            intronMotif = "{}/{}".format(intronFeat.donorSeq, intronFeat.acceptorSeq)
+        """will be lower-case if not a known slice junction"""
+        intronMotif = "{}/{}".format(intronFeat.donorSeq, intronFeat.acceptorSeq)
+        if intronFeat.spliceJuncs == SpliceJuncs.unknown:
+            intronMotif = intronMotif.lower()
         else:
-            intronMotif = "##/##"
+            intronMotif = intronMotif.upper()
         return SjCounts(intronMotif)
 
     def __reportTransIntronSupport(self, trans, transAttrs, intronFeat, byIntronSjSupp, resultsWriter):

@@ -4,6 +4,7 @@ Features of a transcript annotation or alignment.
 from __future__ import print_function
 from pycbio.hgdata import dnaOps
 from pycbio.hgdata.frame import Frame
+from gencode_icedb.general.spliceJuncs import SpliceJuncs, spliceJuncsClassify
 
 # FIXME: moved to a common module
 
@@ -213,21 +214,31 @@ class ExonFeature(TransFeature):
 
 
 class IntronFeature(TransFeature):
-    """intron from annotation or alignment, splice junction information maybe
-    None. alignFeatures are for query insertions in intron, and maybe None"""
+    """Intron from annotation or alignment, splice junction information maybe
+    None. The alignFeatures field are for query insertions in intron, and maybe None.
+    The donorSeq and acceptorSeq values are in the direction of transcription and
+    are lower-case if splice junction motif is unknown and upper case if known.
+    The spliceJuncs field is a SpliceJuncs object or None.
+    """
     name = "intron"
-    __slots__ = ("donorSeq", "acceptorSeq", "spliceSites", "alignFeatures")
+    __slots__ = ("donorSeq", "acceptorSeq", "spliceJuncs", "alignFeatures")
 
-    def __init__(self, parent, chromStart, chromEnd, rnaStart, rnaEnd, donorSeq, acceptorSeq, spliceSites):
+    def __init__(self, parent, chromStart, chromEnd, rnaStart, rnaEnd, donorSeq, acceptorSeq):
         super(IntronFeature, self).__init__(parent, chromStart, chromEnd, rnaStart, rnaEnd)
-        self.donorSeq, self.acceptorSeq, self.spliceSites = donorSeq, acceptorSeq, spliceSites
+        self.donorSeq = self.acceptorSeq = self.spliceJuncs = None
+        if donorSeq is not None:
+            self.spliceJuncs = spliceJuncsClassify(donorSeq, acceptorSeq)
+            if self.spliceJuncs == SpliceJuncs.unknown:
+                self.donorSeq, self.acceptorSeq = donorSeq.lower(), acceptorSeq.lower()
+            else:
+                self.donorSeq, self.acceptorSeq = donorSeq.upper(), acceptorSeq.upper()
         self.alignFeatures = None
 
     def __str__(self):
         if self.donorSeq is None:
             sjDesc = None
         else:
-            sjDesc = "{}...{} ({})".format(self.donorSeq, self.acceptorSeq, self.spliceSites)
+            sjDesc = "{}...{} ({})".format(self.donorSeq, self.acceptorSeq, self.spliceJuncs)
         return "intron {} sjBases={}".format(self.coordsStr(), sjDesc)
 
     def toStrTree(self):
@@ -240,9 +251,8 @@ class IntronFeature(TransFeature):
 
     def reverseComplement(self, rcParent):
         rcCoords = self.reverseCoords()
-        rcDonorSeq, rcAcceptorSeq = (None, None) if self.donorSeq is None else (dnaOps.reverseComplement(self.acceptorSeq), dnaOps.reverseComplement(self.donorSeq))
         rcIntron = IntronFeature(rcParent, rcCoords[0], rcCoords[1], rcCoords[2], rcCoords[3],
-                                 rcDonorSeq, rcAcceptorSeq, self.spliceSites)
+                                 self.donorSeq, self.acceptorSeq)
         rcIntron.alignFeatures = _reverseComplementChildren(rcParent, self.alignFeatures)
         return rcIntron
 

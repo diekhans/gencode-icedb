@@ -18,6 +18,11 @@ class GenomeReader(object):
         self.twoBitReader = twoBitReader
         self.chrom = self.size = None
 
+    def close(self):
+        "twobit package doesn't have close"
+        self.twoBitReader = None
+        self.chrom = self.size = None
+
     def __obtainChrom(self, chrom):
         if self.chrom != chrom:
             self.twoBitSeq = self.twoBitReader[chrom]
@@ -32,6 +37,9 @@ class GenomeReader(object):
         if strand == '-':
             seq = dnaOps.reverseComplement(seq)
         return seq
+
+    def haveChrom(self, chrom):
+        return chrom in self.twoBitReader
 
     def getChromSize(self, chrom):
         self.__obtainChrom(chrom)
@@ -50,10 +58,17 @@ class MockGenomeReader(object):
             self.mockDataSizes[row.chrom] = row.size
             self.mockDataSeqs[(row.chrom, row.start, row.end, row.strand)] = row.seq
 
+    def close(self):
+        "doesn't do anything, but writer does use close"
+        pass
+
     def get(self, chrom, start, end, strand=None):
         if strand is None:
             strand = '+'
         return self.mockDataSeqs[(chrom, start, end, strand)]
+
+    def haveChrom(self, chrom):
+        return chrom in self.mockDataSizes
 
     def getChromSize(self, chrom):
         return self.mockDataSizes[chrom]
@@ -65,18 +80,38 @@ class MockSeqWriter(object):
         self.genomeReader = genomeReader
         self.mockDataFh = open(mockDataTsv, "w")
         fileOps.prRowv(self.mockDataFh, "chrom", "start", "end", "size", "strand", "seq")
+        # track what we got so we can save chroms where only size was obtained
+        # to mock file
+        self.gotSizes = set()
+        self.gotSeq = set()
+
+    def __write(self, chrom, start, end, size, strand, seq):
+        fileOps.prRowv(self.mockDataFh, chrom, start, end, size, strand, seq)
+
+    def close(self):
+        "make sure chromosomes where only the size is obtained are saved"
+        for chrom in self.gotSizes - self.gotSeq:
+            self.__write(chrom, 0, 0, self.getChromSize(chrom), "+", "")
+        self.mockDataFh.close()
+        self.mockDataFh = None
+        self.genomeReader.close()
+
+    def __del__(self):
+        if self.mockDataFh is not None:
+            self.close()
 
     def get(self, chrom, start, end, strand=None):
+        self.gotSeq.add(chrom)
         if strand is None:
             strand = '+'
         assert strand == '+'
         size = self.genomeReader.getChromSize(chrom)
         seq = self.genomeReader.get(chrom, start, end, strand)
-        fileOps.prRowv(self.mockDataFh, chrom, start, end, size, strand, seq)
-        self.mockDataFh.flush()
+        self.__write(chrom, start, end, size, strand, seq)
         return seq
 
     def getChromSize(self, chrom):
+        self.gotSizes.add(chrom)
         return self.genomeReader.getChromSize(chrom)
 
 
@@ -93,6 +128,8 @@ class GenomeReaderFactory(object):
         self.updateMockReader = updateMockReader
         self.forceMockReader = forceMockReader
 
+        if self.updateMockReader and self.forceMockReader:
+            raise Exception("can't specified both updateMockReader and forceMockReader")
         if (self.twoBitFile is None) and (self.mockTsv is None):
             raise Exception("need at least one of twoBitFile ({}) or mockTsv ({})".format(twoBitFile, mockTsv))
         if self.updateMockReader and ((self.twoBitFile is None) or (self.mockTsv is None)):
@@ -102,7 +139,7 @@ class GenomeReaderFactory(object):
         self.genomeReader = None
 
     def __getReal(self):
-        genomeReader = GenomeReader(TwoBitFile(twoBitHg19))
+        genomeReader = GenomeReader(TwoBitFile(self.twoBitFile))
         if self.updateMockReader:
             genomeReader = MockSeqWriter(genomeReader, self.mockTsv)
         return genomeReader
