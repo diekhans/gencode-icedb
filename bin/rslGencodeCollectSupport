@@ -109,8 +109,8 @@ class SupportCounter(object):
 
     def __getBounds(self, transes):
         start = min([a.chromStart for a in transes])
-        end = min([a.chromEnd for a in transes])
-        return start, end
+        end = max([a.chromEnd for a in transes])
+        return transes[0].chrom, start, end
 
     def __sumSupport(self, byIntronSjSupp, sjSupp):
         intron = IntronCoords.fromSjSupport(sjSupp)
@@ -129,8 +129,8 @@ class SupportCounter(object):
         """Sums support by introns for SJ in the range, so transcripts should be a locus,
         either transcripts in one gene locus or one transcript.  Collecting all upfront
         prevents multiple queries for shared introns."""
-        start, end = self.__getBounds(transes)
-        return self.__sumSupportsByIntron(transes[0].chrom, start, end)
+        chrom, start, end = self.__getBounds(transes)
+        return self.__sumSupportsByIntron(chrom, start, end)
 
     def __makeZeroSjSupp(self, intronFeat):
         if intronFeat.donorSeq is not None:
