@@ -60,7 +60,7 @@ def writeMergeBatchJob(sjsupSplits, filesPerJob, mergeBatchFh, mergeBatchDir, iS
     with open(inFileList, "w") as inFileFh: 
         writeInFile(sjsupSplits[iSplit:iSplit + numFiles], inFileFh)
 
-    print(rslStarSjSupMergeJob, inFileList, mergeJobOut, file=mergeBatchFh)
+    print(rslStarSjSupMergeJob, inFileList, "{{check out exists {}}}".format(mergeJobOut), file=mergeBatchFh)
     sjsupMerges.append(mergeJobOut)
 
     return iSplit + numFiles

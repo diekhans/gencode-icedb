@@ -24,6 +24,9 @@ genomeSeqsHg38 = /hive/data/genomes/hg38/hg38.2bit
 
 diff = diff -u
 
+# remove {make out exists ... } from job file so it can be executed as commands
+jobsToCmds = sed -Ee 's/\{check out exists (.+)\}/\1/'
+
 export LC_ALL=C
 
 .SECONDARY:
@@ -122,7 +125,7 @@ mkStarMergeTest: mkdirs
 	wc -l output/$@.mergework/*.jobs | tawko '{print $$2,$$1}' > output/$@.jobs.cnt
 	${diff} expected/$@.jobs.cnt output/$@.jobs.cnt
 	${diff} expected/$@.run-batches output/$@.mergework/run-batches
-	for j in output/mkStarMergeTest.mergework/*.jobs ; do bash -e $$j ; done
+	for j in output/mkStarMergeTest.mergework/*.jobs ; do ${jobsToCmds} $$j | bash -e ; done
 	${diff} expected/$@.merged.sjsup output/$@.mergework/001.merged/000.sjsup
 	bgzip -c output/mkStarMergeTest.mergework/001.merged/000.sjsup >output/$@.sjsup.gz
 	tabix -0 -p bed output/$@.sjsup.gz
@@ -174,7 +177,7 @@ supportCollectMkJobsTest: mkdirs
 	${rslGencodeCollectSupportMkJobs} --maxgenes=10 ${genomeSeqsSpecs} output/$@/gencode.db output/$@/rnaseq.db output/$@.work
 	sed -Ee 's#^.*(/bin/rslGencodeCollectSupport)#??\1#' output/$@.work/batch.jobs > output/$@.work/batch.jobs.cleaned
 	${diff} expected/$@.batch.jobs.cleaned output/$@.work/batch.jobs.cleaned
-	bash -e output/$@.work/batch.jobs
+	${jobsToCmds} output/$@.work/batch.jobs | bash -e  
 	ls -1 output/$@.work/results/ > output/$@.results.lst
 	${diff} expected/$@.results.lst output/$@.results.lst
 	${rslGencodeCollectSupportFinishJobs} --maxgenes=10 output/$@/gencode.db output/$@.work output/$@.db

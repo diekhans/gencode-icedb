@@ -34,7 +34,8 @@ def generateJob(gencodeDb, sjDb, suppProg, resultDir, gencodeId, genomeSeqs, moc
         cmd.append("--genomeSeqs={}".format(genomeSeqs))
     if mockGenomeSeqs is not None:
         cmd.append("--mockGenomeSeqs={}".format(mockGenomeSeqs))
-    cmd.extend([gencodeDb, sjDb, os.path.join(resultDir, "{}.supp.tsv".format(gencodeId)), gencodeId])
+    resultTsv = os.path.join(resultDir, "{}.supp.tsv".format(gencodeId))
+    cmd.extend([gencodeDb, sjDb, "{{check out exists {}}}".format(resultTsv), gencodeId])
     print(*cmd, file=batchFh)
 
 
