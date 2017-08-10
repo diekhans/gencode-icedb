@@ -114,7 +114,7 @@ static void rslStarSjOutSplit(char* starResultsDirTsv,
         startDirRec = 0;
         endDirRec = slCount(starResultsDir);
     }
-    makeDir(chromOutDir);
+    makeDirsOnPath(chromOutDir);
 
     int iDirLine = 0;
     for (struct starResults *starResults = starResultsDir; starResults != NULL; starResults = starResults->next) {

@@ -25,6 +25,7 @@ INLINE char* starMotifCodeToStr(unsigned intronMotifCode) {
         case 3: return "GC/AG";
         case 4: return "CT/GC";
         case 5: return "AT/AC";
+        case 6: return "GT/AT";
         default:
             errAbort("unknown STAR intron motif code: %d", intronMotifCode);
             return NULL;
