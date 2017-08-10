@@ -7,12 +7,9 @@ if __name__ == '__main__':
                 os.path.join(rootDir, "extern/pycbio/lib")] + sys.path
 import unittest
 from pycbio.sys.testCaseBase import TestCaseBase
-from pycbio.tsv import TsvReader
-from pycbio.sys import fileOps
-from gencode_icedb.general.genome import GenomeReader
+from gencode_icedb.general.genome import GenomeReaderFactory
 from gencode_icedb.general.evidFeatures import EvidenceFeatureMap, EvidencePslFactory
 from gencode_icedb.general.annotFeatures import AnnotationGenePredFactory
-from twobitreader import TwoBitFile
 from pycbio.hgdata.hgLite import PslDbTable, GenePredDbTable
 from pycbio.hgdata.genePred import GenePredReader
 import sqlite3
@@ -25,6 +22,7 @@ mockReaderHg19GpTsv = "mockReaderHg19Gp.tsv"
 
 updateMockReader = False   # set this to update from a real run
 forceMockReader = False  # set this to check mock data
+
 debugResults = False   # print out results for updated expected
 noCheckResults = False  # don't check results
 
@@ -32,75 +30,6 @@ if updateMockReader or forceMockReader or debugResults or noCheckResults:
     print("Warning: debug variables set", file=sys.stderr)
 if updateMockReader and forceMockReader:
     raise Exception("makes no sense to have both updateMockReader and forceMockReader set")
-
-
-class MockGenomeReader(object):
-    """Fake GenomeReader when 2bit isn't there"""
-    def __init__(self, mockDataTsv):
-        self.mockDataSizes = dict()
-        self.mockDataSeqs = dict()
-        for row in TsvReader(mockDataTsv,
-                             typeMap={"start": int,
-                                      "end": int,
-                                      "size": int}):
-            self.mockDataSizes[row.chrom] = row.size
-            self.mockDataSeqs[(row.chrom, row.start, row.end, row.strand)] = row.seq
-
-    def get(self, chrom, start, end, strand=None):
-        if strand is None:
-            strand = '+'
-        return self.mockDataSeqs[(chrom, start, end, strand)]
-
-    def getChromSize(self, chrom):
-        return self.mockDataSizes[chrom]
-
-
-class MockSeqWriter(object):
-    """Wrapper around GenomeReader that create mock data from twoBit """
-    def __init__(self, genomeReader, mockDataTsv):
-        self.genomeReader = genomeReader
-        self.mockDataFh = open(mockDataTsv, "w")
-        fileOps.prRowv(self.mockDataFh, "chrom", "start", "end", "size", "strand", "seq")
-
-    def get(self, chrom, start, end, strand=None):
-        if strand is None:
-            strand = '+'
-        assert strand == '+'
-        size = self.genomeReader.getChromSize(chrom)
-        seq = self.genomeReader.get(chrom, start, end, strand)
-        fileOps.prRowv(self.mockDataFh, chrom, start, end, size, strand, seq)
-        self.mockDataFh.flush()
-        return seq
-
-    def getChromSize(self, chrom):
-        return self.genomeReader.getChromSize(chrom)
-
-
-class GenomeReaderFactory(object):
-    """obtain the appropriate genome reader"""
-    def __init__(self, mockTsv):
-        self.mockTsv = mockTsv
-        self.genomeReader = None
-
-    def __getReal(self, testCase):
-        genomeReader = GenomeReader(TwoBitFile(twoBitHg19))
-        if updateMockReader:
-            genomeReader = MockSeqWriter(genomeReader,
-                                         testCase.getInputFile(self.mockTsv))
-        return genomeReader
-
-    def __getMock(self, testCase):
-        if updateMockReader:
-            raise Exception("updateMockReader is True, however twobit {} is not available".format(twoBitHg19))
-        return MockGenomeReader(testCase.getInputFile(self.mockTsv))
-
-    def obtain(self, testCase):
-        if self.genomeReader is None:
-            if os.path.exists(twoBitHg19) and not forceMockReader:
-                self.genomeReader = self.__getReal(testCase)
-            else:
-                self.genomeReader = self.__getMock(testCase)
-        return self.genomeReader
 
 
 class FeatureTestBase(TestCaseBase):
@@ -114,11 +43,14 @@ class FeatureTestBase(TestCaseBase):
 
 
 class EvidenceTests(FeatureTestBase):
-    genomeReaderFactory = GenomeReaderFactory(mockReaderHg19PslTsv)
+    genomeReaderFactory = None
     set1PslDbTbl = None
 
     def __obtainGenomeReader(self):
-        return EvidenceTests.genomeReaderFactory.obtain(self)
+        if EvidenceTests.genomeReaderFactory is None:
+            EvidenceTests.genomeReaderFactory = GenomeReaderFactory(twoBitHg19, self.getInputFile(mockReaderHg19PslTsv),
+                                                                    updateMockReader, forceMockReader)
+        return EvidenceTests.genomeReaderFactory.obtain()
 
     def __obtainSetPslDbTbl(self):
         if EvidenceTests.set1PslDbTbl is None:
@@ -315,11 +247,14 @@ class EvidenceTests(FeatureTestBase):
 
 
 class AnnotationTests(FeatureTestBase):
-    genomeReaderFactory = GenomeReaderFactory(mockReaderHg19GpTsv)
+    genomeReaderFactory = None
     set1GpDbTbl = None
 
     def __obtainGenomeReader(self):
-        return AnnotationTests.genomeReaderFactory.obtain(self)
+        if AnnotationTests.genomeReaderFactory is None:
+            AnnotationTests.genomeReaderFactory = GenomeReaderFactory(twoBitHg19, self.getInputFile(mockReaderHg19GpTsv),
+                                                                      updateMockReader, forceMockReader)
+        return AnnotationTests.genomeReaderFactory.obtain()
 
     def __obtainSetGpDbTbl(self):
         if AnnotationTests.set1GpDbTbl is None:

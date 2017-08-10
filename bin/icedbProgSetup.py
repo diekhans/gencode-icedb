@@ -7,6 +7,7 @@ import sys
 import os
 # using __file__ allows programs to be symlinked
 rootDir = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
+binDir = os.path.join(rootDir, "bin")
 
 
 def _addExtern(module, relDir):
@@ -23,7 +24,7 @@ sys.path.insert(0, os.path.join(rootDir, "lib"))
 
 # executable PATH, make sure we can override kent commands and
 # we get ~markd commands rather than installed ones.
-os.environ["PATH"] = ":".join([os.path.join(rootDir, "bin"),
+os.environ["PATH"] = ":".join([binDir,
                                os.path.expanduser("~markd/opt/current/x86_64/bin"),
                                os.path.expanduser("~/kent/bin/x86_64"),
                                "/cluster/bin/x86_64",

@@ -6,16 +6,27 @@ import argparse
 import csv
 import sqlite3
 from collections import defaultdict, namedtuple
+from pycbio.sys import fileOps
 from pycbio.hgdata.hgLite import GencodeAttrsDbTable, GenePredDbTable
 from gencode_icedb.general import gencodeDb
-from gencode_icedb.rsl.rslModel import sqliteConnect, SjSupportReader
+from gencode_icedb.general.genome import GenomeReaderFactory
 from gencode_icedb.general.transFeatures import IntronFeature
 from gencode_icedb.general.annotFeatures import AnnotationGenePredFactory
+from gencode_icedb.rsl.rslModel import sqliteConnect, SjSupportReader
 
 
 def parseArgs():
-    desc = """Collect splice site evidence for some GENCODE annotations."""
+    desc = """Collect splice site evidence for some GENCODE annotations.
+    Designed to be run as a batch job."""
     parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument('--genomeSeqs',
+                        help="""Genome sequence twobit file to obtain splice sites""")
+    parser.add_argument('--mockGenomeSeqs',
+                        help="""Genome sequence TSV for mock reader for testing. This will be used if genomeSeqs is not specified or does not exist.""")
+    parser.add_argument('--updateMockGenomeSeqs',
+                        help="""update mock genome seqs.""")
+    parser.add_argument('--forceMockGenomeSeqs',
+                        help="""force using mock genome seqs, even if twobit exists""")
     parser.add_argument('gencodeDb',
                         help="""GENCODE sqlite3 database from gencodeDbLoad""")
     parser.add_argument('sjDb',
@@ -61,11 +72,11 @@ class SjCounts(object):
 
 
 class SupportCounter(object):
-    def __init__(self, gencodeConn, sjConn):
+    def __init__(self, gencodeConn, sjConn, genomeReader):
         self.attrsDbTable = GencodeAttrsDbTable(gencodeConn, gencodeDb.gencode_attrs_table)
         self.annDbTable = GenePredDbTable(gencodeConn, gencodeDb.gencode_ann_table)
         self.sjSupportReader = SjSupportReader(sjDbConn=sjConn)
-        self.annFactory = AnnotationGenePredFactory()
+        self.annFactory = AnnotationGenePredFactory(genomeReader)
 
     def __getAttrsById(self, gencodeId):
         "try gene, then transcript id"
@@ -180,14 +191,22 @@ class SupportCounter(object):
 
 def rslGencodeCollectSupport(opts):
     "main function"
+    # this will check sanity of options
+    genomeReaderFactory = GenomeReaderFactory(opts.genomeSeqs, opts.mockGenomeSeqs,
+                                              opts.updateMockGenomeSeqs,
+                                              opts.forceMockGenomeSeqs)
+    genomeReader = genomeReaderFactory.obtain()
+
     gencodeConn = sqlite3.connect(opts.gencodeDb)  # FIXME: switch to APSW read-only
     sjConn = sqliteConnect(opts.sjDb, readonly=True)
-    supportCounter = SupportCounter(gencodeConn, sjConn)
+    supportCounter = SupportCounter(gencodeConn, sjConn, genomeReader)
 
-    with open(opts.resultsTsv, "w") as fh:
+    fileOps.ensureFileDir(opts.resultsTsv)
+    resultsTmpTsv = fileOps.atomicTmpFile(opts.resultsTsv)
+    with open(resultsTmpTsv, "w") as fh:
         supportCounter.collectSupport(opts.gencodeIds, csv.writer(fh, dialect=csv.excel_tab,
                                                                   lineterminator='\n'))
-
+    fileOps.atomicInstall(resultsTmpTsv, opts.resultsTsv)
     gencodeConn.close()
     if not sjConn.is_closed():  # FIXME: not sure why it is in the is_closed state, maybe lazy open?
         sjConn.close()

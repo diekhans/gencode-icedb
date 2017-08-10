@@ -17,6 +17,8 @@ rslMkStarSjSupMergeJobs = ${binDir}/rslMkStarSjSupMergeJobs
 
 gencodeDbLoad = ${binDir}/gencodeDbLoad
 rslGencodeCollectSupport = ${binDir}/rslGencodeCollectSupport
+rslGencodeCollectSupportMkJobs = ${binDir}/rslGencodeCollectSupportMkJobs
+rslGencodeCollectSupportFinishJobs = ${binDir}/rslGencodeCollectSupportFinishJobs
 
 diff = diff -u
 
@@ -67,21 +69,21 @@ dbLoadTests: sraRunInfoDbLoad1Test \
 sqldumpcmd = sqlite3 -header -batch output/$@.db
 
 # call function with table as argument.
-sqldump = ${sqldumpcmd} 'select * from $(1)' > output/$@.$(1).tsv && ${diff} expected/$@.$(1).tsv output/$@.$(1).tsv
+sqldumpdiff = ${sqldumpcmd} 'select * from $(1)' > output/$@.$(1).tsv && ${diff} expected/$@.$(1).tsv output/$@.$(1).tsv
 
 # test loading run-info from SRA
 sraRunInfoDbLoad1Test: mkdirs
 	rm -f output/$@.db
 	${rslSraRunInfoDbLoad} output/$@.db input/set1.hs.run-info.tsv
-	$(call sqldump,RunMetadata)
+	$(call sqldumpdiff,RunMetadata)
 
 mappingMetadataDbLoadTest: mkdirs
 	rm -f output/$@.db
 	${rslSraRunInfoDbLoad} output/$@.db input/set1.hs.run-info.tsv
 	${rslMappingMetadataDbLoad} output/$@.db input/set1.hs.mapping-params.tsv input/set1.hs.stardir.tsv
-	$(call sqldump,RunMetadata)
-	$(call sqldump,MappingParameters)
-	$(call sqldump,MappingMetadata)
+	$(call sqldumpdiff,RunMetadata)
+	$(call sqldumpdiff,MappingParameters)
+	$(call sqldumpdiff,MappingMetadata)
 
 ##
 # build of tabix database
@@ -128,7 +130,8 @@ mkStarMergeTest: mkdirs
 ##
 gencodeSupportTests: supportCollectAllTest \
 			supportCollectGenesTest \
-			supportCollectTransTest
+			supportCollectTransTest \
+			supportCollectMkJobsTest
 
 define gencodeSupportTestSetup
 rm -rf output/$@
@@ -154,6 +157,16 @@ supportCollectTransTest: mkdirs
 	${gencodeSupportTestSetup}
 	${rslGencodeCollectSupport} output/$@/gencode.db output/$@/rnaseq.db output/$@.supp.tsv ENST00000444870.6 ENST00000462356.5
 	${diff} expected/$@.supp.tsv output/$@.supp.tsv
+
+supportCollectMkJobsTest: mkdirs
+	${gencodeSupportTestSetup}
+	${rslGencodeCollectSupportMkJobs} --maxgenes=10 output/$@/gencode.db output/$@/rnaseq.db output/$@.work
+	${diff} expected/$@.batch.jobs output/$@.work/batch.jobs
+	bash -e output/$@.work/batch.jobs
+	ls -1 output/$@.work/results/ > output/$@.results.lst
+	${diff} expected/$@.results.lst output/$@.results.lst
+	${rslGencodeCollectSupportFinishJobs} --maxgenes=10 output/$@/gencode.db output/$@.work output/$@.db
+	$(call sqldumpdiff,GencodeSupport)
 
 ##
 # data from encode3 DCC

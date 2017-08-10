@@ -1,0 +1,82 @@
+#!/usr/bin/env python
+
+from __future__ import print_function
+import icedbProgSetup  # noqa: F401
+import os
+import argparse
+import sqlite3
+from pycbio.tsv import TsvReader
+from pycbio.hgdata.hgLite import GencodeAttrsDbTable
+from gencode_icedb.general import gencodeDb
+from gencode_icedb.rsl.rslModel import sqliteConnect, GencodeSupport
+
+bulk_size = 75   # size of each bulk insert
+
+
+def parseArgs():
+    desc = """Combine rslGencodeCollectSuppor job results."""
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument("--maxgenes", type=int, default=None,
+                        help="""maximum number of genes to use, for testing""")
+    parser.add_argument('gencodeDb',
+                        help="""GENCODE sqlite3 database from gencodeDbLoad""")
+    parser.add_argument('jobWorkDir',
+                        help="""directory contains results directory""")
+    parser.add_argument('resultsDb',
+                        help="""Sqlite database were results are stored."""
+                        """This does not append results, existing gencoderesults table is dropped.""")
+    return parser.parse_args()
+
+
+resultsTsvTypeMap = {
+    "intronStart": int,
+    "intronEnd": int,
+    "numUniqueMapReads": int,
+    "numMultiMapReads": int}
+
+
+def resultsDbLoad(resultsConn, recs):
+    with resultsConn.atomic():
+        for idx in xrange(0, len(recs), bulk_size):
+            GencodeSupport.insert_many(recs[idx:idx + bulk_size]).execute()
+
+
+def rowToDict(row):
+    rowdict = {}
+    for col in row._columns_:
+        rowdict[col] = getattr(row, col)
+    return rowdict
+
+
+def loadResultsTsv(resultsDir, gencodeId):
+    resultsTsv = os.path.join(resultsDir, "{}.supp.tsv".format(gencodeId))
+    return [rowToDict(row) for row in TsvReader(resultsTsv, typeMap=resultsTsvTypeMap)]
+
+
+def collectResults(resultsConn, resultDir, gencodeIds):
+    recs = []
+    for gencodeId in gencodeIds:
+        recs.extend(loadResultsTsv(resultDir, gencodeId))
+    resultsDbLoad(resultsConn, recs)
+
+
+def rslGencodeCollectSupportMkJobs(opts):
+    "main function"
+    gencodeConn = sqlite3.connect(opts.gencodeDb)  # FIXME: switch to APSW read-only
+    attrsDbTable = GencodeAttrsDbTable(gencodeConn, gencodeDb.gencode_attrs_table)
+    gencodeIds = sorted(attrsDbTable.getAllGeneIds())
+    if opts.maxgenes is not None:
+        gencodeIds = gencodeIds[0:opts.maxgenes]
+
+    resultsConn = sqliteConnect(opts.resultsDb)
+    GencodeSupport.drop_table(fail_silently=True)
+    GencodeSupport.create_table()
+    resultDir = os.path.join(opts.jobWorkDir, "results")
+
+    collectResults(resultsConn, resultDir, gencodeIds)
+
+    resultsConn.close()
+    gencodeConn.close()
+
+
+rslGencodeCollectSupportMkJobs(parseArgs())

@@ -3,7 +3,7 @@ PeeWee data models for RNA-Seq metadata and splice junctions.
 """
 from __future__ import print_function
 import os
-from peewee import Proxy, Model, PrimaryKeyField, ForeignKeyField, CharField, TextField
+from peewee import Proxy, Model, PrimaryKeyField, ForeignKeyField, CharField, TextField, IntegerField
 from playhouse.apsw_ext import APSWDatabase
 import apsw
 from collections import namedtuple
@@ -39,7 +39,14 @@ def sqliteSetSynchronous(dbconn, mode):
     dbconn.execute_sql("PRAGMA synchronous={}".format(mode))
 
 
-class RunMetadata(Model):
+class BaseModel(Model):
+    "base for peewee models, used to bind proxy"
+
+    class Meta:
+        database = _database_proxy
+
+
+class RunMetadata(BaseModel):
     """Metadata associated with an RNA-Seq sequencing run.  This
     is obtained from source database (e.g. SRA)
     """
@@ -55,11 +62,8 @@ class RunMetadata(Model):
     tissue = CharField(null=True, default=None,
                        help_text="""Tissue or body site, if available.  This is not normalized and maybe hard to interpret.""")
 
-    class Meta:
-        database = _database_proxy
 
-
-class MappingParameters(Model):
+class MappingParameters(BaseModel):
     """Mapping parameters, stored into a separate table due to use of same parameters for many runs"""
     id = PrimaryKeyField()
     mapping_param_symid = CharField(unique=True,
@@ -69,11 +73,8 @@ class MappingParameters(Model):
     commands = TextField(help_text="""commands used to do mapping""")
     comments = TextField(help_text="""comments""")
 
-    class Meta:
-        database = _database_proxy
 
-
-class MappingMetadata(Model):
+class MappingMetadata(BaseModel):
     """Metadata associated with of an RNA-Seq mapping and splice junction STAR run.
     """
     id = PrimaryKeyField()
@@ -85,9 +86,6 @@ class MappingMetadata(Model):
                             help_text="""mapping analysis accession, only available if results have been submitted to an archive""")
     mapping_parameters_id = ForeignKeyField(MappingParameters,
                                             help_text="""parameters used in mapping""")
-
-    class Meta:
-        database = _database_proxy
 
 
 class SjSupport(namedtuple("SjSupport", ("chrom", "chromStart", "chromEnd",
@@ -133,3 +131,25 @@ class SjSupportReader(object):
         "Query returning SjSupport.  Use zero-based, half open coordinates"
         for row in self.tb.query(chrom, start, end):
             yield SjSupport.factory(row)
+
+
+class GencodeSupport(BaseModel):
+    """Results from comparing support to GENCODE.  De-normalized and not
+    linked for now"""
+    id = PrimaryKeyField()
+    geneId = CharField(index=True,
+                       help_text="""GENCODE gene id""")
+    geneName = CharField(index=True,
+                         help_text="""gene name/symbol""")
+    transcriptId = CharField(index=True,
+                             help_text="""GENCODE trancript id""")
+    transcriptType = CharField(index=True,
+                               help_text="""GENCODE transcript type""")
+    chrom = CharField(help_text="""Chromosome""")
+    intronStart = IntegerField(help_text="""zero-based start of intron""")
+    intronEnd = IntegerField(help_text="""end of intron""")
+    strand = CharField(help_text="""strand of gene""")
+    intronMotif = CharField(help_text="""Intron splice junction motif in the forms AT/GC.  If splice site is not a known """
+                            """motif, the motif is in lower case. """)
+    numUniqueMapReads = IntegerField(help_text="""total number of uniquely mapping reads""")
+    numMultiMapReads = IntegerField(help_text="""total number of multi-mapping reads""")

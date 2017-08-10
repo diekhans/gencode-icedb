@@ -45,7 +45,7 @@ ${OBJDIR}/%.o: %.c
 
 (%.o): %.o
 	@mkdir -p  $(dir $@)
-	${ROOT}/make/addLib $@ $*.o
+	${ROOT}/tools/addLib $@ $*.o
 
 # don't fail on missing dependencies, they are generated the first time the .o
 # is compiled

@@ -1,0 +1,57 @@
+#!/usr/bin/env python
+
+from __future__ import print_function
+import icedbProgSetup  # noqa: F401
+import os
+import argparse
+import sqlite3
+from pycbio.sys import fileOps
+from pycbio.hgdata.hgLite import GencodeAttrsDbTable
+from gencode_icedb.general import gencodeDb
+
+
+def parseArgs():
+    desc = """Collect splice site evidence for some GENCODE annotations."""
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument("--maxgenes", type=int, default=None,
+                        help="""maximum number of genes to use, for testing""")
+    parser.add_argument('gencodeDb',
+                        help="""GENCODE sqlite3 database from gencodeDbLoad""")
+    parser.add_argument('sjDb',
+                        help="""splice junction evidence sqlite3 database, a correspond *.sjsup.gz and tabix index file must exist""")
+    parser.add_argument('jobWorkDir',
+                        help="""directory where jobFile and temporary results are stored""")
+    return parser.parse_args()
+
+
+def generateJob(gencodeDb, sjDb, suppProg, resultDir, gencodeId, batchFh):
+    print(suppProg, gencodeDb, sjDb,
+          os.path.join(resultDir, "{}.supp.tsv".format(gencodeId)), gencodeId,
+          file=batchFh)
+
+
+def generateJobs(gencodeDb, sjDb, gencodeIds, jobWorkDir, batchFh):
+    suppProg = os.path.join(icedbProgSetup.binDir, "rslGencodeCollectSupport")
+    resultDir = os.path.join(jobWorkDir, "results")
+    for gencodeId in gencodeIds:
+        generateJob(gencodeDb, sjDb, suppProg, resultDir, gencodeId, batchFh)
+
+
+def rslGencodeCollectSupportMkJobs(opts):
+    "main function"
+    gencodeConn = sqlite3.connect(opts.gencodeDb)  # FIXME: switch to APSW read-only
+
+    attrsDbTable = GencodeAttrsDbTable(gencodeConn, gencodeDb.gencode_attrs_table)
+    gencodeIds = sorted(attrsDbTable.getAllGeneIds())
+    if opts.maxgenes is not None:
+        gencodeIds = gencodeIds[0:opts.maxgenes]
+
+    fileOps.ensureDir(opts.jobWorkDir)
+    batchFile = os.path.join(opts.jobWorkDir, "batch.jobs")
+    with open(batchFile, "w") as batchFh:
+        generateJobs(opts.gencodeDb, opts.sjDb, gencodeIds, opts.jobWorkDir,
+                     batchFh)
+    gencodeConn.close()
+
+
+rslGencodeCollectSupportMkJobs(parseArgs())
