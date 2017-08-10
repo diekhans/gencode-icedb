@@ -78,6 +78,7 @@ class SupportCounter(object):
         self.annDbTable = GenePredDbTable(gencodeConn, gencodeDb.gencode_ann_table)
         self.sjSupportReader = SjSupportReader(sjDbConn=sjConn)
         self.annFactory = AnnotationGenePredFactory(genomeReader)
+        self.genomeReader = genomeReader
 
     def __getAttrsById(self, gencodeId):
         "try gene, then transcript id"
@@ -127,7 +128,7 @@ class SupportCounter(object):
     def __getIntronMotif(self, sjSupp):
         "return motif, if it's not one known by STAR, look up"
         if sjSupp.intronMotif == "??/??":
-            return spliceJuncsGetSeqs(self.genomeReader, sjSupp.chrom, sjSupp.intronStart, sjSupp.intronStart, sjSupp.strand)
+            return spliceJuncsGetSeqs(self.genomeReader, sjSupp.chrom, sjSupp.chromStart, sjSupp.chromEnd, sjSupp.strand)
         else:
             return sjSupp.intronMotif
 
