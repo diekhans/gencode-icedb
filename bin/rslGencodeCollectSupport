@@ -112,7 +112,7 @@ class SupportCounter(object):
             chroms.remove("chrY")
         # use shortest
         chroms.sort(key=lambda c: len(c))
-        return chroms[0]
+        return byChrom[chroms[0]]
 
     def __splitAttrsByTrans(self, attrs):
         attrsByTrans = dict()
@@ -141,7 +141,7 @@ class SupportCounter(object):
 
     def __sumSupportsByIntron(self, chrom, start, end):
         byIntronSjSupp = dict()
-        for sjSupp in self.sjSupportReader.query(chrom, start, end):
+        for sjSupp in self.sjSupportReader.fetch(chrom, start, end):
             self.__sumSupport(byIntronSjSupp, sjSupp)
         return byIntronSjSupp
 
@@ -187,7 +187,7 @@ class SupportCounter(object):
     def __collectSupportId(self, gencodeId, resultsWriter):
         attrs = self.__getAttrsById(gencodeId)
         transes = self.__getTranscripts(attrs)
-        if transes is not None:
+        if len(transes) > 0:
             self.__collectTranscriptsSupport(self.__getPrimaryTranscript(transes),
                                              self.__splitAttrsByTrans(attrs),
                                              resultsWriter)

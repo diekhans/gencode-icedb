@@ -3,4 +3,4 @@ requests
 eutils
 pytz
 pipettor
-tabix
+pysam

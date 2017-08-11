@@ -5,6 +5,7 @@ import icedbProgSetup  # noqa: F401
 import os
 import argparse
 import sqlite3
+from pycbio.sys import fileOps
 from pycbio.tsv import TsvReader
 from pycbio.hgdata.hgLite import GencodeAttrsDbTable
 from gencode_icedb.general import gencodeDb
@@ -68,6 +69,7 @@ def rslGencodeCollectSupportMkJobs(opts):
     if opts.maxgenes is not None:
         gencodeIds = gencodeIds[0:opts.maxgenes]
 
+    fileOps.ensureFileDir(opts.resultsDb)
     resultsConn = sqliteConnect(opts.resultsDb)
     GencodeSupport.drop_table(fail_silently=True)
     GencodeSupport.create_table()

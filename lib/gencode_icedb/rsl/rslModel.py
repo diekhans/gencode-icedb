@@ -7,7 +7,7 @@ from peewee import Proxy, Model, PrimaryKeyField, ForeignKeyField, CharField, Te
 from playhouse.apsw_ext import APSWDatabase
 import apsw
 from collections import namedtuple
-import tabix
+import pysam
 
 _database_proxy = Proxy()
 
@@ -116,21 +116,25 @@ class SjSupportReader(object):
             if sjDbPath is None:
                 sjDbPath = sjDbConn.database
             tabFile = self.sjTabFromSjDb(sjDbPath)
-        self.tb = tabix.open(tabFile)
+        self.tb = pysam.TabixFile(tabFile)
+        self.chroms = frozenset(self.tb.contigs)
 
     def close(self):
         if self.tb is not None:
-            del self.tb  # doesn't have a close method
-            self.tb = None
+            try:
+                self.tb.close()
+            finally:
+                self.tb = None
 
     def __del__(self):
-        if self.tb is not None:
-            self.close()
+        self.close()
 
-    def query(self, chrom, start, end):
-        "Query returning SjSupport.  Use zero-based, half open coordinates"
-        for row in self.tb.query(chrom, start, end):
-            yield SjSupport.factory(row)
+    def fetch(self, chrom, start, end):
+        """Query returning SjSupport.  Use zero-based, half open coordinates.
+        in chrom is not in index, nothing is returned"""
+        if chrom in self.chroms:
+            for line in self.tb.fetch(chrom, start, end):
+                yield SjSupport.factory(line.split("\t"))
 
 
 class GencodeSupport(BaseModel):
@@ -149,7 +153,10 @@ class GencodeSupport(BaseModel):
     intronStart = IntegerField(help_text="""zero-based start of intron""")
     intronEnd = IntegerField(help_text="""end of intron""")
     strand = CharField(help_text="""strand of gene""")
-    intronMotif = CharField(help_text="""Intron splice junction motif in the forms AT/GC.  If splice site is not a known """
+    intronMotif = CharField(index=True,
+                            help_text="""Intron splice junction motif in the forms AT/GC.  If splice site is not a known """
                             """motif, the motif is in lower case. """)
-    numUniqueMapReads = IntegerField(help_text="""total number of uniquely mapping reads""")
-    numMultiMapReads = IntegerField(help_text="""total number of multi-mapping reads""")
+    numUniqueMapReads = IntegerField(index=True,
+                                     help_text="""total number of uniquely mapping reads""")
+    numMultiMapReads = IntegerField(index=True,
+                                    help_text="""total number of multi-mapping reads""")

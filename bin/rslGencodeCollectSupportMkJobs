@@ -40,7 +40,7 @@ def generateJob(gencodeDb, sjDb, suppProg, resultDir, gencodeId, genomeSeqs, moc
 
 
 def generateJobs(gencodeDb, sjDb, gencodeIds, jobWorkDir, genomeSeqs, mockGenomeSeqs, batchFh):
-    suppProg = os.path.join(icedbProgSetup.binDir, "rslGencodeCollectSupport")
+    suppProg = os.path.join(icedbProgSetup.binDir, "rslGencodeCollectSupportJob")
     resultDir = os.path.join(jobWorkDir, "results")
     for gencodeId in gencodeIds:
         generateJob(gencodeDb, sjDb, suppProg, resultDir, gencodeId, genomeSeqs, mockGenomeSeqs, batchFh)

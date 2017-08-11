@@ -99,6 +99,7 @@ https://bioconductor.org/packages/release/bioc/html/SRAdb.html
 http://metasra.biostat.wisc.edu/ (uses SRAmetadb) [only human]
 
 Build STAR splice junction support database from STAR resuts
+\begin{tightitemize}
 \item Obtain SRA runinfo CVS from the SRA browser.
 \item Filter SRA runinfo using \texttt{rslSraRunInfoFilter --full} to obtain
   run information.  You may need to filter using the \texttt{--selectSubsetTsv}
@@ -117,37 +118,37 @@ Build STAR splice junction support database from STAR resuts
   (\textit{*.sjsup} files).  This is done using \texttt{rslMkStarSjOutSplits} 
 \item Generate a series of batch to merge split \textit{sjsup} files
   with \textit{rslMkStarSjSupMergeJobs}.
-\item Sequentially run parasol batches on cluster using generated script.
+\item Run parasol batches on cluster using generated script.
 \item Compress final file with  \texttt{bgzip} and index with \texttt{tabix}.
+\end{tightitemize}
 
-\item Summary
-  \begin{tightitemize}
-  \item create \texttt{etc/czi.hs.star-results.all.tsv} for all available results 
-  \item \texttt{rslSraRunInfoFilter --full --selectSubsetTsv=etc/czi.hs.star-results.all.tsv SraRunInfo.human.transcriptomics.cvs.bz2 etc/czi.hs.run-info.tsv}
-  \item \texttt{selectById -tsv 1 etc/czi.hs.run-info.tsv 1 etc/czi.hs.star-results.all.tsv > etc/czi.hs.star-results.tsv}
-  \item \texttt{rslSraRunInfoDbLoad sjdb/czi.hs.db etc/czi.hs.run-info.tsv}
-  \item \texttt{rslMappingMetadataDbLoad sjdb/czi.hs.db etc/czi.hs.mapping_params.tsv etc/czi.hs.star-results.tsv}
-  \item \texttt{rslMkStarSjOutSplits --numprocs=8 etc/czi.hs.star-results.tsv merge.tmp}
-  \item \texttt{rslMkStarSjSupMergeJobs merge.tmp}
-  \item \texttt{./merge.tmp/run-batches}
-  \item \texttt{bgzip -c merge.tmp/004.merged/000.sjsup > sjdb/czi.hs.sjsup.gz}
-  \item \texttt{tabix -0 -p bed sjdb/czi.hs.sjsup.gz}
-  \item \texttt{chmod a-w sjdb/*}
-  \item \texttt{rm -rf merge.tmp}
-  \end{tightitemize}
+Summary
+\begin{tightitemize}
+\item create \texttt{etc/czi.hs.star-results.all.tsv} for all available results 
+\item \texttt{rslSraRunInfoFilter --full --selectSubsetTsv=etc/czi.hs.star-results.all.tsv SraRunInfo.human.transcriptomics.cvs.bz2 etc/czi.hs.run-info.tsv}
+\item \texttt{selectById -tsv 1 etc/czi.hs.run-info.tsv 1 etc/czi.hs.star-results.all.tsv > etc/czi.hs.star-results.tsv}
+\item \texttt{rslSraRunInfoDbLoad sjdb/czi.hs.db etc/czi.hs.run-info.tsv}
+\item \texttt{rslMappingMetadataDbLoad sjdb/czi.hs.db etc/czi.hs.mapping_params.tsv etc/czi.hs.star-results.tsv}
+\item \texttt{rslMkStarSjOutSplits --numprocs=8 etc/czi.hs.star-results.tsv merge.tmp}
+\item \texttt{rslMkStarSjSupMergeJobs merge.tmp}
+\item \texttt{./merge.tmp/run-batches}
+\item \texttt{bgzip -c merge.tmp/004.merged/000.sjsup > sjdb/czi.hs.sjsup.gz}
+\item \texttt{tabix -0 -p bed sjdb/czi.hs.sjsup.gz}
+\item \texttt{chmod a-w sjdb/*}
+\item \texttt{rm -rf merge.tmp}
+\end{tightitemize}
 
-\item Load putative intron information into database using \texttt{rslStarIntronDbLoad}.
-  This can be repeated for new data, only new putative introns definitions are
-  added.
-\item Load splice junction intron support with \texttt{rslStarSjSupportDbLoad}.
 
+Collect support for a GENCODE set:
+\begin{tightitemize}
+\item \texttt{gencodeDbLoad --hgdb=hg38 data/gencodeV26.db wgEncodeGencodeAttrsV26 wgEncodeGencodeCompV26 wgEncodeGencodePseudoGeneV26 }
+\item \texttt{rslGencodeCollectSupportMkJobs --genomeSeqs=/hive/data/genomes/hg38/hg38.2bit data/gencodeV26.db ../../data/grch38/sjdb/czi.hs.db analyze.tmp}
+\item \texttt{para make -batch=analyze.tmp/batch analyze.tmp/batch.jobs}
+\item \texttt{bin/rslGencodeCollectSupportFinishJobs data/gencodeV26.db analyze.tmp results/gencodeV26-czi-sjsupp.db}
+\end{tightitemize}
   
-Notes
-\item By loading introns in a separate step, primary keys are defined in advance,
-  and locality of introns is improved.
-
-above is way too slow
-
+  
+  
   
 \fi
 \iffalse
