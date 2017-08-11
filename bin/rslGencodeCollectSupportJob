@@ -1,0 +1,24 @@
+#!/bin/bash
+#
+# Job to do merge of one set of sort sj support files. Files
+# supplied must be already sorted.
+#
+# 
+set -beEu -o pipefail
+export LC_ALL=C
+export TMPDIR=/scratch/tmp
+
+if [ $# -ne 2 ] ; then
+    echo "rslStarSjSupMergeJob inFileList outSj " >&2
+    exit 1
+fi
+inFileList="$1"
+outSj="$2"
+outSjTmp=$outSj.$(hostname).$$.tmp
+
+inFiles=$(cat $inFileList)
+
+
+mkdir -p $(dirname $outSjTmp)
+sort -k1,1 -k2,2n -m $inFiles >$outSjTmp
+mv -f $outSjTmp $outSj
