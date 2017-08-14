@@ -5,42 +5,36 @@ import icedbProgSetup  # noqa: F401
 import argparse
 import csv
 import sqlite3
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 from pycbio.sys import fileOps
 from pycbio.hgdata.hgLite import GencodeAttrsDbTable, GenePredDbTable
 from gencode_icedb.general import gencodeDb
+from gencode_icedb.general.spliceJuncs import SpliceJuncs, spliceJuncsGetSeqs
 from gencode_icedb.general.genome import GenomeReaderFactory
 from gencode_icedb.general.transFeatures import IntronFeature
 from gencode_icedb.general.annotFeatures import AnnotationGenePredFactory
 from gencode_icedb.rsl.rslModel import sqliteConnect, SjSupportReader
-from gencode_icedb.rsl.intronSupportCounter import IntronSupportCounter
 
 
 def parseArgs():
-    desc = """Collect splice site evidence for a subset of GENCODE annotations."""
+    desc = """Collect novel splice sites evidence for a chromosome range that are not in GENCODE annotations."""
     parser = argparse.ArgumentParser(description=desc)
-    parser.add_argument('--genomeSeqs',
-                        help="""Genome sequence twobit file to obtain splice sites""")
-    parser.add_argument('--mockGenomeSeqs',
-                        help="""Genome sequence TSV for mock reader for testing. This will be used if genomeSeqs is not specified or does not exist.""")
-    parser.add_argument('--updateMockGenomeSeqs', action="store_true",
-                        help="""update mock genome seqs.""")
-    parser.add_argument('--forceMockGenomeSeqs', action="store_true",
-                        help="""force using mock genome seqs, even if twobit exists""")
+    GenomeReaderFactory.addCmdOptions(parser)
+    parser.add_argument("--minUniqueMapped", type=int, default=0,
+                        help="""Minimum number of uniquely mapped reads to call as novel""")
     parser.add_argument('gencodeDb',
                         help="""GENCODE sqlite3 database from gencodeDbLoad""")
     parser.add_argument('sjDb',
                         help="""splice junction evidence sqlite3 database, a correspond *.sjsup.gz and tabix index file must exist""")
     parser.add_argument('resultsTsv',
                         help="""TSV file for results""")
-    parser.add_argument('gencodeIds', nargs='*',
-                        help="""GENCODE gene or transcript ids, including versions.  If not are specified, all transcript are processed""")
+    parser.add_argument('chromRanges', nargs='*',
+                        help="""zero-based chromosome ranges, in the form chr:start-end""")
     return parser.parse_args()
 
 
-resultsHeader = ("geneId", "geneName", "transcriptId", "transcriptType",
-                 "chrom", "intronStart", "intronEnd", "strand", "intronMotif",
-                 "numUniqueMapReads", "numMultiMapReads")
+resultsHeader = ("chrom", "intronStart", "intronEnd", "strand", "intronMotif",
+                 "numUniqueMapReads", "numMultiMapReads", "geneId")
 
 
 class SupportCounter(object):
@@ -96,38 +90,64 @@ class SupportCounter(object):
         end = max([a.chromEnd for a in transes])
         return transes[0].chrom, start, end
 
-    def __sumSupportsByIntron(self, chrom, start, end):
-        intronSupportCnts = IntronSupportCounter(self.genomeReader)
-        for sjSupp in self.sjSupportReader.fetch(chrom, start, end):
-            intronSupportCnts.sumSjSupp(sjSupp)
-        return intronSupportCnts
+    def __getIntronMotif(self, sjSupp):
+        "return motif, if it's not one known by STAR, look up"
+        if sjSupp.intronMotif == "??/??":
+            return spliceJuncsGetSeqs(self.genomeReader, sjSupp.chrom, sjSupp.chromStart, sjSupp.chromEnd, sjSupp.strand)
+        else:
+            return sjSupp.intronMotif
 
-    def __sumSupportForTranses(self, transes, attrsByTrans):
+    def __sumSupport(self, byIntronSjSupp, sjSupp):
+        intron = IntronCoords.fromSjSupport(sjSupp)
+        cnts = byIntronSjSupp.get(intron)
+        if cnts is None:
+            byIntronSjSupp[intron] = cnts = SjCounts(self.__getIntronMotif(sjSupp))
+        cnts.sum(sjSupp)
+
+    def __sumSupportsByIntron(self, chrom, start, end):
+        byIntronSjSupp = dict()
+        for sjSupp in self.sjSupportReader.fetch(chrom, start, end):
+            self.__sumSupport(byIntronSjSupp, sjSupp)
+        return byIntronSjSupp
+
+    def __sumSupportForRange(self, transes, attrsByTrans):
         """Sums support by introns for SJ in the range, so transcripts should be a locus,
         either transcripts in one gene locus or one transcript.  Collecting all upfront
         prevents multiple queries for shared introns."""
         chrom, start, end = self.__getBounds(transes)
         return self.__sumSupportsByIntron(chrom, start, end)
 
-    def __reportTransIntronSupport(self, trans, transAttrs, intronFeat, intronSupportCnts, resultsWriter):
-        intron, sjCounts = intronSupportCnts.getIntronFeatCounts(intronFeat)
+    def __makeZeroSjSupp(self, intronFeat):
+        """will be lower-case if not a known slice junction"""
+        intronMotif = "{}/{}".format(intronFeat.donorSeq, intronFeat.acceptorSeq)
+        if intronFeat.spliceJuncs == SpliceJuncs.unknown:
+            intronMotif = intronMotif.lower()
+        else:
+            intronMotif = intronMotif.upper()
+        return SjCounts(intronMotif)
+
+    def __reportTransIntronSupport(self, trans, transAttrs, intronFeat, byIntronSjSupp, resultsWriter):
+        sjSupp = byIntronSjSupp.get(IntronCoords.fromIntronFeat(intronFeat))
+        if sjSupp is None:
+            sjSupp = self.__makeZeroSjSupp(intronFeat)
         resultsWriter.writerow([transAttrs.geneId, transAttrs.geneName,
                                 transAttrs.transcriptId,
                                 transAttrs.transcriptType,
-                                intron.chrom, intron.chromStart, intronFeat.chromEnd,
-                                intron.strand, intron.intronMotif,
-                                sjCounts.numUniqueMapReads,
-                                sjCounts.numMultiMapReads])
+                                intronFeat.transcript.chrom,
+                                intronFeat.chromStart, intronFeat.chromEnd,
+                                intronFeat.transcript.rnaStrand, sjSupp.intronMotif,
+                                sjSupp.numUniqueMapReads,
+                                sjSupp.numMultiMapReads])
 
-    def __reportTranscriptSupport(self, trans, transAttrs, intronSupportCnts, resultsWriter):
+    def __reportTranscriptSupport(self, trans, transAttrs, byIntronSjSupp, resultsWriter):
         for feat in trans.features:
             if isinstance(feat, IntronFeature):
-                self.__reportTransIntronSupport(trans, transAttrs, feat, intronSupportCnts, resultsWriter)
+                self.__reportTransIntronSupport(trans, transAttrs, feat, byIntronSjSupp, resultsWriter)
 
     def __collectTranscriptsSupport(self, transes, attrsByTrans, resultsWriter):
-        intronSupportCnts = self.__sumSupportForTranses(transes, resultsWriter)
+        byIntronSjSupp = self.__sumSupportForRange(transes, resultsWriter)
         for trans in transes:
-            self.__reportTranscriptSupport(trans, attrsByTrans[trans.rnaName], intronSupportCnts, resultsWriter)
+            self.__reportTranscriptSupport(trans, attrsByTrans[trans.rnaName], byIntronSjSupp, resultsWriter)
 
     def __collectSupportId(self, gencodeId, resultsWriter):
         attrs = self.__getAttrsById(gencodeId)
@@ -147,10 +167,7 @@ class SupportCounter(object):
 
 def rslGencodeCollectSupport(opts):
     "main function"
-    # this will check sanity of options
-    genomeReaderFactory = GenomeReaderFactory(opts.genomeSeqs, opts.mockGenomeSeqs,
-                                              opts.updateMockGenomeSeqs,
-                                              opts.forceMockGenomeSeqs)
+    genomeReaderFactory = GenomeReaderFactory.factoryFromCmdOptions(opts)
     genomeReader = genomeReaderFactory.obtain()
 
     gencodeConn = sqlite3.connect(opts.gencodeDb)  # FIXME: switch to APSW read-only

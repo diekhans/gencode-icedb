@@ -154,3 +154,22 @@ class GenomeReaderFactory(object):
             else:
                 self.genomeReader = self.__getMock()
         return self.genomeReader
+
+    @staticmethod
+    def addCmdOptions(parser):
+        """Add command options used to create a factory to the parser"""
+        parser.add_argument('--genomeSeqs',
+                            help="""Genome sequence twobit file to obtain splice sites""")
+        parser.add_argument('--mockGenomeSeqs',
+                            help="""Genome sequence TSV for mock reader for testing. This will be used if genomeSeqs is not specified or does not exist.""")
+        parser.add_argument('--updateMockGenomeSeqs', action="store_true",
+                            help="""update mock genome seqs.""")
+        parser.add_argument('--forceMockGenomeSeqs', action="store_true",
+                            help="""force using mock genome seqs, even if twobit exists""")
+
+    @staticmethod
+    def factoryFromCmdOptions(opts):
+        """create a factory given options parse from command line"""
+        # this will check sanity of options
+        return GenomeReaderFactory(opts.genomeSeqs, opts.mockGenomeSeqs,
+                                   opts.updateMockGenomeSeqs, opts.forceMockGenomeSeqs)

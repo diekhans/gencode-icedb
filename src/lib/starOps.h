@@ -21,11 +21,11 @@ INLINE char* starMotifCodeToStr(unsigned intronMotifCode) {
     switch (intronMotifCode) {
         case 0: return "\?\?/\?\?"; 
         case 1: return "GT/AG";
-        case 2: return "CT/AC";
+        case 2: return "GT/AG"; // rev(CT/AC)
         case 3: return "GC/AG";
-        case 4: return "CT/GC";
+        case 4: return "GC/AG"; // rev(CT/GC)
         case 5: return "AT/AC";
-        case 6: return "GT/AT";
+        case 6: return "AT/AC"; // rev(GT/AT)
         default:
             errAbort("unknown STAR intron motif code: %d", intronMotifCode);
             return NULL;

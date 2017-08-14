@@ -24,7 +24,15 @@ def starStrandCodeToChar(starStrandCode):
     return _starStrandCodeToChar[starStrandCode]
 
 
-_starMotifCodeToStr = {0: "??/??", 1: "GT/AG", 2: "CT/AC", 3: "GC/AG", 4: "CT/GC", 5: "AT/AC", 6: "GT/AT"}
+_starMotifCodeToStr = {
+    0: "??/??",
+    1: "GT/AG",
+    2: "GT/AG",  # rev(CT/AC)
+    3: "GC/AG",
+    4: "GC/AG",  # rev(CT/GC)
+    5: "AT/AC",
+    6: "AT/AC",  # rev(GT/AT)
+}
 
 
 def starMotifCodeToStr(starMotifCode):
