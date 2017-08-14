@@ -14,7 +14,7 @@ rslStarSjSupMergeJob = os.path.join(icedbProgSetup.rootDir, "bin", "rslStarSjSup
 
 def parseArgs():
     desc = """generate a series of parasol batches to merge splice split
-    splice junction files."""
+    splice junction files. Final file will be linked to mergeWorkDir/merged.sjsup"""
     parser = argparse.ArgumentParser(description=desc)
     loggingOps.addCmdOptions(parser)
     parser.add_argument('--filesPerJob', type=int, default=25,
@@ -87,6 +87,11 @@ def mkMergeBatch(sjsupSplits, filesPerJob, mergeWorkDir, mergeBatchNum, runBatch
         return writeMergeBatch(sjsupSplits, filesPerJob, mergeBatchFh, mergeBatchDir)
 
 
+def linkFinalResult(lastMerge, mergeWorkDir, runBatchesFh):
+    print("ln -f {} {}".format(lastMerge, os.path.join(mergeWorkDir, "merged.sjsup")),
+          file=runBatchesFh)
+
+    
 def rslMkStarSjOutSplits(opts):
     byChromDir = os.path.join(opts.mergeWorkDir, "byChrom")
     sjsupSplits = getByChromSplits(byChromDir)
@@ -95,6 +100,9 @@ def rslMkStarSjOutSplits(opts):
     while len(sjsupSplits) > 1:
         sjsupSplits = mkMergeBatch(sjsupSplits, opts.filesPerJob, opts.mergeWorkDir, mergeBatchNum, runBatchesFh)
         mergeBatchNum += 1
+    if len(sjsupSplits) != 1:
+        raise Exception("BUG: didn't end up with one file in the end")
+    linkFinalResult(sjsupSplits[0], opts.mergeWorkDir, runBatchesFh)
     runBatchesFh.close()
 
 rslMkStarSjOutSplits(parseArgs())
