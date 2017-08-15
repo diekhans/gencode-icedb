@@ -41,6 +41,9 @@ class GenomeReader(object):
     def haveChrom(self, chrom):
         return chrom in self.twoBitReader
 
+    def getChroms(self):
+        return sorted(self.twoBitReader.keys())
+
     def getChromSize(self, chrom):
         self.__obtainChrom(chrom)
         return self.size
@@ -69,6 +72,9 @@ class MockGenomeReader(object):
 
     def haveChrom(self, chrom):
         return chrom in self.mockDataSizes
+
+    def getChroms(self):
+        return sorted(self.mockDataSizes.keys())
 
     def getChromSize(self, chrom):
         return self.mockDataSizes[chrom]
@@ -109,6 +115,12 @@ class MockSeqWriter(object):
         seq = self.genomeReader.get(chrom, start, end, strand)
         self.__write(chrom, start, end, size, strand, seq)
         return seq
+
+    def haveChrom(self, chrom):
+        return self.genomeReader.haveChrom()
+
+    def getChroms(self):
+        return self.genomeReader.getChroms()
 
     def getChromSize(self, chrom):
         self.gotSizes.add(chrom)
@@ -154,6 +166,19 @@ class GenomeReaderFactory(object):
             else:
                 self.genomeReader = self.__getMock()
         return self.genomeReader
+
+    def getOptionArgs(self, allowUpdate):
+        "create a vector of options and values for passing to another program"
+        args = []
+        if self.twoBitFile is not None:
+            args.append("--genomeSeqs={}".format(self.twoBitFile))
+        if self.mockTsv is not None:
+            args.append("--mockGenomeSeqs={}".format(self.mockTsv))
+        if self.updateMockReader and allowUpdate:
+            args.append("--updateMockGenomeSeqs")
+        if self.forceMockReader:
+            args.append("--forceMockGenomeSeqs")
+        return args
 
     @staticmethod
     def addCmdOptions(parser):

@@ -8,58 +8,60 @@ import sqlite3
 from pycbio.sys import fileOps
 from pycbio.hgdata.hgLite import GencodeAttrsDbTable
 from gencode_icedb.general import gencodeDb
+from gencode_icedb.general.genome import GenomeReaderFactory
 
 
 def parseArgs():
-    desc = """Collect splice site evidence for some GENCODE annotations."""
+    desc = """Generate parasol jobs to collect splice site evidence for all GENCODE."""
     parser = argparse.ArgumentParser(description=desc)
-    parser.add_argument('--genomeSeqs',
-                        help="""Genome sequence twobit file to obtain splice sites""")
-    parser.add_argument('--mockGenomeSeqs',
-                        help="""Genome sequence TSV for mock reader for testing. This will be used if genomeSeqs is not specified or does not exist.""")
+    GenomeReaderFactory.addCmdOptions(parser)
     parser.add_argument("--maxgenes", type=int, default=None,
                         help="""maximum number of genes to use, for testing""")
     parser.add_argument('gencodeDb',
                         help="""GENCODE sqlite3 database from gencodeDbLoad""")
     parser.add_argument('sjDb',
                         help="""splice junction evidence sqlite3 database, a correspond *.sjsup.gz and tabix index file must exist""")
-    parser.add_argument('jobWorkDir',
+    parser.add_argument('workDir',
                         help="""directory where jobFile and temporary results are stored""")
     return parser.parse_args()
 
 
-def generateJob(gencodeDb, sjDb, suppProg, resultDir, gencodeId, genomeSeqs, mockGenomeSeqs, batchFh):
-    cmd = [suppProg]
-    if genomeSeqs is not None:
-        cmd.append("--genomeSeqs={}".format(genomeSeqs))
-    if mockGenomeSeqs is not None:
-        cmd.append("--mockGenomeSeqs={}".format(mockGenomeSeqs))
-    resultTsv = os.path.join(resultDir, "{}.supp.tsv".format(gencodeId))
-    cmd.extend([gencodeDb, sjDb, "{{check out exists {}}}".format(resultTsv), gencodeId])
-    print(*cmd, file=batchFh)
+class JobGenerator(object):
+    def __init__(self, gencodeDb, sjDb, genomeReaderFactory, workDir):
+        self.gencodeDb = gencodeDb
+        self.sjDb = sjDb
+        self.genomeReaderFactory = genomeReaderFactory
+        self.workDir = workDir
+        self.resultDir = os.path.join(workDir, "results")
+        self.suppProg = os.path.join(icedbProgSetup.binDir, "rslGencodeCollectSupportJob")
 
+    def __generateJob(self, gencodeId, batchFh, expectedFh):
+        cmd = [self.suppProg] + self.genomeReaderFactory.getOptionArgs(allowUpdate=False)
+        resultTsv = os.path.join(self.resultDir, "{}.supp.tsv".format(gencodeId))
+        cmd.extend([self.gencodeDb, self.sjDb, "{{check out exists {}}}".format(resultTsv), gencodeId])
+        print(*cmd, file=batchFh)
+        print(resultTsv, file=expectedFh)
 
-def generateJobs(gencodeDb, sjDb, gencodeIds, jobWorkDir, genomeSeqs, mockGenomeSeqs, batchFh):
-    suppProg = os.path.join(icedbProgSetup.binDir, "rslGencodeCollectSupportJob")
-    resultDir = os.path.join(jobWorkDir, "results")
-    for gencodeId in gencodeIds:
-        generateJob(gencodeDb, sjDb, suppProg, resultDir, gencodeId, genomeSeqs, mockGenomeSeqs, batchFh)
+    def generateJobs(self, gencodeIds, batchFh, expectedFh):
+        for gencodeId in gencodeIds:
+            self.__generateJob(gencodeId, batchFh, expectedFh)
 
 
 def rslGencodeCollectSupportMkJobs(opts):
     "main function"
+    genomeReaderFactory = GenomeReaderFactory.factoryFromCmdOptions(opts)
     gencodeConn = sqlite3.connect(opts.gencodeDb)  # FIXME: switch to APSW read-only
-
     attrsDbTable = GencodeAttrsDbTable(gencodeConn, gencodeDb.gencode_attrs_table)
     gencodeIds = sorted(attrsDbTable.getAllGeneIds())
     if opts.maxgenes is not None:
         gencodeIds = gencodeIds[0:opts.maxgenes]
+    jobGen = JobGenerator(opts.gencodeDb, opts.sjDb, genomeReaderFactory, opts.workDir)
 
-    fileOps.ensureDir(opts.jobWorkDir)
-    batchFile = os.path.join(opts.jobWorkDir, "batch.jobs")
-    with open(batchFile, "w") as batchFh:
-        generateJobs(opts.gencodeDb, opts.sjDb, gencodeIds, opts.jobWorkDir,
-                     opts.genomeSeqs, opts.mockGenomeSeqs, batchFh)
+    fileOps.ensureDir(opts.workDir)
+    batchFile = os.path.join(opts.workDir, "batch.jobs")
+    expectedLst = os.path.join(opts.workDir, "expected.lst")
+    with open(batchFile, "w") as batchFh, open(expectedLst, "w") as expectedFh:
+        jobGen.generateJobs(gencodeIds, batchFh, expectedFh)
     gencodeConn.close()
 
 

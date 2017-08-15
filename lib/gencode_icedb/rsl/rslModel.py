@@ -160,3 +160,21 @@ class GencodeSupport(BaseModel):
                                      help_text="""total number of uniquely mapping reads""")
     numMultiMapReads = IntegerField(index=True,
                                     help_text="""total number of multi-mapping reads""")
+
+
+class GencodeNovel(BaseModel):
+    """Support for novel intron from comparing support to GENCODE."""
+    id = PrimaryKeyField()
+    chrom = CharField(help_text="""Chromosome""")
+    intronStart = IntegerField(help_text="""zero-based start of intron""")
+    intronEnd = IntegerField(help_text="""end of intron""")
+    strand = CharField(help_text="""strand of gene""")
+    intronMotif = CharField(index=True,
+                            help_text="""Intron splice junction motif in the forms AT/GC.  If splice site is not a known """
+                            """motif, the motif is in lower case. """)
+    numUniqueMapReads = IntegerField(index=True,
+                                     help_text="""total number of uniquely mapping reads""")
+    numMultiMapReads = IntegerField(index=True,
+                                    help_text="""total number of multi-mapping reads""")
+    geneIds = CharField(index=True,
+                        help_text="""GENCODE gene ids if intron overlaps a gene""")

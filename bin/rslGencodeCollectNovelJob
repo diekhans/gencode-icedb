@@ -1,0 +1,14 @@
+#!/bin/bash
+#
+# Job wrapper to run rslGencodeCollectNovel.  This sets up the
+# environment to pick up the right python (via .bashrc).
+#
+#
+source ~/.bashrc
+
+set -beEu -o pipefail
+export LC_ALL=C
+export TMPDIR=/scratch/tmp
+
+cmd=$(which $0 | sed -Ee 's/Job$//')
+exec $cmd "$@"

@@ -6,19 +6,21 @@ import os
 import argparse
 from pycbio.sys import fileOps
 from pycbio.tsv import TsvReader
-from gencode_icedb.rsl.rslModel import sqliteConnect, GencodeSupport
+from gencode_icedb.rsl.rslModel import sqliteConnect, GencodeNovel
 
 bulk_size = 75   # size of each bulk insert
 
+# FIXME: duplicated code with rslGencodeCollectSupportFinishJobs
+
 
 def parseArgs():
-    desc = """Combine rslGencodeCollectSupport job results."""
+    desc = """Combine rslGencodeCollectNovel job results."""
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('workDir',
                         help="""directory contains results directory""")
     parser.add_argument('resultsDb',
                         help="""Sqlite database were results are stored."""
-                        """This does not append results, existing gencodesupport table is dropped.""")
+                        """This does not append results, existing gencodenovel table is dropped.""")
     return parser.parse_args()
 
 
@@ -32,7 +34,7 @@ resultsTsvTypeMap = {
 def resultsDbLoad(resultsConn, recs):
     with resultsConn.atomic():
         for idx in xrange(0, len(recs), bulk_size):
-            GencodeSupport.insert_many(recs[idx:idx + bulk_size]).execute()
+            GencodeNovel.insert_many(recs[idx:idx + bulk_size]).execute()
 
 
 def rowToDict(row):
@@ -53,15 +55,16 @@ def collectResults(resultsConn, expectedTsvs):
     resultsDbLoad(resultsConn, recs)
 
 
-def rslGencodeCollectSupportMkJobs(opts):
+def rslGencodeCollectNovelMkJobs(opts):
     "main function"
+
     fileOps.ensureFileDir(opts.resultsDb)
     resultsConn = sqliteConnect(opts.resultsDb)
-    GencodeSupport.drop_table(fail_silently=True)
-    GencodeSupport.create_table()
+    GencodeNovel.drop_table(fail_silently=True)
+    GencodeNovel.create_table()
     expectedTsvs = fileOps.readFileLines(os.path.join(opts.workDir, "expected.lst"))
     collectResults(resultsConn, expectedTsvs)
     resultsConn.close()
 
 
-rslGencodeCollectSupportMkJobs(parseArgs())
+rslGencodeCollectNovelMkJobs(parseArgs())

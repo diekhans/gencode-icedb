@@ -21,6 +21,8 @@ rslGencodeCollectSupportMkJobs = ${binDir}/rslGencodeCollectSupportMkJobs
 rslGencodeCollectSupportFinishJobs = ${binDir}/rslGencodeCollectSupportFinishJobs
 
 rslGencodeCollectNovel = ${binDir}/rslGencodeCollectNovel
+rslGencodeCollectNovelMkJobs = ${binDir}/rslGencodeCollectNovelMkJobs
+rslGencodeCollectNovelFinishJobs = ${binDir}/rslGencodeCollectNovelFinishJobs
 
 genomeSeqsHg38 = /hive/data/genomes/hg38/hg38.2bit
 
@@ -183,13 +185,14 @@ supportCollectMkJobsTest: mkdirs
 	${jobsToCmds} output/$@.work/batch.jobs | bash -e  
 	ls -1 output/$@.work/results/ > output/$@.results.lst
 	${diff} expected/$@.results.lst output/$@.results.lst
-	${rslGencodeCollectSupportFinishJobs} --maxgenes=10 output/$@/gencode.db output/$@.work output/$@.db
+	${rslGencodeCollectSupportFinishJobs} output/$@.work output/$@.db
 	$(call sqldumpdiff,GencodeSupport)
 
 ##
 # test of novel
 ##
-novelTests: novelRange1Test
+novelTests: novelRange1Test \
+	novelMkJobsTest
 
 novelRange1Test: mkdirs
 	${gencodeSupportTestSetup}
@@ -203,6 +206,17 @@ novelSplitTest: mkdirs
 	${rslGencodeCollectNovel} ${genomeSeqsSpecs} output/$@/gencode.db output/$@/rnaseq.db output/$@.win2.novel.tsv chr22:10940708-20000000
 	${diff} expected/$@.win1.novel.tsv output/$@.win1.novel.tsv
 	${diff} expected/$@.win2.novel.tsv output/$@.win2.novel.tsv
+
+novelMkJobsTest: mkdirs
+	${gencodeSupportTestSetup}
+	${rslGencodeCollectNovelMkJobs} --testRange=chr22:10640100-17601091 --windowSize=1000000 ${genomeSeqsSpecs} output/$@/gencode.db output/$@/rnaseq.db output/$@.work
+	sed -Ee 's#^.*(/bin/rslGencodeCollectNovel)#??\1#' output/$@.work/batch.jobs > output/$@.work/batch.jobs.cleaned
+	${diff} expected/$@.batch.jobs.cleaned output/$@.work/batch.jobs.cleaned
+	${jobsToCmds} output/$@.work/batch.jobs | bash -e  
+	ls -1 output/$@.work/results/ > output/$@.results.lst
+	${diff} expected/$@.results.lst output/$@.results.lst
+	${rslGencodeCollectNovelFinishJobs} output/$@.work output/$@.db
+	$(call sqldumpdiff,GencodeNovel)
 
 
 ##
