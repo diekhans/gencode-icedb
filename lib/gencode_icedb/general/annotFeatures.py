@@ -1,6 +1,8 @@
 from __future__ import print_function
+from collections import defaultdict
 from pycbio.hgdata.hgLite import GenePredDbTable
 from pycbio.hgdata.frame import Frame
+from pycbio.hgdata.rangeFinder import RangeFinder
 from gencode_icedb.general.spliceJuncs import spliceJuncsGetSeqs
 from gencode_icedb.tsl import minIntronSize
 from gencode_icedb.general.transFeatures import ExonFeature, IntronFeature, TranscriptFeatures, Utr5RegionFeature, CdsRegionFeature, Utr3RegionFeature, NonCodingRegionFeature
@@ -142,13 +144,12 @@ class AnnotationFeatures(list):
     "table of AnnotTranscript objects"
 
     def __init__(self):
-        self.transcriptByName = {}
+        self.transcriptsByName = defaultdict(list)
+        self.transcriptsByRange = RangeFinder()
 
     def addTranscript(self, annotTrans):
-        self.transcriptByName[annotTrans.name].append(annotTrans)
-        for annotFeat in annotTrans:
-            if isinstance(annotFeat, ExonFeature):
-                self.exonRangeMap.add(annotTrans.chrom, annotFeat.start, annotFeat.end, annotTrans, annotTrans.strand)
+        self.transcriptsByName[annotTrans.name].append(annotTrans)
+        self.transcriptsByRange.add(annotTrans.chrom, annotTrans.chromStart, annotTrans.chromEnd, annotTrans, annotTrans.rnaStrand)
 
     @staticmethod
     def dbFactory(conn, table, chrom, chromStart, chromEnd, genomeReader):

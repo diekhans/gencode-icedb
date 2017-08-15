@@ -11,6 +11,16 @@ class IntronCoords(namedtuple("Intron", ("chrom", "chromStart", "chromEnd", "str
     def fromSjSupport(sjSupp, intronMotif):
         return IntronCoords(sjSupp.chrom, sjSupp.chromStart, sjSupp.chromEnd, sjSupp.strand, intronMotif)
 
+    def __lt__(self, other):
+        "less than, ignoring strand"
+        if self.chrom < other.chrom:
+            return True
+        if self.chromStart < other.chromStart:
+            return True
+        if self.chromEnd < other.chromEnd:
+            return True
+        return False
+
     @staticmethod
     def fromIntronFeat(intronFeat):
         transFeat = intronFeat.transcript

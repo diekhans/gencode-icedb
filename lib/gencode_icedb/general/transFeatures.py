@@ -6,8 +6,6 @@ from pycbio.hgdata import dnaOps
 from pycbio.hgdata.frame import Frame
 from gencode_icedb.general.spliceJuncs import SpliceJuncs, spliceJuncsClassify
 
-# FIXME: moved to a common module
-
 
 def _reverseComplementChildren(rcParent, features):
     "reverse complement a list of child TransFeatures, return None if features is None"

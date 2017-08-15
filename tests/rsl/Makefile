@@ -20,6 +20,8 @@ rslGencodeCollectSupport = ${binDir}/rslGencodeCollectSupport
 rslGencodeCollectSupportMkJobs = ${binDir}/rslGencodeCollectSupportMkJobs
 rslGencodeCollectSupportFinishJobs = ${binDir}/rslGencodeCollectSupportFinishJobs
 
+rslGencodeCollectNovel = ${binDir}/rslGencodeCollectNovel
+
 genomeSeqsHg38 = /hive/data/genomes/hg38/hg38.2bit
 
 diff = diff -u
@@ -36,6 +38,7 @@ test:   dataConvertTests \
 	dbLoadTests \
 	sjsupBuildTests \
 	gencodeSupportTests \
+	novelTests \
 	encodeDccTests \
 	intronEvidBedTests \
 	intronEvidStatsTests
@@ -182,6 +185,25 @@ supportCollectMkJobsTest: mkdirs
 	${diff} expected/$@.results.lst output/$@.results.lst
 	${rslGencodeCollectSupportFinishJobs} --maxgenes=10 output/$@/gencode.db output/$@.work output/$@.db
 	$(call sqldumpdiff,GencodeSupport)
+
+##
+# test of novel
+##
+novelTests: novelRange1Test
+
+novelRange1Test: mkdirs
+	${gencodeSupportTestSetup}
+	${rslGencodeCollectNovel} ${genomeSeqsSpecs} output/$@/gencode.db output/$@/rnaseq.db output/$@.novel.tsv chr1:2193910-7731544
+	${diff} expected/$@.novel.tsv output/$@.novel.tsv
+
+# make sure putative introns start in window
+novelSplitTest: mkdirs
+	${gencodeSupportTestSetup}
+	${rslGencodeCollectNovel} ${genomeSeqsSpecs} output/$@/gencode.db output/$@/rnaseq.db output/$@.win1.novel.tsv chr22:0-10940708
+	${rslGencodeCollectNovel} ${genomeSeqsSpecs} output/$@/gencode.db output/$@/rnaseq.db output/$@.win2.novel.tsv chr22:10940708-20000000
+	${diff} expected/$@.win1.novel.tsv output/$@.win1.novel.tsv
+	${diff} expected/$@.win2.novel.tsv output/$@.win2.novel.tsv
+
 
 ##
 # data from encode3 DCC

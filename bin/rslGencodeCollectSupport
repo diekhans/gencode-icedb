@@ -19,14 +19,7 @@ from gencode_icedb.rsl.intronSupportCounter import IntronSupportCounter
 def parseArgs():
     desc = """Collect splice site evidence for a subset of GENCODE annotations."""
     parser = argparse.ArgumentParser(description=desc)
-    parser.add_argument('--genomeSeqs',
-                        help="""Genome sequence twobit file to obtain splice sites""")
-    parser.add_argument('--mockGenomeSeqs',
-                        help="""Genome sequence TSV for mock reader for testing. This will be used if genomeSeqs is not specified or does not exist.""")
-    parser.add_argument('--updateMockGenomeSeqs', action="store_true",
-                        help="""update mock genome seqs.""")
-    parser.add_argument('--forceMockGenomeSeqs', action="store_true",
-                        help="""force using mock genome seqs, even if twobit exists""")
+    GenomeReaderFactory.addCmdOptions(parser)
     parser.add_argument('gencodeDb',
                         help="""GENCODE sqlite3 database from gencodeDbLoad""")
     parser.add_argument('sjDb',
@@ -146,12 +139,8 @@ class SupportCounter(object):
 
 
 def rslGencodeCollectSupport(opts):
-    "main function"
-    # this will check sanity of options
-    genomeReaderFactory = GenomeReaderFactory(opts.genomeSeqs, opts.mockGenomeSeqs,
-                                              opts.updateMockGenomeSeqs,
-                                              opts.forceMockGenomeSeqs)
-    genomeReader = genomeReaderFactory.obtain()
+    "entry point"
+    genomeReader = GenomeReaderFactory.factoryFromCmdOptions(opts).obtain()
 
     gencodeConn = sqlite3.connect(opts.gencodeDb)  # FIXME: switch to APSW read-only
     sjConn = sqliteConnect(opts.sjDb, readonly=True)

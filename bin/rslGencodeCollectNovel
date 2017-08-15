@@ -5,19 +5,25 @@ import icedbProgSetup  # noqa: F401
 import argparse
 import csv
 import sqlite3
-from collections import defaultdict, namedtuple
-from pycbio.sys import fileOps
-from pycbio.hgdata.hgLite import GencodeAttrsDbTable, GenePredDbTable
+from pycbio.sys import fileOps, setOps
+from pycbio.hgbrowser.coords import Coords
+from pycbio.hgdata.hgLite import GencodeAttrsDbTable
 from gencode_icedb.general import gencodeDb
-from gencode_icedb.general.spliceJuncs import SpliceJuncs, spliceJuncsGetSeqs
 from gencode_icedb.general.genome import GenomeReaderFactory
 from gencode_icedb.general.transFeatures import IntronFeature
-from gencode_icedb.general.annotFeatures import AnnotationGenePredFactory
+from gencode_icedb.general.annotFeatures import AnnotationFeatures
 from gencode_icedb.rsl.rslModel import sqliteConnect, SjSupportReader
+from gencode_icedb.rsl.intronSupportCounter import IntronSupportCounter
 
 
 def parseArgs():
-    desc = """Collect novel splice sites evidence for a chromosome range that are not in GENCODE annotations."""
+    desc = """Collect novel splice sites evidence for a chromosome range
+    (wondow) that are not in GENCODE annotations.  If intron is within an
+    existing gene, report that geneId.  If an putative intron is not
+    completely in the window into the chromosome, it will only be processed if
+    window contains the first bases of the intron.  This allows generating
+    contiguous, non-overlapping
+    """
     parser = argparse.ArgumentParser(description=desc)
     GenomeReaderFactory.addCmdOptions(parser)
     parser.add_argument("--minUniqueMapped", type=int, default=0,
@@ -28,161 +34,110 @@ def parseArgs():
                         help="""splice junction evidence sqlite3 database, a correspond *.sjsup.gz and tabix index file must exist""")
     parser.add_argument('resultsTsv',
                         help="""TSV file for results""")
-    parser.add_argument('chromRanges', nargs='*',
-                        help="""zero-based chromosome ranges, in the form chr:start-end""")
+    parser.add_argument('chromRange',
+                        help="""zero-based chromosome range, in the form chr:start-end.""")
     return parser.parse_args()
 
 
 resultsHeader = ("chrom", "intronStart", "intronEnd", "strand", "intronMotif",
-                 "numUniqueMapReads", "numMultiMapReads", "geneId")
+                 "numUniqueMapReads", "numMultiMapReads", "geneIds")
 
 
-class SupportCounter(object):
-    def __init__(self, gencodeConn, sjConn, genomeReader):
+class NovelFinder(object):
+    def __init__(self, gencodeConn, sjConn, genomeReader, minUniqueMapped):
         self.attrsDbTable = GencodeAttrsDbTable(gencodeConn, gencodeDb.gencode_attrs_table)
-        self.annDbTable = GenePredDbTable(gencodeConn, gencodeDb.gencode_ann_table)
+        self.attrsCache = dict()  # by transcriptId
         self.sjSupportReader = SjSupportReader(sjDbConn=sjConn)
-        self.annFactory = AnnotationGenePredFactory(genomeReader)
         self.genomeReader = genomeReader
+        self.minUniqueMapped = minUniqueMapped
 
-    def __getAttrsById(self, gencodeId):
-        "try gene, then transcript id"
-        attrs = self.attrsDbTable.getByGeneId(gencodeId)
-        if len(attrs) > 0:
-            return attrs
-        attr = self.attrsDbTable.getByTranscriptId(gencodeId)
-        if attr is not None:
-            return [attr]
-        raise Exception("can't find GENCODE gene or transcript with id {}".format(gencodeId))
+        # genes are counts for range
+        self.rangeTranscripts = None
+        self.rangeSupportCnts = IntronSupportCounter(genomeReader)
 
-    def __getTranscripts(self, attrs):
-        """return list of transcripts annotations, which would be empty if the annotations
-        were on alts that were not aligned"""
-        transes = []
-        for attr in attrs:
-            for gp in self.annDbTable.getByName(attr.transcriptId):
-                transes.append(self.annFactory.fromGenePred(gp))
-        return transes
+    def __loadRangeSupport(self, genomeCoords):
+        # only use ones that start in this window
+        for sjSupp in self.sjSupportReader.fetch(genomeCoords.chrom, genomeCoords.start, genomeCoords.end):
+            if (genomeCoords.start <= sjSupp.chromStart) and (sjSupp.chromStart < genomeCoords.end):
+                self.rangeSupportCnts.sumSjSupp(sjSupp)
 
-    def __getPrimaryTranscript(self, transes):
-        "get primary transcript, dropping PAR, alts, etc"
-        byChrom = defaultdict(list)
-        for trans in transes:
-            byChrom[trans.chrom].append(trans)
-        chroms = list(byChrom.keys())
-        if len(chroms) == 1:
-            return byChrom[chroms[0]]
-        if "chrY" in chroms:
-            # ignored Y
-            chroms.remove("chrY")
-        # use shortest
-        chroms.sort(key=lambda c: len(c))
-        return byChrom[chroms[0]]
+    def __loadRangeTranscripts(self, genomeCoords):
+        self.rangeTranscripts = AnnotationFeatures.dbFactory(self.attrsDbTable.conn, gencodeDb.gencode_ann_table,
+                                                             genomeCoords.chrom, genomeCoords.start, genomeCoords.end, self.genomeReader)
 
-    def __splitAttrsByTrans(self, attrs):
-        attrsByTrans = dict()
-        for attr in attrs:
-            attrsByTrans[attr.transcriptId] = attr
-        return attrsByTrans
+    def __getOverlappingTrans(self, intron):
+        return list(self.rangeTranscripts.transcriptsByRange.overlapping(intron.chrom, intron.chromStart, intron.chromEnd, intron.strand))
 
-    def __getBounds(self, transes):
-        start = min([a.chromStart for a in transes])
-        end = max([a.chromEnd for a in transes])
-        return transes[0].chrom, start, end
-
-    def __getIntronMotif(self, sjSupp):
-        "return motif, if it's not one known by STAR, look up"
-        if sjSupp.intronMotif == "??/??":
-            return spliceJuncsGetSeqs(self.genomeReader, sjSupp.chrom, sjSupp.chromStart, sjSupp.chromEnd, sjSupp.strand)
-        else:
-            return sjSupp.intronMotif
-
-    def __sumSupport(self, byIntronSjSupp, sjSupp):
-        intron = IntronCoords.fromSjSupport(sjSupp)
-        cnts = byIntronSjSupp.get(intron)
-        if cnts is None:
-            byIntronSjSupp[intron] = cnts = SjCounts(self.__getIntronMotif(sjSupp))
-        cnts.sum(sjSupp)
-
-    def __sumSupportsByIntron(self, chrom, start, end):
-        byIntronSjSupp = dict()
-        for sjSupp in self.sjSupportReader.fetch(chrom, start, end):
-            self.__sumSupport(byIntronSjSupp, sjSupp)
-        return byIntronSjSupp
-
-    def __sumSupportForRange(self, transes, attrsByTrans):
-        """Sums support by introns for SJ in the range, so transcripts should be a locus,
-        either transcripts in one gene locus or one transcript.  Collecting all upfront
-        prevents multiple queries for shared introns."""
-        chrom, start, end = self.__getBounds(transes)
-        return self.__sumSupportsByIntron(chrom, start, end)
-
-    def __makeZeroSjSupp(self, intronFeat):
-        """will be lower-case if not a known slice junction"""
-        intronMotif = "{}/{}".format(intronFeat.donorSeq, intronFeat.acceptorSeq)
-        if intronFeat.spliceJuncs == SpliceJuncs.unknown:
-            intronMotif = intronMotif.lower()
-        else:
-            intronMotif = intronMotif.upper()
-        return SjCounts(intronMotif)
-
-    def __reportTransIntronSupport(self, trans, transAttrs, intronFeat, byIntronSjSupp, resultsWriter):
-        sjSupp = byIntronSjSupp.get(IntronCoords.fromIntronFeat(intronFeat))
-        if sjSupp is None:
-            sjSupp = self.__makeZeroSjSupp(intronFeat)
-        resultsWriter.writerow([transAttrs.geneId, transAttrs.geneName,
-                                transAttrs.transcriptId,
-                                transAttrs.transcriptType,
-                                intronFeat.transcript.chrom,
-                                intronFeat.chromStart, intronFeat.chromEnd,
-                                intronFeat.transcript.rnaStrand, sjSupp.intronMotif,
-                                sjSupp.numUniqueMapReads,
-                                sjSupp.numMultiMapReads])
-
-    def __reportTranscriptSupport(self, trans, transAttrs, byIntronSjSupp, resultsWriter):
+    def __haveIntron(self, intron, trans):
+        # already strand-filtered
         for feat in trans.features:
-            if isinstance(feat, IntronFeature):
-                self.__reportTransIntronSupport(trans, transAttrs, feat, byIntronSjSupp, resultsWriter)
+            if (isinstance(feat, IntronFeature) and (intron.chromStart == feat.chromStart)
+                and (intron.chromEnd == feat.chromEnd)):
+                return True
+        return False
 
-    def __collectTranscriptsSupport(self, transes, attrsByTrans, resultsWriter):
-        byIntronSjSupp = self.__sumSupportForRange(transes, resultsWriter)
-        for trans in transes:
-            self.__reportTranscriptSupport(trans, attrsByTrans[trans.rnaName], byIntronSjSupp, resultsWriter)
+    def __anyHaveIntron(self, intron, overlappingTranses):
+        for trans in overlappingTranses:
+            if self.__haveIntron(intron, trans):
+                return True
+        return False
 
-    def __collectSupportId(self, gencodeId, resultsWriter):
-        attrs = self.__getAttrsById(gencodeId)
-        transes = self.__getTranscripts(attrs)
-        if len(transes) > 0:
-            self.__collectTranscriptsSupport(self.__getPrimaryTranscript(transes),
-                                             self.__splitAttrsByTrans(attrs),
-                                             resultsWriter)
+    def __getTransAttrs(self, transcriptId):
+        attrs = self.attrsCache.get(transcriptId)
+        if attrs is None:
+            self.attrsCache[transcriptId] = attrs = self.attrsDbTable.getByTranscriptId(transcriptId)
+        return attrs
 
-    def collectSupport(self, gencodeIds, resultsWriter):
-        if len(gencodeIds) == 0:
-            gencodeIds = self.attrsDbTable.getAllGeneIds()
+    def __getContainingGenes(self, intron, overlappingTranses):
+        geneIds = set()
+        for trans in overlappingTranses:
+            geneIds.add(self.__getTransAttrs(trans.rnaName).geneId)
+        return geneIds
+
+    def __reportNovel(self, intron, sjCounts, overlappingTranses, resultsWriter):
+        geneIds = self.__getContainingGenes(intron, overlappingTranses)
+        resultsWriter.writerow([intron.chrom, intron.chromStart, intron.chromEnd,
+                                intron.strand, intron.intronMotif,
+                                sjCounts.numUniqueMapReads,
+                                sjCounts.numMultiMapReads,
+                                setOps.setJoin(geneIds, ",")])
+
+    def __analyzeSj(self, intron, sjCounts, resultsWriter):
+        overlappingTranses = self.__getOverlappingTrans(intron)
+        if not self.__anyHaveIntron(intron, overlappingTranses):
+            self.__reportNovel(intron, sjCounts, overlappingTranses, resultsWriter)
+
+    def __analyzeRange(self, resultsWriter):
+        for intron in sorted(self.rangeSupportCnts.keys()):
+            sjCounts = self.rangeSupportCnts[intron]
+            if sjCounts.numUniqueMapReads >= self.minUniqueMapped:
+                self.__analyzeSj(intron, sjCounts, resultsWriter)
+
+    def collectNovel(self, genomeCoords, resultsWriter):
+        self.__loadRangeSupport(genomeCoords)
+        self.__loadRangeTranscripts(genomeCoords)
         resultsWriter.writerow(resultsHeader)
-        for gencodeId in gencodeIds:
-            self.__collectSupportId(gencodeId, resultsWriter)
+        self.__analyzeRange(resultsWriter)
 
 
-def rslGencodeCollectSupport(opts):
-    "main function"
-    genomeReaderFactory = GenomeReaderFactory.factoryFromCmdOptions(opts)
-    genomeReader = genomeReaderFactory.obtain()
+def rslGencodeCollectNovel(opts):
+    "entry point"
+    genomeCoords = Coords.parse(opts.chromRange)
+    genomeReader = GenomeReaderFactory.factoryFromCmdOptions(opts).obtain()
 
     gencodeConn = sqlite3.connect(opts.gencodeDb)  # FIXME: switch to APSW read-only
     sjConn = sqliteConnect(opts.sjDb, readonly=True)
-    supportCounter = SupportCounter(gencodeConn, sjConn, genomeReader)
+    novelFinder = NovelFinder(gencodeConn, sjConn, genomeReader, opts.minUniqueMapped)
 
     fileOps.ensureFileDir(opts.resultsTsv)
     resultsTmpTsv = fileOps.atomicTmpFile(opts.resultsTsv)
     with open(resultsTmpTsv, "w") as fh:
-        supportCounter.collectSupport(opts.gencodeIds, csv.writer(fh, dialect=csv.excel_tab,
-                                                                  lineterminator='\n'))
+        novelFinder.collectNovel(genomeCoords, csv.writer(fh, dialect=csv.excel_tab,
+                                                          lineterminator='\n'))
     fileOps.atomicInstall(resultsTmpTsv, opts.resultsTsv)
     gencodeConn.close()
     if not sjConn.is_closed():  # FIXME: not sure why it is in the is_closed state, maybe lazy open?
         sjConn.close()
 
 
-rslGencodeCollectSupport(parseArgs())
+rslGencodeCollectNovel(parseArgs())

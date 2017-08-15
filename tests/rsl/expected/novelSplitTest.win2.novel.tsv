@@ -1,0 +1,2 @@
+chrom	intronStart	intronEnd	strand	intronMotif	numUniqueMapReads	numMultiMapReads	geneIds
+chr22	16001198	16010209	-	GT/AG	0	6	
