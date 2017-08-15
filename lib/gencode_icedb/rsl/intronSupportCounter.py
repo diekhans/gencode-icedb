@@ -29,16 +29,17 @@ class IntronCoords(namedtuple("Intron", ("chrom", "chromStart", "chromEnd", "str
 
 class IntronSupportCounts(object):
     """sum of counts for an intron"""
-    __slots__ = ("intronMotif", "numUniqueMapReads", "numMultiMapReads")
+    __slots__ = ("numExprs", "numUniqueMapReads", "numMultiMapReads")
 
     def __init__(self):
-        self.numUniqueMapReads = self.numMultiMapReads = 0
+        self.numExprs = self.numUniqueMapReads = self.numMultiMapReads = 0
 
     def __str__(self):
         return "{} {}".format(self.numUniqueMapReads, self.numMultiMapReads)
 
     def sum(self, cnts):
         "can sum with SjCounts or SjSupport objects"
+        self.numExprs += 1
         self.numUniqueMapReads += cnts.numUniqueMapReads
         self.numMultiMapReads += cnts.numMultiMapReads
 

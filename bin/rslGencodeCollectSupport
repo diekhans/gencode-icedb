@@ -33,7 +33,7 @@ def parseArgs():
 
 resultsHeader = ("geneId", "geneName", "transcriptId", "transcriptType",
                  "chrom", "intronStart", "intronEnd", "strand", "intronMotif",
-                 "numUniqueMapReads", "numMultiMapReads")
+                 "numExprs", "numUniqueMapReads", "numMultiMapReads")
 
 
 class SupportCounter(object):
@@ -109,6 +109,7 @@ class SupportCounter(object):
                                 transAttrs.transcriptType,
                                 intron.chrom, intron.chromStart, intronFeat.chromEnd,
                                 intron.strand, intron.intronMotif,
+                                sjCounts.numExprs,
                                 sjCounts.numUniqueMapReads,
                                 sjCounts.numMultiMapReads])
 

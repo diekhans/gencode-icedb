@@ -40,7 +40,7 @@ def parseArgs():
 
 
 resultsHeader = ("chrom", "intronStart", "intronEnd", "strand", "intronMotif",
-                 "numUniqueMapReads", "numMultiMapReads", "geneIds")
+                 "numExprs", "numUniqueMapReads", "numMultiMapReads", "geneIds")
 
 
 class NovelFinder(object):
@@ -98,6 +98,7 @@ class NovelFinder(object):
         geneIds = self.__getContainingGenes(intron, overlappingTranses)
         resultsWriter.writerow([intron.chrom, intron.chromStart, intron.chromEnd,
                                 intron.strand, intron.intronMotif,
+                                sjCounts.numExprs,
                                 sjCounts.numUniqueMapReads,
                                 sjCounts.numMultiMapReads,
                                 setOps.setJoin(geneIds, ",")])

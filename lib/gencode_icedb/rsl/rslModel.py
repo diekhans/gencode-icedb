@@ -156,6 +156,7 @@ class GencodeSupport(BaseModel):
     intronMotif = CharField(index=True,
                             help_text="""Intron splice junction motif in the forms AT/GC.  If splice site is not a known """
                             """motif, the motif is in lower case. """)
+    numExprs = IntegerField(help_text="""total number of experiments having this intron""")
     numUniqueMapReads = IntegerField(index=True,
                                      help_text="""total number of uniquely mapping reads""")
     numMultiMapReads = IntegerField(index=True,
@@ -172,6 +173,7 @@ class GencodeNovel(BaseModel):
     intronMotif = CharField(index=True,
                             help_text="""Intron splice junction motif in the forms AT/GC.  If splice site is not a known """
                             """motif, the motif is in lower case. """)
+    numExprs = IntegerField(help_text="""total number of experiments having this intron""")
     numUniqueMapReads = IntegerField(index=True,
                                      help_text="""total number of uniquely mapping reads""")
     numMultiMapReads = IntegerField(index=True,
