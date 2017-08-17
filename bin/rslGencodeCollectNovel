@@ -58,7 +58,7 @@ class NovelFinder(object):
     def __loadRangeSupport(self, genomeCoords):
         # only use ones that start in this window
         for sjSupp in self.sjSupportReader.fetch(genomeCoords.chrom, genomeCoords.start, genomeCoords.end):
-            if (genomeCoords.start <= sjSupp.chromStart) and (sjSupp.chromStart < genomeCoords.end):
+            if (sjSupp.strand in ('+', '-')) and (genomeCoords.start <= sjSupp.chromStart) and (sjSupp.chromStart < genomeCoords.end):
                 self.rangeSupportCnts.sumSjSupp(sjSupp)
 
     def __loadRangeTranscripts(self, genomeCoords):
@@ -110,9 +110,10 @@ class NovelFinder(object):
 
     def __analyzeRange(self, resultsWriter):
         for intron in sorted(self.rangeSupportCnts.keys()):
-            sjCounts = self.rangeSupportCnts[intron]
-            if sjCounts.numUniqueMapReads >= self.minUniqueMapped:
-                self.__analyzeSj(intron, sjCounts, resultsWriter)
+            if intron.strand in ('+', '-'):
+                sjCounts = self.rangeSupportCnts[intron]
+                if sjCounts.numUniqueMapReads >= self.minUniqueMapped:
+                    self.__analyzeSj(intron, sjCounts, resultsWriter)
 
     def collectNovel(self, genomeCoords, resultsWriter):
         self.__loadRangeSupport(genomeCoords)
