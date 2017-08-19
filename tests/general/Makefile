@@ -31,11 +31,13 @@ featureUnitTests:
 ##
 gencodeDbLoadTest: mkdirs
 	rm -f output/$@.db
-	${gencodeDbLoad} output/$@.db input/set1.gencodeAttrsV19.tsv input/set1.gencodeCompV19.gp
+	${gencodeDbLoad} output/$@.db input/set1.gencodeAttrsV19.tsv input/set1.gencodeTransSourceV19.tsv input/set1.gencodeCompV19.gp
 	sqlite3 -header -batch output/$@.db 'SELECT * FROM gencode_ann' >output/$@.gencode_ann.gp
 	sqlite3 -header -batch output/$@.db 'SELECT * FROM gencode_attrs' >output/$@.gencode_attrs.tsv
+	sqlite3 -header -batch output/$@.db 'SELECT * FROM gencode_transcript_source' >output/$@.gencode_trans_src.tsv
 	${diff} expected/$@.gencode_ann.gp output/$@.gencode_ann.gp
 	${diff} expected/$@.gencode_attrs.tsv output/$@.gencode_attrs.tsv
+	${diff} expected/$@.gencode_trans_src.tsv output/$@.gencode_trans_src.tsv
 
 
 ##
@@ -67,7 +69,7 @@ gpMondoTest: mkdirs
 
 gencodeDbMondoTest: mkdirs
 	rm -f output/$@.db
-	time ${gencodeDbLoad} --hgdb=hg38 output/$@.db wgEncodeGencodeAttrsV26 wgEncodeGencodeCompV26 wgEncodeGencodePseudoGeneV26
+	time ${gencodeDbLoad} --hgdb=hg38 output/$@.db wgEncodeGencodeAttrsV26 wgEncodeGencodeTranscriptSourceV26 wgEncodeGencodeCompV26 wgEncodeGencodePseudoGeneV26
 
 mkdirs:
 	@mkdir -p output

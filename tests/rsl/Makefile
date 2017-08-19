@@ -146,7 +146,7 @@ gencodeSupportTests: supportCollectAllTest \
 define gencodeSupportTestSetup
 rm -rf output/$@
 mkdir -p output/$@
-${gencodeDbLoad} output/$@/gencode.db input/set1.hs.attrs.v26.tsv input/set1.hs.comp.v26.gp input/set1.hs.pseudo.v26.gp
+${gencodeDbLoad} output/$@/gencode.db input/set1.hs.attrs.v26.tsv input/set1.hs.trans-source.v26.tab input/set1.hs.comp.v26.gp input/set1.hs.pseudo.v26.gp
 ${rslSraRunInfoDbLoad} output/$@/rnaseq.db input/set1.hs.run-info.tsv
 ${rslMappingMetadataDbLoad} output/$@/rnaseq.db input/set1.hs.mapping-params.tsv input/set1.hs.stardir.tsv
 bgzip -c expected/mkStarMergeTest.merged.sjsup > output/$@/rnaseq.sjsup.gz
