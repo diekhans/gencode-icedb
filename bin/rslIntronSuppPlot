@@ -4,6 +4,7 @@ from __future__ import print_function
 import icedbProgSetup  # noqa: F401
 import sys
 import argparse
+import logging
 from pycbio.sys import loggingOps
 from gencode_icedb.rsl.rslModel import sqliteConnect, sqliteClose, GencodeSupport, GencodeNovel
 from collections import defaultdict
@@ -11,6 +12,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
+logger = None
 
 def parseArgs():
     desc = """Create density plots of plots of intron supporting evidence,
@@ -27,6 +29,8 @@ def parseArgs():
                         help="output plot file, defaults to pdf")
     opts = parser.parse_args()
     loggingOps.setupFromCmd(opts, sys.argv[0])
+    global logger
+    logger = logging.getLogger()
     return opts
 
 
@@ -44,6 +48,11 @@ class IntronEvidData(object):
     def __keep(self, rec):
         return self.isNovel or (not isPseudo(rec))
 
+    def __logIntronsByReadCnt(self):
+        logger.debug("readCnt\tnumIntrons")
+        for readCntBucket in sorted(self.intronsByReadCnt.keys()):
+            logger.debug("{}\t{}".format(readCntBucket * self.readCntBucketSize, self.intronsByReadCnt[readCntBucket]))
+    
     def load(self):
         self.intronsByReadCnt = defaultdict(int)
         if self.isNovel:
@@ -53,14 +62,15 @@ class IntronEvidData(object):
         for rec in ormCls.select():
             if self.__keep(rec):
                 self.intronsByReadCnt[rec.numUniqueMapReads / self.readCntBucketSize] += 1
-        return self.intronsByReadCnt
+        if logger.isEnabledFor(logging.DEBUG):
+            self.__logIntronsByReadCnt()
 
     def __countDictToList(self, intronsByReadCnt):
         intronCnts = []
         suppCnts = []
-        for readCnt in intronsByReadCnt.keys():
-            intronCnts.append(intronsByReadCnt[readCnt])
-            suppCnts.append(readCnt)
+        for readCntBucket in intronsByReadCnt.keys():
+            intronCnts.append(intronsByReadCnt[readCntBucket])
+            suppCnts.append(readCntBucket * self.readCntBucketSize)
         return intronCnts, suppCnts
 
     def plot(self, plotOut, uselog=False):
