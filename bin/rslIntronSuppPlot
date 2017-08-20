@@ -63,17 +63,23 @@ class IntronEvidData(object):
             suppCnts.append(readCnt)
         return intronCnts, suppCnts
 
-    def plot(self, plotOut):
+    def plot(self, plotOut, uselog=False):
         intronCnts, suppCnts = self.__countDictToList(self.intronsByReadCnt)
         color = "b"
 
-        plt.interactive(False)
-        # plt.xscale('log')
         if self.isNovel:
-            plt.xlabel("Novel Introns")
+            xlabel ="Novel Introns"
         else:
-            plt.xlabel("GENCODE Introns")
-        plt.ylabel("Unique mapped supporting reads")
+            xlabel ="GENCODE Introns"
+        ylabel = "Unique mapped supporting reads"
+        plt.interactive(False)
+        if uselog:
+            plt.xscale('log')
+            xlabel += " (log)"
+            plt.yscale('log')
+            ylabel += " (log)"
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
         plt.scatter(intronCnts, suppCnts, color=color, rasterized=True)
         plt.savefig(plotOut)
         plt.show()
@@ -84,7 +90,7 @@ def rslIntronSuppPlot(opts):
     conn = sqliteConnect(opts.intronEvidDb, readonly=True)
     intronEvidData.load()
     sqliteClose(conn)
-    intronEvidData.plot(opts.plotOut)
+    intronEvidData.plot(opts.plotOut, uselog=True)
 
 
 rslIntronSuppPlot(parseArgs())
