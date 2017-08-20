@@ -266,10 +266,14 @@ intronEvidStatsConsensus: mkdirs
 plotTests: gencodeSuppCntPlotTest novelSuppCntPlotTest
 
 gencodeSuppCntPlotTest: mkdirs
-	${rslIntronSuppPlot} expected/supportCollectAllTest.supp.tsv output/$@.pdf
+	rm -f output/$@.supp.db
+	tail +2 expected/supportCollectMkJobsTest.GencodeSupport.tsv | sqlite3 output/$@.supp.db '.read input/gencodesupport.sql' '.mode tabs' '.import /dev/stdin gencodesupport'
+	${rslIntronSuppPlot} support output/$@.supp.db output/$@.pdf
 
 novelSuppCntPlotTest: mkdirs
-	${rslIntronSuppPlot} expected/novelRange1Test.novel.tsv output/$@.pdf
+	rm -f output/$@.novel.db
+	tail +2 output/novelMkJobsTest.GencodeNovel.tsv | sqlite3 output/$@.novel.db '.read input/gencodenovel.sql' '.mode tabs' '.import /dev/stdin gencodenovel'
+	${rslIntronSuppPlot} novel output/$@.novel.db output/$@.pdf
 
 
 

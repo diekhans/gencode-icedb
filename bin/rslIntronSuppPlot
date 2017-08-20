@@ -4,15 +4,12 @@ from __future__ import print_function
 import icedbProgSetup  # noqa: F401
 import sys
 import argparse
-from pycbio.tsv import TsvReader
 from pycbio.sys import loggingOps
-from gencode_icedb.rsl.gencodeIntronEvid import GencodeIntronEvidReader
+from gencode_icedb.rsl.rslModel import sqliteConnect, sqliteClose, GencodeSupport, GencodeNovel
 from collections import defaultdict
-import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import matplotlib.colors as colors
 
 
 def parseArgs():
@@ -22,13 +19,16 @@ def parseArgs():
     loggingOps.addCmdOptions(parser)
     parser.add_argument('--readCntBucketSize', type=int, default=10,
                         help="number of reads are bucked by this amount")
-    parser.add_argument('intronEvidTsv',
-                        help="TSV of either supported or novel introns, type determined by header")
+    parser.add_argument('dataType', choices=("support", "novel"),
+                        help="support or novel database, type determined by header")
+    parser.add_argument('intronEvidDb',
+                        help="support or novel database, type determined by header")
     parser.add_argument('plotOut',
                         help="output plot file, defaults to pdf")
     opts = parser.parse_args()
     loggingOps.setupFromCmd(opts, sys.argv[0])
     return opts
+
 
 def isPseudo(suppRec):
     # FIXME: switch to using functions now in CCDS tree
@@ -36,23 +36,24 @@ def isPseudo(suppRec):
 
 
 class IntronEvidData(object):
-    def __init__(self, intronEvidTsv, readCntBucketSize):
+    def __init__(self, dataType, readCntBucketSize):
         self.readCntBucketSize = readCntBucketSize
-        self.isNovel = None
-        self.intronsByReadCnt = self.__load(intronEvidTsv)
+        self.isNovel = (dataType == "novel")
+        self.intronsByReadCnt = None
 
     def __keep(self, rec):
         return self.isNovel or (not isPseudo(rec))
-    
-    def __load(self, intronEvidTsv):
-        intCols = ("intronStart", "intronEnd", "numExprs", "numUniqueMapReads", "numMultiMapReads")
-        rdr = TsvReader(intronEvidTsv, typeMap={c: int for c in intCols})
-        self.isNovel = "geneIds" in rdr.columns
-        intronsByReadCnt = defaultdict(int)
-        for rec in rdr:
+
+    def load(self):
+        self.intronsByReadCnt = defaultdict(int)
+        if self.isNovel:
+            ormCls = GencodeNovel
+        else:
+            ormCls = GencodeSupport
+        for rec in ormCls.select():
             if self.__keep(rec):
-                intronsByReadCnt[rec.numUniqueMapReads / self.readCntBucketSize] += 1
-        return intronsByReadCnt
+                self.intronsByReadCnt[rec.numUniqueMapReads / self.readCntBucketSize] += 1
+        return self.intronsByReadCnt
 
     def __countDictToList(self, intronsByReadCnt):
         intronCnts = []
@@ -67,7 +68,7 @@ class IntronEvidData(object):
         color = "b"
 
         plt.interactive(False)
-        #plt.xscale('log')
+        # plt.xscale('log')
         if self.isNovel:
             plt.xlabel("Novel Introns")
         else:
@@ -79,7 +80,10 @@ class IntronEvidData(object):
 
 
 def rslIntronSuppPlot(opts):
-    intronEvidData = IntronEvidData(opts.intronEvidTsv, opts.readCntBucketSize)
+    intronEvidData = IntronEvidData(opts.dataType, opts.readCntBucketSize)
+    conn = sqliteConnect(opts.intronEvidDb, readonly=True)
+    intronEvidData.load()
+    sqliteClose(conn)
     intronEvidData.plot(opts.plotOut)
 
 

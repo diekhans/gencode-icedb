@@ -31,6 +31,13 @@ def sqliteConnect(rsldb, readonly=False, timeout=None, synchronous=None):
     return dbconn
 
 
+def sqliteClose(rslDb):
+    "close database if not-null and open"
+    # not sure why it might be in closed state even after open, maybe lazy open?
+    if not rslDb.is_closed():
+        rslDb.close()
+
+
 def sqliteSetSynchronous(dbconn, mode):
     if mode is False:
         mode = "OFF"
