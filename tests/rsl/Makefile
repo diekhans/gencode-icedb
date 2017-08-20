@@ -24,6 +24,8 @@ rslGencodeCollectNovel = ${binDir}/rslGencodeCollectNovel
 rslGencodeCollectNovelMkJobs = ${binDir}/rslGencodeCollectNovelMkJobs
 rslGencodeCollectNovelFinishJobs = ${binDir}/rslGencodeCollectNovelFinishJobs
 
+rslIntronSuppPlot = ${binDir}/rslIntronSuppPlot
+
 genomeSeqsHg38 = /hive/data/genomes/hg38/hg38.2bit
 
 diff = diff -u
@@ -43,7 +45,8 @@ test:   dataConvertTests \
 	novelTests \
 	encodeDccTests \
 	intronEvidBedTests \
-	intronEvidStatsTests
+	intronEvidStatsTests \
+	plotTests
 
 ##
 # conversion of data
@@ -230,6 +233,7 @@ encodeDccTests: encodeDcc10Tests
 encodeDcc10Tests: mkdirs
 	${rslEncodeDccQuery} "Mus musculus" --limit=10 output/encodeDcc10Tests.tsv output/encodeDcc10Tests.urls
 
+
 ##
 # rslRnaSeqIntronEvidBed
 ##
@@ -255,6 +259,19 @@ intronEvidStatsMin30: mkdirs
 intronEvidStatsConsensus: mkdirs
 	${rslRnaSeqIntronEvidStats} --spliceJuncCat=consensus input/hs.chr22-2k.evid.tsv output/$@.stats.tsv
 	diff expected/$@.stats.tsv output/$@.stats.tsv
+
+##
+# tests of plotting programs, results not check automatically
+##
+plotTests: gencodeSuppCntPlotTest novelSuppCntPlotTest
+
+gencodeSuppCntPlotTest: mkdirs
+	${rslIntronSuppPlot} expected/supportCollectAllTest.supp.tsv output/$@.pdf
+
+novelSuppCntPlotTest: mkdirs
+	${rslIntronSuppPlot} expected/novelRange1Test.novel.tsv output/$@.pdf
+
+
 
 
 mkdirs:

@@ -1,0 +1,86 @@
+#!/usr/bin/env python
+
+from __future__ import print_function
+import icedbProgSetup  # noqa: F401
+import sys
+import argparse
+from pycbio.tsv import TsvReader
+from pycbio.sys import loggingOps
+from gencode_icedb.rsl.gencodeIntronEvid import GencodeIntronEvidReader
+from collections import defaultdict
+import numpy as np
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import matplotlib.colors as colors
+
+
+def parseArgs():
+    desc = """Create density plots of plots of intron supporting evidence,
+    either known or novel"""
+    parser = argparse.ArgumentParser(description=desc)
+    loggingOps.addCmdOptions(parser)
+    parser.add_argument('--readCntBucketSize', type=int, default=10,
+                        help="number of reads are bucked by this amount")
+    parser.add_argument('intronEvidTsv',
+                        help="TSV of either supported or novel introns, type determined by header")
+    parser.add_argument('plotOut',
+                        help="output plot file, defaults to pdf")
+    opts = parser.parse_args()
+    loggingOps.setupFromCmd(opts, sys.argv[0])
+    return opts
+
+def isPseudo(suppRec):
+    # FIXME: switch to using functions now in CCDS tree
+    return (suppRec.transcriptType.find("pseudogene") >= 0) and (suppRec.transcriptType != "polymorphic_pseudogene")
+
+
+class IntronEvidData(object):
+    def __init__(self, intronEvidTsv, readCntBucketSize):
+        self.readCntBucketSize = readCntBucketSize
+        self.isNovel = None
+        self.intronsByReadCnt = self.__load(intronEvidTsv)
+
+    def __keep(self, rec):
+        return self.isNovel or (not isPseudo(rec))
+    
+    def __load(self, intronEvidTsv):
+        intCols = ("intronStart", "intronEnd", "numExprs", "numUniqueMapReads", "numMultiMapReads")
+        rdr = TsvReader(intronEvidTsv, typeMap={c: int for c in intCols})
+        self.isNovel = "geneIds" in rdr.columns
+        intronsByReadCnt = defaultdict(int)
+        for rec in rdr:
+            if self.__keep(rec):
+                intronsByReadCnt[rec.numUniqueMapReads / self.readCntBucketSize] += 1
+        return intronsByReadCnt
+
+    def __countDictToList(self, intronsByReadCnt):
+        intronCnts = []
+        suppCnts = []
+        for readCnt in intronsByReadCnt.keys():
+            intronCnts.append(intronsByReadCnt[readCnt])
+            suppCnts.append(readCnt)
+        return intronCnts, suppCnts
+
+    def plot(self, plotOut):
+        intronCnts, suppCnts = self.__countDictToList(self.intronsByReadCnt)
+        color = "b"
+
+        plt.interactive(False)
+        #plt.xscale('log')
+        if self.isNovel:
+            plt.xlabel("Novel Introns")
+        else:
+            plt.xlabel("GENCODE Introns")
+        plt.ylabel("Unique mapped supporting reads")
+        plt.scatter(intronCnts, suppCnts, color=color, rasterized=True)
+        plt.savefig(plotOut)
+        plt.show()
+
+
+def rslIntronSuppPlot(opts):
+    intronEvidData = IntronEvidData(opts.intronEvidTsv, opts.readCntBucketSize)
+    intronEvidData.plot(opts.plotOut)
+
+
+rslIntronSuppPlot(parseArgs())

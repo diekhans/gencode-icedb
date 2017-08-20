@@ -7,6 +7,8 @@ from pycbio.sys.symEnum import SymEnum
 from collections import defaultdict
 
 
+# FIXME: used?
+
 class IntronSupportLevel(SymEnum):
     "support level on an single intron"
     INTRON_SUPPORT_NONE = 0

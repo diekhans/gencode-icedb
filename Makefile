@@ -13,9 +13,10 @@ progs = icedbProgSetup.py \
 	rslSraRunInfoFilter rslSraRunInfoDbLoad rslMappingMetadataDbLoad \
 	rslMkStarSjOutSplits \
 	rslGencodeCollectSupport rslGencodeCollectSupportMkJobs rslGencodeCollectSupportFinishJobs \
-	rslGencodeCollectNovel rslGencodeCollectNovelMkJobs rslGencodeCollectNovelFinishJobs
+	rslGencodeCollectNovel rslGencodeCollectNovelMkJobs rslGencodeCollectNovelFinishJobs \
+	rslIntronSuppPlot
 
-# not done:  rslRnaSeqIntronEvidPlot rslRnaSeqIntronEvidStats
+# not done:  rslRnaSeqIntronEvidStats
 
 all::
 	(cd src && ${MAKE})
