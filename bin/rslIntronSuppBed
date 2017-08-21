@@ -6,17 +6,20 @@ import sys
 import argparse
 from pycbio.sys import fileOps, loggingOps
 from pycbio.sys.color import Color
-from gencode_icedb.rsl.gencodeIntronEvid import GencodeIntronEvidSet, IntronSupportLevel, intronEvidSupportLevel
+from gencode_icedb.rsl.rslModel import sqliteConnect, sqliteClose, GencodeSupport, GencodeNovel
+from gencode_icedb.rsl.gencodeIntronEvid import IntronSupportLevel, intronEvidSupportLevel
 
 
 def parseArgs():
-    desc = """Create a BED of introns colored by support"""
+    desc = """Create a BED of introns support"""
     parser = argparse.ArgumentParser(description=desc)
     loggingOps.addCmdOptions(parser)
     parser.add_argument('--htmlColors', action="store_true", default=False,
                         help="print colors in  HTML format for use in documentation, then exit")
-    parser.add_argument('spliceJunctionEvidTsv',
-                        help="length of reads that will be mapped; used to calculate splice junction overhang")
+    parser.add_argument('dataType', choices=("support", "novel"),
+                        help="support or novel database, type determined by header")
+    parser.add_argument('intronEvidDb',
+                        help="support or novel database, type determined by header")
     parser.add_argument('bedOut',
                         help="output BED file")
     opts = parser.parse_args()
@@ -48,19 +51,18 @@ class Colors(object):
         Colors.__printColorHtml(fh, "no support known intron", Colors.none)
 
 
-class GencodeIntronEvidBed(object):
-    def __init__(self, spliceJunctionEvidTsv):
-        self.intronEvid = GencodeIntronEvidSet(spliceJunctionEvidTsv)
+class GencodeIntronBedMaker(object):
+    def __init__(self, dataType):
+        self.dataType = dataType
 
-    @staticmethod
-    def __evidColor(evid, level):
+    def __evidColor(self, evid, level):
         if level == IntronSupportLevel.INTRON_SUPPORT_STRONG:
-            if evid.novel:
+            if self.dataType == "novel":
                 return Colors.strongNovel
             else:
                 return Colors.strongKnown
         elif level == IntronSupportLevel.INTRON_SUPPORT_MEDIUM:
-            if evid.novel:
+            if self.dataType == "novel":
                 return Colors.mediumNovel
             else:
                 return Colors.mediumKnown
@@ -71,10 +73,8 @@ class GencodeIntronEvidBed(object):
 
     @staticmethod
     def __evidStrand(evid):
-        if (evid.rnaSeqStrand is not None) and (evid.rnaSeqStrand != '?'):
-            return evid.rnaSeqStrand
-        elif evid.annotStrand is not None:
-            return evid.annotStrand
+        if (evid.strand is not None) and (evid.strand not in ('?', '.')):
+            return evid.strand
         else:
             return '+'  # something valid
 
@@ -82,27 +82,38 @@ class GencodeIntronEvidBed(object):
     def __evidName(evid):
         return "{} ({}, {})".format(evid.intronMotif, evid.numUniqueMapReads, evid.numMultiMapReads)
 
-    def __writeBedRec(self, evid, bedFh):
-        level = intronEvidSupportLevel(evid)
+    def __shouldReport(self, supp, level):
         # don't report weak novel
-        if (not evid.novel) or (level > IntronSupportLevel.INTRON_SUPPORT_WEAK):
-            fileOps.prRowv(bedFh, evid.chrom, evid.intronStart, evid.intronEnd,
-                           self.__evidName(evid), 0, self.__evidStrand(evid),
-                           evid.intronStart, evid.intronEnd,
-                           self.__evidColor(evid, level).toRgb8Str())
+        return (not self.dataType != "novel") or (level > IntronSupportLevel.INTRON_SUPPORT_WEAK)
+
+    def __writeBedRec(self, supp, bedFh):
+        level = intronEvidSupportLevel(supp)
+        if self.__shouldReport(supp, level):
+            fileOps.prRowv(bedFh, supp.chrom, supp.intronStart, supp.intronEnd,
+                           self.__evidName(supp), 0, self.__evidStrand(supp),
+                           supp.intronStart, supp.intronEnd,
+                           self.__evidColor(supp, level).toRgb8Str())
+
+    def __getOrmClass(self):
+        if self.dataType == "novel":
+            return GencodeNovel
+        else:
+            return GencodeSupport
 
     def writeBed(self, bedFh):
-        for evid in sorted(self.intronEvid, key=lambda e: (e.chrom, e.intronStart)):
-            self.__writeBedRec(evid, bedFh)
+        for rec in self.__getOrmClass().select():
+            self.__writeBedRec(rec, bedFh)
 
 
-def rnaSeqIntronEvidBed(opts):
+def rslIntronSuppBed(opts):
     if opts.htmlColors:
         Colors.printHtml()
         sys.exit(0)
-    gieb = GencodeIntronEvidBed(opts.spliceJunctionEvidTsv)
+    intronBedMaker = GencodeIntronBedMaker(opts.dataType)
+    conn = sqliteConnect(opts.intronEvidDb, readonly=True)
     with open(opts.bedOut, "w") as bedFh:
-        gieb.writeBed(bedFh)
+        intronBedMaker.writeBed(bedFh)
+    sqliteClose(conn)
 
 
-rnaSeqIntronEvidBed(parseArgs())
+rslIntronSuppBed(parseArgs())

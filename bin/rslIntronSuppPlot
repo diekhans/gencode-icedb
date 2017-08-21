@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 
 logger = None
 
+
 def parseArgs():
     desc = """Create density plots of plots of intron supporting evidence,
     either known or novel"""
@@ -52,7 +53,7 @@ class IntronEvidData(object):
         logger.debug("readCnt\tnumIntrons")
         for readCntBucket in sorted(self.intronsByReadCnt.keys()):
             logger.debug("{}\t{}".format(readCntBucket * self.readCntBucketSize, self.intronsByReadCnt[readCntBucket]))
-    
+
     def load(self):
         self.intronsByReadCnt = defaultdict(int)
         if self.isNovel:
@@ -78,9 +79,9 @@ class IntronEvidData(object):
         color = "b"
 
         if self.isNovel:
-            xlabel ="Novel Introns"
+            xlabel = "Novel Introns"
         else:
-            xlabel ="GENCODE Introns"
+            xlabel = "GENCODE Introns"
         ylabel = "Unique mapped supporting reads"
         plt.interactive(False)
         if uselog:

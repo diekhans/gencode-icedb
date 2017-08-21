@@ -4,7 +4,7 @@ binDir = ${ROOT}/bin
 
 rslEncodeDccQuery = ${binDir}/rslEncodeDccQuery
 
-rslRnaSeqIntronEvidBed = ${binDir}/rslRnaSeqIntronEvidBed
+rslIntronSuppBed = ${binDir}/rslIntronSuppBed
 rslRnaSeqIntronEvidStats = ${binDir}/rslRnaSeqIntronEvidStats
 
 rslSraRunInfoFilter = ${binDir}/rslSraRunInfoFilter
@@ -44,7 +44,7 @@ test:   dataConvertTests \
 	gencodeSupportTests \
 	novelTests \
 	encodeDccTests \
-	intronEvidBedTests \
+	intronSuppBedTests \
 	intronEvidStatsTests \
 	plotTests
 
@@ -234,13 +234,29 @@ encodeDcc10Tests: mkdirs
 	${rslEncodeDccQuery} "Mus musculus" --limit=10 output/encodeDcc10Tests.tsv output/encodeDcc10Tests.urls
 
 
-##
-# rslRnaSeqIntronEvidBed
-##
-intronEvidBedTests: intronEvidBed1Test
+define buildGencodeSuppDb
+rm -f output/$@.supp.db
+tail +2 expected/supportCollectMkJobsTest.GencodeSupport.tsv | sqlite3 output/$@.supp.db '.read input/gencodesupport.sql' '.mode tabs' '.import /dev/stdin gencodesupport'
+endef
 
-intronEvidBed1Test: mkdirs
-	${rslRnaSeqIntronEvidBed} input/hs.chr22-2k.evid.tsv output/$@.bed
+define buildGencodeNovelDb
+rm -f output/$@.novel.db
+tail +2 expected/novelMkJobsTest.GencodeNovel.tsv | sqlite3 output/$@.novel.db '.read input/gencodenovel.sql' '.mode tabs' '.import /dev/stdin gencodenovel'
+endef
+
+##
+# rslIntronSuppBed
+##
+intronSuppBedTests: intronGencodeSuppBedTest \
+		intronGencodeNovelBedTest
+
+intronGencodeSuppBedTest: mkdirs
+	${buildGencodeSuppDb}
+	${rslIntronSuppBed} support output/$@.supp.db output/$@.bed
+
+intronGencodeNovelBedTest: mkdirs
+	${buildGencodeNovelDb}
+	${rslIntronSuppBed} novel output/$@.novel.db output/$@.bed
 
 ##
 # rslRnaSeqIntronEvidStats
@@ -263,16 +279,15 @@ intronEvidStatsConsensus: mkdirs
 ##
 # tests of plotting programs, results not check automatically
 ##
+
 plotTests: gencodeSuppCntPlotTest novelSuppCntPlotTest
 
 gencodeSuppCntPlotTest: mkdirs
-	rm -f output/$@.supp.db
-	tail +2 expected/supportCollectMkJobsTest.GencodeSupport.tsv | sqlite3 output/$@.supp.db '.read input/gencodesupport.sql' '.mode tabs' '.import /dev/stdin gencodesupport'
+	${buildGencodeSuppDb}
 	${rslIntronSuppPlot} support output/$@.supp.db output/$@.pdf
 
 novelSuppCntPlotTest: mkdirs
-	rm -f output/$@.novel.db
-	tail +2 output/novelMkJobsTest.GencodeNovel.tsv | sqlite3 output/$@.novel.db '.read input/gencodenovel.sql' '.mode tabs' '.import /dev/stdin gencodenovel'
+	${buildGencodeNovelDb}
 	${rslIntronSuppPlot} novel output/$@.novel.db output/$@.pdf
 
 

@@ -7,8 +7,6 @@ from pycbio.sys.symEnum import SymEnum
 from collections import defaultdict
 
 
-# FIXME: used?
-
 class IntronSupportLevel(SymEnum):
     "support level on an single intron"
     INTRON_SUPPORT_NONE = 0
@@ -16,6 +14,8 @@ class IntronSupportLevel(SymEnum):
     INTRON_SUPPORT_MEDIUM = 2
     INTRON_SUPPORT_STRONG = 3
 
+
+# FIXME: no longer needed
 
 class GencodeIntronEvidReader(tsv.TsvReader):
     "TSV reader for evidence"
@@ -74,13 +74,11 @@ class GencodeIntronEvidSet(list):
 def intronEvidSupportLevel(evid):
     """compute the level of support for a given intron"""
     # easy first pass implementation
-    if evid.numUniqueMapReads >= 20:
+    if evid.numUniqueMapReads >= 1000:
         return IntronSupportLevel.INTRON_SUPPORT_STRONG
+    elif evid.numUniqueMapReads >= 100:
+        return IntronSupportLevel.INTRON_SUPPORT_MEDIUM
     elif evid.numUniqueMapReads >= 10:
-        return IntronSupportLevel.INTRON_SUPPORT_MEDIUM
-    elif (evid.numUniqueMapReads >= 5) and (evid.numMultiMapReads >= 5):
-        return IntronSupportLevel.INTRON_SUPPORT_MEDIUM
-    elif evid.numMultiMapReads >= 5:
         return IntronSupportLevel.INTRON_SUPPORT_WEAK
     else:
         return IntronSupportLevel.INTRON_SUPPORT_NONE
