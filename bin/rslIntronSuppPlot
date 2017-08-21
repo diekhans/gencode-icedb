@@ -101,7 +101,7 @@ def rslIntronSuppPlot(opts):
     conn = sqliteConnect(opts.intronEvidDb, readonly=True)
     intronEvidData.load()
     sqliteClose(conn)
-    intronEvidData.plot(opts.plotOut, uselog=True)
+    intronEvidData.plot(opts.plotOut, uselog=False)
 
 
 rslIntronSuppPlot(parseArgs())
