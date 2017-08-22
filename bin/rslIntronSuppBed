@@ -54,6 +54,7 @@ class Colors(object):
 class GencodeIntronBedMaker(object):
     def __init__(self, dataType):
         self.dataType = dataType
+        self.reported = set()   # don't output dups
 
     def __evidColor(self, evid, level):
         if level == IntronSupportLevel.INTRON_SUPPORT_STRONG:
@@ -83,8 +84,13 @@ class GencodeIntronBedMaker(object):
         return "{} ({}, {})".format(evid.intronMotif, evid.numUniqueMapReads, evid.numMultiMapReads)
 
     def __shouldReport(self, supp, level):
+        key = (supp.chrom, supp.intronStart, supp.intronEnd, supp.strand)
+        if key in self.reported:
+            return False
+        self.reported.add(key)
+
         # don't report weak novel
-        return (not self.dataType != "novel") or (level > IntronSupportLevel.INTRON_SUPPORT_WEAK)
+        return (self.dataType != "novel") or (level > IntronSupportLevel.INTRON_SUPPORT_WEAK)
 
     def __writeBedRec(self, supp, bedFh):
         level = intronEvidSupportLevel(supp)
