@@ -235,12 +235,12 @@ encodeDcc10Tests: mkdirs
 
 define buildGencodeSuppDb
 rm -f output/$@.supp.db
-tail +2 expected/supportCollectMkJobsTest.GencodeSupport.tsv | sqlite3 output/$@.supp.db '.read input/gencodesupport.sql' '.mode tabs' '.import /dev/stdin gencodesupport'
+tail -n +2 expected/supportCollectMkJobsTest.GencodeSupport.tsv | sqlite3 output/$@.supp.db '.read input/gencodesupport.sql' '.mode tabs' '.import /dev/stdin gencodesupport'
 endef
 
 define buildGencodeNovelDb
 rm -f output/$@.novel.db
-tail +2 expected/novelMkJobsTest.GencodeNovel.tsv | sqlite3 output/$@.novel.db '.read input/gencodenovel.sql' '.mode tabs' '.import /dev/stdin gencodenovel'
+tail -n +2 expected/novelMkJobsTest.GencodeNovel.tsv | sqlite3 output/$@.novel.db '.read input/gencodenovel.sql' '.mode tabs' '.import /dev/stdin gencodenovel'
 endef
 
 ##
