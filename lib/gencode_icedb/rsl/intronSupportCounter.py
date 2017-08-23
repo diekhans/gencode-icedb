@@ -26,6 +26,10 @@ class IntronCoords(namedtuple("Intron", ("chrom", "chromStart", "chromEnd", "str
         transFeat = intronFeat.transcript
         return IntronCoords(transFeat.chrom, intronFeat.chromStart, intronFeat.chromEnd, transFeat.rnaStrand)
 
+    @staticmethod
+    def fromIntronSupp(supp):
+        return IntronCoords(supp.chrom, supp.intronStart, supp.intronEnd, supp.strand)
+
 
 class IntronSupportCounts(object):
     """sum of counts for an intron"""

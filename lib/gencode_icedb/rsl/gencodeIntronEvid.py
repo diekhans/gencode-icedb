@@ -9,10 +9,24 @@ from collections import defaultdict
 
 class IntronSupportLevel(SymEnum):
     "support level on an single intron"
-    INTRON_SUPPORT_NONE = 0
-    INTRON_SUPPORT_WEAK = 1
-    INTRON_SUPPORT_MEDIUM = 2
-    INTRON_SUPPORT_STRONG = 3
+    NONE = 0
+    WEAK = 1
+    MEDIUM = 2
+    STRONG = 3
+
+
+def intronEvidSupportLevel(numReads, isNovel):
+    """compute the level of support for a given intron"""
+    # easy first pass implementation
+    mult = 10 if isNovel else 1
+    if numReads >= 1000 * mult:
+        return IntronSupportLevel.STRONG
+    elif numReads >= 100 * mult:
+        return IntronSupportLevel.MEDIUM
+    elif numReads >= 1:
+        return IntronSupportLevel.WEAK
+    else:
+        return IntronSupportLevel.NONE
 
 
 # FIXME: no longer needed
@@ -69,19 +83,6 @@ class GencodeIntronEvidSet(list):
             # find ones on same chrom
             evids = [evid for evid in evids if evid.chrom == transLocus.chrom]
         return tuple(sorted(evids, key=lambda r: r.intronStart))
-
-
-def intronEvidSupportLevel(evid):
-    """compute the level of support for a given intron"""
-    # easy first pass implementation
-    if evid.numUniqueMapReads >= 1000:
-        return IntronSupportLevel.INTRON_SUPPORT_STRONG
-    elif evid.numUniqueMapReads >= 100:
-        return IntronSupportLevel.INTRON_SUPPORT_MEDIUM
-    elif evid.numUniqueMapReads >= 10:
-        return IntronSupportLevel.INTRON_SUPPORT_WEAK
-    else:
-        return IntronSupportLevel.INTRON_SUPPORT_NONE
 
 
 class SpliceJuncCat(SymEnum):

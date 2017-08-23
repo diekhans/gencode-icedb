@@ -17,9 +17,9 @@ def parseArgs():
     parser.add_argument('--htmlColors', action="store_true", default=False,
                         help="print colors in  HTML format for use in documentation, then exit")
     parser.add_argument('dataType', choices=("support", "novel"),
-                        help="support or novel database, type determined by header")
+                        help="type of database")
     parser.add_argument('intronEvidDb',
-                        help="support or novel database, type determined by header")
+                        help="support or novel database")
     parser.add_argument('bedOut',
                         help="output BED file")
     opts = parser.parse_args()
@@ -57,19 +57,19 @@ class GencodeIntronBedMaker(object):
         self.reported = set()   # don't output dups
 
     def __evidColor(self, evid, level):
-        if level == IntronSupportLevel.INTRON_SUPPORT_STRONG:
+        if level == IntronSupportLevel.STRONG:
             if self.dataType == "novel":
                 return Colors.strongNovel
             else:
                 return Colors.strongKnown
-        elif level == IntronSupportLevel.INTRON_SUPPORT_MEDIUM:
+        elif level == IntronSupportLevel.MEDIUM:
             if self.dataType == "novel":
                 return Colors.mediumNovel
             else:
                 return Colors.mediumKnown
-        elif level == IntronSupportLevel.INTRON_SUPPORT_WEAK:
+        elif level == IntronSupportLevel.WEAK:
             return Colors.weak
-        elif level == IntronSupportLevel.INTRON_SUPPORT_NONE:
+        elif level == IntronSupportLevel.NONE:
             return Colors.none
 
     @staticmethod
@@ -90,10 +90,10 @@ class GencodeIntronBedMaker(object):
         self.reported.add(key)
 
         # don't report weak novel
-        return (self.dataType != "novel") or (level > IntronSupportLevel.INTRON_SUPPORT_WEAK)
+        return (self.dataType != "novel") or (level > IntronSupportLevel.WEAK)
 
     def __writeBedRec(self, supp, bedFh):
-        level = intronEvidSupportLevel(supp)
+        level = intronEvidSupportLevel(supp.numUniqueMapReads, self.dataType == "novel")
         if self.__shouldReport(supp, level):
             fileOps.prRowv(bedFh, supp.chrom, supp.intronStart, supp.intronEnd,
                            self.__evidName(supp), 0, self.__evidStrand(supp),

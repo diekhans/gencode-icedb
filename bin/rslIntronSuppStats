@@ -1,0 +1,90 @@
+#!/usr/bin/env python
+
+from __future__ import print_function
+import icedbProgSetup  # noqa: F401
+import sys
+import argparse
+from collections import defaultdict
+from pycbio.sys import fileOps, loggingOps, mathOps
+from gencode_icedb.rsl.rslModel import sqliteConnect, sqliteClose, GencodeSupport, GencodeNovel
+from gencode_icedb.rsl.gencodeIntronEvid import IntronSupportLevel, intronEvidSupportLevel
+
+
+def parseArgs():
+    desc = """Create statistics on intron supporting evidence"""
+    parser = argparse.ArgumentParser(description=desc)
+    loggingOps.addCmdOptions(parser)
+    parser.add_argument('dataType', choices=("support", "novel"),
+                        help="type of database")
+    parser.add_argument('intronEvidDb',
+                        help="support or novel database")
+    parser.add_argument('outPrefix',
+                        help="prefix for statistics output files")
+    opts = parser.parse_args()
+    loggingOps.setupFromCmd(opts, sys.argv[0])
+    return opts
+
+
+class IntronEvidData(object):
+    "data linked to GENCODE transcripts"
+    def __init__(self, dataType):
+        self.isNovel = (dataType == "novel")
+        self.byGeneTrans = None
+        if not self.isNovel:
+            self.byGeneTrans = defaultdict(lambda: defaultdict(list))  # by-gene, by-transcript
+        self.introns = {}  # dup gene/trans dropped
+
+    def __loadRec(self, rec):
+        if not self.isNovel:
+            self.byGeneTrans[rec.geneId][rec.transcriptId].append(rec)
+        self.introns[(rec.intronStart, rec.intronEnd, rec.strand)] = rec
+
+    def __getOrmClass(self):
+        return GencodeNovel if self.isNovel else GencodeSupport
+
+    def load(self):
+        for rec in self.__getOrmClass().select():
+            self.__loadRec(rec)
+
+    def __cntSupportLevels(self):
+        uniqCnts = defaultdict(int)
+        bothCnts = defaultdict(int)
+        for intron in self.introns.values():
+            ulevel = intronEvidSupportLevel(intron.numUniqueMapReads, self.isNovel)
+            mlevel = intronEvidSupportLevel(intron.numMultiMapReads, self.isNovel)
+            uniqCnts[ulevel] += 1
+            bothCnts[(ulevel, mlevel)] += 1
+        return uniqCnts, bothCnts
+
+    def __reportUniqSupportLevels(self, uniqCnts, fh):
+        total = len(self.introns)
+        fileOps.prRowv(fh, "uniqLevel", "count", "rate")
+        for ulevel in reversed(IntronSupportLevel):
+            fileOps.prRowv(fh, ulevel, uniqCnts[ulevel], mathOps.calcFmtFreq(uniqCnts[ulevel], total))
+
+    def __reportBothSupportLevels(self, bothCnts, fh):
+        total = len(self.introns)
+        fileOps.prRowv(fh, "uniqLevel", "multiLevel", "count", "rate")
+        for ulevel in reversed(IntronSupportLevel):
+            for mlevel in reversed(IntronSupportLevel):
+                fileOps.prRowv(fh, ulevel, mlevel, bothCnts[(ulevel, mlevel)], mathOps.calcFmtFreq(bothCnts[ulevel], total))
+
+    def reportSupportLevels(self, uniqTsv, bothTsv):
+        uniqCnts, bothCnts = self.__cntSupportLevels()
+        with open(uniqTsv, "w") as fh:
+            self.__reportUniqSupportLevels(uniqCnts, fh)
+        with open(bothTsv, "w") as fh:
+            self.__reportBothSupportLevels(bothCnts, fh)
+
+
+def rslIntronSuppStats(opts):
+    intronEvidData = IntronEvidData(opts.dataType)
+    conn = sqliteConnect(opts.intronEvidDb, readonly=True)
+    intronEvidData.load()
+    sqliteClose(conn)
+    fileOps.ensureFileDir(opts.outPrefix)
+    intronEvidData.reportSupportLevels("{}uniq-support.tsv".format(opts.outPrefix),
+                                       "{}both-support.tsv".format(opts.outPrefix))
+
+
+rslIntronSuppStats(parseArgs())

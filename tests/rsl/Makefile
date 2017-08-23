@@ -4,9 +4,6 @@ binDir = ${ROOT}/bin
 
 rslEncodeDccQuery = ${binDir}/rslEncodeDccQuery
 
-rslIntronSuppBed = ${binDir}/rslIntronSuppBed
-rslRnaSeqIntronEvidStats = ${binDir}/rslRnaSeqIntronEvidStats
-
 rslSraRunInfoFilter = ${binDir}/rslSraRunInfoFilter
 rslSraRunInfoDbLoad = ${binDir}/rslSraRunInfoDbLoad
 rslMappingMetadataDbLoad = ${binDir}/rslMappingMetadataDbLoad
@@ -25,6 +22,8 @@ rslGencodeCollectNovelMkJobs = ${binDir}/rslGencodeCollectNovelMkJobs
 rslGencodeCollectNovelFinishJobs = ${binDir}/rslGencodeCollectNovelFinishJobs
 
 rslIntronSuppPlot = ${binDir}/rslIntronSuppPlot
+rslIntronSuppBed = ${binDir}/rslIntronSuppBed
+rslIntronSuppStats = ${binDir}/rslIntronSuppStats
 
 genomeSeqsHg38 = /hive/data/genomes/hg38/hg38.2bit
 
@@ -45,7 +44,7 @@ test:   dataConvertTests \
 	novelTests \
 	encodeDccTests \
 	intronSuppBedTests \
-	intronEvidStatsTests \
+	intronStatsTests \
 	plotTests
 
 ##
@@ -259,22 +258,23 @@ intronGencodeNovelBedTest: mkdirs
 	${rslIntronSuppBed} novel output/$@.novel.db output/$@.bed
 
 ##
-# rslRnaSeqIntronEvidStats
+# rslIntronSuppStats
 ##
-intronEvidStatsTests: intronEvidStatsAllTest intronEvidStatsMin30 \
-	intronEvidStatsConsensus
 
-intronEvidStatsAllTest: mkdirs
-	${rslRnaSeqIntronEvidStats} input/hs.chr22-2k.evid.tsv output/$@.stats.tsv
-	diff expected/$@.stats.tsv output/$@.stats.tsv
+intronStatsTests: intronGencodeSuppStatsTest \
+		intronGencodeNovelStatsTest
 
-intronEvidStatsMin30: mkdirs
-	${rslRnaSeqIntronEvidStats} --minIntronSize=30 input/hs.chr22-2k.evid.tsv output/$@.stats.tsv
-	diff expected/$@.stats.tsv output/$@.stats.tsv
+intronGencodeSuppStatsTest: mkdirs
+	${buildGencodeSuppDb}
+	${rslIntronSuppStats} support output/$@.supp.db output/$@/supp.
+	${diff} -r expected/$@ output/$@
 
-intronEvidStatsConsensus: mkdirs
-	${rslRnaSeqIntronEvidStats} --spliceJuncCat=consensus input/hs.chr22-2k.evid.tsv output/$@.stats.tsv
-	diff expected/$@.stats.tsv output/$@.stats.tsv
+intronGencodeNovelStatsTest: mkdirs
+	${buildGencodeNovelDb}
+	${rslIntronSuppStats} novel output/$@.novel.db output/$@/novel.
+	${diff} -r expected/$@ output/$@
+
+
 
 ##
 # tests of plotting programs, results not check automatically

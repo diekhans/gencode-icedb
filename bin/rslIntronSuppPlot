@@ -23,9 +23,9 @@ def parseArgs():
     parser.add_argument('--readCntBucketSize', type=int, default=10,
                         help="number of reads are bucked by this amount")
     parser.add_argument('dataType', choices=("support", "novel"),
-                        help="support or novel database, type determined by header")
+                        help="type of database")
     parser.add_argument('intronEvidDb',
-                        help="support or novel database, type determined by header")
+                        help="support or novel database")
     parser.add_argument('plotOut',
                         help="output plot file, defaults to pdf")
     opts = parser.parse_args()
