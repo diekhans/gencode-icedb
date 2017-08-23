@@ -61,13 +61,16 @@ class IntronEvidData(object):
         fileOps.prRowv(fh, "uniqLevel", "count", "rate")
         for ulevel in reversed(IntronSupportLevel):
             fileOps.prRowv(fh, ulevel, uniqCnts[ulevel], mathOps.calcFmtFreq(uniqCnts[ulevel], total))
+        fileOps.prRowv(fh, "total", total, mathOps.calcFmtFreq(uniqCnts[ulevel], total))
 
     def __reportBothSupportLevels(self, bothCnts, fh):
         total = len(self.introns)
         fileOps.prRowv(fh, "uniqLevel", "multiLevel", "count", "rate")
         for ulevel in reversed(IntronSupportLevel):
             for mlevel in reversed(IntronSupportLevel):
-                fileOps.prRowv(fh, ulevel, mlevel, bothCnts[(ulevel, mlevel)], mathOps.calcFmtFreq(bothCnts[ulevel], total))
+                key = (ulevel, mlevel)
+                fileOps.prRowv(fh, ulevel, mlevel, bothCnts[key], mathOps.calcFmtFreq(bothCnts[key], total))
+        fileOps.prRowv(fh, "total", "total", total, mathOps.calcFmtFreq(total, total))
 
     def reportSupportLevels(self, uniqTsv, bothTsv):
         uniqCnts, bothCnts = self.__cntSupportLevels()
