@@ -15,13 +15,12 @@ class IntronSupportLevel(SymEnum):
     STRONG = 3
 
 
-def intronEvidSupportLevel(numReads, isNovel):
+def intronEvidSupportLevel(numReads):
     """compute the level of support for a given intron"""
     # easy first pass implementation
-    mult = 1 if isNovel else 1  # FIXME, do we want?
-    if numReads >= 1000 * mult:
+    if numReads >= 1000:
         return IntronSupportLevel.STRONG
-    elif numReads >= 100 * mult:
+    elif numReads >= 100:
         return IntronSupportLevel.MEDIUM
     elif numReads >= 1:
         return IntronSupportLevel.WEAK

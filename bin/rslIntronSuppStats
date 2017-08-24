@@ -9,7 +9,7 @@ from pycbio.sys import fileOps, loggingOps, mathOps
 from gencode_icedb.rsl.rslModel import sqliteConnect, sqliteClose
 from gencode_icedb.rsl.gencodeIntronEvid import IntronSupportLevel, intronEvidSupportLevel
 from gencode_icedb.rsl.supportAnalysis import intronSupportReader
-
+# FIXME: split into intron and transcript programs
 
 def parseArgs():
     desc = """Create statistics on intron supporting evidence"""
@@ -49,8 +49,8 @@ class IntronEvidData(object):
         uniqCnts = defaultdict(int)
         bothCnts = defaultdict(int)
         for intron in self.introns.values():
-            ulevel = intronEvidSupportLevel(intron.numUniqueMapReads, self.isNovelDb)
-            mlevel = intronEvidSupportLevel(intron.numMultiMapReads, self.isNovelDb)
+            ulevel = intronEvidSupportLevel(intron.numUniqueMapReads)
+            mlevel = intronEvidSupportLevel(intron.numMultiMapReads)
             uniqCnts[ulevel] += 1
             bothCnts[(ulevel, mlevel)] += 1
         return uniqCnts, bothCnts
@@ -78,6 +78,53 @@ class IntronEvidData(object):
         with open(bothTsv, "w") as fh:
             self.__reportBothSupportLevels(bothCnts, fh)
 
+    supportedIntronBins = (1.0, 0.80, 0.50, 0.00001, 0.0)
+
+    def __getBinIdx(self, fracIntrons):
+        for iBin in xrange(len(self.supportedIntronBins)):
+            if fracIntrons >= self.supportedIntronBins[iBin]:
+                return iBin
+        assert False, "bin not found for {}".format(fracIntrons)
+
+    def __cntTranscriptLevels(self, transIntrons):
+        intronLevels = [intronEvidSupportLevel(intron.numMultiMapReads) for intron in transIntrons]
+        levelCnts = len(IntronSupportLevel) * [0]
+        for intronLevel in intronLevels:
+            for ilev in xrange(intronLevel.value, -1, -1):
+                levelCnts[ilev] += 1
+        return levelCnts
+
+    def __cntTranscript(self, transIntrons, cntMatrix):
+        levelCnts = self.__cntTranscriptLevels(transIntrons)
+        numIntrons = float(len(transIntrons))
+        for iLevel in xrange(len(levelCnts)):
+            iBin = self.__getBinIdx(levelCnts[iLevel] / numIntrons)
+            cntMatrix[iBin][iLevel] += 0 if levelCnts[iLevel] == 0 else 1
+
+    def __cntTranscripts(self):
+        # columns are min level, rows are fraction of introns
+        transCnt = 0
+        cntMatrix = [[0 for l in IntronSupportLevel] for b in self.supportedIntronBins]
+        for geneTrans in self.byGeneTrans.values():
+            for transIntrons in geneTrans.values():
+                self.__cntTranscript(transIntrons, cntMatrix)
+                transCnt += 1
+        return transCnt, cntMatrix
+
+    def __reportTranscriptSupport(self, fh):
+        fileOps.prRow(fh, ["fracIntrons"]
+                      + ["{}_cnt".format(l) for l in reversed(IntronSupportLevel)]
+                      + ["{}_freq".format(l) for l in reversed(IntronSupportLevel)])
+        transCnt, cntMatrix = self.__cntTranscripts()
+        for iBin in xrange(len(self.supportedIntronBins)):
+            fileOps.prRow(fh, [self.supportedIntronBins[iBin]]
+                          + list(reversed(cntMatrix[iBin]))
+                          + [mathOps.calcFmtFreq(c, transCnt) for c in reversed(cntMatrix[iBin])])
+
+    def reportTranscriptSupport(self, transSuppTsv):
+        with open(transSuppTsv, "w") as fh:
+            self.__reportTranscriptSupport(fh)
+
 
 def rslIntronSuppStats(opts):
     intronEvidData = IntronEvidData(opts.dataType)
@@ -87,6 +134,8 @@ def rslIntronSuppStats(opts):
     fileOps.ensureFileDir(opts.outPrefix)
     intronEvidData.reportSupportLevels("{}uniq-support.tsv".format(opts.outPrefix),
                                        "{}both-support.tsv".format(opts.outPrefix))
+    if not intronEvidData.isNovelDb:
+        intronEvidData.reportTranscriptSupport("{}trans-support.tsv".format(opts.outPrefix))
 
 
 rslIntronSuppStats(parseArgs())

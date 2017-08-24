@@ -92,7 +92,7 @@ class GencodeIntronBedMaker(object):
         return (not self.isNovelDb) or (level > IntronSupportLevel.WEAK)
 
     def __writeBedRec(self, supp, bedFh):
-        level = intronEvidSupportLevel(supp.numUniqueMapReads, self.isNovelDb)
+        level = intronEvidSupportLevel(supp.numUniqueMapReads)
         if self.__shouldReport(supp, level):
             fileOps.prRowv(bedFh, supp.chrom, supp.intronStart, supp.intronEnd,
                            self.__evidName(supp), 0, self.__evidStrand(supp),
