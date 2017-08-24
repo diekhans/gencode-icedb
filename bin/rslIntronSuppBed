@@ -6,8 +6,9 @@ import sys
 import argparse
 from pycbio.sys import fileOps, loggingOps
 from pycbio.sys.color import Color
-from gencode_icedb.rsl.rslModel import sqliteConnect, sqliteClose, GencodeSupport, GencodeNovel
+from gencode_icedb.rsl.rslModel import sqliteConnect, sqliteClose
 from gencode_icedb.rsl.gencodeIntronEvid import IntronSupportLevel, intronEvidSupportLevel
+from gencode_icedb.rsl.supportAnalysis import intronSupportReader, intronSupportAlreadyProcessed
 
 
 def parseArgs():
@@ -53,17 +54,17 @@ class Colors(object):
 
 class GencodeIntronBedMaker(object):
     def __init__(self, dataType):
-        self.dataType = dataType
-        self.reported = set()   # don't output dups
+        self.isNovelDb = (dataType == "novel")
+        self.reported = set()   # don't output dups due to multiple transcripts
 
     def __evidColor(self, evid, level):
         if level == IntronSupportLevel.STRONG:
-            if self.dataType == "novel":
+            if self.isNovelDb:
                 return Colors.strongNovel
             else:
                 return Colors.strongKnown
         elif level == IntronSupportLevel.MEDIUM:
-            if self.dataType == "novel":
+            if self.isNovelDb:
                 return Colors.mediumNovel
             else:
                 return Colors.mediumKnown
@@ -84,30 +85,22 @@ class GencodeIntronBedMaker(object):
         return "{} ({}, {})".format(evid.intronMotif, evid.numUniqueMapReads, evid.numMultiMapReads)
 
     def __shouldReport(self, supp, level):
-        key = (supp.chrom, supp.intronStart, supp.intronEnd, supp.strand)
-        if key in self.reported:
+        if intronSupportAlreadyProcessed(supp, self.reported):
             return False
-        self.reported.add(key)
 
         # don't report weak novel
-        return (self.dataType != "novel") or (level > IntronSupportLevel.WEAK)
+        return (not self.isNovelDb) or (level > IntronSupportLevel.WEAK)
 
     def __writeBedRec(self, supp, bedFh):
-        level = intronEvidSupportLevel(supp.numUniqueMapReads, self.dataType == "novel")
+        level = intronEvidSupportLevel(supp.numUniqueMapReads, self.isNovelDb)
         if self.__shouldReport(supp, level):
             fileOps.prRowv(bedFh, supp.chrom, supp.intronStart, supp.intronEnd,
                            self.__evidName(supp), 0, self.__evidStrand(supp),
                            supp.intronStart, supp.intronEnd,
                            self.__evidColor(supp, level).toRgb8Str())
 
-    def __getOrmClass(self):
-        if self.dataType == "novel":
-            return GencodeNovel
-        else:
-            return GencodeSupport
-
     def writeBed(self, bedFh):
-        for rec in self.__getOrmClass().select():
+        for rec in intronSupportReader(self.isNovelDb):
             self.__writeBedRec(rec, bedFh)
 
 

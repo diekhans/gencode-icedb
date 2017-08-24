@@ -6,8 +6,9 @@ import sys
 import argparse
 from collections import defaultdict
 from pycbio.sys import fileOps, loggingOps, mathOps
-from gencode_icedb.rsl.rslModel import sqliteConnect, sqliteClose, GencodeSupport, GencodeNovel
+from gencode_icedb.rsl.rslModel import sqliteConnect, sqliteClose
 from gencode_icedb.rsl.gencodeIntronEvid import IntronSupportLevel, intronEvidSupportLevel
+from gencode_icedb.rsl.supportAnalysis import intronSupportReader
 
 
 def parseArgs():
@@ -28,30 +29,28 @@ def parseArgs():
 class IntronEvidData(object):
     "data linked to GENCODE transcripts"
     def __init__(self, dataType):
-        self.isNovel = (dataType == "novel")
+        self.isNovelDb = (dataType == "novel")
         self.byGeneTrans = None
-        if not self.isNovel:
+        if not self.isNovelDb:
             self.byGeneTrans = defaultdict(lambda: defaultdict(list))  # by-gene, by-transcript
         self.introns = {}  # dup gene/trans dropped
 
     def __loadRec(self, rec):
-        if not self.isNovel:
+        if not self.isNovelDb:
             self.byGeneTrans[rec.geneId][rec.transcriptId].append(rec)
+        # only keeps one, so not double counted
         self.introns[(rec.intronStart, rec.intronEnd, rec.strand)] = rec
 
-    def __getOrmClass(self):
-        return GencodeNovel if self.isNovel else GencodeSupport
-
     def load(self):
-        for rec in self.__getOrmClass().select():
+        for rec in intronSupportReader(self.isNovelDb):
             self.__loadRec(rec)
 
     def __cntSupportLevels(self):
         uniqCnts = defaultdict(int)
         bothCnts = defaultdict(int)
         for intron in self.introns.values():
-            ulevel = intronEvidSupportLevel(intron.numUniqueMapReads, self.isNovel)
-            mlevel = intronEvidSupportLevel(intron.numMultiMapReads, self.isNovel)
+            ulevel = intronEvidSupportLevel(intron.numUniqueMapReads, self.isNovelDb)
+            mlevel = intronEvidSupportLevel(intron.numMultiMapReads, self.isNovelDb)
             uniqCnts[ulevel] += 1
             bothCnts[(ulevel, mlevel)] += 1
         return uniqCnts, bothCnts

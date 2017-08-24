@@ -6,7 +6,8 @@ import sys
 import argparse
 import logging
 from pycbio.sys import loggingOps
-from gencode_icedb.rsl.rslModel import sqliteConnect, sqliteClose, GencodeSupport, GencodeNovel
+from gencode_icedb.rsl.rslModel import sqliteConnect, sqliteClose
+from gencode_icedb.rsl.supportAnalysis import intronSupportReader, intronSupportAlreadyProcessed
 from collections import defaultdict
 import matplotlib
 matplotlib.use('Agg')
@@ -35,19 +36,11 @@ def parseArgs():
     return opts
 
 
-def isPseudo(suppRec):
-    # FIXME: switch to using functions now in CCDS tree
-    return (suppRec.transcriptType.find("pseudogene") >= 0) and (suppRec.transcriptType != "polymorphic_pseudogene")
-
-
 class IntronEvidData(object):
     def __init__(self, dataType, readCntBucketSize):
         self.readCntBucketSize = readCntBucketSize
-        self.isNovel = (dataType == "novel")
+        self.isNovelDb = (dataType == "novel")
         self.intronsByReadCnt = None
-
-    def __keep(self, rec):
-        return self.isNovel or (not isPseudo(rec))
 
     def __logIntronsByReadCnt(self):
         logger.debug("readCnt\tnumIntrons")
@@ -56,12 +49,9 @@ class IntronEvidData(object):
 
     def load(self):
         self.intronsByReadCnt = defaultdict(int)
-        if self.isNovel:
-            ormCls = GencodeNovel
-        else:
-            ormCls = GencodeSupport
-        for rec in ormCls.select():
-            if self.__keep(rec):
+        reported = set()   # don't output dups due to multiple transcripts
+        for rec in intronSupportReader(self.isNovelDb):
+            if not intronSupportAlreadyProcessed(rec, reported):
                 self.intronsByReadCnt[rec.numUniqueMapReads / self.readCntBucketSize] += 1
         if logger.isEnabledFor(logging.DEBUG):
             self.__logIntronsByReadCnt()
@@ -78,7 +68,7 @@ class IntronEvidData(object):
         intronCnts, suppCnts = self.__countDictToList(self.intronsByReadCnt)
         color = "b"
 
-        if self.isNovel:
+        if self.isNovelDb:
             xlabel = "Novel Introns"
         else:
             xlabel = "GENCODE Introns"

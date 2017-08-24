@@ -147,7 +147,9 @@ class SjSupportReader(object):
 class GencodeSupport(BaseModel):
     """Results from comparing support to GENCODE.  De-normalized and not
     linked for now"""
-    # FIXME: not so sure de-normalized is best, check duplication
+    # FIXME: not so sure de-normalized is best, need to keep checking for
+    # duplication in code and have record that are sometimes GencodeSupport
+    # and sometimes GencodeNovel
     id = PrimaryKeyField()
     geneId = CharField(index=True,
                        help_text="""GENCODE gene id""")
