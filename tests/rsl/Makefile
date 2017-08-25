@@ -295,9 +295,6 @@ novelSuppCntPlotTest: mkdirs
 	${buildGencodeNovelDb}
 	${rslIntronSuppPlot} novel output/$@.novel.db output/$@.pdf
 
-
-
-
 mkdirs:
 	@mkdir -p output
 

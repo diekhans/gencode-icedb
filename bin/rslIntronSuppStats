@@ -188,10 +188,10 @@ class IntronEvidData(object):
                 levelTotals[trans.fullSupportLevel().value] += 1
         return levelTotals
 
-    def __reportTranscriptTypeFullStats(self, transType, subtype, transFilter, fh):
+    def __reportTranscriptTypeFullStats(self, transType, subfilter, subtype, transFilter, fh):
         levelTotals = self.__cntTranscriptsFullStats(transFilter)
         transCnt = sum(levelTotals)
-        fileOps.prRow(fh, [transType, subtype]
+        fileOps.prRow(fh, [transType, subfilter, subtype]
                       + list(reversed(levelTotals))
                       + [mathOps.calcFmtFreq(c, transCnt) for c in reversed(levelTotals)])
 
@@ -208,29 +208,29 @@ class IntronEvidData(object):
         return BioType(trans.bioType) in bioTypesNonCoding
 
     def __reportTranscriptTypeFullStatsByTsl(self, fh):
-        for tsl in xrange(0, 6):
-            self.__reportTranscriptTypeFullStats("All/tsl", tsl, lambda trans: trans.tsl == tsl and self.__allFilter(trans), fh)
-        for tsl in xrange(0, 6):
-            self.__reportTranscriptTypeFullStats("Coding/tsl", tsl, lambda trans: trans.tsl == tsl and self.__codingFilter(trans), fh)
-        for tsl in xrange(0, 6):
-            self.__reportTranscriptTypeFullStats("Non-coding/tsl", tsl, lambda trans: trans.tsl == tsl and self.__nonCodingFilter(trans), fh)
+        for tsl in xrange(1, 6):
+            self.__reportTranscriptTypeFullStats("all", "tsl", tsl, lambda trans: trans.tsl == tsl and self.__allFilter(trans), fh)
+        for tsl in xrange(1, 6):
+            self.__reportTranscriptTypeFullStats("coding", "tsl", tsl, lambda trans: trans.tsl == tsl and self.__codingFilter(trans), fh)
+        for tsl in xrange(1, 6):
+            self.__reportTranscriptTypeFullStats("non-coding", "tsl", tsl, lambda trans: trans.tsl == tsl and self.__nonCodingFilter(trans), fh)
 
     def __reportTranscriptTypeFullStatsByChrom(self, fh):
         chroms = sorted(self.chroms, key=lambda c: (len(c), c))
         for chrom in chroms:
-            self.__reportTranscriptTypeFullStats("All/chrom", chrom, lambda trans: trans.chrom == chrom and self.__allFilter(trans), fh)
+            self.__reportTranscriptTypeFullStats("all", "chrom", chrom, lambda trans: trans.chrom == chrom and self.__allFilter(trans), fh)
         for chrom in chroms:
-            self.__reportTranscriptTypeFullStats("Coding/chrom", chrom, lambda trans: trans.chrom == chrom and self.__codingFilter(trans), fh)
+            self.__reportTranscriptTypeFullStats("coding", "chrom", chrom, lambda trans: trans.chrom == chrom and self.__codingFilter(trans), fh)
         for chrom in chroms:
-            self.__reportTranscriptTypeFullStats("Non-coding/chron", chrom, lambda trans: trans.chrom == chrom and self.__nonCodingFilter(trans), fh)
+            self.__reportTranscriptTypeFullStats("non-coding", "chrom", chrom, lambda trans: trans.chrom == chrom and self.__nonCodingFilter(trans), fh)
             
     def __reportTranscriptFullSupportStats(self, fh):
-        fileOps.prRow(fh, ["type", "subtype"]
+        fileOps.prRow(fh, ["type", "subfilter", "subtype"]
                       + ["{}_cnt".format(l) for l in reversed(IntronSupportLevel)]
                       + ["{}_freq".format(l) for l in reversed(IntronSupportLevel)])
-        self.__reportTranscriptTypeFullStats("All", "all", self.__allFilter, fh)
-        self.__reportTranscriptTypeFullStats("Coding", "all", self.__codingFilter, fh)
-        self.__reportTranscriptTypeFullStats("Non-coding", "all", self.__nonCodingFilter, fh)
+        self.__reportTranscriptTypeFullStats("all", "none", "all", self.__allFilter, fh)
+        self.__reportTranscriptTypeFullStats("coding", "none", "all", self.__codingFilter, fh)
+        self.__reportTranscriptTypeFullStats("non-coding", "none", "all", self.__nonCodingFilter, fh)
         self.__reportTranscriptTypeFullStatsByTsl(fh)
         self.__reportTranscriptTypeFullStatsByChrom(fh)
 

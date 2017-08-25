@@ -1,31 +1,28 @@
-type	subtype	STRONG_cnt	MEDIUM_cnt	WEAK_cnt	NONE_cnt	STRONG_freq	MEDIUM_freq	WEAK_freq	NONE_freq
-All	all	0	1	5	58	0.00	0.02	0.08	0.91
-Coding	all	0	0	3	39	0.00	0.00	0.07	0.93
-Non-coding	all	0	0	0	10	0.00	0.00	0.00	1.00
-All/tsl	0	0	0	0	0	0.00	0.00	0.00	0.00
-All/tsl	1	0	1	3	21	0.00	0.04	0.12	0.84
-All/tsl	2	0	0	2	17	0.00	0.00	0.11	0.89
-All/tsl	3	0	0	0	15	0.00	0.00	0.00	1.00
-All/tsl	4	0	0	0	1	0.00	0.00	0.00	1.00
-All/tsl	5	0	0	0	4	0.00	0.00	0.00	1.00
-Coding/tsl	0	0	0	0	0	0.00	0.00	0.00	0.00
-Coding/tsl	1	0	0	3	18	0.00	0.00	0.14	0.86
-Coding/tsl	2	0	0	0	9	0.00	0.00	0.00	1.00
-Coding/tsl	3	0	0	0	10	0.00	0.00	0.00	1.00
-Coding/tsl	4	0	0	0	0	0.00	0.00	0.00	0.00
-Coding/tsl	5	0	0	0	2	0.00	0.00	0.00	1.00
-Non-coding/tsl	0	0	0	0	0	0.00	0.00	0.00	0.00
-Non-coding/tsl	1	0	0	0	1	0.00	0.00	0.00	1.00
-Non-coding/tsl	2	0	0	0	5	0.00	0.00	0.00	1.00
-Non-coding/tsl	3	0	0	0	3	0.00	0.00	0.00	1.00
-Non-coding/tsl	4	0	0	0	0	0.00	0.00	0.00	0.00
-Non-coding/tsl	5	0	0	0	1	0.00	0.00	0.00	1.00
-All/chrom	chr1	0	1	4	45	0.00	0.02	0.08	0.90
-All/chrom	chrY	0	0	0	1	0.00	0.00	0.00	1.00
-All/chrom	chr22	0	0	1	12	0.00	0.00	0.08	0.92
-Coding/chrom	chr1	0	0	3	31	0.00	0.00	0.09	0.91
-Coding/chrom	chrY	0	0	0	0	0.00	0.00	0.00	0.00
-Coding/chrom	chr22	0	0	0	8	0.00	0.00	0.00	1.00
-Non-coding/chron	chr1	0	0	0	9	0.00	0.00	0.00	1.00
-Non-coding/chron	chrY	0	0	0	1	0.00	0.00	0.00	1.00
-Non-coding/chron	chr22	0	0	0	0	0.00	0.00	0.00	0.00
+type	subfilter	subtype	STRONG_cnt	MEDIUM_cnt	WEAK_cnt	NONE_cnt	STRONG_freq	MEDIUM_freq	WEAK_freq	NONE_freq
+all	none	all	0	1	5	58	0.00	0.02	0.08	0.91
+coding	none	all	0	0	3	39	0.00	0.00	0.07	0.93
+non-coding	none	all	0	0	0	10	0.00	0.00	0.00	1.00
+all	tsl	1	0	1	3	21	0.00	0.04	0.12	0.84
+all	tsl	2	0	0	2	17	0.00	0.00	0.11	0.89
+all	tsl	3	0	0	0	15	0.00	0.00	0.00	1.00
+all	tsl	4	0	0	0	1	0.00	0.00	0.00	1.00
+all	tsl	5	0	0	0	4	0.00	0.00	0.00	1.00
+coding	tsl	1	0	0	3	18	0.00	0.00	0.14	0.86
+coding	tsl	2	0	0	0	9	0.00	0.00	0.00	1.00
+coding	tsl	3	0	0	0	10	0.00	0.00	0.00	1.00
+coding	tsl	4	0	0	0	0	0.00	0.00	0.00	0.00
+coding	tsl	5	0	0	0	2	0.00	0.00	0.00	1.00
+non-coding	tsl	1	0	0	0	1	0.00	0.00	0.00	1.00
+non-coding	tsl	2	0	0	0	5	0.00	0.00	0.00	1.00
+non-coding	tsl	3	0	0	0	3	0.00	0.00	0.00	1.00
+non-coding	tsl	4	0	0	0	0	0.00	0.00	0.00	0.00
+non-coding	tsl	5	0	0	0	1	0.00	0.00	0.00	1.00
+all	chrom	chr1	0	1	4	45	0.00	0.02	0.08	0.90
+all	chrom	chrY	0	0	0	1	0.00	0.00	0.00	1.00
+all	chrom	chr22	0	0	1	12	0.00	0.00	0.08	0.92
+coding	chrom	chr1	0	0	3	31	0.00	0.00	0.09	0.91
+coding	chrom	chrY	0	0	0	0	0.00	0.00	0.00	0.00
+coding	chrom	chr22	0	0	0	8	0.00	0.00	0.00	1.00
+non-coding	chrom	chr1	0	0	0	9	0.00	0.00	0.00	1.00
+non-coding	chrom	chrY	0	0	0	1	0.00	0.00	0.00	1.00
+non-coding	chrom	chr22	0	0	0	0	0.00	0.00	0.00	0.00
