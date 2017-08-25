@@ -15,6 +15,8 @@ def parseArgs():
     desc = """Create statistics on intron supporting evidence"""
     parser = argparse.ArgumentParser(description=desc)
     loggingOps.addCmdOptions(parser)
+    parser.add_argument('--chrom',
+                        help="limit to chrom (for testing)")
     parser.add_argument('dataType', choices=("support", "novel"),
                         help="type of database")
     parser.add_argument('intronEvidDb',
@@ -25,44 +27,80 @@ def parseArgs():
     loggingOps.setupFromCmd(opts, sys.argv[0])
     return opts
 
+class Trans(object):
+    def __init__(self, geneId, transcriptId):
+        self.geneId = geneId
+        self.transcriptId = transcriptId
+        self.introns = []
+        self.intronLevels = []
+
+    def finish(self):
+        self.intronLevels = [intronEvidSupportLevel(intron.numMultiMapReads) for intron in self.introns]
+
+    def countLevels(self):
+        levelCnts = len(IntronSupportLevel) * [0]
+        for intronLevel in self.intronLevels:
+            levelCnts[intronLevel.value] += 1
+        return levelCnts
+
 
 class IntronEvidData(object):
     "data linked to GENCODE transcripts"
     def __init__(self, dataType):
         self.isNovelDb = (dataType == "novel")
-        self.byGeneTrans = None
-        if not self.isNovelDb:
-            self.byGeneTrans = defaultdict(lambda: defaultdict(list))  # by-gene, by-transcript
         self.introns = {}  # dup gene/trans dropped
-
-    def __loadRec(self, rec):
+        self.byTransIds = None
         if not self.isNovelDb:
-            self.byGeneTrans[rec.geneId][rec.transcriptId].append(rec)
+            self.byTransIds = {}
+
+    def __obtainTransInfo(self, geneId, transcriptId):
+        trans = self.byTransIds.get(transcriptId)
+        if trans is None:
+            trans = self.byTransIds[transcriptId] = Trans(geneId, transcriptId)
+        return trans
+        
+    def __loadRec(self, rec):
         # only keeps one, so not double counted
         self.introns[(rec.intronStart, rec.intronEnd, rec.strand)] = rec
+        if not self.isNovelDb:
+            self.__obtainTransInfo(rec.geneId, rec.transcriptId).introns.append(rec)
 
-    def load(self):
-        for rec in intronSupportReader(self.isNovelDb):
+    def load(self, chrom):
+        for rec in intronSupportReader(self.isNovelDb, chrom):
             self.__loadRec(rec)
+        if not self.isNovelDb:
+            for transInfo in  self.byTransIds.values():
+                transInfo.finish()
 
-    def __cntSupportLevels(self):
+    def __cntUniqSupportLevels(self):
         uniqCnts = defaultdict(int)
-        bothCnts = defaultdict(int)
         for intron in self.introns.values():
             ulevel = intronEvidSupportLevel(intron.numUniqueMapReads)
-            mlevel = intronEvidSupportLevel(intron.numMultiMapReads)
             uniqCnts[ulevel] += 1
-            bothCnts[(ulevel, mlevel)] += 1
-        return uniqCnts, bothCnts
+        return uniqCnts
 
-    def __reportUniqSupportLevels(self, uniqCnts, fh):
+    def __reportUniqSupportLevels(self, fh):
+        uniqCnts = self.__cntUniqSupportLevels()
         total = len(self.introns)
         fileOps.prRowv(fh, "uniqLevel", "count", "rate")
         for ulevel in reversed(IntronSupportLevel):
             fileOps.prRowv(fh, ulevel, uniqCnts[ulevel], mathOps.calcFmtFreq(uniqCnts[ulevel], total))
         fileOps.prRowv(fh, "total", total, mathOps.calcFmtFreq(uniqCnts[ulevel], total))
 
-    def __reportBothSupportLevels(self, bothCnts, fh):
+    def reportUniqSupportLevels(self, uniqTsv):
+        with open(uniqTsv, "w") as fh:
+            self.__reportUniqSupportLevels(fh)
+    
+    def __cntBothSupportLevels(self):
+        bothCnts = defaultdict(int)
+        for intron in self.introns.values():
+            ulevel = intronEvidSupportLevel(intron.numUniqueMapReads)
+            mlevel = intronEvidSupportLevel(intron.numMultiMapReads)
+            bothCnts[(ulevel, mlevel)] += 1
+        return bothCnts
+
+    def __reportBothSupportLevels(self, fh):
+        bothCnts = self.__cntBothSupportLevels()
         total = len(self.introns)
         fileOps.prRowv(fh, "uniqLevel", "multiLevel", "count", "rate")
         for ulevel in reversed(IntronSupportLevel):
@@ -71,12 +109,21 @@ class IntronEvidData(object):
                 fileOps.prRowv(fh, ulevel, mlevel, bothCnts[key], mathOps.calcFmtFreq(bothCnts[key], total))
         fileOps.prRowv(fh, "total", "total", total, mathOps.calcFmtFreq(total, total))
 
-    def reportSupportLevels(self, uniqTsv, bothTsv):
-        uniqCnts, bothCnts = self.__cntSupportLevels()
-        with open(uniqTsv, "w") as fh:
-            self.__reportUniqSupportLevels(uniqCnts, fh)
+    def reportBothSupportLevels(self, bothTsv):
         with open(bothTsv, "w") as fh:
-            self.__reportBothSupportLevels(bothCnts, fh)
+            self.__reportBothSupportLevels(fh)
+
+    def __reportTranscriptSupport(self, fh):
+        fileOps.prRow(fh, ["transcriptId", "numIntrons"]
+                      + [l for l in reversed(IntronSupportLevel)])
+        for transId in sorted(self.byTransIds.keys()):
+            trans = self.byTransIds[transId]
+            fileOps.prRow(fh, [trans.transcriptId, len(trans.introns)]
+                          + list(reversed(trans.countLevels())))
+
+    def reportTranscriptSupport(self, transSuppTsv):
+        with open(transSuppTsv, "w") as fh:
+            self.__reportTranscriptSupport(fh)
 
     supportedIntronBins = (1.0, 0.80, 0.50, 0.00001, 0.0)
 
@@ -84,58 +131,54 @@ class IntronEvidData(object):
         for iBin in xrange(len(self.supportedIntronBins)):
             if fracIntrons >= self.supportedIntronBins[iBin]:
                 return iBin
-        assert False, "bin not found for {}".format(fracIntrons)
+        assert False, "bug: bin not found for {}".format(fracIntrons)
 
-    def __cntTranscriptLevels(self, transIntrons):
-        intronLevels = [intronEvidSupportLevel(intron.numMultiMapReads) for intron in transIntrons]
-        levelCnts = len(IntronSupportLevel) * [0]
-        for intronLevel in intronLevels:
-            for ilev in xrange(intronLevel.value, -1, -1):
-                levelCnts[ilev] += 1
-        return levelCnts
-
-    def __cntTranscript(self, transIntrons, cntMatrix):
-        levelCnts = self.__cntTranscriptLevels(transIntrons)
-        numIntrons = float(len(transIntrons))
+    def __cntTranscriptStats(self, trans, cntMatrix):
+        levelCnts = trans.countLevels()
+        numIntrons = float(len(trans.introns))
+        print(trans.transcriptId, len(trans.introns))
         for iLevel in xrange(len(levelCnts)):
             iBin = self.__getBinIdx(levelCnts[iLevel] / numIntrons)
-            cntMatrix[iBin][iLevel] += 0 if levelCnts[iLevel] == 0 else 1
+            print("\t", IntronSupportLevel(iLevel), iBin, mathOps.fmtFreq(levelCnts[iLevel] / numIntrons), levelCnts[iLevel], sep='\t')
+            if levelCnts[iLevel] > 0:
+                cntMatrix[iBin][iLevel] += 1
 
-    def __cntTranscripts(self):
+    def __cntTranscriptsStats(self):
         # columns are min level, rows are fraction of introns
         transCnt = 0
         cntMatrix = [[0 for l in IntronSupportLevel] for b in self.supportedIntronBins]
-        for geneTrans in self.byGeneTrans.values():
-            for transIntrons in geneTrans.values():
-                self.__cntTranscript(transIntrons, cntMatrix)
-                transCnt += 1
+        for trans in self.byTransIds.values():
+            self.__cntTranscriptStats(trans, cntMatrix)
+            transCnt += 1
         return transCnt, cntMatrix
 
-    def __reportTranscriptSupport(self, fh):
+    def __reportTranscriptSupportStats(self, fh):
         fileOps.prRow(fh, ["fracIntrons"]
                       + ["{}_cnt".format(l) for l in reversed(IntronSupportLevel)]
                       + ["{}_freq".format(l) for l in reversed(IntronSupportLevel)])
-        transCnt, cntMatrix = self.__cntTranscripts()
+
+        transCnt, cntMatrix = self.__cntTranscriptsStats()
         for iBin in xrange(len(self.supportedIntronBins)):
             fileOps.prRow(fh, [self.supportedIntronBins[iBin]]
                           + list(reversed(cntMatrix[iBin]))
                           + [mathOps.calcFmtFreq(c, transCnt) for c in reversed(cntMatrix[iBin])])
 
-    def reportTranscriptSupport(self, transSuppTsv):
-        with open(transSuppTsv, "w") as fh:
-            self.__reportTranscriptSupport(fh)
+    def reportTranscriptSupportStats(self, transSuppStatsTsv):
+        with open(transSuppStatsTsv, "w") as fh:
+            self.__reportTranscriptSupportStats(fh)
 
 
 def rslIntronSuppStats(opts):
     intronEvidData = IntronEvidData(opts.dataType)
     conn = sqliteConnect(opts.intronEvidDb, readonly=True)
-    intronEvidData.load()
+    intronEvidData.load(opts.chrom)
     sqliteClose(conn)
     fileOps.ensureFileDir(opts.outPrefix)
-    intronEvidData.reportSupportLevels("{}uniq-support.tsv".format(opts.outPrefix),
-                                       "{}both-support.tsv".format(opts.outPrefix))
+    intronEvidData.reportUniqSupportLevels("{}uniq-support-stats.tsv".format(opts.outPrefix))
+    intronEvidData.reportBothSupportLevels("{}both-support-stats.tsv".format(opts.outPrefix))
     if not intronEvidData.isNovelDb:
         intronEvidData.reportTranscriptSupport("{}trans-support.tsv".format(opts.outPrefix))
+        intronEvidData.reportTranscriptSupportStats("{}trans-support-stats.tsv".format(opts.outPrefix))
 
 
 rslIntronSuppStats(parseArgs())

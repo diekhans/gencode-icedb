@@ -19,11 +19,15 @@ def _intronSupportReaderFilter(isNovelDb, rec):
         return not isPseudo(rec)
 
 
-def intronSupportReader(isNovelDb):
+def intronSupportReader(isNovelDb, chrom=None):
     """read with filtering introns support from database.  Should have already
-    connected and bound ORM"""
+    connected and bound ORM.  If chrom is supplied, only query that chrom for
+    testing purposes."""
     ormCls = GencodeNovel if isNovelDb else GencodeSupport
-    for rec in ormCls.select():
+    query = ormCls.select()
+    if chrom is not None:
+        query = query.where(ormCls.chrom == chrom)
+    for rec in query:
         if _intronSupportReaderFilter(isNovelDb, rec):
             yield rec
 
