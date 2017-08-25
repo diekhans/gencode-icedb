@@ -3,7 +3,7 @@
 from __future__ import print_function
 import icedbProgSetup  # noqa: F401
 import argparse
-from pycbio.hgdata.hgLite import GencodeAttrsDbTable, GencodeTranscriptSourceDbTable, GenePredDbTable
+from pycbio.hgdata.hgLite import GencodeAttrsDbTable, GencodeTranscriptSourceDbTable, GenePredDbTable, GencodeTranscriptSourceDbTable, GencodeTranscriptionSupportLevelDbTable
 from pycbio.hgdata import hgDb
 import sqlite3
 from gencode_icedb.general import gencodeDb
@@ -20,6 +20,8 @@ def parseArgs():
                         help="""TSV file or table of GENCODE attributes""")
     parser.add_argument('transcriptSourceSrc',
                         help="""TSV file or table of GENCODE transcript sources""")
+    parser.add_argument('transcriptionSupportLevelSrc',
+                        help="""TSV file or table of GENCODE transcription support level scores""")
     parser.add_argument('genePredSrc',
                         help="""file or table of genePreds to load""")
     parser.add_argument('pseudoPredSrc', nargs='?', default=None,
@@ -63,6 +65,13 @@ def loadTransSource(conn, hgdbConn, transSourceSrc):
     else:
         transSourceDbTable.loadTsv(transSourceSrc)
 
+def loadTransSupportLevel(conn, hgdbConn, transSupportLevelSrc):
+    transSourceDbTable = GencodeTranscriptionSupportLevelDbTable(conn, gencodeDb.gencode_transcription_support_level_table, create=True)
+    if hgdbConn is not None:
+        transSourceDbTable.loads(loadHgDbTable(hgdbConn, transSupportLevelSrc))
+    else:
+        transSourceDbTable.loadTsv(transSupportLevelSrc)
+
 
 def gencodeDbLoad(opts):
     "main function"
@@ -73,6 +82,7 @@ def gencodeDbLoad(opts):
     loadAnnotations(conn, hgdbConn, opts.genePredSrc, opts.pseudoPredSrc)
     loadAttrs(conn, hgdbConn, opts.attrsSrc)
     loadTransSource(conn, hgdbConn, opts.transcriptSourceSrc)
+    loadTransSupportLevel(conn, hgdbConn, opts.transcriptionSupportLevelSrc)
     if hgdbConn is not None:
         hgdbConn.close()
     conn.close()

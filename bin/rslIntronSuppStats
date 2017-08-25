@@ -4,12 +4,19 @@ from __future__ import print_function
 import icedbProgSetup  # noqa: F401
 import sys
 import argparse
+import sqlite3
 from collections import defaultdict
 from pycbio.sys import fileOps, loggingOps, mathOps
+from pycbio.hgdata.hgLite import GencodeTranscriptSourceDbTable, GencodeTranscriptionSupportLevelDbTable
+from gencode_icedb.general import gencodeDb
 from gencode_icedb.rsl.rslModel import sqliteConnect, sqliteClose
 from gencode_icedb.rsl.gencodeIntronEvid import IntronSupportLevel, intronEvidSupportLevel
 from gencode_icedb.rsl.supportAnalysis import intronSupportReader
+from gencode.data.gencodeGenes import BioType, bioTypesCoding, bioTypesNonCoding, sourceToExtendedMethod
+
 # FIXME: split into intron and transcript programs
+# FIXME: move to analysis repo
+
 
 def parseArgs():
     desc = """Create statistics on intron supporting evidence"""
@@ -19,6 +26,8 @@ def parseArgs():
                         help="limit to chrom (for testing)")
     parser.add_argument('dataType', choices=("support", "novel"),
                         help="type of database")
+    parser.add_argument('gencodeDb',
+                        help="GENCODE database")
     parser.add_argument('intronEvidDb',
                         help="support or novel database")
     parser.add_argument('outPrefix',
@@ -27,13 +36,21 @@ def parseArgs():
     loggingOps.setupFromCmd(opts, sys.argv[0])
     return opts
 
+
 class Trans(object):
-    def __init__(self, geneId, transcriptId):
+    def __init__(self, geneId, transcriptId, bioType):
         self.geneId = geneId
         self.transcriptId = transcriptId
+        self.bioType = bioType
+        self.source = None
+        self.tsl = None
         self.introns = []
         self.intronLevels = []
 
+    @property
+    def chrom(self):
+        return self.introns[0].chrom
+        
     def finish(self):
         self.intronLevels = [intronEvidSupportLevel(intron.numMultiMapReads) for intron in self.introns]
 
@@ -43,34 +60,61 @@ class Trans(object):
             levelCnts[intronLevel.value] += 1
         return levelCnts
 
+    def fullSupportLevel(self):
+        "finds lowest level any intron, which is the full transcript support level"
+        levelCnts = self.countLevels()
+        for level in IntronSupportLevel:
+            if levelCnts[level.value] > 0:
+                return level
+
 
 class IntronEvidData(object):
     "data linked to GENCODE transcripts"
     def __init__(self, dataType):
         self.isNovelDb = (dataType == "novel")
         self.introns = {}  # dup gene/trans dropped
+        self.chroms = set()
         self.byTransIds = None
         if not self.isNovelDb:
             self.byTransIds = {}
 
-    def __obtainTransInfo(self, geneId, transcriptId):
-        trans = self.byTransIds.get(transcriptId)
+    def __obtainTransInfo(self, rec):
+        trans = self.byTransIds.get(rec.transcriptId)
         if trans is None:
-            trans = self.byTransIds[transcriptId] = Trans(geneId, transcriptId)
+            trans = self.byTransIds[rec.transcriptId] = Trans(rec.geneId, rec.transcriptId, rec.transcriptType)
         return trans
-        
+
     def __loadRec(self, rec):
         # only keeps one, so not double counted
         self.introns[(rec.intronStart, rec.intronEnd, rec.strand)] = rec
+        self.chroms.add(rec.chrom)
         if not self.isNovelDb:
-            self.__obtainTransInfo(rec.geneId, rec.transcriptId).introns.append(rec)
+            self.__obtainTransInfo(rec).introns.append(rec)
 
     def load(self, chrom):
         for rec in intronSupportReader(self.isNovelDb, chrom):
             self.__loadRec(rec)
         if not self.isNovelDb:
-            for transInfo in  self.byTransIds.values():
+            for transInfo in self.byTransIds.values():
                 transInfo.finish()
+
+    def loadGencodeSource(self, gencodeDbConn):
+        dbTable = GencodeTranscriptSourceDbTable(gencodeDbConn, gencodeDb.gencode_transcript_source_table)
+        for rec in dbTable.queryAll():
+            trans = self.byTransIds.get(rec.transcriptId)
+            if trans is not None:
+                trans.source = sourceToExtendedMethod(rec.source)
+
+    def loadGencodeSupportLevel(self, gencodeDbConn):
+        dbTable = GencodeTranscriptionSupportLevelDbTable(gencodeDbConn, gencodeDb.gencode_transcription_support_level_table)
+        for rec in dbTable.queryAll():
+            trans = self.byTransIds.get(rec.transcriptId)
+            if trans is not None:
+                trans.tsl = rec.level
+        
+    ##
+    # Uniq support levels
+    ##
 
     def __cntUniqSupportLevels(self):
         uniqCnts = defaultdict(int)
@@ -90,7 +134,11 @@ class IntronEvidData(object):
     def reportUniqSupportLevels(self, uniqTsv):
         with open(uniqTsv, "w") as fh:
             self.__reportUniqSupportLevels(fh)
-    
+
+    ##
+    # Uniq and multi support levels
+    ##
+
     def __cntBothSupportLevels(self):
         bothCnts = defaultdict(int)
         for intron in self.introns.values():
@@ -113,6 +161,10 @@ class IntronEvidData(object):
         with open(bothTsv, "w") as fh:
             self.__reportBothSupportLevels(fh)
 
+    ##
+    # per-transcript support
+    ##
+
     def __reportTranscriptSupport(self, fh):
         fileOps.prRow(fh, ["transcriptId", "numIntrons"]
                       + [l for l in reversed(IntronSupportLevel)])
@@ -125,47 +177,66 @@ class IntronEvidData(object):
         with open(transSuppTsv, "w") as fh:
             self.__reportTranscriptSupport(fh)
 
-    supportedIntronBins = (1.0, 0.80, 0.50, 0.00001, 0.0)
+    ##
+    # full transcript support stats
+    ##
 
-    def __getBinIdx(self, fracIntrons):
-        for iBin in xrange(len(self.supportedIntronBins)):
-            if fracIntrons >= self.supportedIntronBins[iBin]:
-                return iBin
-        assert False, "bug: bin not found for {}".format(fracIntrons)
-
-    def __cntTranscriptStats(self, trans, cntMatrix):
-        levelCnts = trans.countLevels()
-        numIntrons = float(len(trans.introns))
-        print(trans.transcriptId, len(trans.introns))
-        for iLevel in xrange(len(levelCnts)):
-            iBin = self.__getBinIdx(levelCnts[iLevel] / numIntrons)
-            print("\t", IntronSupportLevel(iLevel), iBin, mathOps.fmtFreq(levelCnts[iLevel] / numIntrons), levelCnts[iLevel], sep='\t')
-            if levelCnts[iLevel] > 0:
-                cntMatrix[iBin][iLevel] += 1
-
-    def __cntTranscriptsStats(self):
-        # columns are min level, rows are fraction of introns
-        transCnt = 0
-        cntMatrix = [[0 for l in IntronSupportLevel] for b in self.supportedIntronBins]
+    def __cntTranscriptsFullStats(self, transFilter):
+        levelTotals = [0 for l in IntronSupportLevel]
         for trans in self.byTransIds.values():
-            self.__cntTranscriptStats(trans, cntMatrix)
-            transCnt += 1
-        return transCnt, cntMatrix
+            if transFilter(trans):
+                levelTotals[trans.fullSupportLevel().value] += 1
+        return levelTotals
 
-    def __reportTranscriptSupportStats(self, fh):
-        fileOps.prRow(fh, ["fracIntrons"]
+    def __reportTranscriptTypeFullStats(self, transType, subtype, transFilter, fh):
+        levelTotals = self.__cntTranscriptsFullStats(transFilter)
+        transCnt = sum(levelTotals)
+        fileOps.prRow(fh, [transType, subtype]
+                      + list(reversed(levelTotals))
+                      + [mathOps.calcFmtFreq(c, transCnt) for c in reversed(levelTotals)])
+
+    @staticmethod
+    def __allFilter(trans):
+        return True
+
+    @staticmethod
+    def __codingFilter(trans):
+        return BioType(trans.bioType) in bioTypesCoding
+
+    @staticmethod
+    def __nonCodingFilter(trans):
+        return BioType(trans.bioType) in bioTypesNonCoding
+
+    def __reportTranscriptTypeFullStatsByTsl(self, fh):
+        for tsl in xrange(0, 6):
+            self.__reportTranscriptTypeFullStats("All/tsl", tsl, lambda trans: trans.tsl == tsl and self.__allFilter(trans), fh)
+        for tsl in xrange(0, 6):
+            self.__reportTranscriptTypeFullStats("Coding/tsl", tsl, lambda trans: trans.tsl == tsl and self.__codingFilter(trans), fh)
+        for tsl in xrange(0, 6):
+            self.__reportTranscriptTypeFullStats("Non-coding/tsl", tsl, lambda trans: trans.tsl == tsl and self.__nonCodingFilter(trans), fh)
+
+    def __reportTranscriptTypeFullStatsByChrom(self, fh):
+        chroms = sorted(self.chroms, key=lambda c: (len(c), c))
+        for chrom in chroms:
+            self.__reportTranscriptTypeFullStats("All/chrom", chrom, lambda trans: trans.chrom == chrom and self.__allFilter(trans), fh)
+        for chrom in chroms:
+            self.__reportTranscriptTypeFullStats("Coding/chrom", chrom, lambda trans: trans.chrom == chrom and self.__codingFilter(trans), fh)
+        for chrom in chroms:
+            self.__reportTranscriptTypeFullStats("Non-coding/chron", chrom, lambda trans: trans.chrom == chrom and self.__nonCodingFilter(trans), fh)
+            
+    def __reportTranscriptFullSupportStats(self, fh):
+        fileOps.prRow(fh, ["type", "subtype"]
                       + ["{}_cnt".format(l) for l in reversed(IntronSupportLevel)]
                       + ["{}_freq".format(l) for l in reversed(IntronSupportLevel)])
+        self.__reportTranscriptTypeFullStats("All", "all", self.__allFilter, fh)
+        self.__reportTranscriptTypeFullStats("Coding", "all", self.__codingFilter, fh)
+        self.__reportTranscriptTypeFullStats("Non-coding", "all", self.__nonCodingFilter, fh)
+        self.__reportTranscriptTypeFullStatsByTsl(fh)
+        self.__reportTranscriptTypeFullStatsByChrom(fh)
 
-        transCnt, cntMatrix = self.__cntTranscriptsStats()
-        for iBin in xrange(len(self.supportedIntronBins)):
-            fileOps.prRow(fh, [self.supportedIntronBins[iBin]]
-                          + list(reversed(cntMatrix[iBin]))
-                          + [mathOps.calcFmtFreq(c, transCnt) for c in reversed(cntMatrix[iBin])])
-
-    def reportTranscriptSupportStats(self, transSuppStatsTsv):
+    def reportTranscriptFullSupportStats(self, transSuppStatsTsv):
         with open(transSuppStatsTsv, "w") as fh:
-            self.__reportTranscriptSupportStats(fh)
+            self.__reportTranscriptFullSupportStats(fh)
 
 
 def rslIntronSuppStats(opts):
@@ -177,8 +248,12 @@ def rslIntronSuppStats(opts):
     intronEvidData.reportUniqSupportLevels("{}uniq-support-stats.tsv".format(opts.outPrefix))
     intronEvidData.reportBothSupportLevels("{}both-support-stats.tsv".format(opts.outPrefix))
     if not intronEvidData.isNovelDb:
+        gencodeDbConn = sqlite3.connect(opts.gencodeDb)
+        intronEvidData.loadGencodeSource(gencodeDbConn)
+        intronEvidData.loadGencodeSupportLevel(gencodeDbConn)
+        gencodeDbConn.close()
         intronEvidData.reportTranscriptSupport("{}trans-support.tsv".format(opts.outPrefix))
-        intronEvidData.reportTranscriptSupportStats("{}trans-support-stats.tsv".format(opts.outPrefix))
+        intronEvidData.reportTranscriptFullSupportStats("{}trans-full-support-stats.tsv".format(opts.outPrefix))
 
 
 rslIntronSuppStats(parseArgs())

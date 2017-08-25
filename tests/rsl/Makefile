@@ -145,10 +145,13 @@ gencodeSupportTests: supportCollectAllTest \
 			supportCollectTransTest \
 			supportCollectMkJobsTest
 
+# $(call gencodeTestDbSetup,output/$@/gencode.db)
+gencodeTestDbSetup = rm -f $(1) && mkdir -p $(dir $(1)) && ${gencodeDbLoad} $(1) input/set1.hs.attrs.v26.tsv input/set1.hs.trans-source.v26.tsv input/set1.hs.trans-support-level.v26.tsv input/set1.hs.comp.v26.gp input/set1.hs.pseudo.v26.gp
+
 define gencodeSupportTestSetup
-rm -rf output/$@
+$(call gencodeTestDbSetup,output/$@/gencode.db)
+rm -f output/$@/rnaseq.*
 mkdir -p output/$@
-${gencodeDbLoad} output/$@/gencode.db input/set1.hs.attrs.v26.tsv input/set1.hs.trans-source.v26.tab input/set1.hs.comp.v26.gp input/set1.hs.pseudo.v26.gp
 ${rslSraRunInfoDbLoad} output/$@/rnaseq.db input/set1.hs.run-info.tsv
 ${rslMappingMetadataDbLoad} output/$@/rnaseq.db input/set1.hs.mapping-params.tsv input/set1.hs.stardir.tsv
 bgzip -c expected/mkStarMergeTest.merged.sjsup > output/$@/rnaseq.sjsup.gz
@@ -265,13 +268,15 @@ intronStatsTests: intronGencodeSuppStatsTest \
 		intronGencodeNovelStatsTest
 
 intronGencodeSuppStatsTest: mkdirs
+	$(call gencodeTestDbSetup,output/$@.gencode.db)
 	${buildGencodeSuppDb}
-	${rslIntronSuppStats} support output/$@.supp.db output/$@/supp.
+	${rslIntronSuppStats} support output/$@.gencode.db output/$@.supp.db output/$@/supp.
 	${diff} -r expected/$@ output/$@
 
 intronGencodeNovelStatsTest: mkdirs
+	$(call gencodeTestDbSetup,output/$@.gencode.db)
 	${buildGencodeNovelDb}
-	${rslIntronSuppStats} novel output/$@.novel.db output/$@/novel.
+	${rslIntronSuppStats} novel output/$@.gencode.db output/$@.novel.db output/$@/novel.
 	${diff} -r expected/$@ output/$@
 
 
