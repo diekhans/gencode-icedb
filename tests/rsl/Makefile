@@ -24,6 +24,7 @@ rslGencodeCollectNovelFinishJobs = ${binDir}/rslGencodeCollectNovelFinishJobs
 rslIntronSuppPlot = ${binDir}/rslIntronSuppPlot
 rslIntronSuppBed = ${binDir}/rslIntronSuppBed
 rslIntronSuppStats = ${binDir}/rslIntronSuppStats
+rslIntronEvidStats = ${binDir}/rslIntronEvidStats
 
 genomeSeqsHg38 = /hive/data/genomes/hg38/hg38.2bit
 
@@ -265,18 +266,23 @@ intronGencodeNovelBedTest: mkdirs
 ##
 
 intronStatsTests: intronGencodeSuppStatsTest \
+		intronGencodeEvidStatsTest \
 		intronGencodeNovelStatsTest
 
 intronGencodeSuppStatsTest: mkdirs
 	$(call gencodeTestDbSetup,output/$@.gencode.db)
 	${buildGencodeSuppDb}
-	${rslIntronSuppStats} support output/$@.gencode.db output/$@.supp.db output/$@/supp.
+	${rslIntronSuppStats} output/$@.gencode.db output/$@.supp.db output/$@/supp.
+	${diff} -r expected/$@ output/$@
+
+intronGencodeEvidStatsTest: mkdirs
+	${buildGencodeSuppDb}
+	${rslIntronEvidStats} support output/$@.supp.db output/$@/evid.
 	${diff} -r expected/$@ output/$@
 
 intronGencodeNovelStatsTest: mkdirs
-	$(call gencodeTestDbSetup,output/$@.gencode.db)
 	${buildGencodeNovelDb}
-	${rslIntronSuppStats} novel output/$@.gencode.db output/$@.novel.db output/$@/novel.
+	${rslIntronEvidStats} novel output/$@.novel.db output/$@/novel.
 	${diff} -r expected/$@ output/$@
 
 

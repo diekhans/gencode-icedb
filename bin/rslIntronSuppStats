@@ -5,7 +5,6 @@ import icedbProgSetup  # noqa: F401
 import sys
 import argparse
 import sqlite3
-from collections import defaultdict
 from pycbio.sys import fileOps, loggingOps, mathOps
 from pycbio.hgdata.hgLite import GencodeTranscriptSourceDbTable, GencodeTranscriptionSupportLevelDbTable
 from gencode_icedb.general import gencodeDb
@@ -14,22 +13,19 @@ from gencode_icedb.rsl.gencodeIntronEvid import IntronSupportLevel, intronEvidSu
 from gencode_icedb.rsl.supportAnalysis import intronSupportReader
 from gencode.data.gencodeGenes import BioType, bioTypesCoding, bioTypesNonCoding, sourceToExtendedMethod
 
-# FIXME: split into intron and transcript programs
 # FIXME: move to analysis repo
 
 
 def parseArgs():
-    desc = """Create statistics on intron supporting evidence"""
+    desc = """Create statistics on transcript support"""
     parser = argparse.ArgumentParser(description=desc)
     loggingOps.addCmdOptions(parser)
     parser.add_argument('--chrom',
                         help="limit to chrom (for testing)")
-    parser.add_argument('dataType', choices=("support", "novel"),
-                        help="type of database")
     parser.add_argument('gencodeDb',
                         help="GENCODE database")
     parser.add_argument('intronEvidDb',
-                        help="support or novel database")
+                        help="support database")
     parser.add_argument('outPrefix',
                         help="prefix for statistics output files")
     opts = parser.parse_args()
@@ -50,7 +46,7 @@ class Trans(object):
     @property
     def chrom(self):
         return self.introns[0].chrom
-        
+
     def finish(self):
         self.intronLevels = [intronEvidSupportLevel(intron.numMultiMapReads) for intron in self.introns]
 
@@ -70,13 +66,9 @@ class Trans(object):
 
 class IntronEvidData(object):
     "data linked to GENCODE transcripts"
-    def __init__(self, dataType):
-        self.isNovelDb = (dataType == "novel")
-        self.introns = {}  # dup gene/trans dropped
+    def __init__(self):
         self.chroms = set()
-        self.byTransIds = None
-        if not self.isNovelDb:
-            self.byTransIds = {}
+        self.byTransIds = {}
 
     def __obtainTransInfo(self, rec):
         trans = self.byTransIds.get(rec.transcriptId)
@@ -85,18 +77,14 @@ class IntronEvidData(object):
         return trans
 
     def __loadRec(self, rec):
-        # only keeps one, so not double counted
-        self.introns[(rec.intronStart, rec.intronEnd, rec.strand)] = rec
         self.chroms.add(rec.chrom)
-        if not self.isNovelDb:
-            self.__obtainTransInfo(rec).introns.append(rec)
+        self.__obtainTransInfo(rec).introns.append(rec)
 
     def load(self, chrom):
-        for rec in intronSupportReader(self.isNovelDb, chrom):
+        for rec in intronSupportReader(False, chrom):
             self.__loadRec(rec)
-        if not self.isNovelDb:
-            for transInfo in self.byTransIds.values():
-                transInfo.finish()
+        for transInfo in self.byTransIds.values():
+            transInfo.finish()
 
     def loadGencodeSource(self, gencodeDbConn):
         dbTable = GencodeTranscriptSourceDbTable(gencodeDbConn, gencodeDb.gencode_transcript_source_table)
@@ -111,55 +99,6 @@ class IntronEvidData(object):
             trans = self.byTransIds.get(rec.transcriptId)
             if trans is not None:
                 trans.tsl = rec.level
-        
-    ##
-    # Uniq support levels
-    ##
-
-    def __cntUniqSupportLevels(self):
-        uniqCnts = defaultdict(int)
-        for intron in self.introns.values():
-            ulevel = intronEvidSupportLevel(intron.numUniqueMapReads)
-            uniqCnts[ulevel] += 1
-        return uniqCnts
-
-    def __reportUniqSupportLevels(self, fh):
-        uniqCnts = self.__cntUniqSupportLevels()
-        total = len(self.introns)
-        fileOps.prRowv(fh, "uniqLevel", "count", "rate")
-        for ulevel in reversed(IntronSupportLevel):
-            fileOps.prRowv(fh, ulevel, uniqCnts[ulevel], mathOps.calcFmtFreq(uniqCnts[ulevel], total))
-        fileOps.prRowv(fh, "total", total, mathOps.calcFmtFreq(uniqCnts[ulevel], total))
-
-    def reportUniqSupportLevels(self, uniqTsv):
-        with open(uniqTsv, "w") as fh:
-            self.__reportUniqSupportLevels(fh)
-
-    ##
-    # Uniq and multi support levels
-    ##
-
-    def __cntBothSupportLevels(self):
-        bothCnts = defaultdict(int)
-        for intron in self.introns.values():
-            ulevel = intronEvidSupportLevel(intron.numUniqueMapReads)
-            mlevel = intronEvidSupportLevel(intron.numMultiMapReads)
-            bothCnts[(ulevel, mlevel)] += 1
-        return bothCnts
-
-    def __reportBothSupportLevels(self, fh):
-        bothCnts = self.__cntBothSupportLevels()
-        total = len(self.introns)
-        fileOps.prRowv(fh, "uniqLevel", "multiLevel", "count", "rate")
-        for ulevel in reversed(IntronSupportLevel):
-            for mlevel in reversed(IntronSupportLevel):
-                key = (ulevel, mlevel)
-                fileOps.prRowv(fh, ulevel, mlevel, bothCnts[key], mathOps.calcFmtFreq(bothCnts[key], total))
-        fileOps.prRowv(fh, "total", "total", total, mathOps.calcFmtFreq(total, total))
-
-    def reportBothSupportLevels(self, bothTsv):
-        with open(bothTsv, "w") as fh:
-            self.__reportBothSupportLevels(fh)
 
     ##
     # per-transcript support
@@ -223,7 +162,7 @@ class IntronEvidData(object):
             self.__reportTranscriptTypeFullStats("coding", "chrom", chrom, lambda trans: trans.chrom == chrom and self.__codingFilter(trans), fh)
         for chrom in chroms:
             self.__reportTranscriptTypeFullStats("non-coding", "chrom", chrom, lambda trans: trans.chrom == chrom and self.__nonCodingFilter(trans), fh)
-            
+
     def __reportTranscriptFullSupportStats(self, fh):
         fileOps.prRow(fh, ["type", "subfilter", "subtype"]
                       + ["{}_cnt".format(l) for l in reversed(IntronSupportLevel)]
@@ -240,20 +179,16 @@ class IntronEvidData(object):
 
 
 def rslIntronSuppStats(opts):
-    intronEvidData = IntronEvidData(opts.dataType)
+    intronEvidData = IntronEvidData()
     conn = sqliteConnect(opts.intronEvidDb, readonly=True)
     intronEvidData.load(opts.chrom)
     sqliteClose(conn)
     fileOps.ensureFileDir(opts.outPrefix)
-    intronEvidData.reportUniqSupportLevels("{}uniq-support-stats.tsv".format(opts.outPrefix))
-    intronEvidData.reportBothSupportLevels("{}both-support-stats.tsv".format(opts.outPrefix))
-    if not intronEvidData.isNovelDb:
-        gencodeDbConn = sqlite3.connect(opts.gencodeDb)
-        intronEvidData.loadGencodeSource(gencodeDbConn)
-        intronEvidData.loadGencodeSupportLevel(gencodeDbConn)
-        gencodeDbConn.close()
-        intronEvidData.reportTranscriptSupport("{}trans-support.tsv".format(opts.outPrefix))
-        intronEvidData.reportTranscriptFullSupportStats("{}trans-full-support-stats.tsv".format(opts.outPrefix))
-
+    gencodeDbConn = sqlite3.connect(opts.gencodeDb)
+    intronEvidData.loadGencodeSource(gencodeDbConn)
+    intronEvidData.loadGencodeSupportLevel(gencodeDbConn)
+    gencodeDbConn.close()
+    intronEvidData.reportTranscriptSupport("{}trans-support.tsv".format(opts.outPrefix))
+    intronEvidData.reportTranscriptFullSupportStats("{}trans-full-support-stats.tsv".format(opts.outPrefix))
 
 rslIntronSuppStats(parseArgs())

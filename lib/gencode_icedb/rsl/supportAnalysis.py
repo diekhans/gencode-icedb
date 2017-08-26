@@ -40,5 +40,3 @@ def intronSupportAlreadyProcessed(rec, processed):
     else:
         processed.add(key)
         return False
-
-    

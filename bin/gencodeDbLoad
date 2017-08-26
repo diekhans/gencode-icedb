@@ -3,7 +3,7 @@
 from __future__ import print_function
 import icedbProgSetup  # noqa: F401
 import argparse
-from pycbio.hgdata.hgLite import GencodeAttrsDbTable, GencodeTranscriptSourceDbTable, GenePredDbTable, GencodeTranscriptSourceDbTable, GencodeTranscriptionSupportLevelDbTable
+from pycbio.hgdata.hgLite import GencodeAttrsDbTable, GencodeTranscriptSourceDbTable, GenePredDbTable, GencodeTranscriptionSupportLevelDbTable
 from pycbio.hgdata import hgDb
 import sqlite3
 from gencode_icedb.general import gencodeDb
@@ -64,6 +64,7 @@ def loadTransSource(conn, hgdbConn, transSourceSrc):
         transSourceDbTable.loads(loadHgDbTable(hgdbConn, transSourceSrc))
     else:
         transSourceDbTable.loadTsv(transSourceSrc)
+
 
 def loadTransSupportLevel(conn, hgdbConn, transSupportLevelSrc):
     transSourceDbTable = GencodeTranscriptionSupportLevelDbTable(conn, gencodeDb.gencode_transcription_support_level_table, create=True)
