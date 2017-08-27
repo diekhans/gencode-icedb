@@ -62,7 +62,7 @@ class IntronEvidData(object):
         fileOps.prRowv(fh, "uniqLevel", "count", "rate")
         for ulevel in reversed(IntronSupportLevel):
             fileOps.prRowv(fh, ulevel, uniqCnts[ulevel], mathOps.calcFmtFreq(uniqCnts[ulevel], total))
-        fileOps.prRowv(fh, "total", total, mathOps.calcFmtFreq(uniqCnts[ulevel], total))
+        fileOps.prRowv(fh, "total", total, mathOps.calcFmtFreq(total, total))
 
     def reportUniqSupportLevels(self, uniqTsv):
         with open(uniqTsv, "w") as fh:

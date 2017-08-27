@@ -110,11 +110,13 @@ class IntronEvidData(object):
 
     def __reportTranscriptSupport(self, fh):
         fileOps.prRow(fh, ["transcriptId", "numIntrons"]
-                      + [l for l in reversed(IntronSupportLevel)])
+                      + [l for l in reversed(IntronSupportLevel)]
+                      + ["fullLevel", "medianLevel", "tsl"])
         for transId in sorted(self.byTransIds.keys()):
             trans = self.byTransIds[transId]
             fileOps.prRow(fh, [trans.transcriptId, len(trans.introns)]
-                          + list(reversed(trans.countLevels())))
+                          + list(reversed(trans.countLevels()))
+                          + [trans.fullSupportLevel(), trans.medianSupportLevel(), trans.tsl])
 
     def reportTranscriptSupport(self, transSuppTsv):
         with open(transSuppTsv, "w") as fh:
