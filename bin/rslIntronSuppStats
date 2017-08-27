@@ -52,6 +52,10 @@ class Trans(object):
     def chrom(self):
         return self.introns[0].chrom
 
+    @property
+    def strand(self):
+        return self.introns[0].strand
+
     def countLevels(self):
         levelCnts = len(IntronSupportLevel) * [0]
         for intronLevel in self.intronLevels:
@@ -109,12 +113,12 @@ class IntronEvidData(object):
     ##
 
     def __reportTranscriptSupport(self, fh):
-        fileOps.prRow(fh, ["transcriptId", "numIntrons"]
+        fileOps.prRow(fh, ["transcriptId", "strand", "numIntrons"]
                       + [l for l in reversed(IntronSupportLevel)]
                       + ["fullLevel", "medianLevel", "tsl"])
         for transId in sorted(self.byTransIds.keys()):
             trans = self.byTransIds[transId]
-            fileOps.prRow(fh, [trans.transcriptId, len(trans.introns)]
+            fileOps.prRow(fh, [trans.transcriptId, trans.strand, len(trans.introns)]
                           + list(reversed(trans.countLevels()))
                           + [trans.fullSupportLevel(), trans.medianSupportLevel(), trans.tsl])
 
