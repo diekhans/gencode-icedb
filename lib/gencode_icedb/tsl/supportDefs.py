@@ -3,6 +3,14 @@ Types related to support levels.
 """
 from pycbio.sys.symEnum import SymEnum
 
+class TrascriptionSupportLevel(SymEnum):
+    """Transcription support levels"""
+    tslNA = -1
+    tsl1 = 1
+    tsl2 = 2
+    tsl3 = 3
+    tsl4 = 4
+    tsl5 = 5
 
 class EvidenceType(SymEnum):
     """Type of evidence used in support"""
