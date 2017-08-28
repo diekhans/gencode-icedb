@@ -43,7 +43,7 @@ def loadAnnotations(conn, hgdbConn, genePredSrc, pseudoPredSrc):
     if hgdbConn is not None:
         annDbTable.loadsWithBin(loadHgDbTable(hgdbConn, genePredSrc))
         if pseudoPredSrc is not None:
-            annDbTable.loadsWithBin(loadHgDbTable(hgdbConn, genePredSrc))
+            annDbTable.loadsWithBin(loadHgDbTable(hgdbConn, pseudoPredSrc))
     else:
         annDbTable.loadGenePredFile(genePredSrc)
         if pseudoPredSrc is not None:

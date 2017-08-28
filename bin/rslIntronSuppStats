@@ -22,7 +22,7 @@ def parseArgs():
     parser = argparse.ArgumentParser(description=desc)
     loggingOps.addCmdOptions(parser)
     parser.add_argument('--chrom',
-                        help="limit to chrom (for testing)")
+                        help="limit to chrom or chrom range (for testing)")
     parser.add_argument('gencodeDb',
                         help="GENCODE database")
     parser.add_argument('intronEvidDb',
@@ -46,7 +46,7 @@ class Trans(object):
 
     def addIntron(self, intron):
         self.introns.append(intron)
-        self.intronLevels.append(intronEvidSupportLevel(intron.numMultiMapReads))
+        self.intronLevels.append(intronEvidSupportLevel(intron.numUniqueMapReads))
 
     @property
     def chrom(self):

@@ -17,6 +17,8 @@ def parseArgs():
     GenomeReaderFactory.addCmdOptions(parser)
     parser.add_argument("--maxgenes", type=int, default=None,
                         help="""maximum number of genes to use, for testing""")
+    parser.add_argument("--genesPerJob", type=int, default=1,
+                        help="""number of genes in a job""")
     parser.add_argument('gencodeDb',
                         help="""GENCODE sqlite3 database from gencodeDbLoad""")
     parser.add_argument('sjDb',
@@ -35,16 +37,19 @@ class JobGenerator(object):
         self.resultDir = os.path.join(workDir, "results")
         self.suppProg = os.path.join(icedbProgSetup.binDir, "rslGencodeCollectSupportJob")
 
-    def __generateJob(self, gencodeId, batchFh, expectedFh):
+    def __generateJob(self, gencodeIds, batchFh, expectedFh):
         cmd = [self.suppProg] + self.genomeReaderFactory.getOptionArgs(allowUpdate=False)
-        resultTsv = os.path.join(self.resultDir, "{}.supp.tsv".format(gencodeId))
-        cmd.extend([self.gencodeDb, self.sjDb, "{{check out exists {}}}".format(resultTsv), gencodeId])
+        resultTsv = os.path.join(self.resultDir, "{}.supp.tsv".format(gencodeIds[0]))
+        cmd.extend([self.gencodeDb, self.sjDb, "{{check out exists {}}}".format(resultTsv)])
+        cmd.extend(gencodeIds)
         print(*cmd, file=batchFh)
         print(resultTsv, file=expectedFh)
 
-    def generateJobs(self, gencodeIds, batchFh, expectedFh):
-        for gencodeId in gencodeIds:
-            self.__generateJob(gencodeId, batchFh, expectedFh)
+    def generateJobs(self, gencodeIds, genesPerJob, batchFh, expectedFh):
+        iNext = 0
+        while iNext < len(gencodeIds):
+            self.__generateJob(gencodeIds[iNext: iNext + genesPerJob], batchFh, expectedFh)
+            iNext += genesPerJob
 
 
 def rslGencodeCollectSupportMkJobs(opts):
@@ -61,7 +66,7 @@ def rslGencodeCollectSupportMkJobs(opts):
     batchFile = os.path.join(opts.workDir, "batch.jobs")
     expectedLst = os.path.join(opts.workDir, "expected.lst")
     with open(batchFile, "w") as batchFh, open(expectedLst, "w") as expectedFh:
-        jobGen.generateJobs(gencodeIds, batchFh, expectedFh)
+        jobGen.generateJobs(gencodeIds, opts.genesPerJob, batchFh, expectedFh)
     gencodeConn.close()
 
 

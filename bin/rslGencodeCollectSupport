@@ -102,7 +102,7 @@ class SupportCounter(object):
         chrom, start, end = self.__getBounds(transes)
         return self.__sumSupportsByIntron(chrom, start, end)
 
-    def __reportTransIntronSupport(self, trans, transAttrs, intronFeat, intronSupportCnts, resultsWriter):
+    def __collectTransIntronSupport(self, trans, transAttrs, intronFeat, intronSupportCnts, resultsWriter):
         intron, sjCounts = intronSupportCnts.getIntronFeatCounts(intronFeat)
         resultsWriter.writerow([transAttrs.geneId, transAttrs.geneName,
                                 transAttrs.transcriptId,
@@ -113,15 +113,15 @@ class SupportCounter(object):
                                 sjCounts.numUniqueMapReads,
                                 sjCounts.numMultiMapReads])
 
-    def __reportTranscriptSupport(self, trans, transAttrs, intronSupportCnts, resultsWriter):
+    def __collectTranscriptSupport(self, trans, transAttrs, intronSupportCnts, resultsWriter):
         for feat in trans.features:
             if isinstance(feat, IntronFeature):
-                self.__reportTransIntronSupport(trans, transAttrs, feat, intronSupportCnts, resultsWriter)
+                self.__collectTransIntronSupport(trans, transAttrs, feat, intronSupportCnts, resultsWriter)
 
     def __collectTranscriptsSupport(self, transes, attrsByTrans, resultsWriter):
         intronSupportCnts = self.__sumSupportForTranses(transes, resultsWriter)
         for trans in transes:
-            self.__reportTranscriptSupport(trans, attrsByTrans[trans.rnaName], intronSupportCnts, resultsWriter)
+            self.__collectTranscriptSupport(trans, attrsByTrans[trans.rnaName], intronSupportCnts, resultsWriter)
 
     def __collectSupportId(self, gencodeId, resultsWriter):
         attrs = self.__getAttrsById(gencodeId)

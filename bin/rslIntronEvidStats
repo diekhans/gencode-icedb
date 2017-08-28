@@ -18,7 +18,7 @@ def parseArgs():
     parser = argparse.ArgumentParser(description=desc)
     loggingOps.addCmdOptions(parser)
     parser.add_argument('--chrom',
-                        help="limit to chrom (for testing)")
+                        help="limit to chrom or chrom range (for testing)")
     parser.add_argument('dataType', choices=("support", "novel"),
                         help="type of database")
     parser.add_argument('intronEvidDb',
