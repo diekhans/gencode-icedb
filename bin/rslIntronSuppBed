@@ -85,6 +85,9 @@ class GencodeIntronBedMaker(object):
         return "{} ({}, {})".format(evid.intronMotif, evid.numUniqueMapReads, evid.numMultiMapReads)
 
     def __shouldReport(self, supp, level):
+        # don't count no unique for none:
+        if self.isNovelDb and (level == IntronSupportLevel.NONE):
+            return False
         if intronSupportAlreadyProcessed(supp, self.reported):
             return False
 

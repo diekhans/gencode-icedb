@@ -21,18 +21,12 @@ def _intronSupportReaderFilter(isNovelDb, rec):
 
 def intronSupportReader(isNovelDb, chrom=None):
     """read with filtering introns support from database.  Should have already
-    connected and bound ORM.  If chrom is supplied, it can be a chrom or chrom range. Only query
+    connected and bound ORM.  If chrom is supplied, only query
     that chrom for testing purposes."""
     ormCls = GencodeNovel if isNovelDb else GencodeSupport
     query = ormCls.select()
     if chrom is not None:
-        if chrom.find(':') >= 0:
-            assert False, "need to add bin to make this not crawl"
-            # FIXME: chould use bin
-            coords = Coords.parse(chrom)
-            query = query.where(ormCls.chrom == coords.chrom and ormCls.intronStart < coords.end and ormCls.intronEnd > coords.start)
-        else:
-            query = query.where(ormCls.chrom == chrom)
+        query = query.where(ormCls.chrom == chrom)
     for rec in query:
         if _intronSupportReaderFilter(isNovelDb, rec):
             yield rec

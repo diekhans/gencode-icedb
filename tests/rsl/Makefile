@@ -250,6 +250,7 @@ endef
 ##
 # rslIntronSuppBed
 ##
+## FIXME: need novel with unique support
 intronSuppBedTests: intronGencodeSuppBedTest \
 		intronGencodeNovelBedTest
 
