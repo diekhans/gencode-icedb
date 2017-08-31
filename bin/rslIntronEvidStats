@@ -61,9 +61,9 @@ class IntronEvidData(object):
     def __reportUniqSupportLevels(self, fh):
         uniqCnts = self.__cntUniqSupportLevels()
         total = sum(uniqCnts.values())
+        fileOps.prRowv(fh, "uniqLevel", "count", "rate")
         for ulevel in reversed(IntronSupportLevel):
-            if (not self.isNovelDb) or (intron.numUniqueMapReads > 0) or (intron.numMultiMapReads > 0):
-                fileOps.prRowv(fh, ulevel, uniqCnts[ulevel], mathOps.calcFmtFreq(uniqCnts[ulevel], total))
+            fileOps.prRowv(fh, ulevel, uniqCnts[ulevel], mathOps.calcFmtFreq(uniqCnts[ulevel], total))
         fileOps.prRowv(fh, "total", total, mathOps.calcFmtFreq(total, total))
 
     def reportUniqSupportLevels(self, uniqTsv):
@@ -77,9 +77,10 @@ class IntronEvidData(object):
     def __cntBothSupportLevels(self):
         bothCnts = defaultdict(int)
         for intron in self.introns.values():
-            ulevel = intronEvidSupportLevel(intron.numUniqueMapReads)
-            mlevel = intronEvidSupportLevel(intron.numMultiMapReads)
-            bothCnts[(ulevel, mlevel)] += 1
+            if (not self.isNovelDb) or (intron.numUniqueMapReads > 0) or (intron.numMultiMapReads > 0):
+                ulevel = intronEvidSupportLevel(intron.numUniqueMapReads)
+                mlevel = intronEvidSupportLevel(intron.numMultiMapReads)
+                bothCnts[(ulevel, mlevel)] += 1
         return bothCnts
 
     def __reportBothSupportLevels(self, fh):
