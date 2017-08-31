@@ -62,7 +62,8 @@ class IntronEvidData(object):
         uniqCnts = self.__cntUniqSupportLevels()
         total = sum(uniqCnts.values())
         for ulevel in reversed(IntronSupportLevel):
-            fileOps.prRowv(fh, ulevel, uniqCnts[ulevel], mathOps.calcFmtFreq(uniqCnts[ulevel], total))
+            if (not self.isNovelDb) or (intron.numUniqueMapReads > 0) or (intron.numMultiMapReads > 0):
+                fileOps.prRowv(fh, ulevel, uniqCnts[ulevel], mathOps.calcFmtFreq(uniqCnts[ulevel], total))
         fileOps.prRowv(fh, "total", total, mathOps.calcFmtFreq(total, total))
 
     def reportUniqSupportLevels(self, uniqTsv):
