@@ -72,7 +72,7 @@ class Trans(object):
     def medianSupportLevel(self):
         "finds lowest level any intron, which is the full transcript support level"
         return IntronSupportLevel(int(median([il.value for il in self.intronLevels])))
-            
+
 
 class IntronEvidData(object):
     "data linked to GENCODE transcripts"
@@ -205,5 +205,6 @@ def rslIntronSuppStats(opts):
     intronEvidData.reportTranscriptSupport("{}trans-support.tsv".format(opts.outPrefix))
     intronEvidData.reportTranscriptFullSupportStats("{}trans-full-support-stats.tsv".format(opts.outPrefix))
     intronEvidData.reportTranscriptMedianSupportStats("{}trans-median-support-stats.tsv".format(opts.outPrefix))
+
 
 rslIntronSuppStats(parseArgs())

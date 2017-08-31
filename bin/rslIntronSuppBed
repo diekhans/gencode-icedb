@@ -17,6 +17,9 @@ def parseArgs():
     loggingOps.addCmdOptions(parser)
     parser.add_argument('--htmlColors', action="store_true", default=False,
                         help="print colors in  HTML format for use in documentation, then exit")
+    parser.add_argument("--level", action="append",
+                        choices=[str(l) for l in IntronSupportLevel],
+                        help="level to include, maybe repeated")
     parser.add_argument('dataType', choices=("support", "novel"),
                         help="type of database")
     parser.add_argument('intronEvidDb',
@@ -25,6 +28,11 @@ def parseArgs():
                         help="output BED file")
     opts = parser.parse_args()
     loggingOps.setupFromCmd(opts, sys.argv[0])
+    if opts.level is not None:
+        levels = frozenset(opts.level)
+    else:
+        levels = frozenset(list(IntronSupportLevel))
+    opts.level = levels
     return opts
 
 
@@ -53,9 +61,10 @@ class Colors(object):
 
 
 class GencodeIntronBedMaker(object):
-    def __init__(self, dataType):
+    def __init__(self, dataType, levels):
         self.isNovelDb = (dataType == "novel")
         self.reported = set()   # don't output dups due to multiple transcripts
+        self.levels = levels
 
     def __evidColor(self, evid, level):
         if level == IntronSupportLevel.STRONG:
@@ -90,7 +99,8 @@ class GencodeIntronBedMaker(object):
             return False
         if intronSupportAlreadyProcessed(supp, self.reported):
             return False
-
+        if level not in self.levels:
+            return False
         # don't report weak novel
         return (not self.isNovelDb) or (level > IntronSupportLevel.WEAK)
 
@@ -111,7 +121,7 @@ def rslIntronSuppBed(opts):
     if opts.htmlColors:
         Colors.printHtml()
         sys.exit(0)
-    intronBedMaker = GencodeIntronBedMaker(opts.dataType)
+    intronBedMaker = GencodeIntronBedMaker(opts.dataType, opts.level)
     conn = sqliteConnect(opts.intronEvidDb, readonly=True)
     with open(opts.bedOut, "w") as bedFh:
         intronBedMaker.writeBed(bedFh)

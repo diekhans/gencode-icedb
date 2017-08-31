@@ -3,7 +3,7 @@ Common functions to support analysis.
 """
 
 from gencode_icedb.rsl.rslModel import GencodeSupport, GencodeNovel
-from pycbio.hgbrowser.coords import Coords
+
 
 def isPseudo(suppRec):
     # FIXME: switch to using functions now in CCDS tree
