@@ -12,7 +12,7 @@ from gencode_icedb.general import gencodeDb
 from gencode_icedb.rsl.rslModel import sqliteConnect, sqliteClose
 from gencode_icedb.rsl.gencodeIntronEvid import IntronSupportLevel, intronEvidSupportLevel
 from gencode_icedb.rsl.supportAnalysis import intronSupportReader
-from gencode.data.gencodeGenes import BioType, bioTypesCoding, bioTypesNonCoding, sourceToExtendedMethod
+from gencode.data.gencodeGenes import BioType, bioTypesCoding, bioTypesNonCoding, GencodeExtendedMethod, sourceToExtendedMethod
 
 # FIXME: move to analysis repo
 
@@ -156,32 +156,48 @@ class IntronEvidData(object):
     def __nonCodingFilter(trans):
         return BioType(trans.bioType) in bioTypesNonCoding
 
+    transcriptClasses = ("all", "coding", "non-coding")
+
+    def __classFilter(self, tc):
+        if tc == "all":
+            return self.__allFilter
+        elif tc == "coding":
+            return self.__codingFilter
+        elif tc == "non-coding":
+            return self.__nonCodingFilter
+    
+    def __reportTranscriptTypeStatsByAll(self, fh, statFunc):
+        for tc in self.transcriptClasses:
+            filt = self.__classFilter(tc)
+            self.__reportTranscriptTypeStats(tc, "none", "all", lambda trans: filt(trans), fh, statFunc)
+
     def __reportTranscriptTypeStatsByTsl(self, fh, statFunc):
         for tsl in xrange(1, 6):
-            self.__reportTranscriptTypeStats("all", "tsl", tsl, lambda trans: trans.tsl == tsl and self.__allFilter(trans), fh, statFunc)
-        for tsl in xrange(1, 6):
-            self.__reportTranscriptTypeStats("coding", "tsl", tsl, lambda trans: trans.tsl == tsl and self.__codingFilter(trans), fh, statFunc)
-        for tsl in xrange(1, 6):
-            self.__reportTranscriptTypeStats("non-coding", "tsl", tsl, lambda trans: trans.tsl == tsl and self.__nonCodingFilter(trans), fh, statFunc)
+            for tc in self.transcriptClasses:
+                filt = self.__classFilter(tc)
+                self.__reportTranscriptTypeStats(tc, "tsl", tsl, lambda trans: trans.tsl == tsl and filt(trans), fh, statFunc)
+
+    def __reportTranscriptTypeStatsByMethod(self, fh, statFunc):
+       for method in GencodeExtendedMethod.values:
+            for tc in self.transcriptClasses:
+                filt = self.__classFilter(tc)
+                self.__reportTranscriptTypeStats(tc, "method", method, lambda trans: trans.method == method and filt(trans), fh, statFunc)
 
     def __reportTranscriptTypeStatsByChrom(self, fh, statFunc):
         chroms = sorted(self.chroms, key=lambda c: (len(c), c))
         for chrom in chroms:
-            self.__reportTranscriptTypeStats("all", "chrom", chrom, lambda trans: trans.chrom == chrom and self.__allFilter(trans), fh, statFunc)
-        for chrom in chroms:
-            self.__reportTranscriptTypeStats("coding", "chrom", chrom, lambda trans: trans.chrom == chrom and self.__codingFilter(trans), fh, statFunc)
-        for chrom in chroms:
-            self.__reportTranscriptTypeStats("non-coding", "chrom", chrom, lambda trans: trans.chrom == chrom and self.__nonCodingFilter(trans), fh, statFunc)
+            for tc in self.transcriptClasses:
+                filt = self.__classFilter(tc)
+                self.__reportTranscriptTypeStats(tc, "chrom", chrom, lambda trans: trans.chrom == chrom and filt(trans), fh, statFunc)
 
     def __reportTranscriptSupportStats(self, fh, statFunc):
         fileOps.prRow(fh, ["type", "subfilter", "subtype"]
                       + ["{}_cnt".format(l) for l in reversed(IntronSupportLevel)]
                       + ["{}_freq".format(l) for l in reversed(IntronSupportLevel)])
-        self.__reportTranscriptTypeStats("all", "none", "all", self.__allFilter, fh, statFunc)
-        self.__reportTranscriptTypeStats("coding", "none", "all", self.__codingFilter, fh, statFunc)
-        self.__reportTranscriptTypeStats("non-coding", "none", "all", self.__nonCodingFilter, fh, statFunc)
+        self.__reportTranscriptTypeStatsByAll(fh, statFunc)
         self.__reportTranscriptTypeStatsByTsl(fh, statFunc)
         self.__reportTranscriptTypeStatsByChrom(fh, statFunc)
+        self.__reportTranscriptTypeStatsByMethod(fh, statFunc)
 
     def reportTranscriptFullSupportStats(self, transSuppStatsTsv):
         with open(transSuppStatsTsv, "w") as fh:
