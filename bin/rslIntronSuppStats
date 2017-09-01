@@ -12,6 +12,7 @@ from gencode_icedb.general import gencodeDb
 from gencode_icedb.rsl.rslModel import sqliteConnect, sqliteClose
 from gencode_icedb.rsl.gencodeIntronEvid import IntronSupportLevel, intronEvidSupportLevel
 from gencode_icedb.rsl.supportAnalysis import intronSupportReader
+from gencode_icedb.tsl.supportDefs import TrascriptionSupportLevel
 from gencode.data.gencodeGenes import BioType, bioTypesCoding, bioTypesNonCoding, GencodeExtendedMethod, sourceToExtendedMethod
 
 # FIXME: move to analysis repo
@@ -106,7 +107,7 @@ class IntronEvidData(object):
         for rec in dbTable.queryAll():
             trans = self.byTransIds.get(rec.transcriptId)
             if trans is not None:
-                trans.tsl = rec.level
+                trans.tsl = TrascriptionSupportLevel(rec.level)
 
     ##
     # per-transcript support
@@ -156,7 +157,11 @@ class IntronEvidData(object):
     def __nonCodingFilter(trans):
         return BioType(trans.bioType) in bioTypesNonCoding
 
-    transcriptClasses = ("all", "coding", "non-coding")
+    @staticmethod
+    def __otherFilter(trans):
+        return not (IntronEvidData.__codingFilter(trans) or IntronEvidData.__nonCodingFilter(trans))
+
+    transcriptClasses = ("all", "coding", "non-coding", "other")
 
     def __classFilter(self, tc):
         if tc == "all":
@@ -165,20 +170,22 @@ class IntronEvidData(object):
             return self.__codingFilter
         elif tc == "non-coding":
             return self.__nonCodingFilter
-    
+        elif tc == "other":
+            return self.__otherFilter
+
     def __reportTranscriptTypeStatsByAll(self, fh, statFunc):
         for tc in self.transcriptClasses:
             filt = self.__classFilter(tc)
             self.__reportTranscriptTypeStats(tc, "none", "all", lambda trans: filt(trans), fh, statFunc)
 
     def __reportTranscriptTypeStatsByTsl(self, fh, statFunc):
-        for tsl in xrange(1, 6):
+        for tsl in xrange(-1, 6):
             for tc in self.transcriptClasses:
                 filt = self.__classFilter(tc)
                 self.__reportTranscriptTypeStats(tc, "tsl", tsl, lambda trans: trans.tsl == tsl and filt(trans), fh, statFunc)
 
     def __reportTranscriptTypeStatsByMethod(self, fh, statFunc):
-       for method in GencodeExtendedMethod.values:
+        for method in GencodeExtendedMethod.values:
             for tc in self.transcriptClasses:
                 filt = self.__classFilter(tc)
                 self.__reportTranscriptTypeStats(tc, "method", method, lambda trans: trans.method == method and filt(trans), fh, statFunc)
@@ -224,4 +231,3 @@ def rslIntronSuppStats(opts):
 
 
 rslIntronSuppStats(parseArgs())
-1

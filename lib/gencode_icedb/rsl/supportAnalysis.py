@@ -1,7 +1,6 @@
 """
 Common functions to support analysis.
 """
-
 from gencode_icedb.rsl.rslModel import GencodeSupport, GencodeNovel
 
 
