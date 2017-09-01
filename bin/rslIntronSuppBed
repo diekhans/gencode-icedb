@@ -29,7 +29,7 @@ def parseArgs():
     opts = parser.parse_args()
     loggingOps.setupFromCmd(opts, sys.argv[0])
     if opts.level is not None:
-        levels = frozenset(opts.level)
+        levels = frozenset([IntronSupportLevel(l) for l in opts.level])
     else:
         levels = frozenset(list(IntronSupportLevel))
     opts.level = levels

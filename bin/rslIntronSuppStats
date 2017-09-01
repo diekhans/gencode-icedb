@@ -39,7 +39,7 @@ class Trans(object):
         self.geneId = geneId
         self.transcriptId = transcriptId
         self.bioType = bioType
-        self.source = None
+        self.method = None
         self.tsl = None
         self.introns = []
         self.intronLevels = []
@@ -99,7 +99,7 @@ class IntronEvidData(object):
         for rec in dbTable.queryAll():
             trans = self.byTransIds.get(rec.transcriptId)
             if trans is not None:
-                trans.source = sourceToExtendedMethod(rec.source)
+                trans.method = sourceToExtendedMethod(rec.source)
 
     def loadGencodeSupportLevel(self, gencodeDbConn):
         dbTable = GencodeTranscriptionSupportLevelDbTable(gencodeDbConn, gencodeDb.gencode_transcription_support_level_table)
@@ -113,12 +113,12 @@ class IntronEvidData(object):
     ##
 
     def __reportTranscriptSupport(self, fh):
-        fileOps.prRow(fh, ["transcriptId", "strand", "numIntrons"]
+        fileOps.prRow(fh, ["transcriptId", "strand", "numIntrons", "transcriptType", "method"]
                       + [l for l in reversed(IntronSupportLevel)]
                       + ["fullLevel", "medianLevel", "tsl"])
         for transId in sorted(self.byTransIds.keys()):
             trans = self.byTransIds[transId]
-            fileOps.prRow(fh, [trans.transcriptId, trans.strand, len(trans.introns)]
+            fileOps.prRow(fh, [trans.transcriptId, trans.strand, len(trans.introns), trans.bioType, trans.method]
                           + list(reversed(trans.countLevels()))
                           + [trans.fullSupportLevel(), trans.medianSupportLevel(), trans.tsl])
 
@@ -208,3 +208,4 @@ def rslIntronSuppStats(opts):
 
 
 rslIntronSuppStats(parseArgs())
+1
