@@ -179,7 +179,7 @@ class IntronEvidData(object):
             self.__reportTranscriptTypeStats(tc, "none", "all", lambda trans: filt(trans), fh, statFunc)
 
     def __reportTranscriptTypeStatsByTsl(self, fh, statFunc):
-        for tsl in xrange(-1, 6):
+        for tsl in TrascriptionSupportLevel:
             for tc in self.transcriptClasses:
                 filt = self.__classFilter(tc)
                 self.__reportTranscriptTypeStats(tc, "tsl", tsl, lambda trans: trans.tsl == tsl and filt(trans), fh, statFunc)
