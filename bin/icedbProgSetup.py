@@ -5,12 +5,14 @@ automatically on the path.
 """
 import sys
 import os
-# using __file__ allows programs to be symlinked
+
+# Add our library to the path.  Using __file__ allows programs to be symlinked.
 rootDir = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 binDir = os.path.join(rootDir, "bin")
 
 
 def _addExtern(module, relDir):
+    "add packages in extern directory to path"
     modDir = os.path.join(rootDir, "extern", module, relDir)
     if not os.path.exists(modDir):
         raise Exception("can't find {} directory: {}".format(module, modDir))
