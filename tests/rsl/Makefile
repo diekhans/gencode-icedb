@@ -25,6 +25,7 @@ rslIntronSuppPlot = ${binDir}/rslIntronSuppPlot
 rslIntronSuppBed = ${binDir}/rslIntronSuppBed
 rslIntronSuppStats = ${binDir}/rslIntronSuppStats
 rslIntronEvidStats = ${binDir}/rslIntronEvidStats
+rslTransSuppBed = ${binDir}/rslTransSuppBed
 
 genomeSeqsHg38 = /hive/data/genomes/hg38/hg38.2bit
 
@@ -46,6 +47,7 @@ test:   dataConvertTests \
 	encodeDccTests \
 	intronSuppBedTests \
 	intronStatsTests \
+	transSuppBedTests \
 	plotTests
 
 ##
@@ -250,17 +252,18 @@ endef
 ##
 # rslIntronSuppBed
 ##
-## FIXME: need novel with unique support
 intronSuppBedTests: intronGencodeSuppBedTest \
 		intronGencodeNovelBedTest
 
 intronGencodeSuppBedTest: mkdirs
 	${buildGencodeSuppDb}
 	${rslIntronSuppBed} support output/$@.supp.db output/$@.bed
+	diff expected/$@.bed output/$@.bed
 
 intronGencodeNovelBedTest: mkdirs
 	${buildGencodeNovelDb}
 	${rslIntronSuppBed} novel output/$@.novel.db output/$@.bed
+	diff expected/$@.bed output/$@.bed
 
 ##
 # rslIntronSuppStats
@@ -286,7 +289,16 @@ intronGencodeNovelStatsTest: mkdirs
 	${rslIntronEvidStats} novel output/$@.novel.db output/$@/novel.
 	${diff} -r expected/$@ output/$@
 
+##
+# rslTransSuppBed
+##
+transSuppBedTests: transSuppBedAllTest
 
+transSuppBedAllTest: mkdirs
+	$(call gencodeTestDbSetup,output/$@.gencode.db)
+	${buildGencodeSuppDb}
+	${rslTransSuppBed}  output/$@.gencode.db output/$@.supp.db output/$@.bed
+	diff expected/$@.bed output/$@.bed
 
 ##
 # tests of plotting programs, results not check automatically

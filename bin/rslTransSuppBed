@@ -1,0 +1,75 @@
+#!/usr/bin/env python
+
+from __future__ import print_function
+import icedbProgSetup  # noqa: F401
+import sys
+import argparse
+from pycbio.sys import loggingOps
+import sqlite3
+from gencode_icedb.general import gencodeDb
+from gencode_icedb.general.annotFeatures import AnnotationGenePredFactory
+from gencode_icedb.rsl.gencodeIntronEvid import IntronSupportLevel
+from gencode_icedb.rsl.supportAnalysis import GencodeIntronEvid, SupportTrackColors
+from pycbio.hgdata.hgLite import GenePredDbTable
+
+
+def parseArgs():
+    desc = """Create a BED of full transcript support"""
+    parser = argparse.ArgumentParser(description=desc)
+    loggingOps.addCmdOptions(parser)
+    parser.add_argument("--level", action="append",
+                        choices=[str(l) for l in IntronSupportLevel],
+                        help="level to include, maybe repeated")
+    parser.add_argument('gencodeDb',
+                        help="GENCODE database")
+    parser.add_argument('intronEvidDb',
+                        help="support or novel database")
+    parser.add_argument('bedOut',
+                        help="output BED file")
+    opts = parser.parse_args()
+    loggingOps.setupFromCmd(opts, sys.argv[0])
+    if opts.level is not None:
+        levels = frozenset([IntronSupportLevel(l) for l in opts.level])
+    else:
+        levels = frozenset(list(IntronSupportLevel))
+    opts.level = levels
+    return opts
+
+
+class BedMaker(object):
+    def __init__(self, levels, gie):
+        self.levels = levels
+        self.gie = gie
+
+    def __shouldReport(self, transAnn):
+        transEvid = self.gie.byTransIds.get(transAnn.rnaName)
+        if transEvid is None:
+            return False
+        if transEvid.fullSupportLevel() not in self.levels:
+            return False
+        return True
+
+    def __writeBedRec(self, transAnn, bedFh):
+        if self.__shouldReport(transAnn):
+            transEvid = self.gie.byTransIds[transAnn.rnaName]
+            itemRgb = SupportTrackColors.supportLevelColor(False, transEvid.fullSupportLevel()).toRgb8Str()
+            transAnn.toBed(itemRgb).write(bedFh)
+
+    def writeBed(self, gencodeDbConn, bedFh):
+        annFactory = AnnotationGenePredFactory()
+        for gp in GenePredDbTable(gencodeDbConn, gencodeDb.gencode_ann_table).queryAll():
+            self.__writeBedRec(annFactory.fromGenePred(gp), bedFh)
+
+
+def rslIntronSuppBed(opts):
+    gie = GencodeIntronEvid()
+    gie.loadSupportDb(opts.intronEvidDb, None)
+    gie.loadGencodeDb(opts.gencodeDb)
+    bedMaker = BedMaker(opts.level, gie)
+    gencodeDbConn = sqlite3.connect(opts.gencodeDb)
+    with open(opts.bedOut, "w") as bedFh:
+        bedMaker.writeBed(gencodeDbConn, bedFh)
+    gencodeDbConn.close()
+
+
+rslIntronSuppBed(parseArgs())

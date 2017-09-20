@@ -4,6 +4,7 @@ Features of a transcript annotation or alignment.
 from __future__ import print_function
 from pycbio.hgdata import dnaOps
 from pycbio.hgdata.frame import Frame
+from pycbio.hgdata.bed import Bed
 from gencode_icedb.general.spliceJuncs import SpliceJuncs, spliceJuncsClassify
 
 
@@ -288,6 +289,17 @@ class TranscriptFeatures(TransFeature):
         if self.features is not None:
             r.append(self._getChildrenStrTree(self.features))
         return tuple(r)
+
+    def toBed(self, itemRgb):
+        """convert transcript and CDS to a bed vector"""
+        blocks = []
+        for feat in self.features:
+            if isinstance(feat, ExonFeature):
+                blocks.append(Bed.Block(feat.chromStart, feat.chromEnd))
+
+        return Bed(self.chrom, self.chromStart, self.chromEnd,
+                   self.rnaName, 0, self.rnaStrand, self.cdsChromStart, self.cdsChromEnd,
+                   itemRgb, blocks)
 
     @property
     def alignedBases(self):

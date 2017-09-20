@@ -38,7 +38,7 @@ class IntronEvidData(object):
         self.chroms = set()
 
     def __loadRec(self, rec):
-        # only keeps one, so not double counted
+        # only keeps one, so not to double counted
         self.introns[(rec.intronStart, rec.intronEnd, rec.strand)] = rec
 
     def load(self, chrom):

@@ -4,16 +4,11 @@ from __future__ import print_function
 import icedbProgSetup  # noqa: F401
 import sys
 import argparse
-import sqlite3
-from numpy import median
 from pycbio.sys import fileOps, loggingOps, mathOps
-from pycbio.hgdata.hgLite import GencodeTranscriptSourceDbTable, GencodeTranscriptionSupportLevelDbTable
-from gencode_icedb.general import gencodeDb
-from gencode_icedb.rsl.rslModel import sqliteConnect, sqliteClose
-from gencode_icedb.rsl.gencodeIntronEvid import IntronSupportLevel, intronEvidSupportLevel
-from gencode_icedb.rsl.supportAnalysis import intronSupportReader
+from gencode_icedb.rsl.supportAnalysis import GencodeIntronEvid
 from gencode_icedb.tsl.supportDefs import TrascriptionSupportLevel
-from gencode.data.gencodeGenes import BioType, bioTypesCoding, bioTypesNonCoding, GencodeExtendedMethod, sourceToExtendedMethod
+from gencode_icedb.rsl.gencodeIntronEvid import IntronSupportLevel
+from gencode.data.gencodeGenes import BioType, bioTypesCoding, bioTypesNonCoding, GencodeExtendedMethod
 
 # FIXME: move to analysis repo
 
@@ -34,200 +29,134 @@ def parseArgs():
     loggingOps.setupFromCmd(opts, sys.argv[0])
     return opts
 
-
-class Trans(object):
-    def __init__(self, geneId, transcriptId, bioType):
-        self.geneId = geneId
-        self.transcriptId = transcriptId
-        self.bioType = bioType
-        self.method = None
-        self.tsl = None
-        self.introns = []
-        self.intronLevels = []
-
-    def addIntron(self, intron):
-        self.introns.append(intron)
-        self.intronLevels.append(intronEvidSupportLevel(intron.numUniqueMapReads))
-
-    @property
-    def chrom(self):
-        return self.introns[0].chrom
-
-    @property
-    def strand(self):
-        return self.introns[0].strand
-
-    def countLevels(self):
-        levelCnts = len(IntronSupportLevel) * [0]
-        for intronLevel in self.intronLevels:
-            levelCnts[intronLevel.value] += 1
-        return levelCnts
-
-    def fullSupportLevel(self):
-        "finds lowest level any intron, which is the full transcript support level"
-        levelCnts = self.countLevels()
-        for level in IntronSupportLevel:
-            if levelCnts[level.value] > 0:
-                return level
-
-    def medianSupportLevel(self):
-        "finds lowest level any intron, which is the full transcript support level"
-        return IntronSupportLevel(int(median([il.value for il in self.intronLevels])))
+##
+# per-transcript support
+##
 
 
-class IntronEvidData(object):
-    "data linked to GENCODE transcripts"
-    def __init__(self):
-        self.chroms = set()
-        self.byTransIds = {}
+def _reportTranscriptSupport(gie, fh):
+    fileOps.prRow(fh, ["transcriptId", "strand", "numIntrons", "transcriptType", "method"]
+                  + [l for l in reversed(IntronSupportLevel)]
+                  + ["fullLevel", "medianLevel", "tsl"])
+    for transId in sorted(gie.byTransIds.keys()):
+        trans = gie.byTransIds[transId]
+        fileOps.prRow(fh, [trans.transcriptId, trans.strand, len(trans.introns), trans.bioType, trans.method]
+                      + list(reversed(trans.countLevels()))
+                      + [trans.fullSupportLevel(), trans.medianSupportLevel(), trans.tsl])
 
-    def __obtainTransInfo(self, rec):
-        trans = self.byTransIds.get(rec.transcriptId)
-        if trans is None:
-            trans = self.byTransIds[rec.transcriptId] = Trans(rec.geneId, rec.transcriptId, rec.transcriptType)
-        return trans
 
-    def __loadRec(self, rec):
-        self.chroms.add(rec.chrom)
-        self.__obtainTransInfo(rec).addIntron(rec)
+def reportTranscriptSupport(gie, transSuppTsv):
+    with open(transSuppTsv, "w") as fh:
+        _reportTranscriptSupport(gie, fh)
 
-    def load(self, chrom):
-        for rec in intronSupportReader(False, chrom):
-            self.__loadRec(rec)
+##
+# full transcript support stats
+##
 
-    def loadGencodeSource(self, gencodeDbConn):
-        dbTable = GencodeTranscriptSourceDbTable(gencodeDbConn, gencodeDb.gencode_transcript_source_table)
-        for rec in dbTable.queryAll():
-            trans = self.byTransIds.get(rec.transcriptId)
-            if trans is not None:
-                trans.method = sourceToExtendedMethod(rec.source)
 
-    def loadGencodeSupportLevel(self, gencodeDbConn):
-        dbTable = GencodeTranscriptionSupportLevelDbTable(gencodeDbConn, gencodeDb.gencode_transcription_support_level_table)
-        for rec in dbTable.queryAll():
-            trans = self.byTransIds.get(rec.transcriptId)
-            if trans is not None:
-                trans.tsl = TrascriptionSupportLevel(rec.level)
+def _cntTranscriptsStats(gie, transFilter, statFunc):
+    levelTotals = [0 for l in IntronSupportLevel]
+    for trans in gie.byTransIds.values():
+        if transFilter(trans):
+            levelTotals[statFunc(trans).value] += 1
+    return levelTotals
 
-    ##
-    # per-transcript support
-    ##
 
-    def __reportTranscriptSupport(self, fh):
-        fileOps.prRow(fh, ["transcriptId", "strand", "numIntrons", "transcriptType", "method"]
-                      + [l for l in reversed(IntronSupportLevel)]
-                      + ["fullLevel", "medianLevel", "tsl"])
-        for transId in sorted(self.byTransIds.keys()):
-            trans = self.byTransIds[transId]
-            fileOps.prRow(fh, [trans.transcriptId, trans.strand, len(trans.introns), trans.bioType, trans.method]
-                          + list(reversed(trans.countLevels()))
-                          + [trans.fullSupportLevel(), trans.medianSupportLevel(), trans.tsl])
+def _reportTranscriptTypeStats(gie, transType, subfilter, subtype, transFilter, fh, statFunc):
+    levelTotals = _cntTranscriptsStats(gie, transFilter, statFunc)
+    transCnt = sum(levelTotals)
+    fileOps.prRow(fh, [transType, subfilter, subtype]
+                  + list(reversed(levelTotals))
+                  + [mathOps.calcFmtFreq(c, transCnt) for c in reversed(levelTotals)])
 
-    def reportTranscriptSupport(self, transSuppTsv):
-        with open(transSuppTsv, "w") as fh:
-            self.__reportTranscriptSupport(fh)
 
-    ##
-    # full transcript support stats
-    ##
+def allFilter(trans):
+    return True
 
-    def __cntTranscriptsStats(self, transFilter, statFunc):
-        levelTotals = [0 for l in IntronSupportLevel]
-        for trans in self.byTransIds.values():
-            if transFilter(trans):
-                levelTotals[statFunc(trans).value] += 1
-        return levelTotals
 
-    def __reportTranscriptTypeStats(self, transType, subfilter, subtype, transFilter, fh, statFunc):
-        levelTotals = self.__cntTranscriptsStats(transFilter, statFunc)
-        transCnt = sum(levelTotals)
-        fileOps.prRow(fh, [transType, subfilter, subtype]
-                      + list(reversed(levelTotals))
-                      + [mathOps.calcFmtFreq(c, transCnt) for c in reversed(levelTotals)])
+def codingFilter(trans):
+    return BioType(trans.bioType) in bioTypesCoding
 
-    @staticmethod
-    def __allFilter(trans):
-        return True
 
-    @staticmethod
-    def __codingFilter(trans):
-        return BioType(trans.bioType) in bioTypesCoding
+def nonCodingFilter(trans):
+    return BioType(trans.bioType) in bioTypesNonCoding
 
-    @staticmethod
-    def __nonCodingFilter(trans):
-        return BioType(trans.bioType) in bioTypesNonCoding
 
-    @staticmethod
-    def __otherFilter(trans):
-        return not (IntronEvidData.__codingFilter(trans) or IntronEvidData.__nonCodingFilter(trans))
+def otherFilter(trans):
+    return not (codingFilter(trans) or nonCodingFilter(trans))
 
-    transcriptClasses = ("all", "coding", "non-coding", "other")
 
-    def __classFilter(self, tc):
-        if tc == "all":
-            return self.__allFilter
-        elif tc == "coding":
-            return self.__codingFilter
-        elif tc == "non-coding":
-            return self.__nonCodingFilter
-        elif tc == "other":
-            return self.__otherFilter
+transcriptClasses = ("all", "coding", "non-coding", "other")
 
-    def __reportTranscriptTypeStatsByAll(self, fh, statFunc):
-        for tc in self.transcriptClasses:
-            filt = self.__classFilter(tc)
-            self.__reportTranscriptTypeStats(tc, "none", "all", lambda trans: filt(trans), fh, statFunc)
 
-    def __reportTranscriptTypeStatsByTsl(self, fh, statFunc):
-        for tsl in TrascriptionSupportLevel:
-            for tc in self.transcriptClasses:
-                filt = self.__classFilter(tc)
-                self.__reportTranscriptTypeStats(tc, "tsl", tsl, lambda trans: trans.tsl == tsl and filt(trans), fh, statFunc)
+def classFilter(gie, tc):
+    if tc == "all":
+        return allFilter
+    elif tc == "coding":
+        return codingFilter
+    elif tc == "non-coding":
+        return nonCodingFilter
+    elif tc == "other":
+        return otherFilter
 
-    def __reportTranscriptTypeStatsByMethod(self, fh, statFunc):
-        for method in GencodeExtendedMethod.values:
-            for tc in self.transcriptClasses:
-                filt = self.__classFilter(tc)
-                self.__reportTranscriptTypeStats(tc, "method", method, lambda trans: trans.method == method and filt(trans), fh, statFunc)
 
-    def __reportTranscriptTypeStatsByChrom(self, fh, statFunc):
-        chroms = sorted(self.chroms, key=lambda c: (len(c), c))
-        for chrom in chroms:
-            for tc in self.transcriptClasses:
-                filt = self.__classFilter(tc)
-                self.__reportTranscriptTypeStats(tc, "chrom", chrom, lambda trans: trans.chrom == chrom and filt(trans), fh, statFunc)
+def _reportTranscriptTypeStatsByAll(gie, fh, statFunc):
+    for tc in transcriptClasses:
+        filt = classFilter(gie, tc)
+        _reportTranscriptTypeStats(gie, tc, "none", "all", lambda trans: filt(trans), fh, statFunc)
 
-    def __reportTranscriptSupportStats(self, fh, statFunc):
-        fileOps.prRow(fh, ["type", "subfilter", "subtype"]
-                      + ["{}_cnt".format(l) for l in reversed(IntronSupportLevel)]
-                      + ["{}_freq".format(l) for l in reversed(IntronSupportLevel)])
-        self.__reportTranscriptTypeStatsByAll(fh, statFunc)
-        self.__reportTranscriptTypeStatsByTsl(fh, statFunc)
-        self.__reportTranscriptTypeStatsByChrom(fh, statFunc)
-        self.__reportTranscriptTypeStatsByMethod(fh, statFunc)
 
-    def reportTranscriptFullSupportStats(self, transSuppStatsTsv):
-        with open(transSuppStatsTsv, "w") as fh:
-            self.__reportTranscriptSupportStats(fh, lambda trans: trans.fullSupportLevel())
+def _reportTranscriptTypeStatsByTsl(gie, fh, statFunc):
+    for tsl in TrascriptionSupportLevel:
+        for tc in transcriptClasses:
+            filt = classFilter(gie, tc)
+            _reportTranscriptTypeStats(gie, tc, "tsl", tsl, lambda trans: trans.tsl == tsl and filt(trans), fh, statFunc)
 
-    def reportTranscriptMedianSupportStats(self, transSuppStatsTsv):
-        with open(transSuppStatsTsv, "w") as fh:
-            self.__reportTranscriptSupportStats(fh, lambda trans: trans.medianSupportLevel())
+
+def _reportTranscriptTypeStatsByMethod(gie, fh, statFunc):
+    for method in GencodeExtendedMethod.values:
+        for tc in transcriptClasses:
+            filt = classFilter(gie, tc)
+            _reportTranscriptTypeStats(gie, tc, "method", method, lambda trans: trans.method == method and filt(trans), fh, statFunc)
+
+
+def _reportTranscriptTypeStatsByChrom(gie, fh, statFunc):
+    chroms = sorted(gie.chroms, key=lambda c: (len(c), c))
+    for chrom in chroms:
+        for tc in transcriptClasses:
+            filt = classFilter(gie, tc)
+            _reportTranscriptTypeStats(gie, tc, "chrom", chrom, lambda trans: trans.chrom == chrom and filt(trans), fh, statFunc)
+
+
+def _reportTranscriptSupportStats(gie, fh, statFunc):
+    fileOps.prRow(fh, ["type", "subfilter", "subtype"]
+                  + ["{}_cnt".format(l) for l in reversed(IntronSupportLevel)]
+                  + ["{}_freq".format(l) for l in reversed(IntronSupportLevel)])
+    _reportTranscriptTypeStatsByAll(gie, fh, statFunc)
+    _reportTranscriptTypeStatsByTsl(gie, fh, statFunc)
+    _reportTranscriptTypeStatsByChrom(gie, fh, statFunc)
+    _reportTranscriptTypeStatsByMethod(gie, fh, statFunc)
+
+
+def reportTranscriptFullSupportStats(gie, transSuppStatsTsv):
+    with open(transSuppStatsTsv, "w") as fh:
+        _reportTranscriptSupportStats(gie, fh, lambda trans: trans.fullSupportLevel())
+
+
+def reportTranscriptMedianSupportStats(gie, transSuppStatsTsv):
+    with open(transSuppStatsTsv, "w") as fh:
+        _reportTranscriptSupportStats(gie, fh, lambda trans: trans.medianSupportLevel())
 
 
 def rslIntronSuppStats(opts):
-    intronEvidData = IntronEvidData()
-    conn = sqliteConnect(opts.intronEvidDb, readonly=True)
-    intronEvidData.load(opts.chrom)
-    sqliteClose(conn)
+    gie = GencodeIntronEvid()
+    gie.loadSupportDb(opts.intronEvidDb, opts.chrom)
+    gie.loadGencodeDb(opts.gencodeDb)
+
     fileOps.ensureFileDir(opts.outPrefix)
-    gencodeDbConn = sqlite3.connect(opts.gencodeDb)
-    intronEvidData.loadGencodeSource(gencodeDbConn)
-    intronEvidData.loadGencodeSupportLevel(gencodeDbConn)
-    gencodeDbConn.close()
-    intronEvidData.reportTranscriptSupport("{}trans-support.tsv".format(opts.outPrefix))
-    intronEvidData.reportTranscriptFullSupportStats("{}trans-full-support-stats.tsv".format(opts.outPrefix))
-    intronEvidData.reportTranscriptMedianSupportStats("{}trans-median-support-stats.tsv".format(opts.outPrefix))
+    reportTranscriptSupport(gie, "{}trans-support.tsv".format(opts.outPrefix))
+    reportTranscriptFullSupportStats(gie, "{}trans-full-support-stats.tsv".format(opts.outPrefix))
+    reportTranscriptMedianSupportStats(gie, "{}trans-median-support-stats.tsv".format(opts.outPrefix))
 
 
 rslIntronSuppStats(parseArgs())

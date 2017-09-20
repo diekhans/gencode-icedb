@@ -15,6 +15,7 @@ from gencode_icedb.general.annotFeatures import AnnotationGenePredFactory
 from gencode_icedb.rsl.rslModel import sqliteConnect, sqliteClose, SjSupportReader
 from gencode_icedb.rsl.intronSupportCounter import IntronSupportCounter
 
+# FIXME: both support and novel could be collected in one pass.
 
 def parseArgs():
     desc = """Collect splice site evidence for a subset of GENCODE annotations."""

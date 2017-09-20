@@ -1,7 +1,18 @@
 """
 Common functions to support analysis.
 """
+from __future__ import print_function
+import sys
+from numpy import median
+from gencode_icedb.general import gencodeDb
 from gencode_icedb.rsl.rslModel import GencodeSupport, GencodeNovel
+from gencode_icedb.rsl.gencodeIntronEvid import IntronSupportLevel, intronEvidSupportLevel
+import sqlite3
+from gencode_icedb.rsl.rslModel import sqliteConnect, sqliteClose
+from pycbio.sys.color import Color
+from pycbio.hgdata.hgLite import GencodeTranscriptSourceDbTable, GencodeTranscriptionSupportLevelDbTable
+from gencode.data.gencodeGenes import sourceToExtendedMethod
+from gencode_icedb.tsl.supportDefs import TrascriptionSupportLevel
 
 
 def isPseudo(suppRec):
@@ -39,3 +50,131 @@ def intronSupportAlreadyProcessed(rec, processed):
     else:
         processed.add(key)
         return False
+
+
+class SupportTrackColors(object):
+    "color codes"
+    strongNovel = Color.fromRgb8(0, 0, 128)  # dark blue
+    strongKnown = Color.fromRgb8(0, 128, 0)  # dark green
+    mediumNovel = Color.fromRgb8(0, 0, 255)  # light blue
+    mediumKnown = Color.fromRgb8(0, 255, 0)  # light green
+    weak = Color.fromRgb8(238, 118, 0)  # dark orange
+    none = Color.fromRgb8(128, 0, 0)  # dark red
+
+    @staticmethod
+    def __printColorHtml(fh, desc, color):
+        print('<li><p style="color:{}">{}</p>'.format(color.toHtmlColor(), desc), file=fh)
+
+    @staticmethod
+    def printHtml(fh=sys.stdout):
+        "for inclusion in documentation"
+        SupportTrackColors.__printColorHtml(fh, "strong support known intron", SupportTrackColors.strongKnown)
+        SupportTrackColors.__printColorHtml(fh, "strong support novel intron", SupportTrackColors.strongNovel)
+        SupportTrackColors.__printColorHtml(fh, "medium support known intron", SupportTrackColors.mediumKnown)
+        SupportTrackColors.__printColorHtml(fh, "medium support novel intron", SupportTrackColors.mediumNovel)
+        SupportTrackColors.__printColorHtml(fh, "weak support known intron", SupportTrackColors.weak)
+        SupportTrackColors.__printColorHtml(fh, "no support known intron", SupportTrackColors.none)
+
+    @staticmethod
+    def supportLevelColor(isNovelDb, level):
+        if level == IntronSupportLevel.STRONG:
+            if isNovelDb:
+                return SupportTrackColors.strongNovel
+            else:
+                return SupportTrackColors.strongKnown
+        elif level == IntronSupportLevel.MEDIUM:
+            if isNovelDb:
+                return SupportTrackColors.mediumNovel
+            else:
+                return SupportTrackColors.mediumKnown
+        elif level == IntronSupportLevel.WEAK:
+            return SupportTrackColors.weak
+        elif level == IntronSupportLevel.NONE:
+            return SupportTrackColors.none
+
+
+class TransEvid(object):
+    def __init__(self, geneId, transcriptId, bioType):
+        self.geneId = geneId
+        self.transcriptId = transcriptId
+        self.bioType = bioType
+        self.method = None
+        self.tsl = None
+        self.introns = []
+        self.intronLevels = []
+
+    def addIntron(self, intron):
+        self.introns.append(intron)
+        self.intronLevels.append(intronEvidSupportLevel(intron.numUniqueMapReads))
+
+    @property
+    def chrom(self):
+        return self.introns[0].chrom
+
+    @property
+    def strand(self):
+        return self.introns[0].strand
+
+    def countLevels(self):
+        levelCnts = len(IntronSupportLevel) * [0]
+        for intronLevel in self.intronLevels:
+            levelCnts[intronLevel.value] += 1
+        return levelCnts
+
+    def fullSupportLevel(self):
+        "finds lowest level any intron, which is the full transcript support level"
+        levelCnts = self.countLevels()
+        for level in IntronSupportLevel:
+            if levelCnts[level.value] > 0:
+                return level
+
+    def medianSupportLevel(self):
+        "finds lowest level any intron, which is the full transcript support level"
+        return IntronSupportLevel(int(median([il.value for il in self.intronLevels])))
+
+
+class GencodeIntronEvid(object):
+    "data linked to GENCODE transcripts"
+
+    def __init__(self):
+        self.chroms = set()
+        self.byTransIds = {}
+
+    def __obtainTransInfo(self, rec):
+        trans = self.byTransIds.get(rec.transcriptId)
+        if trans is None:
+            trans = self.byTransIds[rec.transcriptId] = TransEvid(rec.geneId, rec.transcriptId, rec.transcriptType)
+        return trans
+
+    def __loadRec(self, rec):
+        self.chroms.add(rec.chrom)
+        self.__obtainTransInfo(rec).addIntron(rec)
+
+    def loadSupport(self, chrom=None):
+        for rec in intronSupportReader(False, chrom):
+            self.__loadRec(rec)
+
+    def loadSupportDb(self, intronEvidDb, chrom=None):
+        conn = sqliteConnect(intronEvidDb, readonly=True)
+        self.loadSupport(chrom)
+        sqliteClose(conn)
+
+    def loadGencodeSource(self, gencodeDbConn):
+        dbTable = GencodeTranscriptSourceDbTable(gencodeDbConn, gencodeDb.gencode_transcript_source_table)
+        for rec in dbTable.queryAll():
+            trans = self.byTransIds.get(rec.transcriptId)
+            if trans is not None:
+                trans.method = sourceToExtendedMethod(rec.source)
+
+    def loadGencodeSupportLevel(self, gencodeDbConn):
+        dbTable = GencodeTranscriptionSupportLevelDbTable(gencodeDbConn, gencodeDb.gencode_transcription_support_level_table)
+        for rec in dbTable.queryAll():
+            trans = self.byTransIds.get(rec.transcriptId)
+            if trans is not None:
+                trans.tsl = TrascriptionSupportLevel(rec.level)
+
+    def loadGencodeDb(self, gencodeDb):
+        gencodeDbConn = sqlite3.connect(gencodeDb)
+        self.loadGencodeSource(gencodeDbConn)
+        self.loadGencodeSupportLevel(gencodeDbConn)
+        gencodeDbConn.close()

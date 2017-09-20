@@ -5,10 +5,9 @@ import icedbProgSetup  # noqa: F401
 import sys
 import argparse
 from pycbio.sys import fileOps, loggingOps
-from pycbio.sys.color import Color
 from gencode_icedb.rsl.rslModel import sqliteConnect, sqliteClose
 from gencode_icedb.rsl.gencodeIntronEvid import IntronSupportLevel, intronEvidSupportLevel
-from gencode_icedb.rsl.supportAnalysis import intronSupportReader, intronSupportAlreadyProcessed
+from gencode_icedb.rsl.supportAnalysis import intronSupportReader, intronSupportAlreadyProcessed, SupportTrackColors
 
 
 def parseArgs():
@@ -36,51 +35,11 @@ def parseArgs():
     return opts
 
 
-class Colors(object):
-    "color codes"
-    strongNovel = Color.fromRgb8(0, 0, 128)  # dark blue
-    strongKnown = Color.fromRgb8(0, 128, 0)  # dark green
-    mediumNovel = Color.fromRgb8(0, 0, 255)  # light blue
-    mediumKnown = Color.fromRgb8(0, 255, 0)  # light green
-    weak = Color.fromRgb8(238, 118, 0)  # dark orange
-    none = Color.fromRgb8(128, 0, 0)  # dark red
-
-    @staticmethod
-    def __printColorHtml(fh, desc, color):
-        print('<li><p style="color:{}">{}</p>'.format(color.toHtmlColor(), desc), file=fh)
-
-    @staticmethod
-    def printHtml(fh=sys.stdout):
-        "for inclusion in documentation"
-        Colors.__printColorHtml(fh, "strong support known intron", Colors.strongKnown)
-        Colors.__printColorHtml(fh, "strong support novel intron", Colors.strongNovel)
-        Colors.__printColorHtml(fh, "medium support known intron", Colors.mediumKnown)
-        Colors.__printColorHtml(fh, "medium support novel intron", Colors.mediumNovel)
-        Colors.__printColorHtml(fh, "weak support known intron", Colors.weak)
-        Colors.__printColorHtml(fh, "no support known intron", Colors.none)
-
-
-class GencodeIntronBedMaker(object):
+class BedMaker(object):
     def __init__(self, dataType, levels):
         self.isNovelDb = (dataType == "novel")
         self.reported = set()   # don't output dups due to multiple transcripts
         self.levels = levels
-
-    def __evidColor(self, evid, level):
-        if level == IntronSupportLevel.STRONG:
-            if self.isNovelDb:
-                return Colors.strongNovel
-            else:
-                return Colors.strongKnown
-        elif level == IntronSupportLevel.MEDIUM:
-            if self.isNovelDb:
-                return Colors.mediumNovel
-            else:
-                return Colors.mediumKnown
-        elif level == IntronSupportLevel.WEAK:
-            return Colors.weak
-        elif level == IntronSupportLevel.NONE:
-            return Colors.none
 
     @staticmethod
     def __evidStrand(evid):
@@ -110,7 +69,7 @@ class GencodeIntronBedMaker(object):
             fileOps.prRowv(bedFh, supp.chrom, supp.intronStart, supp.intronEnd,
                            self.__evidName(supp), 0, self.__evidStrand(supp),
                            supp.intronStart, supp.intronEnd,
-                           self.__evidColor(supp, level).toRgb8Str())
+                           SupportTrackColors.supportLevelColor(self.isNovelDb, level).toRgb8Str())
 
     def writeBed(self, bedFh):
         for rec in intronSupportReader(self.isNovelDb):
@@ -119,12 +78,12 @@ class GencodeIntronBedMaker(object):
 
 def rslIntronSuppBed(opts):
     if opts.htmlColors:
-        Colors.printHtml()
+        SupportTrackColors.printHtml()
         sys.exit(0)
-    intronBedMaker = GencodeIntronBedMaker(opts.dataType, opts.level)
+    bedMaker = BedMaker(opts.dataType, opts.level)
     conn = sqliteConnect(opts.intronEvidDb, readonly=True)
     with open(opts.bedOut, "w") as bedFh:
-        intronBedMaker.writeBed(bedFh)
+        bedMaker.writeBed(bedFh)
     sqliteClose(conn)
 
 
