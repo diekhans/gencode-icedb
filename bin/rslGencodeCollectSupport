@@ -16,6 +16,7 @@ from gencode_icedb.rsl.rslModel import sqliteConnect, sqliteClose, SjSupportRead
 from gencode_icedb.rsl.intronSupportCounter import IntronSupportCounter
 
 # FIXME: both support and novel could be collected in one pass.
+# is this true? do we really needs jobs to group by transcript
 
 def parseArgs():
     desc = """Collect splice site evidence for a subset of GENCODE annotations."""

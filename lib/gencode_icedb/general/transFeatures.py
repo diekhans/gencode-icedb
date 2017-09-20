@@ -296,9 +296,10 @@ class TranscriptFeatures(TransFeature):
         for feat in self.features:
             if isinstance(feat, ExonFeature):
                 blocks.append(Bed.Block(feat.chromStart, feat.chromEnd))
-
+        cdsStart = self.cdsChromStart if self.cdsChromStart is not None else self.chromEnd
+        cdsEnd = self.cdsChromEnd if self.cdsChromEnd is not None else self.chromEnd
         return Bed(self.chrom, self.chromStart, self.chromEnd,
-                   self.rnaName, 0, self.rnaStrand, self.cdsChromStart, self.cdsChromEnd,
+                   self.rnaName, 0, self.rnaStrand, cdsStart, cdsEnd,
                    itemRgb, blocks)
 
     @property

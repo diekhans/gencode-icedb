@@ -562,6 +562,15 @@ class AnnotationTests(FeatureTestBase):
             trans = factory.fromGenePred(gp)
             self.assertEqual(trans.rnaName, names[i])
 
+    def testAnnotToBed(self):
+        """test for conversion to BED"""
+        # had a bug non-code genes had only basic columns because thickStart/thickEnd were None
+        factory = AnnotationGenePredFactory()
+        for gp in GenePredReader(self.getInputFile("set1.gencodeCompV19.gp")):
+            trans = factory.fromGenePred(gp)
+            bed = trans.toBed("100,0,0")
+            self.assertEqual(len(bed.getRow()), 12)
+        
 
 def suite():
     ts = unittest.TestSuite()
