@@ -26,6 +26,7 @@ rslIntronSuppBed = ${binDir}/rslIntronSuppBed
 rslIntronSuppStats = ${binDir}/rslIntronSuppStats
 rslIntronEvidStats = ${binDir}/rslIntronEvidStats
 rslTransSuppBed = ${binDir}/rslTransSuppBed
+rslGencodeCollectSaturation = ${binDir}/rslGencodeCollectSaturation
 
 genomeSeqsHg38 = /hive/data/genomes/hg38/hg38.2bit
 
@@ -48,6 +49,7 @@ test:   dataConvertTests \
 	intronSuppBedTests \
 	intronStatsTests \
 	transSuppBedTests \
+	saturationTests \
 	plotTests
 
 ##
@@ -258,12 +260,12 @@ intronSuppBedTests: intronGencodeSuppBedTest \
 intronGencodeSuppBedTest: mkdirs
 	${buildGencodeSuppDb}
 	${rslIntronSuppBed} support output/$@.supp.db output/$@.bed
-	diff expected/$@.bed output/$@.bed
+	${diff} expected/$@.bed output/$@.bed
 
 intronGencodeNovelBedTest: mkdirs
 	${buildGencodeNovelDb}
 	${rslIntronSuppBed} novel output/$@.novel.db output/$@.bed
-	diff expected/$@.bed output/$@.bed
+	${diff} expected/$@.bed output/$@.bed
 
 ##
 # rslIntronSuppStats
@@ -298,7 +300,7 @@ transSuppBedAllTest: mkdirs
 	$(call gencodeTestDbSetup,output/$@.gencode.db)
 	${buildGencodeSuppDb}
 	${rslTransSuppBed}  output/$@.gencode.db output/$@.supp.db output/$@.bed
-	diff expected/$@.bed output/$@.bed
+	${diff} expected/$@.bed output/$@.bed
 
 ##
 # tests of plotting programs, results not check automatically
@@ -313,6 +315,16 @@ gencodeSuppCntPlotTest: mkdirs
 novelSuppCntPlotTest: mkdirs
 	${buildGencodeNovelDb}
 	${rslIntronSuppPlot} novel output/$@.novel.db output/$@.pdf
+
+##
+# rslGencodeCollectSaturation
+##
+saturationTests: saturationTest
+
+saturationTest: mkdirs
+	${gencodeSupportTestSetup}
+	${rslGencodeCollectSaturation} --testMode output/$@/gencode.db output/$@/rnaseq.db chr22:10000000-20000000 output/$@.saturation.tsv
+	${diff} expected/$@.saturation.tsv output/$@.saturation.tsv
 
 mkdirs:
 	@mkdir -p output

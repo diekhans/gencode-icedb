@@ -101,6 +101,17 @@ class SjSupport(namedtuple("SjSupport", ("chrom", "chromStart", "chromEnd",
                                          "maxOverhang", "mapping_symid"))):
     """SjSupport record created from STAR sjout files.  These are loaded from
     a tabix indexed tab file."""
+    __slots__ = ()
+
+    @property
+    def start(self):
+        # FIXME make up our mind on names
+        return self.chromStart
+
+    def end(self):
+        # FIXME make up our mind on names
+        return self.end
+
     @staticmethod
     def factory(row):
         return SjSupport(row[0], int(row[1]), int(row[2]),

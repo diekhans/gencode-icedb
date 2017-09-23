@@ -150,6 +150,7 @@ class AnnotationFeatures(list):
     def addTranscript(self, annotTrans):
         self.transcriptsByName[annotTrans.name].append(annotTrans)
         self.transcriptsByRange.add(annotTrans.chrom, annotTrans.chromStart, annotTrans.chromEnd, annotTrans, annotTrans.rnaStrand)
+        self.append(annotTrans)
 
     @staticmethod
     def dbFactory(conn, table, chrom, chromStart, chromEnd, genomeReader):

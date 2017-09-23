@@ -316,7 +316,7 @@ class AnnotationTests(FeatureTestBase):
 
         self.assertEqual(str(trans.toBed("0,1,2")),
                          "chr22\t18632665\t18660164\tENST00000215794.7\t0\t+\t18640430\t18659584\t0,1,2\t11\t324,263,97,146,80,147,96,168,132,50,626,\t0,7659,10273,11891,17356,17991,19945,20854,23251,23894,26873,")
-        
+
     def testENST00000334029(self):
         # - strand
         trans = self.__gpToEvidTranscript(self.__getSet1Gp("ENST00000334029.2"))
@@ -570,7 +570,7 @@ class AnnotationTests(FeatureTestBase):
             trans = factory.fromGenePred(gp)
             bed = trans.toBed("100,0,0")
             self.assertEqual(len(bed.getRow()), 12)
-        
+
 
 def suite():
     ts = unittest.TestSuite()

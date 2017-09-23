@@ -60,7 +60,6 @@ class GencodeIntronEvidSet(list):
         self.novel = []
         # this mixes transcript loci by PAR, sorted out with get
         self.byTranscriptId = defaultdict(list)
-
         self.__loadEvid(evidTsv)
 
     def __loadEvid(self, evidTsv):

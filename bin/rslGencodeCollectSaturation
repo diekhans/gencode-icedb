@@ -1,0 +1,193 @@
+#!/usr/bin/env python
+
+from __future__ import print_function
+import icedbProgSetup  # noqa: F401
+import argparse
+import sqlite3
+import random
+from collections import defaultdict
+from pycbio.sys import fileOps
+from pycbio.hgbrowser.coords import Coords
+from gencode_icedb.general import gencodeDb
+from gencode_icedb.general.genome import GenomeReaderFactory
+from gencode_icedb.general.transFeatures import IntronFeature
+from gencode_icedb.general.annotFeatures import AnnotationFeatures
+from gencode_icedb.rsl.rslModel import sqliteConnect, SjSupportReader
+from gencode_icedb.rsl.intronSupportCounter import IntronCoords
+from gencode_icedb.rsl.gencodeIntronEvid import IntronSupportLevel, intronEvidSupportLevel
+
+
+def parseArgs():
+    desc = """Collect saturation evidence fir annotated and novel splice sites
+    for a chromosome range (window) that are not in GENCODE annotations.
+    If an putative intron is not completely in the window into the chromosome,
+    it will only be processed if window contains the first bases of the
+    intron.  This allows generating contiguous, non-overlapping regions.
+
+    Saturation is compute on a experiment by experiment level.
+    """
+    parser = argparse.ArgumentParser(description=desc)
+    GenomeReaderFactory.addCmdOptions(parser)
+    parser.add_argument('--testMode', action="store_true", default=False,
+                        help="""don't randomize experiments for testing""")
+    parser.add_argument('gencodeDb',
+                        help="""GENCODE sqlite3 database from gencodeDbLoad""")
+    parser.add_argument('sjDb',
+                        help="""splice junction evidence sqlite3 database, a correspond *.sjsup.gz and tabix index file must exist""")
+    parser.add_argument('chromRange',
+                        help="""zero-based chromosome range, in the form chr:start-end.""")
+    parser.add_argument('resultsTsv',
+                        help="""TSV file for results""")
+    return parser.parse_args()
+
+
+# FIXME: need some common code for attributes
+
+def getPseudoTransIds(gencodeConn):
+    pseudoTransIds = set()
+    cur = gencodeConn.cursor()
+    try:
+        sql = """select transcriptId from {table} where (transcriptType like "%pseudogene%") and (transcriptType != "polymorphic_pseudogene")""".format(table=gencodeDb.gencode_attrs_table)
+        cur.execute(sql)
+        for row in cur:
+            pseudoTransIds.add(row[0])
+        return pseudoTransIds
+    finally:
+        cur.close()
+
+
+def inWindow(intron, window):
+    return (intron.chromStart >= window.start) and (intron.chromStart < window.end)
+
+def useSjSupport(sjSupp, window):
+    return (sjSupp.numUniqueMapReads > 0) and inWindow(sjSupp, window)
+
+class IntronCount(object):
+    """counts for a specified intron"""
+    def __init__(self, intronCoords, isNovel):
+        self.intronCoords = intronCoords
+        self.isNovel = isNovel
+        self.numExprs = self.numUniqueMapReads = self.numMultiMapReads = 0
+
+
+class IntronCounter(dict):
+    """indexed by IntronCoords, all introns are defined upfront, both novel and annotated"""
+    def __init__(self, window):
+        self.window = window
+
+    def __defineIntron(self, intronCoords, isNovel):
+        if intronCoords not in self:
+            self[intronCoords] = IntronCount(intronCoords, isNovel)
+
+    def __defineTransIntrons(self, trans):
+        for feat in trans.features:
+            if isinstance(feat, IntronFeature) and inWindow(feat, self.window):
+                self.__defineIntron(IntronCoords.fromIntronFeat(feat), isNovel=False)
+
+    def defineGencodeIntrons(self, gencodeConn):
+        """must be called before defining rna-seq introns"""
+        pseudoTransIds = getPseudoTransIds(gencodeConn)
+        for trans in AnnotationFeatures.dbFactory(gencodeConn, gencodeDb.gencode_ann_table,
+                                                  self.window.chrom, self.window.start, self.window.end, None):
+            if trans.rnaName not in pseudoTransIds:
+                self.__defineTransIntrons(trans)
+
+    def defineRnaSeqIntrons(self, sjSupps):
+        for sjSupp in sjSupps:
+            if useSjSupport(sjSupp, self.window):
+                self.__defineIntron(IntronCoords.fromIntronSupp(sjSupp), isNovel=True)
+
+    def countIntronSupport(self, sjSupp):
+        intron = self[IntronCoords.fromIntronSupp(sjSupp)]
+        intron.numUniqueMapReads += sjSupp.numUniqueMapReads
+        intron.numMultiMapReads += sjSupp.numMultiMapReads
+
+    def countIntronSupports(self, sjSupps):
+        for sjSupp in sjSupps:
+            if useSjSupport(sjSupp, self.window):
+                self.countIntronSupport(sjSupp)
+
+
+class SupportLevelCounts(object):
+    def __init__(self, exprCnt, intronCounter):
+        self.exprCnt = exprCnt
+        # indexed by IntronSupportLevel
+        self.annotCnts = defaultdict(int)
+        self.novelCnts = defaultdict(int)
+        self.__count(intronCounter)
+
+    def __count(self, intronCounter):
+        for cnts in intronCounter.values():
+            level = intronEvidSupportLevel(cnts.numUniqueMapReads)
+            if cnts.isNovel:
+                self.novelCnts[level] += 1
+            else:
+                self.annotCnts[level] += 1
+
+    revLevels = tuple(reversed(IntronSupportLevel))
+    header = tuple(["numExprs", "annotCnt", "novelCnt"]
+                   + ["{}_annot_cnt".format(l) for l in revLevels]
+                   + ["{}_novel_cnt".format(l) for l in revLevels])
+
+    @staticmethod
+    def writeHeader(fh):
+        fileOps.prRow(fh, SupportLevelCounts.header)
+
+    def write(self, fh):
+        fileOps.prRow(fh, [self.exprCnt, sum(self.annotCnts.values()), sum(self.novelCnts.values())]
+                       + [self.annotCnts[l] for l in self.revLevels]
+                       + [self.novelCnts[l] for l in self.revLevels])
+
+
+class CollectSaturation(object):
+    def __init__(self, window, gencodeConn, sjConn, testMode):
+        self.testMode = testMode
+        self.intronCounter = IntronCounter(window)
+        self.sjSuppByExpr = defaultdict(list)
+        sjSupps = self.__loadIntrons(sjConn, window)
+        self.intronCounter.defineGencodeIntrons(gencodeConn)
+        self.intronCounter.defineRnaSeqIntrons(sjSupps)
+
+    def __loadIntrons(self, sjConn, window):
+        sjSupps = []
+        for sjSupp in SjSupportReader(sjDbConn=sjConn).fetch(window.chrom, window.start, window.end):
+            self.sjSuppByExpr[sjSupp.mapping_symid].append(sjSupp)
+            sjSupps.append(sjSupp)
+        return sjSupps
+
+    def __countExpr(self, fh, exprCnt, sjSupps):
+        self.intronCounter.countIntronSupports(sjSupps)
+        counts = SupportLevelCounts(exprCnt, self.intronCounter)
+        counts.write(fh)
+
+    def countSupport(self, fh):
+        SupportLevelCounts.writeHeader(fh)
+        exprCnt = 0
+        exprs = list(self.sjSuppByExpr.keys())
+        if not self.testMode:
+            random.shuffle(exprs)
+        for expr in exprs:
+            exprCnt += 1
+            self.__countExpr(fh, exprCnt, self.sjSuppByExpr[expr])
+
+
+def rslGencodeCollectSaturation(opts):
+    "entry point"
+    # FIXME: genomeCoords vs window name??
+    genomeCoords = Coords.parse(opts.chromRange)
+    gencodeConn = sqlite3.connect(opts.gencodeDb)  # FIXME: switch to APSW read-only
+    sjConn = sqliteConnect(opts.sjDb, readonly=True)
+    saturationCollector = CollectSaturation(genomeCoords, gencodeConn, sjConn, opts.testMode)
+
+    fileOps.ensureFileDir(opts.resultsTsv)
+    resultsTmpTsv = fileOps.atomicTmpFile(opts.resultsTsv)
+    with open(resultsTmpTsv, "w") as fh:
+        saturationCollector.countSupport(fh)
+
+    fileOps.atomicInstall(resultsTmpTsv, opts.resultsTsv)
+    gencodeConn.close()
+    if not sjConn.is_closed():  # FIXME: not sure why it is in the is_closed state, maybe lazy open?
+        sjConn.close()
+
+
+rslGencodeCollectSaturation(parseArgs())

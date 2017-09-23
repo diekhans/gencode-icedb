@@ -21,7 +21,7 @@ def isPseudo(suppRec):
 
 
 def _intronSupportReaderFilter(isNovelDb, rec):
-    """for novel, don't keep ones generated from GENCODE , for genes, don't
+    """for novel, don't keep ones generated from GENCODE, for genes, don't
     use pseudo"""
     if isNovelDb:
         return rec.numExprs > 0
@@ -54,10 +54,8 @@ def intronSupportAlreadyProcessed(rec, processed):
 
 class SupportTrackColors(object):
     "color codes"
-    strongNovel = Color.fromRgb8(0, 0, 128)  # dark blue
-    strongKnown = Color.fromRgb8(0, 128, 0)  # dark green
-    mediumNovel = Color.fromRgb8(0, 0, 255)  # light blue
-    mediumKnown = Color.fromRgb8(0, 255, 0)  # light green
+    strong = Color.fromRgb8(0, 128, 0)  # dark green
+    medium = Color.fromRgb8(0, 0, 255)  # light blue
     weak = Color.fromRgb8(238, 118, 0)  # dark orange
     none = Color.fromRgb8(128, 0, 0)  # dark red
 
@@ -68,25 +66,17 @@ class SupportTrackColors(object):
     @staticmethod
     def printHtml(fh=sys.stdout):
         "for inclusion in documentation"
-        SupportTrackColors.__printColorHtml(fh, "strong support known intron", SupportTrackColors.strongKnown)
-        SupportTrackColors.__printColorHtml(fh, "strong support novel intron", SupportTrackColors.strongNovel)
-        SupportTrackColors.__printColorHtml(fh, "medium support known intron", SupportTrackColors.mediumKnown)
-        SupportTrackColors.__printColorHtml(fh, "medium support novel intron", SupportTrackColors.mediumNovel)
-        SupportTrackColors.__printColorHtml(fh, "weak support known intron", SupportTrackColors.weak)
-        SupportTrackColors.__printColorHtml(fh, "no support known intron", SupportTrackColors.none)
+        SupportTrackColors.__printColorHtml(fh, "strong support", SupportTrackColors.strong)
+        SupportTrackColors.__printColorHtml(fh, "medium support", SupportTrackColors.medium)
+        SupportTrackColors.__printColorHtml(fh, "weak support", SupportTrackColors.weak)
+        SupportTrackColors.__printColorHtml(fh, "no support", SupportTrackColors.none)
 
     @staticmethod
     def supportLevelColor(isNovelDb, level):
         if level == IntronSupportLevel.STRONG:
-            if isNovelDb:
-                return SupportTrackColors.strongNovel
-            else:
-                return SupportTrackColors.strongKnown
+            return SupportTrackColors.strong
         elif level == IntronSupportLevel.MEDIUM:
-            if isNovelDb:
-                return SupportTrackColors.mediumNovel
-            else:
-                return SupportTrackColors.mediumKnown
+            return SupportTrackColors.medium
         elif level == IntronSupportLevel.WEAK:
             return SupportTrackColors.weak
         elif level == IntronSupportLevel.NONE:

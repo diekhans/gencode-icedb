@@ -4,6 +4,8 @@ Code for counting STAR SJ support.
 from collections import defaultdict, namedtuple
 from gencode_icedb.general.spliceJuncs import SpliceJuncs, spliceJuncsGetSeqs
 
+# FIXME: make naming of supp vs sjsupp consistent
+
 
 class IntronCoords(namedtuple("Intron", ("chrom", "chromStart", "chromEnd", "strand", "intronMotif"))):
     """"Coordinates of an intron that can be used as an hash keey"""
@@ -24,11 +26,11 @@ class IntronCoords(namedtuple("Intron", ("chrom", "chromStart", "chromEnd", "str
     @staticmethod
     def fromIntronFeat(intronFeat):
         transFeat = intronFeat.transcript
-        return IntronCoords(transFeat.chrom, intronFeat.chromStart, intronFeat.chromEnd, transFeat.rnaStrand)
+        return IntronCoords(transFeat.chrom, intronFeat.chromStart, intronFeat.chromEnd, transFeat.rnaStrand, intronFeat.sjBases)
 
     @staticmethod
     def fromIntronSupp(supp):
-        return IntronCoords(supp.chrom, supp.intronStart, supp.intronEnd, supp.strand)
+        return IntronCoords(supp.chrom, supp.chromStart, supp.chromEnd, supp.strand, supp.intronMotif)
 
 
 class IntronSupportCounts(object):

@@ -240,6 +240,14 @@ class IntronFeature(TransFeature):
             sjDesc = "{}...{} ({})".format(self.donorSeq, self.acceptorSeq, self.spliceJuncs)
         return "intron {} sjBases={}".format(self.coordsStr(), sjDesc)
 
+    def sjBases(self):
+        """Get splice junction patterns"""
+        if self.donorSeq is None:
+            return "??/??"
+        else:
+            sjDesc = "{}/{}".format(self.donorSeq, self.acceptorSeq)
+        
+    
     def toStrTree(self):
         """recursively convert to a recursive tuple of strings representing
         the feature tree"""

@@ -18,11 +18,11 @@ from gencode_icedb.rsl.intronSupportCounter import IntronSupportCounter
 
 def parseArgs():
     desc = """Collect novel splice sites evidence for a chromosome range
-    (wondow) that are not in GENCODE annotations.  If intron is within an
+    (window) that are not in GENCODE annotations.  If intron is within an
     existing gene, report that geneId.  If an putative intron is not
     completely in the window into the chromosome, it will only be processed if
     window contains the first bases of the intron.  This allows generating
-    contiguous, non-overlapping
+    contiguous, non-overlapping regions.
     """
     parser = argparse.ArgumentParser(description=desc)
     GenomeReaderFactory.addCmdOptions(parser)

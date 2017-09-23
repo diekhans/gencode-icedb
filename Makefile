@@ -14,7 +14,8 @@ progs = icedbProgSetup.py \
 	rslMkStarSjOutSplits \
 	rslGencodeCollectSupport rslGencodeCollectSupportMkJobs rslGencodeCollectSupportFinishJobs \
 	rslGencodeCollectNovel rslGencodeCollectNovelMkJobs rslGencodeCollectNovelFinishJobs \
-	rslIntronSuppPlot rslIntronSuppBed rslTransSuppBed rslIntronEvidStats rslIntronSuppStats
+	rslIntronSuppPlot rslIntronSuppBed rslTransSuppBed rslIntronEvidStats rslIntronSuppStats \
+	rslGencodeCollectSaturation
 
 # not done:  rslRnaSeqIntronEvidStats
 

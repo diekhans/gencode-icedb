@@ -4,6 +4,7 @@ from __future__ import print_function
 import icedbProgSetup  # noqa: F401
 import sys
 import argparse
+import pipettor
 from pycbio.sys import fileOps, loggingOps
 from gencode_icedb.rsl.rslModel import sqliteConnect, sqliteClose
 from gencode_icedb.rsl.gencodeIntronEvid import IntronSupportLevel, intronEvidSupportLevel
@@ -82,7 +83,8 @@ def rslIntronSuppBed(opts):
         sys.exit(0)
     bedMaker = BedMaker(opts.dataType, opts.level)
     conn = sqliteConnect(opts.intronEvidDb, readonly=True)
-    with open(opts.bedOut, "w") as bedFh:
+    # sort for use in
+    with pipettor.Popen(["sort", "-k1,1", "-k2,2n", "-k3,3n"], "w", stdout=opts.bedOut) as bedFh:
         bedMaker.writeBed(bedFh)
     sqliteClose(conn)
 
