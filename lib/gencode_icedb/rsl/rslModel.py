@@ -104,9 +104,9 @@ class SjSupport(namedtuple("SjSupport", ("chrom", "chromStart", "chromEnd",
     __slots__ = ()
 
     def __str__(self):
-        return "{}:{}-{} ({}) {}: ann={} uniq={} multi={} over={} expr={}".format(self.chrom, self.chromStart, self.chromEnd, self.strand,
-                                                                                  self.intronMotif, self.annotated, self.numUniqueMapReads,
-                                                                                  self.numMultiMapReads, self.maxOverhang, self.mapping_symid)
+        return "{}:{}-{} ({}) {}: annot={} uniq={} multi={} over={} expr={}".format(self.chrom, self.chromStart, self.chromEnd, self.strand,
+                                                                                    self.intronMotif, self.annotated, self.numUniqueMapReads,
+                                                                                    self.numMultiMapReads, self.maxOverhang, self.mapping_symid)
 
     @property
     def start(self):
@@ -120,7 +120,7 @@ class SjSupport(namedtuple("SjSupport", ("chrom", "chromStart", "chromEnd",
     @staticmethod
     def factory(row):
         return SjSupport(row[0], int(row[1]), int(row[2]),
-                         row[3], row[4], bool(row[5]),
+                         row[3], row[4], bool(int(row[5])),
                          int(row[6]), int(row[7]), int(row[8]), row[9])
 
 

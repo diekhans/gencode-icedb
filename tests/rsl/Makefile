@@ -156,14 +156,18 @@ gencodeSupportTests: supportCollectAllTest \
 # $(call gencodeTestDbSetup,output/$@/gencode.db)
 gencodeTestDbSetup = rm -f $(1) && mkdir -p $(dir $(1)) && ${gencodeDbLoad} $(1) input/set1.hs.attrs.v26.tsv input/set1.hs.trans-source.v26.tsv input/set1.hs.trans-support-level.v26.tsv input/set1.hs.comp.v26.gp input/set1.hs.pseudo.v26.gp
 
-define gencodeSupportTestSetup
-$(call gencodeTestDbSetup,output/$@/gencode.db)
+define rnaSeqDbSetup
 rm -f output/$@/rnaseq.*
 mkdir -p output/$@
 ${rslSraRunInfoDbLoad} output/$@/rnaseq.db input/set1.hs.run-info.tsv
 ${rslMappingMetadataDbLoad} output/$@/rnaseq.db input/set1.hs.mapping-params.tsv input/set1.hs.stardir.tsv
 bgzip -c expected/mkStarMergeTest.merged.sjsup > output/$@/rnaseq.sjsup.gz
 tabix -0 -p bed output/$@/rnaseq.sjsup.gz
+endef
+
+define gencodeSupportTestSetup
+$(call gencodeTestDbSetup,output/$@/gencode.db)
+${rnaSeqDbSetup}
 endef
 
 # uncomment to test mock sequences
@@ -326,8 +330,8 @@ saturationTests: saturationCollectTest \
 		saturationFinishTest
 
 saturationCollectTest: mkdirs
-	${gencodeSupportTestSetup}
-	${rslGencodeCollectSaturation} --testMode ${genomeSeqsSpecs} output/$@/gencode.db output/$@/rnaseq.db output/$@.saturation.tsv chr22:10000000-20000000
+	${rnaSeqDbSetup}
+	${rslGencodeCollectSaturation} --testMode output/$@/rnaseq.db output/$@.saturation.tsv chr1:2100000-8000000
 	${diff} expected/$@.saturation.tsv output/$@.saturation.tsv
 
 # test input to combines is just two copies of above output

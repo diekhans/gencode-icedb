@@ -7,7 +7,6 @@ from gencode_icedb.general.spliceJuncs import SpliceJuncs, spliceJuncsGetSeqs
 # FIXME: make naming of supp vs sjsupp consistent
 # FIXME including intronMotif in coords means they are different if one source
 #       has them and one doesn't.  Bad if a hash key.
-   
 
 
 class IntronCoords(namedtuple("Intron", ("chrom", "chromStart", "chromEnd", "strand", "intronMotif"))):
@@ -29,7 +28,7 @@ class IntronCoords(namedtuple("Intron", ("chrom", "chromStart", "chromEnd", "str
 
     def __str__(self):
         return "{}:{}-{} ({}) {}".format(self.chrom, self.chromStart, self.chromEnd, self.strand, self.intronMotif)
-    
+
     @staticmethod
     def fromIntronFeat(intronFeat):
         transFeat = intronFeat.transcript

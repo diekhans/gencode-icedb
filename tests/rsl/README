@@ -28,7 +28,7 @@ wgEncodeCaltechRnaSeqMcf7R2x75Il200AlignsRep2V2.bam
   
 ---
 - set1.hs.*:
-  From CZI human STAR mappings in range chr1:2000000-8000000
+  From CZI human STAR mappings for a select set of ranges
 
   - pseudogene ENST00000508065.7 was added because it matches a
     STAR SJ of an unknown motif in SRR1700176

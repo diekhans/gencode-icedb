@@ -3,15 +3,10 @@
 from __future__ import print_function
 import icedbProgSetup  # noqa: F401
 import argparse
-import sqlite3
 import random
 from collections import defaultdict
 from pycbio.sys import fileOps
 from pycbio.hgbrowser.coords import Coords
-from gencode_icedb.general import gencodeDb
-from gencode_icedb.general.genome import GenomeReaderFactory
-from gencode_icedb.general.transFeatures import IntronFeature
-from gencode_icedb.general.annotFeatures import AnnotationFeatures
 from gencode_icedb.rsl.rslModel import sqliteConnect, SjSupportReader
 from gencode_icedb.rsl.intronSupportCounter import IntronCoords
 from gencode_icedb.rsl.saturation import SaturationCounts
@@ -27,11 +22,8 @@ def parseArgs():
     Saturation is compute on a experiment by experiment level.
     """
     parser = argparse.ArgumentParser(description=desc)
-    GenomeReaderFactory.addCmdOptions(parser)
     parser.add_argument('--testMode', action="store_true", default=False,
                         help="""don't randomize experiments for testing""")
-    parser.add_argument('gencodeDb',
-                        help="""GENCODE sqlite3 database from gencodeDbLoad""")
     parser.add_argument('sjDb',
                         help="""splice junction evidence sqlite3 database, a correspond *.sjsup.gz and tabix index file must exist""")
     parser.add_argument('resultsTsv',
@@ -41,27 +33,12 @@ def parseArgs():
     return parser.parse_args()
 
 
-# FIXME: need some common code for attributes
-
-def getPseudoTransIds(gencodeConn):
-    pseudoTransIds = set()
-    cur = gencodeConn.cursor()
-    try:
-        sql = """select transcriptId from {table} where (transcriptType like "%pseudogene%") and (transcriptType != "polymorphic_pseudogene")""".format(table=gencodeDb.gencode_attrs_table)
-        cur.execute(sql)
-        for row in cur:
-            pseudoTransIds.add(row[0])
-        return pseudoTransIds
-    finally:
-        cur.close()
-
-
 def inWindow(intron, window):
     return (intron.chromStart >= window.start) and (intron.chromStart < window.end)
 
 
 def useSjSupport(sjSupp, window):
-    return (sjSupp.numUniqueMapReads > 0) and inWindow(sjSupp, window)
+    return (sjSupp.annotated or (sjSupp.numUniqueMapReads > 0)) and inWindow(sjSupp, window)
 
 
 class IntronCount(object):
@@ -74,58 +51,40 @@ class IntronCount(object):
     def __str__(self):
         return "{}: novel={} exprs={} uniq={} multi={}".format(self.intronCoords, self.isNovel, self.numExprs, self.numUniqueMapReads, self.numMultiMapReads)
 
+    def addSupport(self, sjSupp):
+        self.numUniqueMapReads += sjSupp.numUniqueMapReads
+        self.numMultiMapReads += sjSupp.numMultiMapReads
+
 
 class IntronCounter(dict):
     """indexed by IntronCoords, all introns are defined upfront, both novel and annotated"""
     def __init__(self, window):
         self.window = window
 
-    def __defineIntron(self, intronCoords, isNovel):
-        # don't overwrite, setting isNovel works this way
-        print("def", isNovel, intronCoords not in self, str(intronCoords))
+    def __defineIntron(self, sjSupp):
+        intronCoords = IntronCoords.fromIntronSupp(sjSupp)
         if intronCoords not in self:
-            self[intronCoords] = IntronCount(intronCoords, isNovel)
+            self[intronCoords] = IntronCount(intronCoords, not sjSupp.annotated)
 
-    def __defineTransIntrons(self, trans):
-        for feat in trans.features:
-            if isinstance(feat, IntronFeature) and inWindow(feat, self.window):
-                self.__defineIntron(IntronCoords.fromIntronFeat(feat), isNovel=False)
-
-    def defineGencodeIntrons(self, gencodeConn, genomeReader):
-        """must be called before defining rna-seq introns"""
-        pseudoTransIds = getPseudoTransIds(gencodeConn)
-        for trans in AnnotationFeatures.dbFactory(gencodeConn, gencodeDb.gencode_ann_table,
-                                                  self.window.chrom, self.window.start, self.window.end, genomeReader):
-            if trans.rnaName not in pseudoTransIds:
-                self.__defineTransIntrons(trans)
-
-    def defineRnaSeqIntrons(self, sjSupps):
-        """must be called after defining transcript introns"""
+    def defineIntrons(self, sjSupps):
         for sjSupp in sjSupps:
             if useSjSupport(sjSupp, self.window):
-                self.__defineIntron(IntronCoords.fromIntronSupp(sjSupp), isNovel=True)
-
-    def countIntronSupport(self, sjSupp):
-        intron = self[IntronCoords.fromIntronSupp(sjSupp)]
-        intron.numUniqueMapReads += sjSupp.numUniqueMapReads
-        intron.numMultiMapReads += sjSupp.numMultiMapReads
+                self.__defineIntron(sjSupp)
 
     def countIntronSupports(self, sjSupps):
         for sjSupp in sjSupps:
-            print("cnt", useSjSupport(sjSupp, self.window), sjSupp)
             if useSjSupport(sjSupp, self.window):
-                self.countIntronSupport(sjSupp)
+                self[IntronCoords.fromIntronSupp(sjSupp)].addSupport(sjSupp)
 
 
 class CollectSaturation(object):
-    def __init__(self, genomeReader, window, gencodeConn, sjConn, testMode):
-        self.genomeReader = genomeReader
+    def __init__(self, window, sjConn, testMode):
         self.testMode = testMode
         self.intronCounter = IntronCounter(window)
         self.sjSuppByExpr = defaultdict(list)
         sjSupps = self.__loadIntrons(sjConn, window)
-        self.intronCounter.defineGencodeIntrons(gencodeConn, genomeReader)
-        self.intronCounter.defineRnaSeqIntrons(sjSupps)
+        # defines all introns that will be analyzed
+        self.intronCounter.defineIntrons(sjSupps)
 
     def __loadIntrons(self, sjConn, window):
         sjSupps = []
@@ -134,16 +93,15 @@ class CollectSaturation(object):
             sjSupps.append(sjSupp)
         return sjSupps
 
-    def __countExpr(self, fh, exprCnt, sjSupps):
+    def __collectExpr(self, fh, exprCnt, sjSupps):
         self.intronCounter.countIntronSupports(sjSupps)
         saturationCounts = SaturationCounts(exprCnt)
         for sjcnts in self.intronCounter.values():
             saturationCounts.count(sjcnts.isNovel, sjcnts)
         saturationCounts.write(fh)
-        for ic in self.intronCounter.values():
-            print("ic", str(ic))
 
-    def countSupport(self, fh):
+    def collectByExpr(self, fh):
+        """add in support from each experiment and output"""
         SaturationCounts.writeHeader(fh)
         exprCnt = 0
         exprs = list(self.sjSuppByExpr.keys())
@@ -151,23 +109,21 @@ class CollectSaturation(object):
             random.shuffle(exprs)
         for expr in exprs:
             exprCnt += 1
-            self.__countExpr(fh, exprCnt, self.sjSuppByExpr[expr])
+            self.__collectExpr(fh, exprCnt, self.sjSuppByExpr[expr])
+
 
 def rslGencodeCollectSaturation(opts):
     "entry point"
-    genomeReader = GenomeReaderFactory.factoryFromCmdOptions(opts).obtain()
     genomeCoords = Coords.parse(opts.chromRange)
-    gencodeConn = sqlite3.connect(opts.gencodeDb)  # FIXME: switch to APSW read-only
     sjConn = sqliteConnect(opts.sjDb, readonly=True)
-    saturationCollector = CollectSaturation(genomeReader, genomeCoords, gencodeConn, sjConn, opts.testMode)
+    saturationCollector = CollectSaturation(genomeCoords, sjConn, opts.testMode)
 
     fileOps.ensureFileDir(opts.resultsTsv)
     resultsTmpTsv = fileOps.atomicTmpFile(opts.resultsTsv)
     with open(resultsTmpTsv, "w") as fh:
-        saturationCollector.countSupport(fh)
+        saturationCollector.collectByExpr(fh)
 
     fileOps.atomicInstall(resultsTmpTsv, opts.resultsTsv)
-    gencodeConn.close()
     if not sjConn.is_closed():  # FIXME: not sure why it is in the is_closed state, maybe lazy open?
         sjConn.close()
 
