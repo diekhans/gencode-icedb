@@ -1,4 +1,4 @@
-numExprs	annotCnt	novelCnt	STRONG_annot_cnt	MEDIUM_annot_cnt	WEAK_annot_cnt	NONE_annot_cnt	STRONG_novel_cnt	MEDIUM_novel_cnt	WEAK_novel_cnt	NONE_novel_cnt
-1	141	5	0	0	0	141	0	0	0	5
-2	141	5	0	0	0	141	0	0	1	4
-3	141	5	0	0	0	141	0	0	5	0
+numExprs	annotCnt	novelCnt	NONE_annot_cnt	WEAK_annot_cnt	MEDIUM_annot_cnt	STRONG_annot_cnt	NONE_novel_cnt	WEAK_novel_cnt	MEDIUM_novel_cnt	STRONG_novel_cnt
+1	141	5	141	0	0	0	5	0	0	0
+2	141	5	141	0	0	0	4	1	0	0
+3	141	5	141	0	0	0	0	5	0	0

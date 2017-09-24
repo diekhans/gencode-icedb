@@ -103,6 +103,11 @@ class SjSupport(namedtuple("SjSupport", ("chrom", "chromStart", "chromEnd",
     a tabix indexed tab file."""
     __slots__ = ()
 
+    def __str__(self):
+        return "{}:{}-{} ({}) {}: ann={} uniq={} multi={} over={} expr={}".format(self.chrom, self.chromStart, self.chromEnd, self.strand,
+                                                                                  self.intronMotif, self.annotated, self.numUniqueMapReads,
+                                                                                  self.numMultiMapReads, self.maxOverhang, self.mapping_symid)
+
     @property
     def start(self):
         # FIXME make up our mind on names
@@ -110,7 +115,7 @@ class SjSupport(namedtuple("SjSupport", ("chrom", "chromStart", "chromEnd",
 
     def end(self):
         # FIXME make up our mind on names
-        return self.end
+        return self.chromEnd
 
     @staticmethod
     def factory(row):

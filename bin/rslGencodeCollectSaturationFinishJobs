@@ -6,9 +6,7 @@ import os
 import argparse
 from pycbio.sys import fileOps
 from pycbio.tsv import TsvReader
-from gencode_icedb.rsl.rslModel import sqliteConnect, GencodeSupport
-
-bulk_size = 75   # size of each bulk insert
+from gencode_icedb.rsl.saturation import SaturationCounts
 
 
 def parseArgs():
@@ -16,39 +14,55 @@ def parseArgs():
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('workDir',
                         help="""directory contains results directory""")
-    parser.add_argument('resultsDb',
-                        help="""Sqlite database were results are stored."""
-                        """This does not append results, existing gencodesupport table is dropped.""")
+    parser.add_argument('resultsTsv',
+                        help="""combined TSV.""")
     return parser.parse_args()
 
-# FIXME put in common file? make objects
-header = tuple(["numExprs", "annotCnt", "novelCnt"]
-               + ["{}_annot_cnt".format(l) for l in revLevels]
-               + ["{}_novel_cnt".format(l) for l in revLevels])
-resultsTsvTypeMap = {h: int for h in header}
 
-class Gencode
-
-def loadResultsTsv(resultsTsv):
-    return [for row in TsvReader(resultsTsv, typeMap=resultsTsvTypeMap)]
+def loadWindowResults(resultsTsv):
+    return [row for row in TsvReader(resultsTsv, typeMap=SaturationCounts.tsvTypeMap)]
 
 
-def collectResults(resultsConn, expectedTsvs):
-    recs = []
+def loadAllResults(expectedTsvs):
+    maxNumExprs = 0
+    byWindowByNumExpr = {}   # [resultName][exprNum]
     for resultsTsv in expectedTsvs:
-        recs.extend(loadResultsTsv(resultsTsv))
-    resultsDbLoad(resultsConn, recs)
+        winResults = loadWindowResults(resultsTsv)
+        byWindowByNumExpr[resultsTsv] = winResults
+        maxNumExprs = max(maxNumExprs, len(winResults))
+    return byWindowByNumExpr, maxNumExprs
+
+
+def countByNumExpr(iExpr, byWindowByNumExpr):
+    saturationCounts = SaturationCounts(iExpr + 1)
+    for winResults in byWindowByNumExpr.values():
+        # fill in with last row if there is no coverage in this window for number of experiments
+        if len(winResults) > 0:
+            row = winResults[min(iExpr, len(winResults) - 1)]
+            saturationCounts.sumTsvRow(row)
+    return saturationCounts
+
+
+def collectResults(expectedTsvs):
+    byWindowByNumExpr, maxNumExprs = loadAllResults(expectedTsvs)
+    countsByNumExpr = []
+    for iExpr in xrange(maxNumExprs):
+        countsByNumExpr.append(countByNumExpr(iExpr, byWindowByNumExpr))
+    return countsByNumExpr
+
+
+def writeResults(countsByNumExpr, fh):
+    SaturationCounts.writeHeader(fh)
+    for iExpr in xrange(len(countsByNumExpr)):
+        countsByNumExpr[iExpr].write(fh)
 
 
 def rslGencodeCollectSupportMkJobs(opts):
     "main function"
-    fileOps.ensureFileDir(opts.resultsDb)
-    resultsConn = sqliteConnect(opts.resultsDb)
-    GencodeSupport.drop_table(fail_silently=True)
-    GencodeSupport.create_table()
     expectedTsvs = fileOps.readFileLines(os.path.join(opts.workDir, "expected.lst"))
-    collectResults(resultsConn, expectedTsvs)
-    resultsConn.close()
+    countsByNumExpr = collectResults(expectedTsvs)
+    with open(opts.resultsTsv, "w") as fh:
+        writeResults(countsByNumExpr, fh)
 
 
 rslGencodeCollectSupportMkJobs(parseArgs())

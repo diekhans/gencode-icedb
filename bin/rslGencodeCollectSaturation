@@ -14,7 +14,7 @@ from gencode_icedb.general.transFeatures import IntronFeature
 from gencode_icedb.general.annotFeatures import AnnotationFeatures
 from gencode_icedb.rsl.rslModel import sqliteConnect, SjSupportReader
 from gencode_icedb.rsl.intronSupportCounter import IntronCoords
-from gencode_icedb.rsl.gencodeIntronEvid import IntronSupportLevel, intronEvidSupportLevel
+from gencode_icedb.rsl.saturation import SaturationCounts
 
 
 def parseArgs():
@@ -34,10 +34,10 @@ def parseArgs():
                         help="""GENCODE sqlite3 database from gencodeDbLoad""")
     parser.add_argument('sjDb',
                         help="""splice junction evidence sqlite3 database, a correspond *.sjsup.gz and tabix index file must exist""")
-    parser.add_argument('chromRange',
-                        help="""zero-based chromosome range, in the form chr:start-end.""")
     parser.add_argument('resultsTsv',
                         help="""TSV file for results""")
+    parser.add_argument('chromRange',
+                        help="""zero-based chromosome range, in the form chr:start-end.""")
     return parser.parse_args()
 
 
@@ -59,8 +59,10 @@ def getPseudoTransIds(gencodeConn):
 def inWindow(intron, window):
     return (intron.chromStart >= window.start) and (intron.chromStart < window.end)
 
+
 def useSjSupport(sjSupp, window):
     return (sjSupp.numUniqueMapReads > 0) and inWindow(sjSupp, window)
+
 
 class IntronCount(object):
     """counts for a specified intron"""
@@ -69,6 +71,9 @@ class IntronCount(object):
         self.isNovel = isNovel
         self.numExprs = self.numUniqueMapReads = self.numMultiMapReads = 0
 
+    def __str__(self):
+        return "{}: novel={} exprs={} uniq={} multi={}".format(self.intronCoords, self.isNovel, self.numExprs, self.numUniqueMapReads, self.numMultiMapReads)
+
 
 class IntronCounter(dict):
     """indexed by IntronCoords, all introns are defined upfront, both novel and annotated"""
@@ -76,6 +81,8 @@ class IntronCounter(dict):
         self.window = window
 
     def __defineIntron(self, intronCoords, isNovel):
+        # don't overwrite, setting isNovel works this way
+        print("def", isNovel, intronCoords not in self, str(intronCoords))
         if intronCoords not in self:
             self[intronCoords] = IntronCount(intronCoords, isNovel)
 
@@ -84,15 +91,16 @@ class IntronCounter(dict):
             if isinstance(feat, IntronFeature) and inWindow(feat, self.window):
                 self.__defineIntron(IntronCoords.fromIntronFeat(feat), isNovel=False)
 
-    def defineGencodeIntrons(self, gencodeConn):
+    def defineGencodeIntrons(self, gencodeConn, genomeReader):
         """must be called before defining rna-seq introns"""
         pseudoTransIds = getPseudoTransIds(gencodeConn)
         for trans in AnnotationFeatures.dbFactory(gencodeConn, gencodeDb.gencode_ann_table,
-                                                  self.window.chrom, self.window.start, self.window.end, None):
+                                                  self.window.chrom, self.window.start, self.window.end, genomeReader):
             if trans.rnaName not in pseudoTransIds:
                 self.__defineTransIntrons(trans)
 
     def defineRnaSeqIntrons(self, sjSupps):
+        """must be called after defining transcript introns"""
         for sjSupp in sjSupps:
             if useSjSupport(sjSupp, self.window):
                 self.__defineIntron(IntronCoords.fromIntronSupp(sjSupp), isNovel=True)
@@ -104,48 +112,19 @@ class IntronCounter(dict):
 
     def countIntronSupports(self, sjSupps):
         for sjSupp in sjSupps:
+            print("cnt", useSjSupport(sjSupp, self.window), sjSupp)
             if useSjSupport(sjSupp, self.window):
                 self.countIntronSupport(sjSupp)
 
 
-class SupportLevelCounts(object):
-    def __init__(self, exprCnt, intronCounter):
-        self.exprCnt = exprCnt
-        # indexed by IntronSupportLevel
-        self.annotCnts = defaultdict(int)
-        self.novelCnts = defaultdict(int)
-        self.__count(intronCounter)
-
-    def __count(self, intronCounter):
-        for cnts in intronCounter.values():
-            level = intronEvidSupportLevel(cnts.numUniqueMapReads)
-            if cnts.isNovel:
-                self.novelCnts[level] += 1
-            else:
-                self.annotCnts[level] += 1
-
-    revLevels = tuple(reversed(IntronSupportLevel))
-    header = tuple(["numExprs", "annotCnt", "novelCnt"]
-                   + ["{}_annot_cnt".format(l) for l in revLevels]
-                   + ["{}_novel_cnt".format(l) for l in revLevels])
-
-    @staticmethod
-    def writeHeader(fh):
-        fileOps.prRow(fh, SupportLevelCounts.header)
-
-    def write(self, fh):
-        fileOps.prRow(fh, [self.exprCnt, sum(self.annotCnts.values()), sum(self.novelCnts.values())]
-                       + [self.annotCnts[l] for l in self.revLevels]
-                       + [self.novelCnts[l] for l in self.revLevels])
-
-
 class CollectSaturation(object):
-    def __init__(self, window, gencodeConn, sjConn, testMode):
+    def __init__(self, genomeReader, window, gencodeConn, sjConn, testMode):
+        self.genomeReader = genomeReader
         self.testMode = testMode
         self.intronCounter = IntronCounter(window)
         self.sjSuppByExpr = defaultdict(list)
         sjSupps = self.__loadIntrons(sjConn, window)
-        self.intronCounter.defineGencodeIntrons(gencodeConn)
+        self.intronCounter.defineGencodeIntrons(gencodeConn, genomeReader)
         self.intronCounter.defineRnaSeqIntrons(sjSupps)
 
     def __loadIntrons(self, sjConn, window):
@@ -157,11 +136,15 @@ class CollectSaturation(object):
 
     def __countExpr(self, fh, exprCnt, sjSupps):
         self.intronCounter.countIntronSupports(sjSupps)
-        counts = SupportLevelCounts(exprCnt, self.intronCounter)
-        counts.write(fh)
+        saturationCounts = SaturationCounts(exprCnt)
+        for sjcnts in self.intronCounter.values():
+            saturationCounts.count(sjcnts.isNovel, sjcnts)
+        saturationCounts.write(fh)
+        for ic in self.intronCounter.values():
+            print("ic", str(ic))
 
     def countSupport(self, fh):
-        SupportLevelCounts.writeHeader(fh)
+        SaturationCounts.writeHeader(fh)
         exprCnt = 0
         exprs = list(self.sjSuppByExpr.keys())
         if not self.testMode:
@@ -170,14 +153,13 @@ class CollectSaturation(object):
             exprCnt += 1
             self.__countExpr(fh, exprCnt, self.sjSuppByExpr[expr])
 
-
 def rslGencodeCollectSaturation(opts):
     "entry point"
-    # FIXME: genomeCoords vs window name??
+    genomeReader = GenomeReaderFactory.factoryFromCmdOptions(opts).obtain()
     genomeCoords = Coords.parse(opts.chromRange)
     gencodeConn = sqlite3.connect(opts.gencodeDb)  # FIXME: switch to APSW read-only
     sjConn = sqliteConnect(opts.sjDb, readonly=True)
-    saturationCollector = CollectSaturation(genomeCoords, gencodeConn, sjConn, opts.testMode)
+    saturationCollector = CollectSaturation(genomeReader, genomeCoords, gencodeConn, sjConn, opts.testMode)
 
     fileOps.ensureFileDir(opts.resultsTsv)
     resultsTmpTsv = fileOps.atomicTmpFile(opts.resultsTsv)

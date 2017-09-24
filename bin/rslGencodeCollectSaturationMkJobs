@@ -10,6 +10,7 @@ from gencode_icedb.general.genome import GenomeReaderFactory
 
 # FIXME mostly duplication with rslGencodeCollectNovelMkJobs, make common
 
+
 def parseArgs():
     desc = """Generate parasol jobs site evidence considering GENCODE annotations."""
     parser = argparse.ArgumentParser(description=desc)

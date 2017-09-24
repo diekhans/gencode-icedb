@@ -26,7 +26,10 @@ rslIntronSuppBed = ${binDir}/rslIntronSuppBed
 rslIntronSuppStats = ${binDir}/rslIntronSuppStats
 rslIntronEvidStats = ${binDir}/rslIntronEvidStats
 rslTransSuppBed = ${binDir}/rslTransSuppBed
+
 rslGencodeCollectSaturation = ${binDir}/rslGencodeCollectSaturation
+rslGencodeCollectSaturationMkJobs = ${binDir}/rslGencodeCollectSaturationMkJobs
+rslGencodeCollectSaturationFinishJobs = ${binDir}/rslGencodeCollectSaturationFinishJobs
 
 genomeSeqsHg38 = /hive/data/genomes/hg38/hg38.2bit
 
@@ -319,11 +322,21 @@ novelSuppCntPlotTest: mkdirs
 ##
 # rslGencodeCollectSaturation
 ##
-saturationTests: saturationTest
+saturationTests: saturationCollectTest \
+		saturationFinishTest
 
-saturationTest: mkdirs
+saturationCollectTest: mkdirs
 	${gencodeSupportTestSetup}
-	${rslGencodeCollectSaturation} --testMode output/$@/gencode.db output/$@/rnaseq.db chr22:10000000-20000000 output/$@.saturation.tsv
+	${rslGencodeCollectSaturation} --testMode ${genomeSeqsSpecs} output/$@/gencode.db output/$@/rnaseq.db output/$@.saturation.tsv chr22:10000000-20000000
+	${diff} expected/$@.saturation.tsv output/$@.saturation.tsv
+
+# test input to combines is just two copies of above output
+saturationFinishTest: mkdirs
+	mkdir -p output/$@.work
+	cp expected/saturationCollectTest.saturation.tsv output/$@.work/win1.tsv
+	cp expected/saturationCollectTest.saturation.tsv output/$@.work/win2.tsv
+	(echo output/$@.work/win1.tsv; echo output/$@.work/win2.tsv) > output/$@.work/expected.lst
+	${rslGencodeCollectSaturationFinishJobs} output/$@.work output/$@.saturation.tsv
 	${diff} expected/$@.saturation.tsv output/$@.saturation.tsv
 
 mkdirs:
