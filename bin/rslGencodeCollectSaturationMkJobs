@@ -1,0 +1,76 @@
+#!/usr/bin/env python
+
+from __future__ import print_function
+import icedbProgSetup  # noqa: F401
+import os
+import argparse
+from pycbio.sys import fileOps
+from pycbio.hgbrowser.coords import Coords
+from gencode_icedb.general.genome import GenomeReaderFactory
+
+# FIXME mostly duplication with rslGencodeCollectNovelMkJobs, make common
+
+def parseArgs():
+    desc = """Generate parasol jobs site evidence considering GENCODE annotations."""
+    parser = argparse.ArgumentParser(description=desc)
+    GenomeReaderFactory.addCmdOptions(parser)
+    parser.add_argument("--windowSize", type=int, default=10000000,
+                        help="""maximum window size""")
+    parser.add_argument("--testRange", type=Coords.parse,
+                        help="""Only generate jobs that overlap the specified range, for testing""")
+    parser.add_argument('gencodeDb',
+                        help="""GENCODE sqlite3 database from gencodeDbLoad""")
+    parser.add_argument('sjDb',
+                        help="""splice junction evidence sqlite3 database, a correspond *.sjsup.gz and tabix index file must exist""")
+    parser.add_argument('workDir',
+                        help="""directory where jobFile and temporary results are stored""")
+    opts = parser.parse_args()
+    return opts
+
+
+class JobGenerator(object):
+    def __init__(self, gencodeDb, sjDb, genomeReaderFactory, windowSize, workDir):
+        self.gencodeDb = gencodeDb
+        self.sjDb = sjDb
+        self.genomeReaderFactory = genomeReaderFactory
+        self.genomeReader = genomeReaderFactory.obtain()
+        self.windowSize = windowSize
+        self.workDir = workDir
+        self.resultDir = os.path.join(workDir, "results")
+        self.novelProg = os.path.join(icedbProgSetup.binDir, "rslGencodeCollectSaturationJob")
+
+    def __generateJob(self, genomeCoords, batchFh, expectedFh):
+        cmd = [self.novelProg] + self.genomeReaderFactory.getOptionArgs(allowUpdate=False)
+        resultTsv = os.path.join(self.resultDir, "{}.novel.tsv".format(genomeCoords))
+        cmd.extend([self.gencodeDb, self.sjDb, "{{check out exists {}}}".format(resultTsv), genomeCoords])
+        print(*cmd, file=batchFh)
+        print(resultTsv, file=expectedFh)
+
+    def __generateChromJob(self, chrom, chromSize, batchFh, expectedFh, testRange):
+        chromStart = 0
+        while chromStart < chromSize:
+            chromEnd = min(chromStart + self.windowSize, chromSize)
+            genomeCoords = Coords(chrom, chromStart, chromEnd)
+            if (testRange is None) or genomeCoords.overlaps(testRange):
+                self.__generateJob(genomeCoords, batchFh, expectedFh)
+            chromStart = chromEnd
+
+    def generateJobs(self, batchFh, expectedFh, testRange):
+        for chrom in self.genomeReader.getChroms():
+            if (testRange is None) or (chrom == testRange.chrom):
+                self.__generateChromJob(chrom, self.genomeReader.getChromSize(chrom), batchFh, expectedFh, testRange)
+
+
+def rslGencodeCollectSaturationMkJobs(opts):
+    "main function"
+    genomeReaderFactory = GenomeReaderFactory.factoryFromCmdOptions(opts)
+    jobGen = JobGenerator(opts.gencodeDb, opts.sjDb, genomeReaderFactory, opts.windowSize, opts.workDir)
+
+    fileOps.ensureDir(opts.workDir)
+    batchFile = os.path.join(opts.workDir, "batch.jobs")
+    expectedLst = os.path.join(opts.workDir, "expected.lst")
+    with open(batchFile, "w") as batchFh, open(expectedLst, "w") as expectedFh:
+        jobGen.generateJobs(batchFh, expectedFh, opts.testRange)
+
+
+rslGencodeCollectSaturationMkJobs(parseArgs())

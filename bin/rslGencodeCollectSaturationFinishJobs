@@ -1,0 +1,54 @@
+#!/usr/bin/env python
+
+from __future__ import print_function
+import icedbProgSetup  # noqa: F401
+import os
+import argparse
+from pycbio.sys import fileOps
+from pycbio.tsv import TsvReader
+from gencode_icedb.rsl.rslModel import sqliteConnect, GencodeSupport
+
+bulk_size = 75   # size of each bulk insert
+
+
+def parseArgs():
+    desc = """Combine rslGencodeCollectSupport job results."""
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument('workDir',
+                        help="""directory contains results directory""")
+    parser.add_argument('resultsDb',
+                        help="""Sqlite database were results are stored."""
+                        """This does not append results, existing gencodesupport table is dropped.""")
+    return parser.parse_args()
+
+# FIXME put in common file? make objects
+header = tuple(["numExprs", "annotCnt", "novelCnt"]
+               + ["{}_annot_cnt".format(l) for l in revLevels]
+               + ["{}_novel_cnt".format(l) for l in revLevels])
+resultsTsvTypeMap = {h: int for h in header}
+
+class Gencode
+
+def loadResultsTsv(resultsTsv):
+    return [for row in TsvReader(resultsTsv, typeMap=resultsTsvTypeMap)]
+
+
+def collectResults(resultsConn, expectedTsvs):
+    recs = []
+    for resultsTsv in expectedTsvs:
+        recs.extend(loadResultsTsv(resultsTsv))
+    resultsDbLoad(resultsConn, recs)
+
+
+def rslGencodeCollectSupportMkJobs(opts):
+    "main function"
+    fileOps.ensureFileDir(opts.resultsDb)
+    resultsConn = sqliteConnect(opts.resultsDb)
+    GencodeSupport.drop_table(fail_silently=True)
+    GencodeSupport.create_table()
+    expectedTsvs = fileOps.readFileLines(os.path.join(opts.workDir, "expected.lst"))
+    collectResults(resultsConn, expectedTsvs)
+    resultsConn.close()
+
+
+rslGencodeCollectSupportMkJobs(parseArgs())
