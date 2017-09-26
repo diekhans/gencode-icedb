@@ -31,7 +31,7 @@ featureUnitTests:
 ##
 gencodeDbLoadTest: mkdirs
 	rm -f output/$@.db
-	${gencodeDbLoad} output/$@.db input/set1.gencodeAttrsV19.tsv input/set1.gencodeTransSourceV19.tsv input/set1.gencodeTransSupportLevelV19.tsv input/set1.gencodeCompV19.gp
+	${gencodeDbLoad} --attrs=input/set1.gencodeAttrsV19.tsv --transcriptSource=input/set1.gencodeTransSourceV19.tsv --transcriptionSupportLevel=input/set1.gencodeTransSupportLevelV19.tsv  --tags=input/set1.gencodeTagV19.tsv --genes=input/set1.gencodeCompV19.gp output/$@.db
 	sqlite3 -header -batch output/$@.db 'SELECT * FROM gencode_ann' >output/$@.gencode_ann.gp
 	sqlite3 -header -batch output/$@.db 'SELECT * FROM gencode_attrs' >output/$@.gencode_attrs.tsv
 	sqlite3 -header -batch output/$@.db 'SELECT * FROM gencode_transcript_source' >output/$@.gencode_trans_src.tsv
@@ -71,7 +71,7 @@ gpMondoTest: mkdirs
 
 gencodeDbMondoTest: mkdirs
 	rm -f output/$@.db
-	time ${gencodeDbLoad} --hgdb=hg38 output/$@.db wgEncodeGencodeAttrsV26 wgEncodeGencodeTranscriptSourceV26 wgEncodeGencodeCompV26 wgEncodeGencodePseudoGeneV26
+	time ${gencodeDbLoad} --hgdb=hg38 --version=V26 output/$@.db
 
 mkdirs:
 	@mkdir -p output

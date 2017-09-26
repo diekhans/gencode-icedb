@@ -20,6 +20,8 @@ def parseArgs():
     parser.add_argument("--level", action="append",
                         choices=[str(l) for l in IntronSupportLevel],
                         help="level to include, maybe repeated")
+    parser.add_argument("--symLevelName", action="store_true", default=False,
+                        help="""include the symbolic level in the name rather than the support counts""")
     parser.add_argument('dataType', choices=("support", "novel"),
                         help="type of database")
     parser.add_argument('intronEvidDb',
@@ -37,8 +39,9 @@ def parseArgs():
 
 
 class BedMaker(object):
-    def __init__(self, dataType, levels):
+    def __init__(self, dataType, symLevelName, levels):
         self.isNovelDb = (dataType == "novel")
+        self.symLevelName = symLevelName
         self.reported = set()   # don't output dups due to multiple transcripts
         self.levels = levels
 
@@ -49,9 +52,12 @@ class BedMaker(object):
         else:
             return '+'  # something valid
 
-    @staticmethod
-    def __evidName(evid):
-        return "{} ({}, {})".format(evid.intronMotif, evid.numUniqueMapReads, evid.numMultiMapReads)
+    def __evidName(self, evid, level):
+        # FIXME: symLevelName is a hack around not having a per-intron level db
+        if self.symLevelName:
+            return "{} {} ({}, {})".format(evid.intronMotif, str(level), evid.numUniqueMapReads, evid.numMultiMapReads)
+        else:
+            return "{} ({}, {})".format(evid.intronMotif, evid.numUniqueMapReads, evid.numMultiMapReads)
 
     def __shouldReport(self, supp, level):
         # don't count no unique for none:
@@ -68,7 +74,7 @@ class BedMaker(object):
         level = intronEvidSupportLevel(supp.numUniqueMapReads)
         if self.__shouldReport(supp, level):
             fileOps.prRowv(bedFh, supp.chrom, supp.intronStart, supp.intronEnd,
-                           self.__evidName(supp), 0, self.__evidStrand(supp),
+                           self.__evidName(supp, level), 0, self.__evidStrand(supp),
                            supp.intronStart, supp.intronEnd,
                            SupportTrackColors.supportLevelColor(self.isNovelDb, level).toRgb8Str())
 
@@ -81,7 +87,7 @@ def rslIntronSuppBed(opts):
     if opts.htmlColors:
         SupportTrackColors.printHtml()
         sys.exit(0)
-    bedMaker = BedMaker(opts.dataType, opts.level)
+    bedMaker = BedMaker(opts.dataType, opts.symLevelName, opts.level)
     conn = sqliteConnect(opts.intronEvidDb, readonly=True)
     # sort for use in
     with pipettor.Popen(["sort", "-k1,1", "-k2,2n", "-k3,3n"], "w", stdout=opts.bedOut) as bedFh:

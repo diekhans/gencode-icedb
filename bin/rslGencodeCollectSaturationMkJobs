@@ -19,8 +19,6 @@ def parseArgs():
                         help="""maximum window size""")
     parser.add_argument("--testRange", type=Coords.parse,
                         help="""Only generate jobs that overlap the specified range, for testing""")
-    parser.add_argument('gencodeDb',
-                        help="""GENCODE sqlite3 database from gencodeDbLoad""")
     parser.add_argument('sjDb',
                         help="""splice junction evidence sqlite3 database, a correspond *.sjsup.gz and tabix index file must exist""")
     parser.add_argument('workDir',
@@ -30,20 +28,18 @@ def parseArgs():
 
 
 class JobGenerator(object):
-    def __init__(self, gencodeDb, sjDb, genomeReaderFactory, windowSize, workDir):
-        self.gencodeDb = gencodeDb
+    def __init__(self, sjDb, genomeReader, windowSize, workDir):
         self.sjDb = sjDb
-        self.genomeReaderFactory = genomeReaderFactory
-        self.genomeReader = genomeReaderFactory.obtain()
+        self.genomeReader = genomeReader
         self.windowSize = windowSize
         self.workDir = workDir
         self.resultDir = os.path.join(workDir, "results")
         self.novelProg = os.path.join(icedbProgSetup.binDir, "rslGencodeCollectSaturationJob")
 
     def __generateJob(self, genomeCoords, batchFh, expectedFh):
-        cmd = [self.novelProg] + self.genomeReaderFactory.getOptionArgs(allowUpdate=False)
         resultTsv = os.path.join(self.resultDir, "{}.novel.tsv".format(genomeCoords))
-        cmd.extend([self.gencodeDb, self.sjDb, "{{check out exists {}}}".format(resultTsv), genomeCoords])
+        cmd = [self.novelProg, self.sjDb,
+               "{{check out exists {}}}".format(resultTsv), genomeCoords]
         print(*cmd, file=batchFh)
         print(resultTsv, file=expectedFh)
 
@@ -64,8 +60,8 @@ class JobGenerator(object):
 
 def rslGencodeCollectSaturationMkJobs(opts):
     "main function"
-    genomeReaderFactory = GenomeReaderFactory.factoryFromCmdOptions(opts)
-    jobGen = JobGenerator(opts.gencodeDb, opts.sjDb, genomeReaderFactory, opts.windowSize, opts.workDir)
+    genomeReader = GenomeReaderFactory.factoryFromCmdOptions(opts).obtain()
+    jobGen = JobGenerator(opts.sjDb, genomeReader, opts.windowSize, opts.workDir)
 
     fileOps.ensureDir(opts.workDir)
     batchFile = os.path.join(opts.workDir, "batch.jobs")

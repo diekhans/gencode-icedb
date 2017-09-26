@@ -154,7 +154,7 @@ gencodeSupportTests: supportCollectAllTest \
 			supportCollectMkJobsTest
 
 # $(call gencodeTestDbSetup,output/$@/gencode.db)
-gencodeTestDbSetup = rm -f $(1) && mkdir -p $(dir $(1)) && ${gencodeDbLoad} $(1) input/set1.hs.attrs.v26.tsv input/set1.hs.trans-source.v26.tsv input/set1.hs.trans-support-level.v26.tsv input/set1.hs.comp.v26.gp input/set1.hs.pseudo.v26.gp
+gencodeTestDbSetup = rm -f $(1) && mkdir -p $(dir $(1)) && ${gencodeDbLoad} $(1) --attrs=input/set1.hs.attrs.v26.tsv --transcriptSource=input/set1.hs.trans-source.v26.tsv --transcriptionSupportLevel=input/set1.hs.trans-support-level.v26.tsv --tags=input/set1.hs.trans-tag.v26.tsv --genes=input/set1.hs.comp.v26.gp --pseudoGenes=input/set1.hs.pseudo.v26.gp
 
 define rnaSeqDbSetup
 rm -f output/$@/rnaseq.*

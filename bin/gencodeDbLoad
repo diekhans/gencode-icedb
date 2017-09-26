@@ -3,7 +3,7 @@
 from __future__ import print_function
 import icedbProgSetup  # noqa: F401
 import argparse
-from pycbio.hgdata.hgLite import GencodeAttrsDbTable, GencodeTranscriptSourceDbTable, GenePredDbTable, GencodeTranscriptionSupportLevelDbTable
+from pycbio.hgdata.hgLite import GencodeAttrsDbTable, GencodeTranscriptSourceDbTable, GenePredDbTable, GencodeTranscriptionSupportLevelDbTable, GencodeTagDbTable
 from pycbio.hgdata import hgDb
 import sqlite3
 from gencode_icedb.general import gencodeDb
@@ -14,64 +14,94 @@ def parseArgs():
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('--hgdb',
                         help="""load from mysql hgdb instead of files""")
+    parser.add_argument('--version',
+                        help="""If specified, get construct names from this version, this should include leading V or VM""")
+    parser.add_argument('--attrs',
+                        help="""TSV file or table of GENCODE attributes""")
+    parser.add_argument('--transcriptSource',
+                        help="""TSV file or table of GENCODE transcript sources""")
+    parser.add_argument('--transcriptionSupportLevel',
+                        help="""TSV file or table of GENCODE transcription support level scores""")
+    parser.add_argument('--tags',
+                        help="""TSV file or table of GENCODE tags""")
+    parser.add_argument('--genes',
+                        help="""file or table of genePreds to load""")
+    parser.add_argument('--pseudoGenes',
+                        help="""file or table of pseudo genePreds to load""")
     parser.add_argument('sqliteDb',
                         help="""database to load""")
-    parser.add_argument('attrsSrc',
-                        help="""TSV file or table of GENCODE attributes""")
-    parser.add_argument('transcriptSourceSrc',
-                        help="""TSV file or table of GENCODE transcript sources""")
-    parser.add_argument('transcriptionSupportLevelSrc',
-                        help="""TSV file or table of GENCODE transcription support level scores""")
-    parser.add_argument('genePredSrc',
-                        help="""file or table of genePreds to load""")
-    parser.add_argument('pseudoPredSrc', nargs='?', default=None,
-                        help="""optional file or table of pseudo genePreds to load""")
-    return parser.parse_args()
+    opts = parser.parse_args()
+    if opts.version is not None:
+        if opts.hgdb is None:
+            parser.error("--version requires --hgdb")
+        if opts.attrs is None:
+            opts.attrs = "wgEncodeGencodeAttrs" + opts.version
+        if opts.transcriptSource is None:
+            opts.transcriptSource = "wgEncodeGencodeTranscriptSource" + opts.version
+        if opts.transcriptionSupportLevel is None:
+            opts.transcriptionSupportLevel = "wgEncodeGencodeTranscriptionSupportLevel" + opts.version
+        if opts.tags is None:
+            opts.tags = "wgEncodeGencodeTag" + opts.version
+        if opts.genes is None:
+            opts.genes = "wgEncodeGencodeComp" + opts.version
+        if opts.pseudoGenes is None:
+            opts.pseudoGenes = "wgEncodeGencodePseudoGene" + opts.version
+    return opts
 
 
 def loadHgDbTable(hgdbConn, tbl):
     cur = hgdbConn.cursor()
     try:
-        cur.execute("SELECT * from {}".format(tbl))
+        cur.execute("SELECT * FROM {}".format(tbl))
         return cur.fetchall()
     finally:
         cur.close()
 
 
-def loadAnnotations(conn, hgdbConn, genePredSrc, pseudoPredSrc):
+def loadAnnotations(conn, hgdbConn, genes, pseudoGenes):
     annDbTable = GenePredDbTable(conn, gencodeDb.gencode_ann_table, create=True)
     if hgdbConn is not None:
-        annDbTable.loadsWithBin(loadHgDbTable(hgdbConn, genePredSrc))
-        if pseudoPredSrc is not None:
-            annDbTable.loadsWithBin(loadHgDbTable(hgdbConn, pseudoPredSrc))
+        if genes is not None:
+            annDbTable.loadsWithBin(loadHgDbTable(hgdbConn, genes))
+        if pseudoGenes is not None:
+            annDbTable.loadsWithBin(loadHgDbTable(hgdbConn, pseudoGenes))
     else:
-        annDbTable.loadGenePredFile(genePredSrc)
-        if pseudoPredSrc is not None:
-            annDbTable.loadGenePredFile(pseudoPredSrc)
+        if genes is not None:
+            annDbTable.loadGenePredFile(genes)
+        if pseudoGenes is not None:
+            annDbTable.loadGenePredFile(pseudoGenes)
 
 
-def loadAttrs(conn, hgdbConn, attrsSrc):
+def loadAttrs(conn, hgdbConn, attrs):
     attrsDbTable = GencodeAttrsDbTable(conn, gencodeDb.gencode_attrs_table, create=True)
     if hgdbConn is not None:
-        attrsDbTable.loads(loadHgDbTable(hgdbConn, attrsSrc))
+        attrsDbTable.loads(loadHgDbTable(hgdbConn, attrs))
     else:
-        attrsDbTable.loadTsv(attrsSrc)
+        attrsDbTable.loadTsv(attrs)
 
 
-def loadTransSource(conn, hgdbConn, transSourceSrc):
+def loadTransSource(conn, hgdbConn, transSource):
     transSourceDbTable = GencodeTranscriptSourceDbTable(conn, gencodeDb.gencode_transcript_source_table, create=True)
     if hgdbConn is not None:
-        transSourceDbTable.loads(loadHgDbTable(hgdbConn, transSourceSrc))
+        transSourceDbTable.loads(loadHgDbTable(hgdbConn, transSource))
     else:
-        transSourceDbTable.loadTsv(transSourceSrc)
+        transSourceDbTable.loadTsv(transSource)
 
 
-def loadTransSupportLevel(conn, hgdbConn, transSupportLevelSrc):
+def loadTransSupportLevel(conn, hgdbConn, transSupportLevel):
     transSourceDbTable = GencodeTranscriptionSupportLevelDbTable(conn, gencodeDb.gencode_transcription_support_level_table, create=True)
     if hgdbConn is not None:
-        transSourceDbTable.loads(loadHgDbTable(hgdbConn, transSupportLevelSrc))
+        transSourceDbTable.loads(loadHgDbTable(hgdbConn, transSupportLevel))
     else:
-        transSourceDbTable.loadTsv(transSupportLevelSrc)
+        transSourceDbTable.loadTsv(transSupportLevel)
+
+
+def loadTags(conn, hgdbConn, tags):
+    tagsDbTable = GencodeTagDbTable(conn, gencodeDb.gencode_tag_table, create=True)
+    if hgdbConn is not None:
+        tagsDbTable.loads(loadHgDbTable(hgdbConn, tags))
+    else:
+        tagsDbTable.loadTsv(tags)
 
 
 def gencodeDbLoad(opts):
@@ -80,10 +110,16 @@ def gencodeDbLoad(opts):
     hgdbConn = None
     if opts.hgdb is not None:
         hgdbConn = hgDb.connect(opts.hgdb)
-    loadAnnotations(conn, hgdbConn, opts.genePredSrc, opts.pseudoPredSrc)
-    loadAttrs(conn, hgdbConn, opts.attrsSrc)
-    loadTransSource(conn, hgdbConn, opts.transcriptSourceSrc)
-    loadTransSupportLevel(conn, hgdbConn, opts.transcriptionSupportLevelSrc)
+    if (opts.genes is not None) or (opts.pseudoGenes is not None):
+        loadAnnotations(conn, hgdbConn, opts.genes, opts.pseudoGenes)
+    if opts.attrs is not None:
+        loadAttrs(conn, hgdbConn, opts.attrs)
+    if opts.transcriptSource is not None:
+        loadTransSource(conn, hgdbConn, opts.transcriptSource)
+    if opts.transcriptionSupportLevel is not None:
+        loadTransSupportLevel(conn, hgdbConn, opts.transcriptionSupportLevel)
+    if opts.tags is not None:
+        loadTags(conn, hgdbConn, opts.tags)
     if hgdbConn is not None:
         hgdbConn.close()
     conn.close()

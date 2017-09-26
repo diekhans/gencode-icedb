@@ -101,6 +101,7 @@ class SjSupport(namedtuple("SjSupport", ("chrom", "chromStart", "chromEnd",
                                          "maxOverhang", "mapping_symid"))):
     """SjSupport record created from STAR sjout files.  These are loaded from
     a tabix indexed tab file."""
+    # FIXME better name the mapping_symid
     __slots__ = ()
 
     def __str__(self):
@@ -135,11 +136,12 @@ class SjSupportReader(object):
         """can open by tab file name, a APSWDatabase object, or path to that
         the database files"""
         self.tb = None
-        if tabFile is None:
+        self.tabFile = tabFile
+        if self.tabFile is None:
             if sjDbPath is None:
                 sjDbPath = sjDbConn.database
-            tabFile = self.sjTabFromSjDb(sjDbPath)
-        self.tb = pysam.TabixFile(tabFile)
+            self.tabFile = self.sjTabFromSjDb(sjDbPath)
+        self.tb = pysam.TabixFile(self.tabFile)
         self.chroms = frozenset(self.tb.contigs)
 
     def close(self):
