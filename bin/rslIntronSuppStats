@@ -4,13 +4,15 @@ from __future__ import print_function
 import icedbProgSetup  # noqa: F401
 import sys
 import argparse
-from pycbio.sys import fileOps, loggingOps, mathOps
+from pycbio.sys import fileOps, loggingOps, mathOps, setOps
 from gencode_icedb.rsl.supportAnalysis import GencodeIntronEvid
 from gencode_icedb.tsl.supportDefs import TrascriptionSupportLevel
 from gencode_icedb.rsl.gencodeIntronEvid import IntronSupportLevel
 from gencode.data.gencodeGenes import BioType, bioTypesCoding, bioTypesNonCoding, bioTypesPseudo, GencodeExtendedMethod
 
 # FIXME: move to analysis repo
+# FIXME: this is an over done mess
+# FIXME: move transcript support levels to a database
 
 
 def parseArgs():
@@ -37,12 +39,12 @@ def parseArgs():
 def _reportTranscriptSupport(gie, fh):
     fileOps.prRow(fh, ["transcriptId", "strand", "numIntrons", "transcriptType", "method"]
                   + [l for l in reversed(IntronSupportLevel)]
-                  + ["fullLevel", "medianLevel", "tsl"])
+                  + ["fullLevel", "medianLevel", "tsl", "tags"])
     for transId in sorted(gie.byTransIds.keys()):
         trans = gie.byTransIds[transId]
         fileOps.prRow(fh, [trans.transcriptId, trans.strand, len(trans.introns), trans.bioType, trans.method]
                       + list(reversed(trans.countLevels()))
-                      + [trans.fullSupportLevel(), trans.medianSupportLevel(), trans.tsl])
+                      + [trans.fullSupportLevel(), trans.medianSupportLevel(), trans.tsl, setOps.setJoin(trans.tags, ',')])
 
 
 def reportTranscriptSupport(gie, transSuppTsv):

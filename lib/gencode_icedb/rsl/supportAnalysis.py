@@ -10,7 +10,7 @@ from gencode_icedb.rsl.gencodeIntronEvid import IntronSupportLevel, intronEvidSu
 import sqlite3
 from gencode_icedb.rsl.rslModel import sqliteConnect, sqliteClose
 from pycbio.sys.color import Color
-from pycbio.hgdata.hgLite import GencodeTranscriptSourceDbTable, GencodeTranscriptionSupportLevelDbTable
+from pycbio.hgdata.hgLite import GencodeTranscriptSourceDbTable, GencodeTranscriptionSupportLevelDbTable, GencodeTagDbTable
 from gencode.data.gencodeGenes import sourceToExtendedMethod
 from gencode_icedb.tsl.supportDefs import TrascriptionSupportLevel
 
@@ -58,7 +58,7 @@ class SupportTrackColors(object):
     strong = Color.fromRgb8(0, 128, 0)  # dark green
     medium = Color.fromRgb8(0, 0, 255)  # light blue
     weak = Color.fromRgb8(238, 118, 0)  # dark orange
-    none = Color.fromRgb8(128, 0, 0)  # dark red
+    none = Color.fromRgb8(200, 0, 0)  # red
 
     @staticmethod
     def __printColorHtml(fh, desc, color):
@@ -91,6 +91,7 @@ class TransEvid(object):
         self.bioType = bioType
         self.method = None
         self.tsl = None
+        self.tags = set()
         self.introns = []
         self.intronLevels = []
 
@@ -164,8 +165,16 @@ class GencodeIntronEvid(object):
             if trans is not None:
                 trans.tsl = TrascriptionSupportLevel(rec.level)
 
+    def loadGencodeTags(self, gencodeDbConn):
+        dbTable = GencodeTagDbTable(gencodeDbConn, gencodeDb.gencode_tag_table)
+        for rec in dbTable.queryAll():
+            trans = self.byTransIds.get(rec.transcriptId)
+            if trans is not None:
+                trans.tags.add(rec.tag)
+
     def loadGencodeDb(self, gencodeDb):
         gencodeDbConn = sqlite3.connect(gencodeDb)
         self.loadGencodeSource(gencodeDbConn)
         self.loadGencodeSupportLevel(gencodeDbConn)
+        self.loadGencodeTags(gencodeDbConn)
         gencodeDbConn.close()
