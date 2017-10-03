@@ -129,8 +129,9 @@ class GencodeIntronEvid(object):
     "data linked to GENCODE transcripts"
 
     def __init__(self):
-        self.chroms = set()
         self.byTransIds = {}
+        self.chroms = set()
+        self.bioTypes = set()
 
     def __obtainTransInfo(self, rec):
         trans = self.byTransIds.get(rec.transcriptId)
@@ -139,8 +140,10 @@ class GencodeIntronEvid(object):
         return trans
 
     def __loadRec(self, rec):
+        trans = self.__obtainTransInfo(rec)
+        trans.addIntron(rec)
         self.chroms.add(rec.chrom)
-        self.__obtainTransInfo(rec).addIntron(rec)
+        self.bioTypes.add(trans.bioType)
 
     def loadSupport(self, chrom=None):
         for rec in intronSupportReader(False, chrom):

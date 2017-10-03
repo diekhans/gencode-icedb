@@ -76,7 +76,7 @@ class BedMaker(object):
             fileOps.prRowv(bedFh, supp.chrom, supp.intronStart, supp.intronEnd,
                            self.__evidName(supp, level), 0, self.__evidStrand(supp),
                            supp.intronStart, supp.intronEnd,
-                           SupportTrackColors.supportLevelColor(self.isNovelDb, level).toRgb8Str())
+                           SupportTrackColors.supportLevelColor(level).toRgb8Str())
 
     def writeBed(self, bedFh):
         for rec in intronSupportReader(self.isNovelDb):

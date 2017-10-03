@@ -52,7 +52,7 @@ class BedMaker(object):
     def __writeBedRec(self, transAnn, bedFh):
         if self.__shouldReport(transAnn):
             transEvid = self.gie.byTransIds[transAnn.rnaName]
-            itemRgb = SupportTrackColors.supportLevelColor(False, transEvid.fullSupportLevel()).toRgb8Str()
+            itemRgb = SupportTrackColors.supportLevelColor(transEvid.fullSupportLevel()).toRgb8Str()
             transAnn.toBed(itemRgb).write(bedFh)
 
     def writeBed(self, gencodeDbConn, bedFh):

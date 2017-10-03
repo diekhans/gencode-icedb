@@ -64,3 +64,8 @@ coding	method	merged	0	0	3	13	0.00	0.00	0.19	0.81
 non-coding	method	merged	0	0	0	0	0.00	0.00	0.00	0.00
 pseudo	method	merged	0	0	0	0	0.00	0.00	0.00	0.00
 other	method	merged	0	0	0	0	0.00	0.00	0.00	0.00
+all	bioType	lincRNA	0	0	0	1	0.00	0.00	0.00	1.00
+all	bioType	nonsense_mediated_decay	0	0	0	6	0.00	0.00	0.00	1.00
+all	bioType	processed_transcript	0	0	2	7	0.00	0.00	0.22	0.78
+all	bioType	protein_coding	0	0	4	32	0.00	0.00	0.11	0.89
+all	bioType	retained_intron	0	0	3	9	0.00	0.00	0.25	0.75
