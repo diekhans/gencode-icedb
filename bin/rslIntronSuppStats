@@ -8,7 +8,7 @@ from pycbio.sys import fileOps, loggingOps, mathOps
 from gencode_icedb.rsl.supportAnalysis import GencodeIntronEvid
 from gencode_icedb.tsl.supportDefs import TrascriptionSupportLevel
 from gencode_icedb.rsl.gencodeIntronEvid import IntronSupportLevel
-from gencode.data.gencodeGenes import BioType, bioTypesCoding, bioTypesNonCoding, GencodeExtendedMethod
+from gencode.data.gencodeGenes import BioType, bioTypesCoding, bioTypesNonCoding, bioTypesPseudo, GencodeExtendedMethod
 
 # FIXME: move to analysis repo
 
@@ -81,12 +81,14 @@ def codingFilter(trans):
 def nonCodingFilter(trans):
     return BioType(trans.bioType) in bioTypesNonCoding
 
+def pseudoFilter(trans):
+    return BioType(trans.bioType) in bioTypesPseudo
 
 def otherFilter(trans):
     return not (codingFilter(trans) or nonCodingFilter(trans))
 
 
-transcriptClasses = ("all", "coding", "non-coding", "other")
+transcriptClasses = ("all", "coding", "non-coding", "pseudo", "other")
 
 
 def classFilter(gie, tc):
@@ -96,6 +98,8 @@ def classFilter(gie, tc):
         return codingFilter
     elif tc == "non-coding":
         return nonCodingFilter
+    elif tc == "pseudo":
+        return pseudoFilter
     elif tc == "other":
         return otherFilter
 
@@ -157,6 +161,5 @@ def rslIntronSuppStats(opts):
     reportTranscriptSupport(gie, "{}trans-support.tsv".format(opts.outPrefix))
     reportTranscriptFullSupportStats(gie, "{}trans-full-support-stats.tsv".format(opts.outPrefix))
     reportTranscriptMedianSupportStats(gie, "{}trans-median-support-stats.tsv".format(opts.outPrefix))
-
 
 rslIntronSuppStats(parseArgs())

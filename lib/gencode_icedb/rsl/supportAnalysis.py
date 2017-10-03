@@ -54,6 +54,7 @@ def intronSupportAlreadyProcessed(rec, processed):
 
 class SupportTrackColors(object):
     "color codes"
+    # FIXME: not just for tracks
     strong = Color.fromRgb8(0, 128, 0)  # dark green
     medium = Color.fromRgb8(0, 0, 255)  # light blue
     weak = Color.fromRgb8(238, 118, 0)  # dark orange
@@ -72,7 +73,7 @@ class SupportTrackColors(object):
         SupportTrackColors.__printColorHtml(fh, "no support", SupportTrackColors.none)
 
     @staticmethod
-    def supportLevelColor(isNovelDb, level):
+    def supportLevelColor(level):
         if level == IntronSupportLevel.STRONG:
             return SupportTrackColors.strong
         elif level == IntronSupportLevel.MEDIUM:
