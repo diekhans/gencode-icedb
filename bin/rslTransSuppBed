@@ -11,6 +11,7 @@ from gencode_icedb.general.annotFeatures import AnnotationGenePredFactory
 from gencode_icedb.rsl.gencodeIntronEvid import IntronSupportLevel
 from gencode_icedb.rsl.supportAnalysis import GencodeIntronEvid, SupportTrackColors
 from pycbio.hgdata.hgLite import GenePredDbTable
+from gencode.data.gencodeGenes import BioType
 
 
 def parseArgs():
@@ -20,6 +21,9 @@ def parseArgs():
     parser.add_argument("--level", action="append",
                         choices=[str(l) for l in IntronSupportLevel],
                         help="level to include, maybe repeated")
+    parser.add_argument("--biotype", action="append",
+                        choices=[str(b) for b in BioType.values],
+                        help="biotype to include, maybe repeated")
     parser.add_argument('gencodeDb',
                         help="GENCODE database")
     parser.add_argument('intronEvidDb',
@@ -29,23 +33,33 @@ def parseArgs():
     opts = parser.parse_args()
     loggingOps.setupFromCmd(opts, sys.argv[0])
     if opts.level is not None:
-        levels = frozenset([IntronSupportLevel(l) for l in opts.level])
+        opts.level = frozenset([IntronSupportLevel(l) for l in opts.level])
     else:
-        levels = frozenset(list(IntronSupportLevel))
-    opts.level = levels
+        opts.level = frozenset(list(IntronSupportLevel))
+    if opts.biotype is not None:
+        opts.biotype = frozenset([BioType(b) for b in opts.biotype])
     return opts
 
 
 class BedMaker(object):
-    def __init__(self, levels, gie):
+    def __init__(self, levels, bioTypes, gie):
         self.levels = levels
+        self.bioTypes = bioTypes
         self.gie = gie
 
+    def __reportBiotype(self, transAnn):
+        if self.bioTypes is None:
+            return True
+        else:
+            return self.gie.byTransIds[transAnn.rnaName].bioType in self.bioTypes
+        
     def __shouldReport(self, transAnn):
         transEvid = self.gie.byTransIds.get(transAnn.rnaName)
         if transEvid is None:
             return False
         if transEvid.fullSupportLevel() not in self.levels:
+            return False
+        if not self.__reportBiotype(transAnn):
             return False
         return True
 
@@ -65,7 +79,7 @@ def rslIntronSuppBed(opts):
     gie = GencodeIntronEvid()
     gie.loadSupportDb(opts.intronEvidDb, None)
     gie.loadGencodeDb(opts.gencodeDb)
-    bedMaker = BedMaker(opts.level, gie)
+    bedMaker = BedMaker(opts.level, opts.biotype, gie)
     gencodeDbConn = sqlite3.connect(opts.gencodeDb)
     with open(opts.bedOut, "w") as bedFh:
         bedMaker.writeBed(gencodeDbConn, bedFh)

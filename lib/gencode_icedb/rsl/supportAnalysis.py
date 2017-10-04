@@ -13,6 +13,7 @@ from pycbio.sys.color import Color
 from pycbio.hgdata.hgLite import GencodeTranscriptSourceDbTable, GencodeTranscriptionSupportLevelDbTable, GencodeTagDbTable
 from gencode.data.gencodeGenes import sourceToExtendedMethod
 from gencode_icedb.tsl.supportDefs import TrascriptionSupportLevel
+from gencode.data.gencodeGenes import BioType
 
 
 def isPseudo(suppRec):
@@ -88,7 +89,7 @@ class TransEvid(object):
     def __init__(self, geneId, transcriptId, bioType):
         self.geneId = geneId
         self.transcriptId = transcriptId
-        self.bioType = bioType
+        self.bioType = BioType(bioType)
         self.method = None
         self.tsl = None
         self.tags = set()

@@ -10,7 +10,6 @@ from gencode_icedb.rsl.rslModel import sqliteConnect, sqliteClose
 from gencode_icedb.rsl.gencodeIntronEvid import IntronSupportLevel, intronEvidSupportLevel
 from gencode_icedb.rsl.supportAnalysis import intronSupportReader, intronSupportAlreadyProcessed, SupportTrackColors
 
-
 def parseArgs():
     desc = """Create a BED of introns support"""
     parser = argparse.ArgumentParser(description=desc)
@@ -31,10 +30,9 @@ def parseArgs():
     opts = parser.parse_args()
     loggingOps.setupFromCmd(opts, sys.argv[0])
     if opts.level is not None:
-        levels = frozenset([IntronSupportLevel(l) for l in opts.level])
+        opts.level = frozenset([IntronSupportLevel(l) for l in opts.level])
     else:
-        levels = frozenset(list(IntronSupportLevel))
-    opts.level = levels
+        opts.level = frozenset(list(IntronSupportLevel))
     return opts
 
 

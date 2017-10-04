@@ -77,14 +77,14 @@ def allFilter(trans):
 
 
 def codingFilter(trans):
-    return BioType(trans.bioType) in bioTypesCoding
+    return trans.bioType in bioTypesCoding
 
 
 def nonCodingFilter(trans):
-    return BioType(trans.bioType) in bioTypesNonCoding
+    return trans.bioType in bioTypesNonCoding
 
 def pseudoFilter(trans):
-    return BioType(trans.bioType) in bioTypesPseudo
+    return trans.bioType in bioTypesPseudo
 
 def otherFilter(trans):
     return not (codingFilter(trans) or nonCodingFilter(trans) or pseudoFilter(trans))

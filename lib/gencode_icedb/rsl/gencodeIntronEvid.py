@@ -6,6 +6,7 @@ from pycbio import tsv
 from pycbio.sys.symEnum import SymEnum
 from collections import defaultdict
 
+# FIXME: name confusion with supportAnalysis.GencodeIntronEvid
 
 class IntronSupportLevel(SymEnum):
     "support level on an single intron"
@@ -74,7 +75,7 @@ class GencodeIntronEvidSet(list):
             for ti in evid.transcripts:
                 self.byTranscriptId[ti].append(evid)
 
-    def getByTranscribeLocus(self, transLocus):
+    def getByTranscriptLocus(self, transLocus):
         "get introns for a transcript locus, sorted in genomic order"
         evids = self.byTranscriptId[transLocus.transcript.id]
         if transLocus.hasMultiLoci():
