@@ -21,15 +21,6 @@ rslGencodeCollectNovel = ${binDir}/rslGencodeCollectNovel
 rslGencodeCollectNovelMkJobs = ${binDir}/rslGencodeCollectNovelMkJobs
 rslGencodeCollectNovelFinishJobs = ${binDir}/rslGencodeCollectNovelFinishJobs
 
-rslIntronSuppPlot = ${binDir}/rslIntronSuppPlot
-rslIntronSuppBed = ${binDir}/rslIntronSuppBed
-rslIntronSuppStats = ${binDir}/rslIntronSuppStats
-rslIntronEvidStats = ${binDir}/rslIntronEvidStats
-rslTransSuppBed = ${binDir}/rslTransSuppBed
-
-rslGencodeCollectSaturation = ${binDir}/rslGencodeCollectSaturation
-rslGencodeCollectSaturationMkJobs = ${binDir}/rslGencodeCollectSaturationMkJobs
-rslGencodeCollectSaturationFinishJobs = ${binDir}/rslGencodeCollectSaturationFinishJobs
 
 genomeSeqsHg38 = /hive/data/genomes/hg38/hg38.2bit
 
@@ -48,12 +39,7 @@ test:   dataConvertTests \
 	sjsupBuildTests \
 	gencodeSupportTests \
 	novelTests \
-	encodeDccTests \
-	intronSuppBedTests \
-	intronStatsTests \
-	transSuppBedTests \
-	saturationTests \
-	plotTests
+	encodeDccTests
 
 ##
 # conversion of data
@@ -247,101 +233,6 @@ encodeDccTests: encodeDcc10Tests
 encodeDcc10Tests: mkdirs
 	${rslEncodeDccQuery} "Mus musculus" --limit=10 output/encodeDcc10Tests.tsv output/encodeDcc10Tests.urls
 
-
-define buildGencodeSuppDb
-rm -f output/$@.supp.db
-tail -n +2 expected/supportCollectMkJobsTest.GencodeSupport.tsv | sqlite3 output/$@.supp.db '.read input/gencodesupport.sql' '.mode tabs' '.import /dev/stdin gencodesupport'
-endef
-
-define buildGencodeNovelDb
-rm -f output/$@.novel.db
-tail -n +2 expected/novelMkJobsTest.GencodeNovel.tsv | sqlite3 output/$@.novel.db '.read input/gencodenovel.sql' '.mode tabs' '.import /dev/stdin gencodenovel'
-endef
-
-##
-# rslIntronSuppBed
-##
-intronSuppBedTests: intronGencodeSuppBedTest \
-		intronGencodeNovelBedTest
-
-intronGencodeSuppBedTest: mkdirs
-	${buildGencodeSuppDb}
-	${rslIntronSuppBed} support output/$@.supp.db output/$@.bed
-	${diff} expected/$@.bed output/$@.bed
-
-intronGencodeNovelBedTest: mkdirs
-	${buildGencodeNovelDb}
-	${rslIntronSuppBed} novel output/$@.novel.db output/$@.bed
-	${diff} expected/$@.bed output/$@.bed
-
-##
-# rslIntronSuppStats
-##
-
-intronStatsTests: intronGencodeSuppStatsTest \
-		intronGencodeEvidStatsTest \
-		intronGencodeNovelStatsTest
-
-intronGencodeSuppStatsTest: mkdirs
-	$(call gencodeTestDbSetup,output/$@.gencode.db)
-	${buildGencodeSuppDb}
-	${rslIntronSuppStats} output/$@.gencode.db output/$@.supp.db output/$@/supp.
-	${diff} -r expected/$@ output/$@
-
-intronGencodeEvidStatsTest: mkdirs
-	${buildGencodeSuppDb}
-	${rslIntronEvidStats} support output/$@.supp.db output/$@/evid.
-	${diff} -r expected/$@ output/$@
-
-intronGencodeNovelStatsTest: mkdirs
-	${buildGencodeNovelDb}
-	${rslIntronEvidStats} novel output/$@.novel.db output/$@/novel.
-	${diff} -r expected/$@ output/$@
-
-##
-# rslTransSuppBed
-##
-transSuppBedTests: transSuppBedAllTest
-
-transSuppBedAllTest: mkdirs
-	$(call gencodeTestDbSetup,output/$@.gencode.db)
-	${buildGencodeSuppDb}
-	${rslTransSuppBed}  output/$@.gencode.db output/$@.supp.db output/$@.bed
-	${diff} expected/$@.bed output/$@.bed
-
-##
-# tests of plotting programs, results not check automatically
-##
-
-plotTests: gencodeSuppCntPlotTest novelSuppCntPlotTest
-
-gencodeSuppCntPlotTest: mkdirs
-	${buildGencodeSuppDb}
-	${rslIntronSuppPlot} support output/$@.supp.db output/$@.pdf
-
-novelSuppCntPlotTest: mkdirs
-	${buildGencodeNovelDb}
-	${rslIntronSuppPlot} novel output/$@.novel.db output/$@.pdf
-
-##
-# rslGencodeCollectSaturation
-##
-saturationTests: saturationCollectTest \
-		saturationFinishTest
-
-saturationCollectTest: mkdirs
-	${rnaSeqDbSetup}
-	${rslGencodeCollectSaturation} --testMode output/$@/rnaseq.db output/$@.saturation.tsv chr1:2100000-8000000
-	${diff} expected/$@.saturation.tsv output/$@.saturation.tsv
-
-# test input to combines is just two copies of above output
-saturationFinishTest: mkdirs
-	mkdir -p output/$@.work
-	cp expected/saturationCollectTest.saturation.tsv output/$@.work/win1.tsv
-	cp expected/saturationCollectTest.saturation.tsv output/$@.work/win2.tsv
-	(echo output/$@.work/win1.tsv; echo output/$@.work/win2.tsv) > output/$@.work/expected.lst
-	${rslGencodeCollectSaturationFinishJobs} output/$@.work output/$@.saturation.tsv
-	${diff} expected/$@.saturation.tsv output/$@.saturation.tsv
 
 mkdirs:
 	@mkdir -p output
