@@ -237,7 +237,7 @@ class IntronFeature(TransFeature):
         if self.donorSeq is None:
             sjDesc = None
         else:
-            sjDesc = "{}...{} ({})".format(self.donorSeq, self.acceptorSeq, self.spliceJuncs)
+            sjDesc = "{}...{} ({})".format(self.donorSeq, self.acceptorSeq, str(self.spliceJuncs))
         return "intron {} sjBases={}".format(self.coordsStr(), sjDesc)
 
     @property
