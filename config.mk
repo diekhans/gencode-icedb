@@ -4,6 +4,8 @@
 #  - LIB_MODS = base names files in current directory to compile to library
 
 
+PYTHON = python3
+
 MACHTYPE = $(shell uname -m)
 SYS = $(shell uname -s)
 
@@ -57,3 +59,9 @@ endif
 
 
 LIBS += -lsqlite3
+
+
+diff = diff -u
+# force sort to be consistent
+export LC_ALL=C
+

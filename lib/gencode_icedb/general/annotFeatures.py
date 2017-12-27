@@ -87,7 +87,7 @@ class AnnotationGenePredFactory(object):
     def __addCodingFeatures(self, gp, iBlkStart, iBlkEnd, rnaStart, rnaEnd, exon):
         rnaFeatures = []
         rnaNext = rnaStart
-        for iBlk in xrange(iBlkStart, iBlkEnd):
+        for iBlk in range(iBlkStart, iBlkEnd):
             rnaNext = self.__getCodingFeatures(gp.exons[iBlk], rnaNext, exon, rnaFeatures)
         assert rnaNext == rnaEnd
         exon.rnaFeatures = tuple(rnaFeatures)
@@ -95,7 +95,7 @@ class AnnotationGenePredFactory(object):
     def __addNonCodingFeatures(self, gp, iBlkStart, iBlkEnd, rnaStart, rnaEnd, exon):
         nonCodingFeatures = []
         rnaNext = rnaStart
-        for iBlk in xrange(iBlkStart, iBlkEnd):
+        for iBlk in range(iBlkStart, iBlkEnd):
             gpExon = gp.exons[iBlk]
             nonCodingFeatures.append(NonCodingRegionFeature(exon, gpExon.start, gpExon.end,
                                                             rnaNext, rnaNext + gpExon.size()))
@@ -106,7 +106,7 @@ class AnnotationGenePredFactory(object):
     def __makeExon(self, gp, iBlkStart, iBlkEnd, rnaStart, rnaEnd, trans):
         exon = ExonFeature(trans, gp.exons[iBlkStart].start, gp.exons[iBlkEnd - 1].end,
                            rnaStart, rnaEnd)
-        if trans.cdsChromStart < trans.cdsChromEnd:
+        if trans.cdsChromStart is not None:
             self.__addCodingFeatures(gp, iBlkStart, iBlkEnd, rnaStart, rnaEnd, exon)
         else:
             self.__addNonCodingFeatures(gp, iBlkStart, iBlkEnd, rnaStart, rnaEnd, exon)

@@ -1,30 +1,27 @@
 ROOT = ../..
+include ${ROOT}/config.mk
 
-binDir = ${ROOT}/bin
+rslEncodeDccQuery = ${BINDIR}/rslEncodeDccQuery
 
-rslEncodeDccQuery = ${binDir}/rslEncodeDccQuery
+rslSraRunInfoFilter = ${BINDIR}/rslSraRunInfoFilter
+rslSraRunInfoDbLoad = ${BINDIR}/rslSraRunInfoDbLoad
+rslMappingMetadataDbLoad = ${BINDIR}/rslMappingMetadataDbLoad
 
-rslSraRunInfoFilter = ${binDir}/rslSraRunInfoFilter
-rslSraRunInfoDbLoad = ${binDir}/rslSraRunInfoDbLoad
-rslMappingMetadataDbLoad = ${binDir}/rslMappingMetadataDbLoad
+rslStarSjOutSplit = ${BINDIR}/rslStarSjOutSplit
+rslMkStarSjOutSplits = ${BINDIR}/rslMkStarSjOutSplits
+rslMkStarSjSupMergeJobs = ${BINDIR}/rslMkStarSjSupMergeJobs
 
-rslStarSjOutSplit = ${binDir}/rslStarSjOutSplit
-rslMkStarSjOutSplits = ${binDir}/rslMkStarSjOutSplits
-rslMkStarSjSupMergeJobs = ${binDir}/rslMkStarSjSupMergeJobs
+gencodeDbLoad = ${BINDIR}/gencodeDbLoad
+rslGencodeCollectSupport = ${BINDIR}/rslGencodeCollectSupport
+rslGencodeCollectSupportMkJobs = ${BINDIR}/rslGencodeCollectSupportMkJobs
+rslGencodeCollectSupportFinishJobs = ${BINDIR}/rslGencodeCollectSupportFinishJobs
 
-gencodeDbLoad = ${binDir}/gencodeDbLoad
-rslGencodeCollectSupport = ${binDir}/rslGencodeCollectSupport
-rslGencodeCollectSupportMkJobs = ${binDir}/rslGencodeCollectSupportMkJobs
-rslGencodeCollectSupportFinishJobs = ${binDir}/rslGencodeCollectSupportFinishJobs
-
-rslGencodeCollectNovel = ${binDir}/rslGencodeCollectNovel
-rslGencodeCollectNovelMkJobs = ${binDir}/rslGencodeCollectNovelMkJobs
-rslGencodeCollectNovelFinishJobs = ${binDir}/rslGencodeCollectNovelFinishJobs
+rslGencodeCollectNovel = ${BINDIR}/rslGencodeCollectNovel
+rslGencodeCollectNovelMkJobs = ${BINDIR}/rslGencodeCollectNovelMkJobs
+rslGencodeCollectNovelFinishJobs = ${BINDIR}/rslGencodeCollectNovelFinishJobs
 
 
 genomeSeqsHg38 = /hive/data/genomes/hg38/hg38.2bit
-
-diff = diff -u
 
 # remove {make out exists ... } from job file so it can be executed as commands
 jobsToCmds = sed -Ee 's/\{check out exists (.+)\}/\1/'

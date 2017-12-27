@@ -13,11 +13,7 @@ progs = icedbProgSetup.py \
 	rslSraRunInfoFilter rslSraRunInfoDbLoad rslMappingMetadataDbLoad \
 	rslMkStarSjOutSplits \
 	rslGencodeCollectSupport rslGencodeCollectSupportMkJobs rslGencodeCollectSupportFinishJobs \
-	rslGencodeCollectNovel rslGencodeCollectNovelMkJobs rslGencodeCollectNovelFinishJobs \
-	rslIntronSuppPlot rslIntronSuppBed rslTransSuppBed rslIntronEvidStats rslIntronSuppStats \
-	rslGencodeCollectSaturation rslGencodeCollectSaturationMkJobs rslGencodeCollectSaturationFinishJobs
-
-# not done:  rslRnaSeqIntronEvidStats
+	rslGencodeCollectNovel rslGencodeCollectNovelMkJobs rslGencodeCollectNovelFinishJobs
 
 all::
 	(cd src && ${MAKE})
@@ -29,7 +25,7 @@ mondoTest::
 	(cd tests && ${MAKE} mondoTest)
 
 lint:
-	flake8 ${pylibs} ${progs:%=bin/%} ${pytests}
+	flake8-3 ${pylibs} ${progs:%=bin/%} ${pytests}
 
 clean::
 	(cd src && ${MAKE} clean)

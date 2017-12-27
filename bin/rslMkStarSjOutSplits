@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from __future__ import print_function
 import icedbProgSetup  # noqa: F401
@@ -41,9 +41,9 @@ def mkProc(starResultsDirTsv, startRec, endRec, byChromDir):
 
 def mkProcs(starResultsDirTsv, numResults, numprocs, byChromDir):
     procs = []
-    splitSize = numResults / numprocs
+    splitSize = numResults // numprocs
     startRec = 0
-    for iProc in xrange(0, numprocs):
+    for iProc in range(0, numprocs):
         # last split gets all remaining
         endRec = startRec + splitSize if iProc < numprocs - 1 else numResults
         procs.append(mkProc(starResultsDirTsv, startRec, endRec, byChromDir))

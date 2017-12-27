@@ -1,15 +1,10 @@
 ROOT = ../..
+include ${ROOT}/config.mk
 
-binDir = ${ROOT}/bin
-
-faUcscToGencode = ${binDir}/faUcscToGencode
-genePredIntrons = ${binDir}/genePredIntrons
-gencodeDbLoad = ${binDir}/gencodeDbLoad
+faUcscToGencode = ${BINDIR}/faUcscToGencode
+genePredIntrons = ${BINDIR}/genePredIntrons
+gencodeDbLoad = ${BINDIR}/gencodeDbLoad
 featureMondoTester = ./bin/featureMondoTester
-
-diff = diff -u
-
-export LC_ALL=C
 
 .SECONDARY:
 
@@ -24,7 +19,7 @@ test:   featureUnitTests \
 # test of features
 ##
 featureUnitTests:
-	python featureUnitTests.py
+	${PYTHON} featureUnitTests.py
  
 ##
 # tests of loading gencode data into sqlite

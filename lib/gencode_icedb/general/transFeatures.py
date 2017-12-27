@@ -13,7 +13,7 @@ def _reverseComplementChildren(rcParent, features):
     if features is None:
         return None
     rcFeatures = []
-    for i in xrange(len(features) - 1, -1, -1):
+    for i in range(len(features) - 1, -1, -1):
         rcFeatures.append(features[i].reverseComplement(rcParent))
     return tuple(rcFeatures)
 

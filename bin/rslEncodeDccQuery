@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from __future__ import print_function
 import icedbProgSetup  # noqa: F401
@@ -11,7 +11,7 @@ import requests  # from pip
 import json
 
 encodeUrl = "https://www.encodeproject.org/"
-encodeSearchUrl = urllib.basejoin(encodeUrl, "/search/")
+encodeSearchUrl = urllib.parse.urljoin(encodeUrl, "/search/")
 
 
 def parseArgs():
@@ -56,7 +56,7 @@ def buildUrl(scientificName, limit):
             "files.file_type": "fastq",
             "limit": str(limit),
             "frame": "embedded"}
-    return "{}?{}".format(encodeSearchUrl, urllib.urlencode(args))
+    return "{}?{}".format(encodeSearchUrl, urllib.parse.urlencode(args))
 
 
 def search(scientificName, limit):
@@ -103,12 +103,12 @@ def collectFile(frec, filesById, doneIds):
     if frec2 is not None:
         doneIds.add(frec2["@id"])
     runname = frec1["title"]  # just use first
-    readsfileurl = urllib.basejoin(encodeUrl, frec1["href"])
+    readsfileurl = urllib.parse.urljoin(encodeUrl, frec1["href"])
     readsfile = os.path.basename(frec1["href"])
     readlength = frec1["read_length"]
     md5sum = frec1["md5sum"]
     if frec2 is not None:
-        readsfile2url = urllib.basejoin(encodeUrl, frec2["href"])
+        readsfile2url = urllib.parse.urljoin(encodeUrl, frec2["href"])
         readsfile2 = os.path.basename(frec2["href"])
         md5sum2 = frec2["md5sum"]
     else:

@@ -52,7 +52,7 @@ class EvidencePslFactory(object):
 
     def __addAlignFeatures(self, psl, iBlkStart, iBlkEnd, exon):
         alignFeatures = []
-        for iBlk in xrange(iBlkStart, iBlkEnd):
+        for iBlk in range(iBlkStart, iBlkEnd):
             if iBlk > iBlkStart:
                 self.__addUnalignedFeatures(psl, iBlk, exon, alignFeatures)
             self.__addAlignedFeature(psl, iBlk, exon, alignFeatures)  # after since unaligned is before block

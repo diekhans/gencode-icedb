@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from __future__ import print_function
 import icedbProgSetup  # noqa: F401
@@ -33,7 +33,7 @@ resultsTsvTypeMap = {
 
 def resultsDbLoad(resultsConn, recs):
     with resultsConn.atomic():
-        for idx in xrange(0, len(recs), bulk_size):
+        for idx in range(0, len(recs), bulk_size):
             GencodeNovel.insert_many(recs[idx:idx + bulk_size]).execute()
 
 

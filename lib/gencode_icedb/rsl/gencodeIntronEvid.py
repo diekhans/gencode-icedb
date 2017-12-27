@@ -8,6 +8,7 @@ from collections import defaultdict
 
 # FIXME: name confusion with supportAnalysis.GencodeIntronEvid
 
+
 class IntronSupportLevel(SymEnum):
     "support level on an single intron"
     NONE = 0
