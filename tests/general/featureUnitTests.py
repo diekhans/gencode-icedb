@@ -73,7 +73,7 @@ class EvidenceTests(FeatureTestBase):
     def testAF010310(self):
         trans = self.__pslToEvidTranscript(self.__getSet1Psl("AF010310.1"))
         self._assertFeatures(trans,
-                             ('t=chr22:18900294-18905926/+, rna=AF010310.1:0-888/- 901',
+                             ('t=chr22:18900294-18905926/+, rna=AF010310.1:13-901/- 901',
                               (('exon 18900294-18900875 rna=13-618',
                                 (('aln 18900294-18900452 rna=13-171',),
                                  ('rins None-None rna=171-174',),
@@ -178,7 +178,7 @@ class EvidenceTests(FeatureTestBase):
         rcTrans = trans.reverseComplement()
         self.assertEqual(len(rcTrans.features), len(trans.features))
         self._assertFeatures(rcTrans,
-                             ('t=chr22:32398640-32404272/-, rna=AF010310.1:13-901/+ 901',
+                             ('t=chr22:32398640-32404272/-, rna=AF010310.1:0-888/+ 901',
                               (('exon 32398640-32398738 rna=0-95',
                                 (('aln 32398640-32398673 rna=0-33',),
                                  ('cins 32398673-32398677 rna=None-None',),
@@ -560,7 +560,7 @@ class AnnotationTests(FeatureTestBase):
         i = 0
         for gp in GenePredReader(self.getInputFile("gencodeV26.gp")):
             trans = factory.fromGenePred(gp)
-            self.assertEqual(trans.rnaName, names[i])
+            self.assertEqual(trans.rna.name, names[i])
 
     def testAnnotToBed(self):
         """test for conversion to BED"""

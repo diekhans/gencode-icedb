@@ -5,7 +5,7 @@ import icedbProgSetup  # noqa: F401
 import os
 import argparse
 from pycbio.sys import fileOps
-from pycbio.hgbrowser.coords import Coords
+from pycbio.hgdata.coords import Coords
 from gencode_icedb.general.genome import GenomeReaderFactory
 
 
@@ -56,7 +56,7 @@ class JobGenerator(object):
 
     def generateJobs(self, batchFh, expectedFh, testRange):
         for chrom in self.genomeReader.getChroms():
-            if (testRange is None) or (chrom == testRange.chrom):
+            if (testRange is None) or (chrom == testRange.name):
                 self.__generateChromJob(chrom, self.genomeReader.getChromSize(chrom), batchFh, expectedFh, testRange)
 
 

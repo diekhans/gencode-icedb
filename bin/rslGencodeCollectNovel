@@ -6,7 +6,7 @@ import argparse
 import csv
 import sqlite3
 from pycbio.sys import fileOps, setOps
-from pycbio.hgbrowser.coords import Coords
+from pycbio.hgdata.coords import Coords
 from pycbio.hgdata.hgLite import GencodeAttrsDbTable
 from gencode_icedb.general import gencodeDb
 from gencode_icedb.general.genome import GenomeReaderFactory
@@ -57,13 +57,13 @@ class NovelFinder(object):
 
     def __loadRangeSupport(self, genomeCoords):
         # only use ones that start in this window
-        for sjSupp in self.sjSupportReader.fetch(genomeCoords.chrom, genomeCoords.start, genomeCoords.end):
+        for sjSupp in self.sjSupportReader.fetch(genomeCoords.name, genomeCoords.start, genomeCoords.end):
             if (sjSupp.strand in ('+', '-')) and (genomeCoords.start <= sjSupp.chromStart) and (sjSupp.chromStart < genomeCoords.end):
                 self.rangeSupportCnts.sumSjSupp(sjSupp)
 
     def __loadRangeTranscripts(self, genomeCoords):
         self.rangeTranscripts = AnnotationFeatures.dbFactory(self.attrsDbTable.conn, gencodeDb.gencode_ann_table,
-                                                             genomeCoords.chrom, genomeCoords.start, genomeCoords.end, self.genomeReader)
+                                                             genomeCoords.name, genomeCoords.start, genomeCoords.end, self.genomeReader)
 
     def __getOverlappingTrans(self, intron):
         return list(self.rangeTranscripts.transcriptsByRange.overlapping(intron.chrom, intron.chromStart, intron.chromEnd, intron.strand))
@@ -71,8 +71,8 @@ class NovelFinder(object):
     def __haveIntron(self, intron, trans):
         # already strand-filtered
         for feat in trans.features:
-            if (isinstance(feat, IntronFeature) and (intron.chromStart == feat.chromStart)
-                and (intron.chromEnd == feat.chromEnd)):
+            if (isinstance(feat, IntronFeature) and (intron.chromStart == feat.chrom.start)
+                and (intron.chromEnd == feat.chrom.end)):
                 return True
         return False
 
@@ -91,7 +91,7 @@ class NovelFinder(object):
     def __getContainingGenes(self, intron, overlappingTranses):
         geneIds = set()
         for trans in overlappingTranses:
-            geneIds.add(self.__getTransAttrs(trans.rnaName).geneId)
+            geneIds.add(self.__getTransAttrs(trans.rna.name).geneId)
         return geneIds
 
     def __reportNovel(self, intron, sjCounts, overlappingTranses, resultsWriter):

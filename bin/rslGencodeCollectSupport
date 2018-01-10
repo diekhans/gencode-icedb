@@ -70,7 +70,7 @@ class SupportCounter(object):
         "get primary transcript, dropping PAR, alts, etc"
         byChrom = defaultdict(list)
         for trans in transes:
-            byChrom[trans.chrom].append(trans)
+            byChrom[trans.chrom.name].append(trans)
         chroms = list(byChrom.keys())
         if len(chroms) == 1:
             return byChrom[chroms[0]]
@@ -88,9 +88,9 @@ class SupportCounter(object):
         return attrsByTrans
 
     def __getBounds(self, transes):
-        start = min([a.chromStart for a in transes])
-        end = max([a.chromEnd for a in transes])
-        return transes[0].chrom, start, end
+        start = min([a.chrom.start for a in transes])
+        end = max([a.chrom.end for a in transes])
+        return transes[0].chrom.name, start, end
 
     def __sumSupportsByIntron(self, chrom, start, end):
         intronSupportCnts = IntronSupportCounter(self.genomeReader)
@@ -110,7 +110,7 @@ class SupportCounter(object):
         resultsWriter.writerow([transAttrs.geneId, transAttrs.geneName,
                                 transAttrs.transcriptId,
                                 transAttrs.transcriptType,
-                                intron.chrom, intron.chromStart, intronFeat.chromEnd,
+                                intron.chrom, intron.chromStart, intron.chromEnd,
                                 intron.strand, intron.intronMotif,
                                 sjCounts.numExprs,
                                 sjCounts.numUniqueMapReads,
@@ -124,7 +124,7 @@ class SupportCounter(object):
     def __collectTranscriptsSupport(self, transes, attrsByTrans, resultsWriter):
         intronSupportCnts = self.__sumSupportForTranses(transes, resultsWriter)
         for trans in transes:
-            self.__collectTranscriptSupport(trans, attrsByTrans[trans.rnaName], intronSupportCnts, resultsWriter)
+            self.__collectTranscriptSupport(trans, attrsByTrans[trans.rna.name], intronSupportCnts, resultsWriter)
 
     def __collectSupportId(self, gencodeId, resultsWriter):
         attrs = self.__getAttrsById(gencodeId)

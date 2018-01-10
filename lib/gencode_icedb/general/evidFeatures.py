@@ -4,6 +4,7 @@ Convert alignments (PSL) to features, closing and tracking gaps.
 from __future__ import print_function
 from pycbio.hgdata.rangeFinder import RangeFinder
 from pycbio.hgdata.hgLite import PslDbTable
+from pycbio.hgdata.coords import Coords
 from gencode_icedb.general.spliceJuncs import spliceJuncsGetSeqs
 from gencode_icedb.tsl import minIntronSize
 from gencode_icedb.general.transFeatures import ExonFeature, IntronFeature, TranscriptFeatures, AlignedFeature, ChromInsertFeature, RnaInsertFeature
@@ -40,15 +41,19 @@ class EvidencePslFactory(object):
 
     def __addAlignedFeature(self, psl, iBlk, exon, alignFeatures):
         blk = psl.blocks[iBlk]
-        alignFeatures.append(AlignedFeature(exon, blk.tStart, blk.tEnd, blk.qStart, blk.qEnd))
+        alignFeatures.append(AlignedFeature(exon,
+                                            exon.chrom.subrange(blk.tStart, blk.tEnd),
+                                            exon.rna.subrange(blk.qStart, blk.qEnd)))
 
     def __addUnalignedFeatures(self, psl, iBlk, exon, alignFeatures):
         prevBlk = psl.blocks[iBlk - 1]
         blk = psl.blocks[iBlk]
         if blk.qStart > prevBlk.qEnd:
-            alignFeatures.append(RnaInsertFeature(exon, prevBlk.qEnd, blk.qStart))
+            alignFeatures.append(RnaInsertFeature(exon,
+                                                  exon.rna.subrange(prevBlk.qEnd, blk.qStart)))
         if blk.tStart > prevBlk.tEnd:
-            alignFeatures.append(ChromInsertFeature(exon, prevBlk.tEnd, blk.tStart))
+            alignFeatures.append(ChromInsertFeature(exon,
+                                                    exon.chrom.subrange(prevBlk.tEnd, blk.tStart)))
 
     def __addAlignFeatures(self, psl, iBlkStart, iBlkEnd, exon):
         alignFeatures = []
@@ -59,8 +64,9 @@ class EvidencePslFactory(object):
         exon.alignFeatures = tuple(alignFeatures)
 
     def __makeExon(self, psl, iBlkStart, iBlkEnd, trans):
-        exon = ExonFeature(trans, psl.blocks[iBlkStart].tStart, psl.blocks[iBlkEnd - 1].tEnd,
-                           psl.blocks[iBlkStart].qStart, psl.blocks[iBlkEnd - 1].qEnd)
+        exon = ExonFeature(trans,
+                           trans.chrom.subrange(psl.blocks[iBlkStart].tStart, psl.blocks[iBlkEnd - 1].tEnd),
+                           trans.rna.subrange(psl.blocks[iBlkStart].qStart, psl.blocks[iBlkEnd - 1].qEnd))
         self.__addAlignFeatures(psl, iBlkStart, iBlkEnd, exon)
         return exon
 
@@ -73,16 +79,20 @@ class EvidencePslFactory(object):
 
     def __makeIntron(self, psl, iBlkNext, trans):
         donorSeq, acceptorSeq = self.__getSpliceSites(psl, iBlkNext)
-        return IntronFeature(trans, psl.blocks[iBlkNext - 1].tEnd, psl.blocks[iBlkNext].tStart,
-                             psl.blocks[iBlkNext - 1].qEnd, psl.blocks[iBlkNext].qStart,
+        return IntronFeature(trans,
+                             trans.chrom.subrange(psl.blocks[iBlkNext - 1].tEnd, psl.blocks[iBlkNext].tStart),
+                             trans.rna.subrange(psl.blocks[iBlkNext - 1].qEnd, psl.blocks[iBlkNext].qStart),
                              donorSeq, acceptorSeq)
 
     def fromPsl(self, psl):
         "convert a psl to an TranscriptFeatures object"
-        if psl.getTStrand() != '+':
-            raise Exception("unexpected target `-' strand on {} ".format(psl.qName))
-        trans = TranscriptFeatures(psl.tName, psl.getTStrand(), psl.tStart, psl.tEnd, psl.tSize,
-                                   psl.qName, psl.getQStrand(), psl.qStart, psl.qEnd, psl.qSize)
+        chrom = Coords(psl.tName, psl.tStart, psl.tEnd, '+', psl.tSize)
+        if psl.getTStrand() == '-':
+            chrom = chrom.reverse()
+        rna = Coords(psl.qName, psl.qStart, psl.qEnd, '+', psl.qSize)
+        if psl.getQStrand() == '-':
+            rna = rna.reverse()
+        trans = TranscriptFeatures(chrom, rna)
         trans.features = tuple(self.__buildFeatures(psl, trans))
         return trans
 
@@ -102,7 +112,7 @@ class EvidenceFeatureMap(list):
         self.transcripts.append(trans)
         for feat in trans.features:
             if isinstance(feat, ExonFeature):
-                self.exonRangeMap.add(trans.chrom, feat.chromStart, feat.chromEnd, trans, trans.chromStrand)
+                self.exonRangeMap.add(trans.chrom.name, feat.chrom.start, feat.chrom.end, trans, trans.chrom.strand)
 
     @staticmethod
     def dbFactory(conn, table, chrom, start, end, genomeReader):
