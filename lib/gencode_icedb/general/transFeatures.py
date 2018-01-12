@@ -4,7 +4,6 @@ Features of a transcript annotation or alignment.
 from __future__ import print_function
 from pycbio.hgdata import dnaOps
 from pycbio.hgdata.frame import Frame
-from pycbio.hgdata.coords import Coords
 from pycbio.hgdata.bed import Bed
 from gencode_icedb.general.spliceJuncs import SpliceJuncs, spliceJuncsClassify
 
@@ -167,7 +166,7 @@ class ExonFeature(TransFeature):
 
     def rnaOverlaps(self, exon2):
         "does RNA range overlap another exon?"
-        return (self.rnaStart < exon2.rnaEnd) and (self.rnaEnd > exon2.rnaStart)
+        return (self.rna.start < exon2.rna.end) and (self.rna.end > exon2.rna.start)
 
     def __countAlignedBases(self):
         alignedCnt = 0
@@ -251,7 +250,7 @@ class TranscriptFeatures(TransFeature):
 
     def __init__(self, chrom, rna, cdsChromStart=None, cdsChromEnd=None):
         super(TranscriptFeatures, self).__init__(None, chrom, rna)
-        self.chrom= chrom
+        self.chrom = chrom
         self.rna = rna
         self.cdsChromStart = cdsChromStart
         self.cdsChromEnd = cdsChromEnd

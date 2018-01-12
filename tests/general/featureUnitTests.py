@@ -235,6 +235,15 @@ class EvidenceTests(FeatureTestBase):
                                  ('rins None-None rna=727-730',),
                                  ('aln 32404114-32404272 rna=730-888',))))))
 
+    def testExonRnaOverlap(self):
+        aln1 = self.__pslToEvidTranscript(self.__getSet1Psl("AF010310.1"))
+        aln2 = self.__pslToEvidTranscript(self.__getSet1Psl("AF120278.1"))
+        exon1 = aln1.features[0]
+        exon2 = aln1.features[0]
+        self.assertTrue(exon1.rnaOverlaps(exon2))
+        exon2b = aln1.features[3]
+        self.assertFalse(exon1.rnaOverlaps(exon2b))
+
     def testRangeMap1(self):
         # range is set1: chr22:18632931-19279166
         pslDbTbl = self.__obtainSetPslDbTbl()

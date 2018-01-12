@@ -1,11 +1,6 @@
 ROOT = .
 include ${ROOT}/config.mk
 
-pylibs = $(wildcard ${PYLIBDIR}/*.py) \
-	$(wildcard ${PYLIBDIR}/general/*.py) \
-	$(wildcard ${PYLIBDIR}/rsl/*.py) \
-	$(wildcard ${PYLIBDIR}/tsl/*.py)
-pytests = $(wildcard tests/general/*.py)
 progs = icedbProgSetup.py \
 	gencodeDbLoad \
 	tslGbffGetProblemCases tslGenbankProblemCasesLoad tslGetEnsemblRnaAligns \
@@ -25,10 +20,11 @@ mondoTest::
 	(cd tests && ${MAKE} mondoTest)
 
 lint:
-	flake8-3 ${pylibs} ${progs:%=bin/%} ${pytests}
+	flake8-3 tests/general lib/gencode_icedb ${progs:%=bin/%}
 
 clean::
 	(cd src && ${MAKE} clean)
 	(cd tests && ${MAKE} clean)
-	rm -f ${pylibs:%=%c} ${BINDIR}/*.pyc
 	rm -rf  ${OBJDIR}
+	find . -type f -name '*.pyc' -exec rm -f {} \;
+	find . -type d -name __pycache__ -exec rmdir {} \;
