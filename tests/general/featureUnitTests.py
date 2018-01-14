@@ -36,6 +36,7 @@ class FeatureTestBase(TestCaseBase):
     def _assertFeatures(self, trans, expect):
         if debugResults:
             print("==== {} ==== ".format(self.id()))
+            # FIXME: this splits string with whitespace, needed smarter print
             pprint.pprint(trans.toStrTree(), width=1)
             print()
         if not noCheckResults:
@@ -239,9 +240,9 @@ class EvidenceTests(FeatureTestBase):
         aln1 = self.__pslToEvidTranscript(self.__getSet1Psl("AF010310.1"))
         aln2 = self.__pslToEvidTranscript(self.__getSet1Psl("AF120278.1"))
         exon1 = aln1.features[0]
-        exon2 = aln1.features[0]
+        exon2 = aln2.features[0]
         self.assertTrue(exon1.rnaOverlaps(exon2))
-        exon2b = aln1.features[3]
+        exon2b = aln2.features[3]
         self.assertFalse(exon1.rnaOverlaps(exon2b))
 
     def testRangeMap1(self):
