@@ -13,7 +13,6 @@ from gencode_icedb.general.annotFeatures import AnnotationGenePredFactory
 from pycbio.hgdata.hgLite import PslDbTable, GenePredDbTable
 from pycbio.hgdata.genePred import GenePredReader
 import sqlite3
-import pprint
 
 
 twoBitHg19 = "/hive/data/genomes/hg19/hg19.2bit"
@@ -26,6 +25,7 @@ forceMockReader = False  # set this to check mock data
 debugResults = False   # print out results for updated expected
 noCheckResults = False  # don't check results
 
+
 if updateMockReader or forceMockReader or debugResults or noCheckResults:
     print("Warning: debug variables set", file=sys.stderr)
 if updateMockReader and forceMockReader:
@@ -36,9 +36,7 @@ class FeatureTestBase(TestCaseBase):
     def _assertFeatures(self, trans, expect):
         if debugResults:
             print("==== {} ==== ".format(self.id()))
-            # FIXME: this splits string with whitespace, needed smarter print
-            pprint.pprint(trans.toStrTree(), width=1)
-            print()
+            trans.dump(fh=sys.stdout, indent=2)
         if not noCheckResults:
             self.assertEqual(expect, trans.toStrTree())
 

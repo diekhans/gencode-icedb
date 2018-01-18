@@ -57,6 +57,26 @@ class TransFeature(object):
             r.append(feat.toStrTree())
         return tuple(r)
 
+    def dump(self, fh, indent=0, msg=None):
+        """print the tree for debugging purposes., optionally prefixing first line with
+        msg and indenting beneath it"""
+        if msg is not None:
+            pmsg = msg + ": "
+            fh.write(pmsg)
+            indent += len(pmsg)
+        self._dump(fh, indent)
+
+    def _dump(self, fh, indent):
+        "print current node and children, assumes current indent has been done"
+        fh.write(str(self) + '\n')
+
+    @staticmethod
+    def _dumpChildren(fh, indent, features):
+        "utility to dump a list of children"
+        for feat in features:
+            fh.write(indent * " ")
+            feat._dump(fh, indent)
+
     @property
     def transcript(self):
         "get the transcript feature by walking the parents"
@@ -158,6 +178,13 @@ class ExonFeature(TransFeature):
             r.append(self._getChildrenStrTree(self.alignFeatures))
         return tuple(r)
 
+    def _dump(self, fh, indent):
+        fh.write(str(self) + '\n')
+        if self.rnaFeatures is not None:
+            self._dumpChildren(fh, indent + 2, self.rnaFeatures)
+        if self.alignFeatures is not None:
+            self._dumpChildren(fh, indent + 2, self.alignFeatures)
+
     def reverseComplement(self, rcParent):
         rcExon = ExonFeature(rcParent, self.chrom.reverse(), self.rna.reverse())
         rcExon.rnaFeatures = _reverseComplementChildren(rcExon, self.rnaFeatures)
@@ -229,6 +256,11 @@ class IntronFeature(TransFeature):
             r.append(self._getChildrenStrTree(self.alignFeatures))
         return tuple(r)
 
+    def _dump(self, fh, indent):
+        fh.write(str(self) + '\n')
+        if self.alignFeatures is not None:
+            self._dumpChildren(fh, indent, self.alignFeatures)
+
     def reverseComplement(self, rcParent):
         rcIntron = IntronFeature(rcParent, self.chrom.reverse(), self.rna.reverse(),
                                  self.donorSeq, self.acceptorSeq)
@@ -267,6 +299,11 @@ class TranscriptFeatures(TransFeature):
         if self.features is not None:
             r.append(self._getChildrenStrTree(self.features))
         return tuple(r)
+
+    def _dump(self, fh, indent):
+        fh.write(str(self) + '\n')
+        if self.features is not None:
+            self._dumpChildren(fh, indent + 2, self.features)
 
     def toBed(self, itemRgb=""):
         """convert transcript and CDS to a Bed object"""
