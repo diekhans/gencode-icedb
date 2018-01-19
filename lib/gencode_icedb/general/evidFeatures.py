@@ -45,15 +45,15 @@ class EvidencePslFactory(object):
                                             exon.chrom.subrange(blk.tStart, blk.tEnd),
                                             exon.rna.subrange(blk.qStart, blk.qEnd)))
 
-    def __addUnalignedFeatures(self, psl, iBlk, exon, alignFeatures):
+    def __addUnalignedFeatures(self, psl, iBlk, feat, alignFeatures):
         prevBlk = psl.blocks[iBlk - 1]
         blk = psl.blocks[iBlk]
         if blk.qStart > prevBlk.qEnd:
-            alignFeatures.append(RnaInsertFeature(exon,
-                                                  exon.rna.subrange(prevBlk.qEnd, blk.qStart)))
+            alignFeatures.append(RnaInsertFeature(feat,
+                                                  feat.rna.subrange(prevBlk.qEnd, blk.qStart)))
         if blk.tStart > prevBlk.tEnd:
-            alignFeatures.append(ChromInsertFeature(exon,
-                                                    exon.chrom.subrange(prevBlk.tEnd, blk.tStart)))
+            alignFeatures.append(ChromInsertFeature(feat,
+                                                    feat.chrom.subrange(prevBlk.tEnd, blk.tStart)))
 
     def __addAlignFeatures(self, psl, iBlkStart, iBlkEnd, exon):
         alignFeatures = []
@@ -79,10 +79,14 @@ class EvidencePslFactory(object):
 
     def __makeIntron(self, psl, iBlkNext, trans):
         donorSeq, acceptorSeq = self.__getSpliceSites(psl, iBlkNext)
-        return IntronFeature(trans,
-                             trans.chrom.subrange(psl.blocks[iBlkNext - 1].tEnd, psl.blocks[iBlkNext].tStart),
-                             trans.rna.subrange(psl.blocks[iBlkNext - 1].qEnd, psl.blocks[iBlkNext].qStart),
-                             donorSeq, acceptorSeq)
+        alignFeatures = []
+        intron = IntronFeature(trans,
+                               trans.chrom.subrange(psl.blocks[iBlkNext - 1].tEnd, psl.blocks[iBlkNext].tStart),
+                               trans.rna.subrange(psl.blocks[iBlkNext - 1].qEnd, psl.blocks[iBlkNext].qStart),
+                               donorSeq, acceptorSeq)
+        self.__addUnalignedFeatures(psl, iBlkNext, intron, alignFeatures)
+        intron.alignFeatures = tuple(alignFeatures)
+        return intron
 
     def fromPsl(self, psl):
         "convert a psl to an TranscriptFeatures object"

@@ -12,12 +12,8 @@ from gencode_icedb.general.evidFeatures import EvidenceFeatureMap, EvidencePslFa
 from gencode_icedb.general.annotFeatures import AnnotationGenePredFactory
 from pycbio.hgdata.hgLite import PslDbTable, GenePredDbTable
 from pycbio.hgdata.genePred import GenePredReader
+from pycbio.sys.pprint2 import nswpprint
 import sqlite3
-
-
-twoBitHg19 = "/hive/data/genomes/hg19/hg19.2bit"
-mockReaderHg19PslTsv = "mockReaderHg19Psl.tsv"
-mockReaderHg19GpTsv = "mockReaderHg19Gp.tsv"
 
 updateMockReader = False   # set this to update from a real run
 forceMockReader = False  # set this to check mock data
@@ -25,49 +21,158 @@ forceMockReader = False  # set this to check mock data
 debugResults = False   # print out results for updated expected
 noCheckResults = False  # don't check results
 
-
 if updateMockReader or forceMockReader or debugResults or noCheckResults:
-    print("Warning: debug variables set", file=sys.stderr)
+    print("WARNING: debug variables set", file=sys.stderr)
 if updateMockReader and forceMockReader:
     raise Exception("makes no sense to have both updateMockReader and forceMockReader set")
+
+
+def getInputFile(base):
+    "from input relative to test file"
+    return os.path.join(os.path.dirname(__file__), "input", base)
+
+
+class GenomeSeqSrc(object):
+    "caching real or mock genome sources"
+
+    srcs = None  # initialized below
+
+    def __init__(self, db, twoBit, mockTsv):
+        self.db = db
+        self.twoBit = twoBit
+        self.mockTsv = mockTsv
+        self.factory = None
+
+    def __obtain(self):
+        if self.factory is None:
+            self.factory = GenomeReaderFactory(self.twoBit,
+                                               getInputFile(self.mockTsv),
+                                               updateMockReader, forceMockReader)
+        return self.factory.obtain()
+
+    @classmethod
+    def obtain(cls, db):
+        return cls.srcs[db].__obtain()
+
+
+GenomeSeqSrc.srcs = {
+    "hg19": GenomeSeqSrc("hg19", "/hive/data/genomes/hg19/hg19.2bit", "hg19.mock.tsv"),
+    "mm10": GenomeSeqSrc("mm10", "/hive/data/genomes/mm10/mm10.2bit", "mm10.mock.tsv"),
+}
+
+
+class PslDbSrc(object):
+    "caching psl sqlite database"
+    srcs = None  # initialized below
+
+    def __init__(self, name, pslFile):
+        self.name = name
+        self.pslFile = pslFile
+        self.conn = None
+        self.dbTbl = None
+
+    def __build(self):
+        self.conn = sqlite3.connect(":memory:")
+        self.dbTbl = PslDbTable(self.conn, self.name, create=True)
+        self.dbTbl.loadPslFile(getInputFile(self.pslFile))
+
+    def __obtain(self):
+        if self.conn is None:
+            self.__build()
+        return self.dbTbl
+
+    @classmethod
+    def obtain(cls, name):
+        return cls.srcs[name].__obtain()
+
+    @classmethod
+    def obtainPsl(cls, name, acc):
+        psls = cls.obtain(name).getByQName(acc)
+        if len(psls) == 0:
+            raise Exception("psl not found: {}".format(acc))
+        return psls[0]
+
+
+PslDbSrc.srcs = {
+    "set1": PslDbSrc("set1", "set1.ucsc-mrna.psl"),
+    "hg38-mm10.transMap": PslDbSrc("set1", "hg38-mm10.transMap.psl"),
+}
+
+
+class GenePredDbSrc(object):
+    "caching genpred sqlite database"
+    srcs = None  # initialized below
+
+    def __init__(self, name, genePredFile):
+        self.name = name
+        self.genePredFile = genePredFile
+        self.conn = None
+        self.dbTbl = None
+
+    def __build(self):
+        self.conn = sqlite3.connect(":memory:")
+        self.dbTbl = GenePredDbTable(self.conn, self.name, create=True)
+        self.dbTbl.loadGenePredFile(getInputFile(self.genePredFile))
+
+    def __obtain(self):
+        if self.conn is None:
+            self.__build()
+        return self.dbTbl
+
+    @classmethod
+    def obtain(cls, name):
+        return cls.srcs[name].__obtain()
+
+    @classmethod
+    def obtainGenePred(cls, name, acc):
+        gps = cls.obtain(name).getByName(acc)
+        if len(gps) == 0:
+            raise Exception("genePred not found: {}".format(acc))
+        return gps[0]
+
+
+GenePredDbSrc.srcs = {
+    "set1": GenePredDbSrc("set1", "set1.gencodeCompV19.gp")
+}
 
 
 class FeatureTestBase(TestCaseBase):
     def _assertFeatures(self, trans, expect):
         if debugResults:
             print("==== {} ==== ".format(self.id()))
-            trans.dump(fh=sys.stdout, indent=2)
+            nswpprint(trans.toStrTree(), indent=2)
         if not noCheckResults:
             self.assertEqual(expect, trans.toStrTree())
 
 
 class EvidenceTests(FeatureTestBase):
-    genomeReaderFactory = None
-    set1PslDbTbl = None
-
-    def __obtainGenomeReader(self):
-        if EvidenceTests.genomeReaderFactory is None:
-            EvidenceTests.genomeReaderFactory = GenomeReaderFactory(twoBitHg19, self.getInputFile(mockReaderHg19PslTsv),
-                                                                    updateMockReader, forceMockReader)
-        return EvidenceTests.genomeReaderFactory.obtain()
-
-    def __obtainSetPslDbTbl(self):
-        if EvidenceTests.set1PslDbTbl is None:
-            conn = sqlite3.connect(":memory:")
-            EvidenceTests.set1PslDbTbl = PslDbTable(conn, "set1", create=True)
-            EvidenceTests.set1PslDbTbl.loadPslFile(self.getInputFile("set1.ucsc-mrna.psl"))
-        return EvidenceTests.set1PslDbTbl
-
     def __getSet1Psl(self, acc):
-        pslDbTbl = self.__obtainSetPslDbTbl()
-        psls = pslDbTbl.getByQName(acc)
-        if len(psls) == 0:
-            raise Exception("psl not found: {}".format(acc))
-        return psls[0]
+        return PslDbSrc.obtainPsl("set1", acc)
 
     def __pslToEvidTranscript(self, psl):
-        factory = EvidencePslFactory(self.__obtainGenomeReader())
+        factory = EvidencePslFactory(GenomeSeqSrc.obtain("hg19"))
         return factory.fromPsl(psl)
+
+    def __checkRnaAln(self, trans):
+        "validate that full RNA is covered by alignment"
+        prevChromEnd = trans.chrom.start
+        prevRnaEnd = trans.rna.start
+        for feat in trans.features:
+            if feat.alignFeatures is not None:
+                for alnFeat in feat.alignFeatures:
+                    if alnFeat.chrom is not None:
+                        self.assertEqual(alnFeat.chrom.start, prevChromEnd,
+                                         msg="trans: {} feat: {} aln: {} chrom.start {} != prevChromEnd {}".format(trans.rna.name, feat, alnFeat, alnFeat.chrom.start, prevChromEnd))
+                        prevChromEnd = alnFeat.chrom.end
+                    if alnFeat.rna is not None:
+                        self.assertEqual(alnFeat.rna.start, prevRnaEnd,
+                                         msg="trans: {} feat: {} aln: {} rna.start {} != prevRnaEnd {}".format(trans.rna.name, feat, alnFeat, alnFeat.rna.start, prevRnaEnd))
+                        prevRnaEnd = alnFeat.rna.end
+        self.assertEqual(prevChromEnd, trans.chrom.end,
+                         msg="trans: {} alignments don't cover chrom range".format(trans.rna.name))
+        self.assertEqual(prevRnaEnd, trans.rna.end,
+                         msg="trans: {} alignments don't cover RNA range".format(trans.rna.name))
+
 
     def testAF010310(self):
         trans = self.__pslToEvidTranscript(self.__getSet1Psl("AF010310.1"))
@@ -116,18 +221,22 @@ class EvidenceTests(FeatureTestBase):
                                  ('aln 18900803-18900871 rna=545-613',),
                                  ('rins None-None rna=613-614',),
                                  ('aln 18900871-18900875 rna=614-618',))),
-                               ('intron 18900875-18900950 rna=618-618 sjBases=GT...AG (GT_AG)',),
+                               ('intron 18900875-18900950 rna=618-618 sjBases=GT...AG (GT_AG)',
+                                (('cins 18900875-18900950 rna=None-None',),)),
                                ('exon 18900950-18901039 rna=618-707',
                                 (('aln 18900950-18901039 rna=618-707',),)),
-                               ('intron 18901039-18904402 rna=707-707 sjBases=GT...AG (GT_AG)',),
+                               ('intron 18901039-18904402 rna=707-707 sjBases=GT...AG (GT_AG)',
+                                (('cins 18901039-18904402 rna=None-None',),)),
                                ('exon 18904402-18904501 rna=707-806',
                                 (('aln 18904402-18904501 rna=707-806',),)),
-                               ('intron 18904501-18905828 rna=806-806 sjBases=GT...AG (GT_AG)',),
+                               ('intron 18904501-18905828 rna=806-806 sjBases=GT...AG (GT_AG)',
+                                (('cins 18904501-18905828 rna=None-None',),)),
                                ('exon 18905828-18905926 rna=806-901',
                                 (('aln 18905828-18905889 rna=806-867',),
                                  ('rins None-None rna=867-868',),
                                  ('cins 18905889-18905893 rna=None-None',),
                                  ('aln 18905893-18905926 rna=868-901',))))))
+        self.__checkRnaAln(trans)
 
     def testX96484(self):
         trans = self.__pslToEvidTranscript(self.__getSet1Psl("X96484.1"))
@@ -135,104 +244,261 @@ class EvidenceTests(FeatureTestBase):
                              ('t=chr22:18893922-18899592/+, rna=X96484.1:48-1067/+ 1080',
                               (('exon 18893922-18893997 rna=48-123',
                                 (('aln 18893922-18893997 rna=48-123',),)),
-                               ('intron 18893997-18894077 rna=123-123 sjBases=GT...AG (GT_AG)',),
+                               ('intron 18893997-18894077 rna=123-123 sjBases=GT...AG (GT_AG)',
+                                (('cins 18893997-18894077 rna=None-None',),)),
                                ('exon 18894077-18894238 rna=123-285',
                                 (('aln 18894077-18894173 rna=123-219',),
                                  ('rins None-None rna=219-220',),
                                  ('aln 18894173-18894238 rna=220-285',))),
-                               ('intron 18894238-18897684 rna=285-285 sjBases=GT...AG (GT_AG)',),
+                               ('intron 18894238-18897684 rna=285-285 sjBases=GT...AG (GT_AG)',
+                                (('cins 18894238-18897684 rna=None-None',),)),
                                ('exon 18897684-18897785 rna=285-386',
                                 (('aln 18897684-18897785 rna=285-386',),)),
-                               ('intron 18897785-18898400 rna=386-386 sjBases=GT...AG (GT_AG)',),
+                               ('intron 18897785-18898400 rna=386-386 sjBases=GT...AG (GT_AG)',
+                                (('cins 18897785-18898400 rna=None-None',),)),
                                ('exon 18898400-18898541 rna=386-527',
                                 (('aln 18898400-18898541 rna=386-527',),)),
-                               ('intron 18898541-18899052 rna=527-527 sjBases=GT...AG (GT_AG)',),
+                               ('intron 18898541-18899052 rna=527-527 sjBases=GT...AG (GT_AG)',
+                                (('cins 18898541-18899052 rna=None-None',),)),
                                ('exon 18899052-18899592 rna=527-1067',
                                 (('aln 18899052-18899592 rna=527-1067',),)))))
+        self.__checkRnaAln(trans)
 
     def testX96484NoSJ(self):
-        factory = EvidencePslFactory(None)
-        trans = factory.fromPsl(self.__getSet1Psl("X96484.1"))
+        trans = EvidencePslFactory(None).fromPsl(self.__getSet1Psl("X96484.1"))
         self._assertFeatures(trans,
                              ('t=chr22:18893922-18899592/+, rna=X96484.1:48-1067/+ 1080',
                               (('exon 18893922-18893997 rna=48-123',
                                 (('aln 18893922-18893997 rna=48-123',),)),
-                               ('intron 18893997-18894077 rna=123-123 sjBases=None',),
+                               ('intron 18893997-18894077 rna=123-123 sjBases=None',
+                                (('cins 18893997-18894077 rna=None-None',),)),
                                ('exon 18894077-18894238 rna=123-285',
                                 (('aln 18894077-18894173 rna=123-219',),
                                  ('rins None-None rna=219-220',),
                                  ('aln 18894173-18894238 rna=220-285',))),
-                               ('intron 18894238-18897684 rna=285-285 sjBases=None',),
+                               ('intron 18894238-18897684 rna=285-285 sjBases=None',
+                                (('cins 18894238-18897684 rna=None-None',),)),
                                ('exon 18897684-18897785 rna=285-386',
                                 (('aln 18897684-18897785 rna=285-386',),)),
-                               ('intron 18897785-18898400 rna=386-386 sjBases=None',),
+                               ('intron 18897785-18898400 rna=386-386 sjBases=None',
+                                (('cins 18897785-18898400 rna=None-None',),)),
                                ('exon 18898400-18898541 rna=386-527',
                                 (('aln 18898400-18898541 rna=386-527',),)),
-                               ('intron 18898541-18899052 rna=527-527 sjBases=None',),
+                               ('intron 18898541-18899052 rna=527-527 sjBases=None',
+                                (('cins 18898541-18899052 rna=None-None',),)),
                                ('exon 18899052-18899592 rna=527-1067',
                                 (('aln 18899052-18899592 rna=527-1067',),)))))
+        self.__checkRnaAln(trans)
 
-    def testAF010310Rc(self):
-        trans = self.__pslToEvidTranscript(self.__getSet1Psl("AF010310.1"))
-        rcTrans = trans.reverseComplement()
-        self.assertEqual(len(rcTrans.features), len(trans.features))
-        self._assertFeatures(rcTrans,
-                             ('t=chr22:32398640-32404272/-, rna=AF010310.1:0-888/+ 901',
-                              (('exon 32398640-32398738 rna=0-95',
-                                (('aln 32398640-32398673 rna=0-33',),
-                                 ('cins 32398673-32398677 rna=None-None',),
-                                 ('rins None-None rna=33-34',),
-                                 ('aln 32398677-32398738 rna=34-95',))),
-                               ('intron 32398738-32400065 rna=95-95 sjBases=GT...AG (GT_AG)',),
-                               ('exon 32400065-32400164 rna=95-194',
-                                (('aln 32400065-32400164 rna=95-194',),)),
-                               ('intron 32400164-32403527 rna=194-194 sjBases=GT...AG (GT_AG)',),
-                               ('exon 32403527-32403616 rna=194-283',
-                                (('aln 32403527-32403616 rna=194-283',),)),
-                               ('intron 32403616-32403691 rna=283-283 sjBases=GT...AG (GT_AG)',),
-                               ('exon 32403691-32404272 rna=283-888',
-                                (('aln 32403691-32403695 rna=283-287',),
-                                 ('rins None-None rna=287-288',),
-                                 ('aln 32403695-32403763 rna=288-356',),
+    def testTransMapDropExon(self):
+        # internal exon was not mapped, causing an intron to contain unaligned
+        psl = PslDbSrc.obtainPsl("hg38-mm10.transMap", "ENST00000641446")
+        trans = EvidencePslFactory(GenomeSeqSrc.obtain("mm10")).fromPsl(psl)
+        self._assertFeatures(trans,
+                             ('t=chr4:148039043-148056154/+, rna=ENST00000641446:0-2820/+ 2820',
+                              (('exon 148039043-148039141 rna=0-106',
+                                (('aln 148039043-148039050 rna=0-7',),
+                                 ('cins 148039050-148039051 rna=None-None',),
+                                 ('aln 148039051-148039059 rna=7-15',),
+                                 ('rins None-None rna=15-16',),
+                                 ('aln 148039059-148039079 rna=16-36',),
+                                 ('rins None-None rna=36-44',),
+                                 ('aln 148039079-148039141 rna=44-106',))),
+                               ('intron 148039141-148041583 rna=106-115 sjBases=aa...ag (unknown)',
+                                (('rins None-None rna=106-115',),
+                                 ('cins 148039141-148041583 rna=None-None',))),
+                               ('exon 148041583-148041829 rna=115-364',
+                                (('aln 148041583-148041649 rna=115-181',),
+                                 ('rins None-None rna=181-184',),
+                                 ('aln 148041649-148041829 rna=184-364',))),
+                               ('intron 148041829-148043424 rna=364-364 sjBases=GT...AG (GT_AG)',
+                                (('cins 148041829-148043424 rna=None-None',),)),
+                               ('exon 148043424-148043663 rna=364-603',
+                                (('aln 148043424-148043663 rna=364-603',),)),
+                               ('intron 148043663-148044443 rna=603-603 sjBases=GT...AG (GT_AG)',
+                                (('cins 148043663-148044443 rna=None-None',),)),
+                               ('exon 148044443-148044554 rna=603-714',
+                                (('aln 148044443-148044554 rna=603-714',),)),
+                               ('intron 148044554-148048072 rna=714-714 sjBases=GT...AG (GT_AG)',
+                                (('cins 148044554-148048072 rna=None-None',),)),
+                               ('exon 148048072-148048266 rna=714-908',
+                                (('aln 148048072-148048266 rna=714-908',),)),
+                               ('intron 148048266-148051371 rna=908-908 sjBases=GT...AG (GT_AG)',
+                                (('cins 148048266-148051371 rna=None-None',),)),
+                               ('exon 148051371-148051622 rna=908-1159',
+                                (('aln 148051371-148051622 rna=908-1159',),)),
+                               ('intron 148051622-148051864 rna=1159-1159 sjBases=GT...AG (GT_AG)',
+                                (('cins 148051622-148051864 rna=None-None',),)),
+                               ('exon 148051864-148051999 rna=1159-1294',
+                                (('aln 148051864-148051999 rna=1159-1294',),)),
+                               ('intron 148051999-148052098 rna=1294-1294 sjBases=GT...AG (GT_AG)',
+                                (('cins 148051999-148052098 rna=None-None',),)),
+                               ('exon 148052098-148052279 rna=1294-1475',
+                                (('aln 148052098-148052279 rna=1294-1475',),)),
+                               ('intron 148052279-148052513 rna=1475-1475 sjBases=GT...AG (GT_AG)',
+                                (('cins 148052279-148052513 rna=None-None',),)),
+                               ('exon 148052513-148052696 rna=1475-1658',
+                                (('aln 148052513-148052696 rna=1475-1658',),)),
+                               ('intron 148052696-148053579 rna=1658-1658 sjBases=GT...AG (GT_AG)',
+                                (('cins 148052696-148053579 rna=None-None',),)),
+                               ('exon 148053579-148053681 rna=1658-1760',
+                                (('aln 148053579-148053681 rna=1658-1760',),)),
+                               ('intron 148053681-148054984 rna=1760-1869 sjBases=GT...AG (GT_AG)',
+                                (('rins None-None rna=1760-1869',),
+                                 ('cins 148053681-148054984 rna=None-None',))),
+                               ('exon 148054984-148055104 rna=1869-1989',
+                                (('aln 148054984-148055104 rna=1869-1989',),)),
+                               ('intron 148055104-148055372 rna=1989-1989 sjBases=GT...AG (GT_AG)',
+                                (('cins 148055104-148055372 rna=None-None',),)),
+                               ('exon 148055372-148055597 rna=1989-2217',
+                                (('aln 148055372-148055566 rna=1989-2183',),
+                                 ('rins None-None rna=2183-2186',),
+                                 ('aln 148055566-148055597 rna=2186-2217',))),
+                               ('intron 148055597-148055703 rna=2217-2297 sjBases=tc...cc (unknown)',
+                                (('rins None-None rna=2217-2297',),
+                                 ('cins 148055597-148055703 rna=None-None',))),
+                               ('exon 148055703-148056110 rna=2297-2750',
+                                (('aln 148055703-148055739 rna=2297-2333',),
+                                 ('cins 148055739-148055749 rna=None-None',),
+                                 ('aln 148055749-148055803 rna=2333-2387',),
+                                 ('rins None-None rna=2387-2388',),
+                                 ('aln 148055803-148055878 rna=2388-2463',),
+                                 ('rins None-None rna=2463-2464',),
+                                 ('aln 148055878-148055884 rna=2464-2470',),
+                                 ('rins None-None rna=2470-2500',),
+                                 ('aln 148055884-148055903 rna=2500-2519',),
+                                 ('rins None-None rna=2519-2523',),
+                                 ('aln 148055903-148055932 rna=2523-2552',),
+                                 ('rins None-None rna=2552-2568',),
+                                 ('aln 148055932-148055976 rna=2568-2612',),
+                                 ('rins None-None rna=2612-2617',),
+                                 ('aln 148055976-148055994 rna=2617-2635',),
+                                 ('rins None-None rna=2635-2637',),
+                                 ('aln 148055994-148055997 rna=2637-2640',),
+                                 ('cins 148055997-148055998 rna=None-None',),
+                                 ('aln 148055998-148056008 rna=2640-2650',),
+                                 ('rins None-None rna=2650-2651',),
+                                 ('aln 148056008-148056013 rna=2651-2656',),
+                                 ('cins 148056013-148056018 rna=None-None',),
+                                 ('aln 148056018-148056040 rna=2656-2678',),
+                                 ('cins 148056040-148056041 rna=None-None',),
+                                 ('aln 148056041-148056046 rna=2678-2683',),
+                                 ('cins 148056046-148056048 rna=None-None',),
+                                 ('aln 148056048-148056065 rna=2683-2700',),
+                                 ('rins None-None rna=2700-2703',),
+                                 ('aln 148056065-148056089 rna=2703-2727',),
+                                 ('rins None-None rna=2727-2729',),
+                                 ('aln 148056089-148056110 rna=2729-2750',))),
+                               ('intron 148056110-148056150 rna=2750-2816 sjBases=ca...tg (unknown)',
+                                (('rins None-None rna=2750-2816',),
+                                 ('cins 148056110-148056150 rna=None-None',))),
+                               ('exon 148056150-148056154 rna=2816-2820',
+                                (('aln 148056150-148056154 rna=2816-2820',),)))))
+        self.__checkRnaAln(trans)
+
+    def testTransMapDropExonRc(self):
+        psl = PslDbSrc.obtainPsl("hg38-mm10.transMap", "ENST00000641446")
+        trans = EvidencePslFactory(GenomeSeqSrc.obtain("mm10")).fromPsl(psl)
+        transRc = trans.reverseComplement()
+        self._assertFeatures(transRc,
+                             ('t=chr4:8451962-8469073/-, rna=ENST00000641446:0-2820/- 2820',
+                              (('exon 8451962-8451966 rna=0-4', (('aln 8451962-8451966 rna=0-4',),)),
+                               ('intron 8451966-8452006 rna=4-70 sjBases=ca...tg (unknown)',
+                                (('cins 8451966-8452006 rna=None-None',), ('rins None-None rna=4-70',))),
+                               ('exon 8452006-8452413 rna=70-523',
+                                (('aln 8452006-8452027 rna=70-91',),
+                                 ('rins None-None rna=91-93',),
+                                 ('aln 8452027-8452051 rna=93-117',),
+                                 ('rins None-None rna=117-120',),
+                                 ('aln 8452051-8452068 rna=120-137',),
+                                 ('cins 8452068-8452070 rna=None-None',),
+                                 ('aln 8452070-8452075 rna=137-142',),
+                                 ('cins 8452075-8452076 rna=None-None',),
+                                 ('aln 8452076-8452098 rna=142-164',),
+                                 ('cins 8452098-8452103 rna=None-None',),
+                                 ('aln 8452103-8452108 rna=164-169',),
+                                 ('rins None-None rna=169-170',),
+                                 ('aln 8452108-8452118 rna=170-180',),
+                                 ('cins 8452118-8452119 rna=None-None',),
+                                 ('aln 8452119-8452122 rna=180-183',),
+                                 ('rins None-None rna=183-185',),
+                                 ('aln 8452122-8452140 rna=185-203',),
+                                 ('rins None-None rna=203-208',),
+                                 ('aln 8452140-8452184 rna=208-252',),
+                                 ('rins None-None rna=252-268',),
+                                 ('aln 8452184-8452213 rna=268-297',),
+                                 ('rins None-None rna=297-301',),
+                                 ('aln 8452213-8452232 rna=301-320',),
+                                 ('rins None-None rna=320-350',),
+                                 ('aln 8452232-8452238 rna=350-356',),
                                  ('rins None-None rna=356-357',),
-                                 ('aln 32403763-32403776 rna=357-370',),
-                                 ('rins None-None rna=370-371',),
-                                 ('aln 32403776-32403804 rna=371-399',),
-                                 ('rins None-None rna=399-400',),
-                                 ('aln 32403804-32403897 rna=400-493',),
-                                 ('rins None-None rna=493-494',),
-                                 ('aln 32403897-32403902 rna=494-499',),
-                                 ('rins None-None rna=499-500',),
-                                 ('aln 32403902-32403921 rna=500-519',),
-                                 ('rins None-None rna=519-520',),
-                                 ('aln 32403921-32403923 rna=520-522',),
-                                 ('rins None-None rna=522-523',),
-                                 ('aln 32403923-32403932 rna=523-532',),
-                                 ('cins 32403932-32403938 rna=None-None',),
-                                 ('rins None-None rna=532-542',),
-                                 ('aln 32403938-32403945 rna=542-549',),
-                                 ('rins None-None rna=549-550',),
-                                 ('aln 32403945-32403950 rna=550-555',),
-                                 ('rins None-None rna=555-556',),
-                                 ('aln 32403950-32403955 rna=556-561',),
-                                 ('rins None-None rna=561-562',),
-                                 ('aln 32403955-32403959 rna=562-566',),
-                                 ('cins 32403959-32403960 rna=None-None',),
-                                 ('rins None-None rna=566-569',),
-                                 ('aln 32403960-32403987 rna=569-596',),
-                                 ('rins None-None rna=596-597',),
-                                 ('aln 32403987-32403989 rna=597-599',),
-                                 ('rins None-None rna=599-600',),
-                                 ('aln 32403989-32403999 rna=600-610',),
-                                 ('rins None-None rna=610-611',),
-                                 ('aln 32403999-32404001 rna=611-613',),
-                                 ('rins None-None rna=613-614',),
-                                 ('aln 32404001-32404031 rna=614-644',),
-                                 ('rins None-None rna=644-645',),
-                                 ('aln 32404031-32404113 rna=645-727',),
-                                 ('cins 32404113-32404114 rna=None-None',),
-                                 ('rins None-None rna=727-730',),
-                                 ('aln 32404114-32404272 rna=730-888',))))))
+                                 ('aln 8452238-8452313 rna=357-432',),
+                                 ('rins None-None rna=432-433',),
+                                 ('aln 8452313-8452367 rna=433-487',),
+                                 ('cins 8452367-8452377 rna=None-None',),
+                                 ('aln 8452377-8452413 rna=487-523',))),
+                               ('intron 8452413-8452519 rna=523-603 sjBases=tc...cc (unknown)',
+                                (('cins 8452413-8452519 rna=None-None',),
+                                 ('rins None-None rna=523-603',))),
+                               ('exon 8452519-8452744 rna=603-831',
+                                (('aln 8452519-8452550 rna=603-634',),
+                                 ('rins None-None rna=634-637',),
+                                 ('aln 8452550-8452744 rna=637-831',))),
+                               ('intron 8452744-8453012 rna=831-831 sjBases=GT...AG (GT_AG)',
+                                (('cins 8452744-8453012 rna=None-None',),)),
+                               ('exon 8453012-8453132 rna=831-951',
+                                (('aln 8453012-8453132 rna=831-951',),)),
+                               ('intron 8453132-8454435 rna=951-1060 sjBases=GT...AG (GT_AG)',
+                                (('cins 8453132-8454435 rna=None-None',),
+                                 ('rins None-None rna=951-1060',))),
+                               ('exon 8454435-8454537 rna=1060-1162',
+                                (('aln 8454435-8454537 rna=1060-1162',),)),
+                               ('intron 8454537-8455420 rna=1162-1162 sjBases=GT...AG (GT_AG)',
+                                (('cins 8454537-8455420 rna=None-None',),)),
+                               ('exon 8455420-8455603 rna=1162-1345',
+                                (('aln 8455420-8455603 rna=1162-1345',),)),
+                               ('intron 8455603-8455837 rna=1345-1345 sjBases=GT...AG (GT_AG)',
+                                (('cins 8455603-8455837 rna=None-None',),)),
+                               ('exon 8455837-8456018 rna=1345-1526',
+                                (('aln 8455837-8456018 rna=1345-1526',),)),
+                               ('intron 8456018-8456117 rna=1526-1526 sjBases=GT...AG (GT_AG)',
+                                (('cins 8456018-8456117 rna=None-None',),)),
+                               ('exon 8456117-8456252 rna=1526-1661',
+                                (('aln 8456117-8456252 rna=1526-1661',),)),
+                               ('intron 8456252-8456494 rna=1661-1661 sjBases=GT...AG (GT_AG)',
+                                (('cins 8456252-8456494 rna=None-None',),)),
+                               ('exon 8456494-8456745 rna=1661-1912',
+                                (('aln 8456494-8456745 rna=1661-1912',),)),
+                               ('intron 8456745-8459850 rna=1912-1912 sjBases=GT...AG (GT_AG)',
+                                (('cins 8456745-8459850 rna=None-None',),)),
+                               ('exon 8459850-8460044 rna=1912-2106',
+                                (('aln 8459850-8460044 rna=1912-2106',),)),
+                               ('intron 8460044-8463562 rna=2106-2106 sjBases=GT...AG (GT_AG)',
+                                (('cins 8460044-8463562 rna=None-None',),)),
+                               ('exon 8463562-8463673 rna=2106-2217',
+                                (('aln 8463562-8463673 rna=2106-2217',),)),
+                               ('intron 8463673-8464453 rna=2217-2217 sjBases=GT...AG (GT_AG)',
+                                (('cins 8463673-8464453 rna=None-None',),)),
+                               ('exon 8464453-8464692 rna=2217-2456',
+                                (('aln 8464453-8464692 rna=2217-2456',),)),
+                               ('intron 8464692-8466287 rna=2456-2456 sjBases=GT...AG (GT_AG)',
+                                (('cins 8464692-8466287 rna=None-None',),)),
+                               ('exon 8466287-8466533 rna=2456-2705',
+                                (('aln 8466287-8466467 rna=2456-2636',),
+                                 ('rins None-None rna=2636-2639',),
+                                 ('aln 8466467-8466533 rna=2639-2705',))),
+                               ('intron 8466533-8468975 rna=2705-2714 sjBases=aa...ag (unknown)',
+                                (('cins 8466533-8468975 rna=None-None',),
+                                 ('rins None-None rna=2705-2714',))),
+                               ('exon 8468975-8469073 rna=2714-2820',
+                                (('aln 8468975-8469037 rna=2714-2776',),
+                                 ('rins None-None rna=2776-2784',),
+                                 ('aln 8469037-8469057 rna=2784-2804',),
+                                 ('rins None-None rna=2804-2805',),
+                                 ('aln 8469057-8469065 rna=2805-2813',),
+                                 ('cins 8469065-8469066 rna=None-None',),
+                                 ('aln 8469066-8469073 rna=2813-2820',))))))
+        self.__checkRnaAln(transRc)
 
     def testExonRnaOverlap(self):
         aln1 = self.__pslToEvidTranscript(self.__getSet1Psl("AF010310.1"))
@@ -242,44 +508,28 @@ class EvidenceTests(FeatureTestBase):
         self.assertTrue(exon1.rnaOverlaps(exon2))
         exon2b = aln2.features[3]
         self.assertFalse(exon1.rnaOverlaps(exon2b))
+        self.__checkRnaAln(aln1)
+        self.__checkRnaAln(aln2)
 
     def testRangeMap1(self):
         # range is set1: chr22:18632931-19279166
-        pslDbTbl = self.__obtainSetPslDbTbl()
+        pslDbTbl = PslDbSrc.obtain("set1")
         evidFeatureMap = EvidenceFeatureMap.dbFactory(pslDbTbl.conn, pslDbTbl.table,
                                                       "chr22", 18958026, 19109719,
-                                                      self.__obtainGenomeReader())
+                                                      GenomeSeqSrc.obtain("hg19"))
         self.assertEqual(len(evidFeatureMap.transcripts), 30)
         overFeats = list(evidFeatureMap.overlapping("chr22", 18958026, 18982141))
         self.assertEqual(len(overFeats), 12)
+        for trans in evidFeatureMap.transcripts:
+            self.__checkRnaAln(trans)
 
 
 class AnnotationTests(FeatureTestBase):
-    genomeReaderFactory = None
-    set1GpDbTbl = None
-
-    def __obtainGenomeReader(self):
-        if AnnotationTests.genomeReaderFactory is None:
-            AnnotationTests.genomeReaderFactory = GenomeReaderFactory(twoBitHg19, self.getInputFile(mockReaderHg19GpTsv),
-                                                                      updateMockReader, forceMockReader)
-        return AnnotationTests.genomeReaderFactory.obtain()
-
-    def __obtainSetGpDbTbl(self):
-        if AnnotationTests.set1GpDbTbl is None:
-            conn = sqlite3.connect(":memory:")
-            AnnotationTests.set1GpDbTbl = GenePredDbTable(conn, "set1", create=True)
-            AnnotationTests.set1GpDbTbl.loadGenePredFile(self.getInputFile("set1.gencodeCompV19.gp"))
-        return AnnotationTests.set1GpDbTbl
-
     def __getSet1Gp(self, acc):
-        gpDbTbl = self.__obtainSetGpDbTbl()
-        gps = gpDbTbl.getByName(acc)
-        if len(gps) == 0:
-            raise Exception("gp not found: {}".format(acc))
-        return gps[0]
+        return GenePredDbSrc.obtainGenePred("set1", acc)
 
     def __gpToEvidTranscript(self, gp):
-        factory = AnnotationGenePredFactory(self.__obtainGenomeReader())
+        factory = AnnotationGenePredFactory(GenomeSeqSrc.obtain("hg19"))
         return factory.fromGenePred(gp)
 
     def testENST00000215794(self):
@@ -476,7 +726,7 @@ class AnnotationTests(FeatureTestBase):
 
     def testENST00000334029NoSJRc(self):
         # no splice sites, just sizes
-        factory = AnnotationGenePredFactory(chromSizeFunc=self.__obtainGenomeReader().getChromSize)
+        factory = AnnotationGenePredFactory(chromSizeFunc=GenomeSeqSrc.obtain("hg19").getChromSize)
         trans = factory.fromGenePred(self.__getSet1Gp("ENST00000334029.2"))
         rcTrans = trans.reverseComplement()
         self.assertEqual(len(rcTrans.features), len(trans.features))

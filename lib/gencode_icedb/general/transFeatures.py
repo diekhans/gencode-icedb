@@ -191,9 +191,9 @@ class ExonFeature(TransFeature):
         rcExon.alignFeatures = _reverseComplementChildren(rcExon, self.alignFeatures)
         return rcExon
 
-    def rnaOverlaps(self, exon2):
+    def rnaOverlaps(self, feat2):
         "does RNA range overlap another exon?"
-        return (self.rna.start < exon2.rna.end) and (self.rna.end > exon2.rna.start)
+        return (self.rna.start < feat2.rna.end) and (self.rna.end > feat2.rna.start)
 
     def __countAlignedBases(self):
         alignedCnt = 0
@@ -267,9 +267,9 @@ class IntronFeature(TransFeature):
         rcIntron.alignFeatures = _reverseComplementChildren(rcParent, self.alignFeatures)
         return rcIntron
 
-    def rnaIntersect(self, exon2):
-        "does RNA interbase range intersect another intron? (overlap allowing zero length)"
-        return (self.rna.start <= exon2.rna.end) and (self.rna.end >= exon2.rna.start)
+    def rnaIntersect(self, feat2):
+        "does RNA interbase range intersect another feature? (overlap allowing zero length)"
+        return (self.rna.start <= feat2.rna.end) and (self.rna.end >= feat2.rna.start)
 
 
 class TranscriptFeatures(TransFeature):
