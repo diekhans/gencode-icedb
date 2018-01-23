@@ -173,7 +173,6 @@ class EvidenceTests(FeatureTestBase):
         self.assertEqual(prevRnaEnd, trans.rna.end,
                          msg="trans: {} alignments don't cover RNA range".format(trans.rna.name))
 
-
     def testAF010310(self):
         trans = self.__pslToEvidTranscript(self.__getSet1Psl("AF010310.1"))
         self._assertFeatures(trans,

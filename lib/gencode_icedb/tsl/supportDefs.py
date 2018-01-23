@@ -27,11 +27,14 @@ class EvidenceComparison(SymEnum):
     by a given piece of evidence"""
     __slots__ = ()
     good = 1
-    endsMedium = 2
-    endsWeak = 3
-    suspectMRna = 4
-    estN = 5
-    est1 = 6
-    suspectEst = 7
-    nonUniqueMapping = 8
-    poor = 9
+    polymorphic = 2
+
+    featMismatch = 10
+    # endsMedium = 2
+    # endsWeak = 3
+    # suspectMRna = 4
+    # estN = 5
+    # est1 = 6
+    # suspectEst = 7
+    # nonUniqueMapping = 8
+    # poor = 9

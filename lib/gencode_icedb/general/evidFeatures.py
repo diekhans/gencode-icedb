@@ -21,12 +21,14 @@ class EvidencePslFactory(object):
 
     def __buildFeatures(self, psl, trans):
         iBlkStart = 0
+        features = []
         while iBlkStart < len(psl.blocks):
             iBlkEnd = self.__findExonEnd(psl, iBlkStart)
-            yield self.__makeExon(psl, iBlkStart, iBlkEnd, trans)
+            features.append(self.__makeExon(psl, iBlkStart, iBlkEnd, trans, len(features)))
             if iBlkEnd < len(psl.blocks):
-                yield self.__makeIntron(psl, iBlkEnd, trans)
+                features.append(self.__makeIntron(psl, iBlkEnd, trans, len(features)))
             iBlkStart = iBlkEnd
+        return features
 
     def __tGapSize(self, psl, iBlk):
         "size of gap before the block"
@@ -41,7 +43,7 @@ class EvidencePslFactory(object):
 
     def __addAlignedFeature(self, psl, iBlk, exon, alignFeatures):
         blk = psl.blocks[iBlk]
-        alignFeatures.append(AlignedFeature(exon,
+        alignFeatures.append(AlignedFeature(exon, len(alignFeatures),
                                             exon.chrom.subrange(blk.tStart, blk.tEnd),
                                             exon.rna.subrange(blk.qStart, blk.qEnd)))
 
@@ -49,10 +51,10 @@ class EvidencePslFactory(object):
         prevBlk = psl.blocks[iBlk - 1]
         blk = psl.blocks[iBlk]
         if blk.qStart > prevBlk.qEnd:
-            alignFeatures.append(RnaInsertFeature(feat,
+            alignFeatures.append(RnaInsertFeature(feat, len(alignFeatures),
                                                   feat.rna.subrange(prevBlk.qEnd, blk.qStart)))
         if blk.tStart > prevBlk.tEnd:
-            alignFeatures.append(ChromInsertFeature(feat,
+            alignFeatures.append(ChromInsertFeature(feat, len(alignFeatures),
                                                     feat.chrom.subrange(prevBlk.tEnd, blk.tStart)))
 
     def __addAlignFeatures(self, psl, iBlkStart, iBlkEnd, exon):
@@ -63,8 +65,8 @@ class EvidencePslFactory(object):
             self.__addAlignedFeature(psl, iBlk, exon, alignFeatures)  # after since unaligned is before block
         exon.alignFeatures = tuple(alignFeatures)
 
-    def __makeExon(self, psl, iBlkStart, iBlkEnd, trans):
-        exon = ExonFeature(trans,
+    def __makeExon(self, psl, iBlkStart, iBlkEnd, trans, iFeat):
+        exon = ExonFeature(trans, iFeat,
                            trans.chrom.subrange(psl.blocks[iBlkStart].tStart, psl.blocks[iBlkEnd - 1].tEnd),
                            trans.rna.subrange(psl.blocks[iBlkStart].qStart, psl.blocks[iBlkEnd - 1].qEnd))
         self.__addAlignFeatures(psl, iBlkStart, iBlkEnd, exon)
@@ -77,10 +79,10 @@ class EvidencePslFactory(object):
             return spliceJuncsGetSeqs(self.genomeReader, psl.tName, psl.blocks[iBlkNext - 1].tEnd,
                                       psl.blocks[iBlkNext].tStart, psl.getQStrand())
 
-    def __makeIntron(self, psl, iBlkNext, trans):
+    def __makeIntron(self, psl, iBlkNext, trans, iFeat):
         donorSeq, acceptorSeq = self.__getSpliceSites(psl, iBlkNext)
         alignFeatures = []
-        intron = IntronFeature(trans,
+        intron = IntronFeature(trans, iFeat,
                                trans.chrom.subrange(psl.blocks[iBlkNext - 1].tEnd, psl.blocks[iBlkNext].tStart),
                                trans.rna.subrange(psl.blocks[iBlkNext - 1].qEnd, psl.blocks[iBlkNext].qStart),
                                donorSeq, acceptorSeq)
