@@ -8,6 +8,10 @@ from pycbio.tsv import TsvReader
 from pycbio.hgdata import dnaOps
 from twobitreader import TwoBitFile
 
+# twobitreader warning, pull request was submitted.
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning, module='twobitreader')
+
 
 class GenomeReader(object):
     """

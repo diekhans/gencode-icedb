@@ -1,8 +1,6 @@
 ROOT = ../../..
 include ${ROOT}/config.mk
-
-# force sort to be consistent
-export LC_ALL=C
+include ${ROOT}/tests/testDefs.mk
 
 test:: 
 

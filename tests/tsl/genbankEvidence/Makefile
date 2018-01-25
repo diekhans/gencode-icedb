@@ -1,13 +1,9 @@
 ROOT = ../../..
 include ${ROOT}/config.mk
+include ${ROOT}/tests/testDefs.mk
 
 # always use public database, since hgwdev might be ahead
 export HGDB_CONF=hg.pub.conf
-
-tslGetUcscRnaAligns = ${BINDIR}/tslGetUcscRnaAligns
-tslGetEnsemblRnaAligns = ${BINDIR}/tslGetEnsemblRnaAligns
-tslGbffGetProblemCases = ${BINDIR}/tslGbffGetProblemCases
-tslGenbankProblemCasesLoad = ${BINDIR}/tslGenbankProblemCasesLoad
 
 gencodeOrg = human
 ensemblVer = 87_38

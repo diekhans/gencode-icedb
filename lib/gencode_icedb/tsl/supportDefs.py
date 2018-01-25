@@ -29,7 +29,13 @@ class EvidenceComparison(SymEnum):
     good = 1
     polymorphic = 2
 
-    featMismatch = 10
+    poor = 10  # value greater than this a detail of poor
+    exon_boundry_mismatch = 11
+    large_indel_size = 12  # give indel exceeds a threshold
+    large_indel_content = 14  # indel context if a given exon exceeded
+    internal_unaligned = 15  # intron contains unaligned
+
+
     # endsMedium = 2
     # endsWeak = 3
     # suspectMRna = 4
