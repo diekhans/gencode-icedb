@@ -105,13 +105,15 @@ class CDnaSizeFinder(object):
             size = self.__getSizeEutils(accver)
         return size
 
+
 def buildCDnaSubRangeClause(ensChromSubset):
     if ensChromSubset.start is None:  # whole chrom??
         return ("(sr.name = %s)",
                 [ensChromSubset.name])
     else:
         return ("((sr.name = %s) AND (daf.seq_region_end >= %s) AND (daf.seq_region_start <= %s))",
-                [ensChromSubset.name, ensChromSubset.start+1, ensChromSubset.end])
+                [ensChromSubset.name, ensChromSubset.start + 1, ensChromSubset.end])
+
 
 def buildCDnaSubRangeClauses(ensChromSubsets):
     sqlClauses = []
@@ -121,6 +123,7 @@ def buildCDnaSubRangeClauses(ensChromSubsets):
         sqlClauses.append(ret[0])
         sqlArgs.extend(ret[1])
     return "(" + " OR ".join(sqlClauses) + ")", sqlArgs
+
 
 def buildCDnaQuery(limit, accverSubset, ensChromSubsets):
     sql = ensCDnaAlnQuery

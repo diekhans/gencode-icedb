@@ -35,7 +35,6 @@ class EvidenceComparison(SymEnum):
     large_indel_content = 14  # indel context if a given exon exceeded
     internal_unaligned = 15  # intron contains unaligned
 
-
     # endsMedium = 2
     # endsWeak = 3
     # suspectMRna = 4

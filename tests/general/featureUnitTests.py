@@ -15,16 +15,11 @@ from pycbio.hgdata.genePred import GenePredReader
 from pycbio.sys.pprint2 import nswpprint
 import sqlite3
 
-updateMockReader = False   # set this to update from a real run
-forceMockReader = False  # set this to check mock data
-
 debugResults = False   # print out results for updated expected
 noCheckResults = False  # don't check results
 
-if updateMockReader or forceMockReader or debugResults or noCheckResults:
+if debugResults or noCheckResults:
     print("WARNING: debug variables set", file=sys.stderr)
-if updateMockReader and forceMockReader:
-    raise Exception("makes no sense to have both updateMockReader and forceMockReader set")
 
 
 def getInputFile(base):
@@ -33,21 +28,18 @@ def getInputFile(base):
 
 
 class GenomeSeqSrc(object):
-    "caching real or mock genome sources"
+    "caching genome reader"
 
     srcs = None  # initialized below
 
-    def __init__(self, db, twoBit, mockTsv):
+    def __init__(self, db, twoBit):
         self.db = db
         self.twoBit = twoBit
-        self.mockTsv = mockTsv
         self.factory = None
 
     def __obtain(self):
         if self.factory is None:
-            self.factory = GenomeReaderFactory(self.twoBit,
-                                               getInputFile(self.mockTsv),
-                                               updateMockReader, forceMockReader)
+            self.factory = GenomeReaderFactory(self.twoBit)
         return self.factory.obtain()
 
     @classmethod
@@ -56,8 +48,8 @@ class GenomeSeqSrc(object):
 
 
 GenomeSeqSrc.srcs = {
-    "hg19": GenomeSeqSrc("hg19", "/hive/data/genomes/hg19/hg19.2bit", "hg19.mock.tsv"),
-    "mm10": GenomeSeqSrc("mm10", "/hive/data/genomes/mm10/mm10.2bit", "mm10.mock.tsv"),
+    "hg19": GenomeSeqSrc("hg19", "/hive/data/genomes/hg19/hg19.2bit"),
+    "mm10": GenomeSeqSrc("mm10", "/hive/data/genomes/mm10/mm10.2bit"),
 }
 
 

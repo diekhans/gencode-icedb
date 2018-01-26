@@ -29,9 +29,9 @@ def checkMegExonIndels(evidExon):
     "check for allowed indel polymorphism"
 
     def getIndelSize(aln):
-        if isinstance(aln ChromInsertFeature):
+        if isinstance(aln, ChromInsertFeature):
             return len(aln.chrom)
-        elif isinstance(aln RnaInsertFeature):
+        elif isinstance(aln, RnaInsertFeature):
             return len(aln.rna)
         else:
             return 0  # not an indel
@@ -46,6 +46,7 @@ def checkMegExonIndels(evidExon):
         return EvidenceComparison.large_indel_content
     else:
         return EvidenceComparison.polymorphic
+
 
 def compareMegExon(annotExon, evidExon):
     # boundaries are check with introns, so just check indels
