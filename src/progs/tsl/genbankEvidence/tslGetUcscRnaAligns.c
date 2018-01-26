@@ -19,12 +19,13 @@ static void usage(char *msg) {
         "\n"
         "Options:\n"
         "  -verbose=n\n"
-        "  -chrom=chrom - restrict to this chrom, for testing\n"
+        "  -chromSpec=spec - restrict to this chrom or chrom range, for testing.\n"
+        "   Maybe repeated.\n"
         ;
     errAbort("%s:\n%s", msg, usageMsg);
 }
 static struct optionSpec optionSpecs[] = {
-    {"chrom", OPTION_STRING},
+    {"chromSpec", OPTION_STRING|OPTION_MULTI},
     {NULL, 0}
 };
 
@@ -59,26 +60,85 @@ static char *pslCreateSqliteBinIndex =
 static char *pslCreateSqliteQnameIndex =
     "CREATE INDEX {table}_qname on {table} (qName);";
 
-/* load PSLs and sort by target */
-static struct psl* loadPsls(struct sqlConnection *hgConn, char *table,
-                            char *restrictChrom) {
+/* chromosome spec */
+struct ChromSpec {
+    struct ChromSpec *next;
+    char* chrom;    // NULL if not restriction
+    int start;      // zero length for whole chromosome
+    int end;
+};
+
+/* parse chrome spec */
+static struct ChromSpec* parseChromSpec(char* db,
+                                        char* chromSpecStr) {
+    struct ChromSpec *chromSpec;
+    AllocVar(chromSpec);
+    if (!hgParseChromRange(db, chromSpecStr,
+                           &chromSpec->chrom, &chromSpec->start, &chromSpec->end)) {
+        errAbort("invalid chromSpec: %s", chromSpecStr);
+    }
+    if (chromSpec->start < chromSpec->end) {
+        chromSpec->start++; // hgParseChromRange assumes one-based
+    }
+    return chromSpec;
+}
+
+/* parse list chrome spec */
+static struct ChromSpec* parseChromSpecs(char* db,
+                                         struct slName* chromSpecStrs) {
+    struct ChromSpec* chromSpecs = NULL;
+    for (struct slName *chromSpecStr = chromSpecStrs; chromSpecStr != NULL; chromSpecStr = chromSpecStr->next) {
+        slAddHead(&chromSpecs, parseChromSpec(db, chromSpecStr->name));
+    }
+    return chromSpecs;
+}
+
+/* common code to build sql query with chromSpec */
+static struct dyString* makeQuery(char *sqlTemplate, char *table,
+                                  char *chromCol, char *startCol, char *endCol,
+                                  struct ChromSpec *chromSpec) {
+    struct dyString *query = dyStringNew(256);
+    dyStringPrintf(query, sqlTemplate, table);
+    if (chromSpec->chrom != NULL) {
+        dyStringPrintf(query, " WHERE (%s = \"%s\")", chromCol, chromSpec->chrom);
+        if (chromSpec->start < chromSpec->end) {
+            dyStringPrintf(query, " AND ");
+            hAddBinToQueryGeneral("bin", chromSpec->start, chromSpec->end, query);
+            dyStringPrintf(query, " (%s < %d) AND (%s > %d)", startCol, chromSpec->end, endCol, chromSpec->start);
+        }
+    }
+    return query;
+}
+
+/* load PSLs for a range */
+static struct psl* loadPslsRange(struct sqlConnection *hgConn, char *table,
+                                 struct ChromSpec *chromSpec) {
     char *sqlTemplate =
         "SELECT matches, misMatches, repMatches, nCount, qNumInsert, qBaseInsert, tNumInsert, "
         "tBaseInsert, strand, concat(qName,\".\",version), qSize, qStart, qEnd, tName, "
         "tSize, tStart, tEnd, blockCount, blockSizes, qStarts, tStarts "
-        "FROM %s, hgFixed.gbCdnaInfo where (qName = acc) %s;";
-    char where[256];
-    where[0] = '\0';
-    if (restrictChrom != NULL) {
-        safef(where, sizeof(where), " AND (tName = \"%s\")", restrictChrom);
-    }
-    char sql[2048];
-    safef(sql, sizeof(sql), sqlTemplate, table, where);
-    struct sqlResult *sr = sqlGetResult(hgConn, sql);
+        "FROM %s LEFT JOIN hgFixed.gbCdnaInfo ON (qName = acc)";
+    struct dyString *query = makeQuery(sqlTemplate, table, "tName", "tStart", "tEnd", chromSpec);
+    struct sqlResult *sr = sqlGetResult(hgConn, dyStringContents(query));
     char **row;
     struct psl *psls = NULL;
     while ((row = sqlNextRow(sr)) != NULL) {
         slAddHead(&psls, pslLoad(row));
+    }
+    dyStringFree(&query);
+    return psls;
+}
+
+/* load PSLs for all ranges and sort by target */
+static struct psl* loadPsls(struct sqlConnection *hgConn, char *table,
+                            struct ChromSpec *chromSpecs) {
+    struct psl* psls = NULL;
+    if (chromSpecs == NULL) {
+        psls = loadPslsRange(hgConn, table, NULL);
+    } else {
+        for (struct ChromSpec *chromSpec = chromSpecs; chromSpec != NULL; chromSpec = chromSpec->next) {
+            psls = slCat(psls, loadPslsRange(hgConn, table, chromSpec));
+        }
     }
     slSort(&psls, pslCmpTarget);
     return psls;
@@ -94,16 +154,11 @@ static char *getOrientInfoKey(char *name, char *chrom,
 
 /* load EST orient info, hashed by name, chrom, chromStart, chromEnd.
  * record are in hash local memory. */
-struct hash* loadEstOrientInfos(struct sqlConnection *hgConn, char *table,
-                                char *restrictChrom) {
-    struct hash* orientInfoMap = hashNew(18);
-    char sql[1024], where[256];
-    where[0] = '\0';
-    if (restrictChrom != NULL) {
-        safef(where, sizeof(where), " WHERE (chrom = \"%s\")", restrictChrom);
-    }
-    safef(sql, sizeof(sql), "SELECT * FROM %s%s", table, where);
-    struct sqlResult *sr = sqlGetResult(hgConn, sql);
+static void loadEstOrientInfosRange(struct sqlConnection *hgConn, char *table,
+                                    struct ChromSpec *chromSpec,
+                                    struct hash* orientInfoMap) {
+    struct dyString *query = makeQuery("SELECT * FROM %s", table, "chrom", "chromStart", "chromEnd", chromSpec);
+    struct sqlResult *sr = sqlGetResult(hgConn, dyStringContents(query));
     char **row;
     while ((row = sqlNextRow(sr)) != NULL) {
         struct estOrientInfo *eoi = estOrientInfoLoadLm(row+1, orientInfoMap->lm);
@@ -111,6 +166,17 @@ struct hash* loadEstOrientInfos(struct sqlConnection *hgConn, char *table,
         hashAdd(orientInfoMap, key, eoi);
     }
     sqlFreeResult(&sr);
+    dyStringFree(&query);
+}
+
+/* load EST orient info, hashed by name, chrom, chromStart, chromEnd.
+ * record are in hash local memory. */
+static struct hash* loadEstOrientInfos(struct sqlConnection *hgConn, char *table,
+                                struct ChromSpec *chromSpecs) {
+    struct hash* orientInfoMap = hashNew(18);
+    for (struct ChromSpec *chromSpec = chromSpecs; chromSpec != NULL; chromSpec = chromSpec->next) {
+        loadEstOrientInfosRange(hgConn, table, chromSpec, orientInfoMap);
+    }
     return orientInfoMap;
 }
 
@@ -122,8 +188,8 @@ static boolean isPslReversed(struct hash* orientInfoMap, struct psl *psl) {
 }
 
 /* orient ESTs when possible */
-static void orientEstPsls(struct sqlConnection *hgConn, struct psl *psls, char *restrictChrom) {
-    struct hash* orientInfoMap = loadEstOrientInfos(hgConn, "estOrientInfo", restrictChrom);
+static void orientEstPsls(struct sqlConnection *hgConn, struct psl *psls, struct ChromSpec *chromSpecs) {
+    struct hash* orientInfoMap = loadEstOrientInfos(hgConn, "estOrientInfo", chromSpecs);
     for (struct psl *psl = psls; psl != NULL; psl = psl->next) {
         if (isPslReversed(orientInfoMap, psl)) {
             pslRc(psl);
@@ -133,12 +199,12 @@ static void orientEstPsls(struct sqlConnection *hgConn, struct psl *psls, char *
 }
 
 /* load and orient alignments */
-static struct psl *loadAligns(char *ucscDb, char *type, char *restrictChrom) {
+static struct psl *loadAligns(char *ucscDb, char *type, struct ChromSpec *chromSpecs) {
     struct sqlConnection *hgConn = sqlConnect(ucscDb);
     bool isEst = sameString(type, "est");
-    struct psl *psls = loadPsls(hgConn, (isEst? "all_est" : "all_mrna"), restrictChrom);
+    struct psl *psls = loadPsls(hgConn, (isEst? "all_est" : "all_mrna"), chromSpecs);
     if (isEst) {
-        orientEstPsls(hgConn, psls, restrictChrom);
+        orientEstPsls(hgConn, psls, chromSpecs);
     }
     sqlDisconnect(&hgConn);
     return psls;
@@ -233,8 +299,8 @@ static void storeSqliteDb(struct psl *psls, char *sqliteDb, char *table) {
 
 /* get rna or est alignments */
 static void tslGetUcscRnaAligns(char *ucscDb, char *type, char *sqliteDb, char *sqliteTable,
-                             char *restrictChrom) {
-    struct psl *psls = loadAligns(ucscDb, type, restrictChrom);
+                                struct ChromSpec *chromSpecs) {
+    struct psl *psls = loadAligns(ucscDb, type, chromSpecs);
     storeSqliteDb(psls, sqliteDb, sqliteTable);
     // Don't bother: pslFreeList(&psls);
 }
@@ -247,7 +313,11 @@ int main(int argc, char** argv) {
     if (!(sameString(argv[2], "rna") || sameString(argv[2], "est"))) {
         usage("expected type of `rna' or `est'");
     }
-    char *restrictChrom = optionVal("chrom", NULL);
-    tslGetUcscRnaAligns(argv[1], argv[2], argv[3], argv[4], restrictChrom);
+    struct ChromSpec *chromSpecs = NULL;
+    struct slName *chromSpecStrs = optionMultiVal("chromSpec", NULL);
+    if (chromSpecStrs != NULL) {
+        chromSpecs = parseChromSpecs(argv[1], chromSpecStrs);
+    }
+    tslGetUcscRnaAligns(argv[1], argv[2], argv[3], argv[4], chromSpecs);
     return 0;
 }

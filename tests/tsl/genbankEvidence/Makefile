@@ -21,13 +21,13 @@ ucscTests: ucscRnaChrMTest ucscEstChrMTest
 
 ucscRnaChrMTest: mkdirs
 	rm -f output/$@.db
-	${tslGetUcscRnaAligns} -chrom=chrM ${ucscGenomeDb} rna output/$@.db ucscRnaAligns
+	${tslGetUcscRnaAligns} -chromSpec=chrM ${ucscGenomeDb} rna output/$@.db ucscRnaAligns
 	sqlite3 --batch output/$@.db 'select * from ucscRnaAligns;' | cut -f 2- | sort > output/$@.sort.psl
 	diff expected/$@.sort.psl output/$@.sort.psl
 
 ucscEstChrMTest: mkdirs
 	rm -f output/$@.db
-	${tslGetUcscRnaAligns} -chrom=chrM ${ucscGenomeDb} est output/$@.db ucscEstAligns
+	${tslGetUcscRnaAligns} -chromSpec=chrM ${ucscGenomeDb} est output/$@.db ucscEstAligns
 	sqlite3 --batch output/$@.db 'select * from ucscEstAligns;' | cut -f 2- | sort > output/$@.sort.psl
 	diff expected/$@.sort.psl output/$@.sort.psl
 

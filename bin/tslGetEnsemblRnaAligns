@@ -10,6 +10,7 @@ from pycbio.hgdata import hgDb
 from pycbio.hgdata.psl import Psl, PslBlock, reverseCoords
 from pycbio.hgdata.cigar import ExonerateCigar, OP_ALIGNED, OP_TINSERT, OP_TDELETE
 from pycbio.hgdata.hgLite import PslDbTable
+from pycbio.hgdata.coords import Coords
 from pycbio.sys import dbOps, fileOps, loggingOps
 from pycbio.ncbi.assembly import AssemblyReport
 import eutils.client
@@ -40,8 +41,8 @@ def parseArgs():
                         help="""limit on query resuts, used for tests""")
     parser.add_argument('--accverList',
                         help="""file with list of accession/versions to process, used for testing.""")
-    parser.add_argument('--ensChrom', action="append", dest="ensChroms",
-                        help="""Restrict to this chromosome (Ensembl conventions), maybe repeated, used for testing.""")
+    parser.add_argument('--ensChromSpec', action="append", dest="ensChroms", type=Coords.parse,
+                        help="""Restrict to this chromosome or chromosome range (Ensembl chromosome naming), maybe repeated, used for testing.""")
     parser.add_argument('ensemblCDnaDb',
                         help="""Ensembl cDNA database to use""")
     parser.add_argument('assemblyReport',
@@ -104,26 +105,43 @@ class CDnaSizeFinder(object):
             size = self.__getSizeEutils(accver)
         return size
 
+def buildCDnaSubRangeClause(ensChromSubset):
+    if ensChromSubset.start is None:  # whole chrom??
+        return ("(sr.name = %s)",
+                [ensChromSubset.name])
+    else:
+        return ("((sr.name = %s) AND (daf.seq_region_end >= %s) AND (daf.seq_region_start <= %s))",
+                [ensChromSubset.name, ensChromSubset.start+1, ensChromSubset.end])
 
-def buildCDnaQuery(limit, accverSubset, ensChromsSubset):
+def buildCDnaSubRangeClauses(ensChromSubsets):
+    sqlClauses = []
+    sqlArgs = []
+    for ensChromSubset in ensChromSubsets:
+        ret = buildCDnaSubRangeClause(ensChromSubset)
+        sqlClauses.append(ret[0])
+        sqlArgs.extend(ret[1])
+    return "(" + " OR ".join(sqlClauses) + ")", sqlArgs
+
+def buildCDnaQuery(limit, accverSubset, ensChromSubsets):
     sql = ensCDnaAlnQuery
     sqlArgs = []
     if accverSubset is not None:
         sql += " AND (daf.hit_name in ({}))".format(",".join(len(accverSubset) * ["%s"]))
         sqlArgs += accverSubset
-    if ensChromsSubset is not None:
-        sql += " AND (sr.name in ({}))".format(",".join(len(ensChromsSubset) * ["%s"]))
-        sqlArgs += ensChromsSubset
+    if ensChromSubsets is not None:
+        ret = buildCDnaSubRangeClauses(ensChromSubsets)
+        sql += " AND " + ret[0]
+        sqlArgs += ret[1]
     if limit is not None:
         sql += " LIMIT {}".format(limit)
     return sql, sqlArgs
 
 
-def ensemblCDnaQuery(ensemblCDnaDb, limit=None, accverSubset=None, ensChromsSubset=None):
+def ensemblCDnaQuery(ensemblCDnaDb, limit=None, accverSubset=None, ensChromSubsets=None):
     "generator of cDNA alignments from Ensembl"
     conn = MySQLdb.Connect(host=ensDbHost, port=ensDbPort, user=ensDbUser,
                            db=ensemblCDnaDb, cursorclass=MySQLdb.cursors.DictCursor)
-    sql, sqlArgs = buildCDnaQuery(limit, accverSubset, ensChromsSubset)
+    sql, sqlArgs = buildCDnaQuery(limit, accverSubset, ensChromSubsets)
     try:
         cur = conn.cursor()
         cur.execute(sql, sqlArgs)
@@ -243,9 +261,9 @@ class EnsemblCDnaConverter(object):
             return None
         return pslFromEnsembl(row, qSize, chromInfo.ucscStyleName, chromInfo.sequenceLength)
 
-    def ensemblCDnasToPsls(self, ensemblCDnaDb, limit, accverSubset, ensChromsSubset):
+    def ensemblCDnasToPsls(self, ensemblCDnaDb, limit, accverSubset, ensChromSubsets):
         psls = []
-        for row in ensemblCDnaQuery(ensemblCDnaDb, limit, accverSubset, ensChromsSubset):
+        for row in ensemblCDnaQuery(ensemblCDnaDb, limit, accverSubset, ensChromSubsets):
             logging.getLogger().debug("Ensembl cDNA row: {}".format(row))
             psl = self.__convertToPsl(row)
             if psl is not None:
