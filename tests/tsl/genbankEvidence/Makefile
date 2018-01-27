@@ -54,7 +54,7 @@ ensemblIdListTest: mkdirs
 problemCasesTests: problemCasesParseTest problemCasesLoadTest
 
 problemCasesParseTest: mkdirs
-	${tslGbffGetProblemCases} --maxProcess=2 output/hs.$@.tab output/mm.$@.tab input/problem.gbff input/problem2.gbff
+	${tslGbffGetProblemCases} --maxProcess=2 output/hs.$@.tab output/mm.$@.tab input/problem1.gbff input/problem2.gbff
 	diff expected/hs.$@.tab output/hs.$@.tab
 	diff expected/mm.$@.tab output/mm.$@.tab
 

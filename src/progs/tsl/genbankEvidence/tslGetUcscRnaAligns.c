@@ -20,7 +20,8 @@ static void usage(char *msg) {
         "Options:\n"
         "  -verbose=n\n"
         "  -chromSpec=spec - restrict to this chrom or chrom range, for testing.\n"
-        "   Maybe repeated.\n"
+        "   Maybe repeated. Duplicates caused alignments being in multiple ranges\n"
+        "   are discarded.\n"
         ;
     errAbort("%s:\n%s", msg, usageMsg);
 }
@@ -129,6 +130,41 @@ static struct psl* loadPslsRange(struct sqlConnection *hgConn, char *table,
     return psls;
 }
 
+/* Compare to sort based on target start, but check all fields before
+ * declaring unique */
+static int pslFullCmpTarget(const void *va, const void *vb) {
+#define cmpNumMacro(f1, f2) {int dif = f1 - f2; if (dif != 0) {return dif;}}
+#define cmpStrMacro(f1, f2) {int dif = strcmp(f1, f2); if (dif != 0) {return dif;}}
+    const struct psl *a = *((struct psl **)va);
+    const struct psl *b = *((struct psl **)vb);
+    cmpStrMacro(a->tName, b->tName);
+    cmpNumMacro(a->tStart, b->tStart);
+    cmpNumMacro(a->tEnd, b->tEnd);
+    cmpNumMacro(a->tSize, b->tSize);
+    cmpStrMacro(a->qName, b->qName);
+    cmpNumMacro(a->qSize, b->qSize);
+    cmpNumMacro(a->qStart, b->qStart);
+    cmpNumMacro(a->qEnd, b->qEnd);
+    cmpStrMacro(a->strand, b->strand);
+    cmpNumMacro(a->match, b->match);
+    cmpNumMacro(a->misMatch, b->misMatch);
+    cmpNumMacro(a->repMatch, b->repMatch);
+    cmpNumMacro(a->nCount, b->nCount);
+    cmpNumMacro(a->qNumInsert, b->qNumInsert);
+    cmpNumMacro(a->qBaseInsert, b->qBaseInsert);
+    cmpNumMacro(a->tNumInsert, b->tNumInsert);
+    cmpNumMacro(a->tBaseInsert, b->tBaseInsert);
+    cmpNumMacro(a->blockCount, b->blockCount);
+    for (int i = 0; i < a->blockCount; i++) {
+        cmpNumMacro(a->blockSizes[i], b->blockSizes[i]);
+        cmpNumMacro(a->qStarts[i], b->qStarts[i]);
+        cmpNumMacro(a->tStarts[i], b->tStarts[i]);
+    }
+    return 0;
+#undef cmpNumMacro
+#undef cmpStrMacro
+}
+
 /* load PSLs for all ranges and sort by target */
 static struct psl* loadPsls(struct sqlConnection *hgConn, char *table,
                             struct ChromSpec *chromSpecs) {
@@ -140,7 +176,9 @@ static struct psl* loadPsls(struct sqlConnection *hgConn, char *table,
             psls = slCat(psls, loadPslsRange(hgConn, table, chromSpec));
         }
     }
-    slSort(&psls, pslCmpTarget);
+    // both sort and unique to avoid duplication due to an alignment being in two
+    // ranges
+    slUniqify(&psls, pslFullCmpTarget, pslFree);
     return psls;
 }
 

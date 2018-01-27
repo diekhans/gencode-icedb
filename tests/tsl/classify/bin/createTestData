@@ -1,0 +1,9 @@
+#!/bin/env python3
+import os
+import runpy
+runpy.run_path(os.path.join(os.path.dirname(__file__), "../../../../bin/icedbProgSetup.py"))
+
+from pycbio.sys import fileOps
+
+def parseArgs():
+    desc = """Recreate test data from TSV specifying genes"""

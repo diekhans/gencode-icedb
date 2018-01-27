@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-
-from __future__ import print_function
 import icedbProgSetup  # noqa: F401
 import os
 import sys
@@ -43,7 +41,7 @@ def createRunBatches(mergeWorkDir):
     print("set -beEu -o pipefail", file=fh)
     os.chmod(runBatchesScript, 0o755)
     return fh
-    
+
 def writeInFile(sjsups, inFileFh):
     for sjsup in sjsups:
         print(sjsup, file=inFileFh)
@@ -57,7 +55,7 @@ def writeMergeBatchJob(sjsupSplits, filesPerJob, mergeBatchFh, mergeBatchDir, iS
     if numFiles == len(sjsupSplits) - 1:
         numFiles += 1
 
-    with open(inFileList, "w") as inFileFh: 
+    with open(inFileList, "w") as inFileFh:
         writeInFile(sjsupSplits[iSplit:iSplit + numFiles], inFileFh)
 
     print(rslStarSjSupMergeJob, inFileList, "{{check out exists {}}}".format(mergeJobOut), file=mergeBatchFh)
@@ -91,7 +89,7 @@ def linkFinalResult(lastMerge, mergeWorkDir, runBatchesFh):
     print("ln -f {} {}".format(lastMerge, os.path.join(mergeWorkDir, "merged.sjsup")),
           file=runBatchesFh)
 
-    
+
 def rslMkStarSjOutSplits(opts):
     byChromDir = os.path.join(opts.mergeWorkDir, "byChrom")
     sjsupSplits = getByChromSplits(byChromDir)

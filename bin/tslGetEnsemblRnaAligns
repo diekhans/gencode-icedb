@@ -2,7 +2,6 @@
 """
 Obtain cDNA alignments from an Ensembl database.
 """
-from __future__ import print_function
 import icedbProgSetup  # noqa: F401
 import sys
 import argparse
@@ -106,33 +105,33 @@ class CDnaSizeFinder(object):
         return size
 
 
-def buildCDnaSubRangeClause(ensChromSubset):
-    if ensChromSubset.start is None:  # whole chrom??
+def buildCDnaSubRangeClause(ensChromRange):
+    if ensChromRange.start is None:  # whole chrom??
         return ("(sr.name = %s)",
-                [ensChromSubset.name])
+                [ensChromRange.name])
     else:
         return ("((sr.name = %s) AND (daf.seq_region_end >= %s) AND (daf.seq_region_start <= %s))",
-                [ensChromSubset.name, ensChromSubset.start + 1, ensChromSubset.end])
+                [ensChromRange.name, ensChromRange.start + 1, ensChromRange.end])
 
 
-def buildCDnaSubRangeClauses(ensChromSubsets):
+def buildCDnaSubRangeClauses(ensChromRanges):
     sqlClauses = []
     sqlArgs = []
-    for ensChromSubset in ensChromSubsets:
-        ret = buildCDnaSubRangeClause(ensChromSubset)
+    for ensChromRange in ensChromRanges:
+        ret = buildCDnaSubRangeClause(ensChromRange)
         sqlClauses.append(ret[0])
         sqlArgs.extend(ret[1])
     return "(" + " OR ".join(sqlClauses) + ")", sqlArgs
 
 
-def buildCDnaQuery(limit, accverSubset, ensChromSubsets):
+def buildCDnaQuery(limit, accverSubset, ensChromRanges):
     sql = ensCDnaAlnQuery
     sqlArgs = []
     if accverSubset is not None:
         sql += " AND (daf.hit_name in ({}))".format(",".join(len(accverSubset) * ["%s"]))
         sqlArgs += accverSubset
-    if ensChromSubsets is not None:
-        ret = buildCDnaSubRangeClauses(ensChromSubsets)
+    if ensChromRanges is not None:
+        ret = buildCDnaSubRangeClauses(ensChromRanges)
         sql += " AND " + ret[0]
         sqlArgs += ret[1]
     if limit is not None:
@@ -140,11 +139,11 @@ def buildCDnaQuery(limit, accverSubset, ensChromSubsets):
     return sql, sqlArgs
 
 
-def ensemblCDnaQuery(ensemblCDnaDb, limit=None, accverSubset=None, ensChromSubsets=None):
+def ensemblCDnaQuery(ensemblCDnaDb, limit=None, accverSubset=None, ensChromRanges=None):
     "generator of cDNA alignments from Ensembl"
     conn = MySQLdb.Connect(host=ensDbHost, port=ensDbPort, user=ensDbUser,
                            db=ensemblCDnaDb, cursorclass=MySQLdb.cursors.DictCursor)
-    sql, sqlArgs = buildCDnaQuery(limit, accverSubset, ensChromSubsets)
+    sql, sqlArgs = buildCDnaQuery(limit, accverSubset, ensChromRanges)
     try:
         cur = conn.cursor()
         cur.execute(sql, sqlArgs)
@@ -264,15 +263,16 @@ class EnsemblCDnaConverter(object):
             return None
         return pslFromEnsembl(row, qSize, chromInfo.ucscStyleName, chromInfo.sequenceLength)
 
-    def ensemblCDnasToPsls(self, ensemblCDnaDb, limit, accverSubset, ensChromSubsets):
-        psls = []
-        for row in ensemblCDnaQuery(ensemblCDnaDb, limit, accverSubset, ensChromSubsets):
+    def ensemblCDnasToPsls(self, ensemblCDnaDb, limit, accverSubset, ensChromRanges):
+        # use a set to ensure to avoid duplication due to alignment being in two
+        # ranges
+        psls = set()
+        for row in ensemblCDnaQuery(ensemblCDnaDb, limit, accverSubset, ensChromRanges):
             logging.getLogger().debug("Ensembl cDNA row: {}".format(row))
             psl = self.__convertToPsl(row)
             if psl is not None:
-                psls.append(psl)
-        psls.sort(key=lambda p: (p.tName, p.tStart, p.tEnd))
-        return psls
+                psls.add(psl)
+        return list(sorted(psls, key=lambda p: (p.tName, p.tStart, p.tEnd)))
 
 
 def cdnaEnsemblAligns(opts):
