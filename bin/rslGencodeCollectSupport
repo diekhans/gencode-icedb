@@ -4,13 +4,13 @@ import argparse
 import csv
 from collections import defaultdict
 from pycbio.sys import fileOps
-from pycbio.hgdata.hgLite import hgSqliteConnect
+from pycbio.hgdata.hgLite import sqliteConnect
 from pycbio.hgdata.hgLite import GencodeAttrsDbTable, GenePredDbTable
 from gencode_icedb.general import gencodeDb
 from gencode_icedb.general.genome import GenomeReaderFactory
 from gencode_icedb.general.transFeatures import IntronFeature
 from gencode_icedb.general.annotFeatures import AnnotationGenePredFactory
-from gencode_icedb.rsl.rslModel import sqliteConnect, sqliteClose, SjSupportReader
+from gencode_icedb.rsl.rslModel import rslConnect, rslClose, SjSupportReader
 from gencode_icedb.rsl.intronSupportCounter import IntronSupportCounter
 
 # FIXME: both support and novel could be collected in one pass.
@@ -144,8 +144,8 @@ def rslGencodeCollectSupport(opts):
     "entry point"
     genomeReader = GenomeReaderFactory.factoryFromCmdOptions(opts).obtain()
 
-    gencodeConn = hgSqliteConnect(opts.gencodeDb, readOnly=True)
-    sjConn = sqliteConnect(opts.sjDb, readonly=True)
+    gencodeConn = sqliteConnect(opts.gencodeDb, readOnly=True)
+    sjConn = rslConnect(opts.sjDb, readonly=True)
     supportCounter = SupportCounter(gencodeConn, sjConn, genomeReader)
 
     fileOps.ensureFileDir(opts.resultsTsv)
@@ -155,7 +155,7 @@ def rslGencodeCollectSupport(opts):
                                                                   lineterminator='\n'))
     fileOps.atomicInstall(resultsTmpTsv, opts.resultsTsv)
     gencodeConn.close()
-    sqliteClose(sjConn)
+    rslClose(sjConn)
 
 
 rslGencodeCollectSupport(parseArgs())

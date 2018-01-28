@@ -4,12 +4,12 @@ import argparse
 import csv
 from pycbio.sys import fileOps, setOps
 from pycbio.hgdata.coords import Coords
-from pycbio.hgdata.hgLite import hgSqliteConnect, GencodeAttrsDbTable
+from pycbio.hgdata.hgLite import sqliteConnect, GencodeAttrsDbTable
 from gencode_icedb.general import gencodeDb
 from gencode_icedb.general.genome import GenomeReaderFactory
 from gencode_icedb.general.transFeatures import IntronFeature
-from gencode_icedb.general.annotFeatures import AnnotationFeatures
-from gencode_icedb.rsl.rslModel import sqliteConnect, SjSupportReader
+from gencode_icedb.general.annotFeatures import AnnotationMap
+from gencode_icedb.rsl.rslModel import rslConnect, SjSupportReader
 from gencode_icedb.rsl.intronSupportCounter import IntronSupportCounter
 
 
@@ -59,11 +59,11 @@ class NovelFinder(object):
                 self.rangeSupportCnts.sumSjSupp(sjSupp)
 
     def __loadRangeTranscripts(self, genomeCoords):
-        self.rangeTranscripts = AnnotationFeatures.dbFactory(self.attrsDbTable.conn, gencodeDb.gencode_ann_table,
-                                                             genomeCoords.name, genomeCoords.start, genomeCoords.end, self.genomeReader)
+        self.rangeTranscripts = AnnotationMap.dbFactory(self.attrsDbTable.conn, gencodeDb.gencode_ann_table, self.genomeReader,
+                                                        genomeCoords.name, genomeCoords.start, genomeCoords.end)
 
     def __getOverlappingTrans(self, intron):
-        return list(self.rangeTranscripts.transcriptsByRange.overlapping(intron.chrom, intron.chromStart, intron.chromEnd, intron.strand))
+        return list(self.rangeTranscripts.byRange.overlapping(intron.chrom, intron.chromStart, intron.chromEnd, intron.strand))
 
     def __haveIntron(self, intron, trans):
         # already strand-filtered
@@ -124,8 +124,8 @@ def rslGencodeCollectNovel(opts):
     genomeCoords = Coords.parse(opts.chromRange)
     genomeReader = GenomeReaderFactory.factoryFromCmdOptions(opts).obtain()
 
-    gencodeConn = hgSqliteConnect(opts.gencodeDb, readOnly=True)
-    sjConn = sqliteConnect(opts.sjDb, readonly=True)
+    gencodeConn = sqliteConnect(opts.gencodeDb, readOnly=True)
+    sjConn = rslConnect(opts.sjDb, readonly=True)
     novelFinder = NovelFinder(gencodeConn, sjConn, genomeReader, opts.minUniqueMapped)
 
     fileOps.ensureFileDir(opts.resultsTsv)

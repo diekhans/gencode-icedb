@@ -153,24 +153,30 @@ class AnnotationGenePredFactory(object):
         return trans
 
 
-class AnnotationFeatures(list):
-    "table of AnnotTranscript objects"
+class AnnotationMap(list):
+    "table of annotation TranscriptFeatures objects"
 
     def __init__(self):
-        self.transcriptsByName = defaultdict(list)
-        self.transcriptsByRange = RangeFinder()
+        self.byName = defaultdict(list)
+        self.byRange = RangeFinder()
 
-    def addTranscript(self, annotTrans):
-        self.transcriptsByName[annotTrans.name].append(annotTrans)
-        self.transcriptsByRange.add(annotTrans.chrom.name, annotTrans.chrom.start, annotTrans.chrom.end, annotTrans, annotTrans.rna.strand)
+    def add(self, annotTrans):
+        self.byName[annotTrans.name].append(annotTrans)
+        self.byRange.add(annotTrans.chrom.name, annotTrans.chrom.start, annotTrans.chrom.end, annotTrans, annotTrans.rna.strand)
         self.append(annotTrans)
 
     @staticmethod
-    def dbFactory(conn, table, chrom, chromStart, chromEnd, genomeReader):
-        "constructor from a sqlite3 databases"
+    def dbFactory(conn, table, genomeReader, chrom=None, start=None, end=None):
+        """Factory from a sqlite3 databases.  This can load a range or an entire
+        table."""
+        assert (chrom is None) == (start is None) == (end is None), "chrom, start, end must all be None or all specified"
         gpDbTable = GenePredDbTable(conn, table)
         annotFactory = AnnotationGenePredFactory(genomeReader)
-        annotFeatureMap = AnnotationFeatures()
-        for gp in gpDbTable.getRangeOverlap(chrom, chromStart, chromEnd):
-            annotFeatureMap.addTranscript(annotFactory.fromGenePred(gp))
-        return annotFeatureMap
+        annotMap = AnnotationMap()
+        if chrom is None:
+            gpGen = gpDbTable.getAll()
+        else:
+            gpGen = gpDbTable.getRangeOverlap(chrom, start, end)
+        for gp in gpGen:
+            annotMap.add(annotFactory.fromGenePred(gp))
+        return annotMap

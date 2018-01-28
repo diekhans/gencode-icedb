@@ -2,6 +2,7 @@
 Convert alignments (PSL) to features, closing and tracking gaps.
 """
 from __future__ import print_function
+from collections import defaultdict
 from pycbio.hgdata.rangeFinder import RangeFinder
 from pycbio.hgdata.hgLite import PslDbTable
 from pycbio.hgdata.coords import Coords
@@ -103,29 +104,33 @@ class EvidencePslFactory(object):
         return trans
 
 
-class EvidenceFeatureMap(list):
-    "map by exon coordinates of TranscriptFeatures objects"
+class EvidenceMap(list):
+    "map by overall coordinates of TranscriptFeatures objects"
 
     def __init__(self):
-        self.transcripts = []
-        self.exonRangeMap = RangeFinder()
+        self.byName = defaultdict(list)
+        self.byRange = RangeFinder()
 
     def overlapping(self, chrom, start, end, strand=None):
-        "generator over ExonFeatures overlaping the specified range"
-        return self.exonRangeMap.overlapping(chrom, start, end, strand)
+        "generator over Features overlaping the specified range"
+        return self.byRange.overlapping(chrom, start, end, strand)
 
-    def addTranscript(self, trans):
-        self.transcripts.append(trans)
-        for feat in trans.features:
-            if isinstance(feat, ExonFeature):
-                self.exonRangeMap.add(trans.chrom.name, feat.chrom.start, feat.chrom.end, trans, trans.chrom.strand)
+    def add(self, trans):
+        self.append(trans)
+        self.byRange.add(trans.chrom.name, trans.chrom.start, trans.chrom.end, trans, trans.chrom.strand)
 
     @staticmethod
-    def dbFactory(conn, table, chrom, start, end, genomeReader):
-        "constructor from a sqlite3 databases"
+    def dbFactory(conn, table, genomeReader, chrom=None, start=None, end=None):
+        """Factory from a sqlite3 databases.  This can load a range or an entire
+        table."""
+        assert (chrom is None) == (start is None) == (end is None), "chrom, start, end must all be None or all specified"
         pslDbTable = PslDbTable(conn, table)
         evidFactory = EvidencePslFactory(genomeReader)
-        evidFeatureMap = EvidenceFeatureMap()
-        for psl in pslDbTable.getTRangeOverlap(chrom, start, end):
-            evidFeatureMap.addTranscript(evidFactory.fromPsl(psl))
-        return evidFeatureMap
+        evidMap = EvidenceMap()
+        if chrom is None:
+            pslGen = pslDbTable.getAll()
+        else:
+            pslGen = pslDbTable.getTRangeOverlap(chrom, start, end)
+        for psl in pslGen:
+            evidMap.add(evidFactory.fromPsl(psl))
+        return evidMap

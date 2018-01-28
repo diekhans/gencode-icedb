@@ -14,7 +14,10 @@ hsGencodeDb = output/hsGencode.db
 
 testInputDone = output/test-input.done
 
-test:: ${testInputDone}
+test:: ${testInputDone} classifyUnitTests
+
+classifyUnitTests: ${testInputDone}
+	${PYTHON} classifyUnitTests.py
 
 
 ${testInputDone}: bin/createTestData input/v27-test-cases.tsv

@@ -32,34 +32,34 @@ static struct optionSpec optionSpecs[] = {
 
 static char *pslCreateSqliteTbl =
     "CREATE TABLE {table} ("
-    "bin int unsigned not null,"
-    "matches int unsigned not null,"
-    "misMatches int unsigned not null,"
-    "repMatches int unsigned not null,"
-    "nCount int unsigned not null,"
-    "qNumInsert int unsigned not null,"
-    "qBaseInsert int unsigned not null,"
-    "tNumInsert int unsigned not null,"
-    "tBaseInsert int unsigned not null,"
-    "strand text not null,"
-    "qName text not null,"
-    "qSize int unsigned not null,"
-    "qStart int unsigned not null,"
-    "qEnd int unsigned not null,"
-    "tName text not null,"
-    "tSize int unsigned not null,"
-    "tStart int unsigned not null,"
-    "tEnd int unsigned not null,"
-    "blockCount int unsigned not null,"
-    "blockSizes blob not null,"
-    "qStarts text not null,"
-    "tStarts text not null);";
+    "bin INT UNSIGNED NOT NULL,"
+    "matches INT UNSIGNED NOT NULL,"
+    "misMatches INT UNSIGNED NOT NULL,"
+    "repMatches INT UNSIGNED NOT NULL,"
+    "nCount INT UNSIGNED NOT NULL,"
+    "qNumInsert INT UNSIGNED NOT NULL,"
+    "qBaseInsert INT UNSIGNED NOT NULL,"
+    "tNumInsert INT UNSIGNED NOT NULL,"
+    "tBaseInsert INT UNSIGNED NOT NULL,"
+    "strand TEXT NOT NULL,"
+    "qName TEXT NOT NULL,"
+    "qSize INT UNSIGNED NOT NULL,"
+    "qStart INT UNSIGNED NOT NULL,"
+    "qEnd INT UNSIGNED NOT NULL,"
+    "tName TEXT NOT NULL,"
+    "tSize INT UNSIGNED NOT NULL,"
+    "tStart INT UNSIGNED NOT NULL,"
+    "tEnd INT UNSIGNED NOT NULL,"
+    "blockCount INT UNSIGNED NOT NULL,"
+    "blockSizes TEXT NOT NULL,"
+    "qStarts TEXT NOT NULL,"
+    "tStarts TEXT NOT NULL);";
 static char *pslInsertSqlite =
     "INSERT INTO {table} VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22);";
 static char *pslCreateSqliteBinIndex =
-    "CREATE INDEX {table}_tName_bin on {table} (tName, bin);";
+    "CREATE INDEX {table}_tName_bin ON {table} (tName, bin);";
 static char *pslCreateSqliteQnameIndex =
-    "CREATE INDEX {table}_qname on {table} (qName);";
+    "CREATE INDEX {table}_qname ON {table} (qName);";
 
 /* chromosome spec */
 struct ChromSpec {
@@ -302,9 +302,9 @@ static void writePslToDb(struct psl *psl,
     sqliteExBindInt(stmt, 17, psl->tStart);
     sqliteExBindInt(stmt, 18, psl->tEnd);
     sqliteExBindInt(stmt, 19, psl->blockCount);
-    sqliteExBindBlob(stmt, 20, dyStringContents(blockSizesBuf), dyStringLen(blockSizesBuf));
-    sqliteExBindBlob(stmt, 21, dyStringContents(qStartsBuf), dyStringLen(qStartsBuf));
-    sqliteExBindBlob(stmt, 22, dyStringContents(tStartsBuf), dyStringLen(tStartsBuf));
+    sqliteExBindText(stmt, 20, dyStringContents(blockSizesBuf));
+    sqliteExBindText(stmt, 21, dyStringContents(qStartsBuf));
+    sqliteExBindText(stmt, 22, dyStringContents(tStartsBuf));
 
     if (sqlite3_step(stmt) != SQLITE_DONE) {
         errAbort("PSL insert failed %s", sqlite3_errmsg(sqlite3_db_handle(stmt)));

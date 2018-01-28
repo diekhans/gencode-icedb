@@ -8,9 +8,9 @@ if __name__ == '__main__':
 import unittest
 from pycbio.sys.testCaseBase import TestCaseBase
 from gencode_icedb.general.genome import GenomeReaderFactory
-from gencode_icedb.general.evidFeatures import EvidenceFeatureMap, EvidencePslFactory
+from gencode_icedb.general.evidFeatures import EvidenceMap, EvidencePslFactory
 from gencode_icedb.general.annotFeatures import AnnotationGenePredFactory
-from pycbio.hgdata.hgLite import hgSqliteConnect
+from pycbio.hgdata.hgLite import sqliteConnect
 from pycbio.hgdata.hgLite import PslDbTable, GenePredDbTable
 from pycbio.hgdata.genePred import GenePredReader
 from pycbio.sys.pprint2 import nswpprint
@@ -65,7 +65,7 @@ class PslDbSrc(object):
         self.dbTbl = None
 
     def __build(self):
-        self.conn = hgSqliteConnect(None)
+        self.conn = sqliteConnect(None)
         self.dbTbl = PslDbTable(self.conn, self.name, create=True)
         self.dbTbl.loadPslFile(getInputFile(self.pslFile))
 
@@ -103,7 +103,7 @@ class GenePredDbSrc(object):
         self.dbTbl = None
 
     def __build(self):
-        self.conn = hgSqliteConnect(None)
+        self.conn = sqliteConnect(None)
         self.dbTbl = GenePredDbTable(self.conn, self.name, create=True)
         self.dbTbl.loadGenePredFile(getInputFile(self.genePredFile))
 
@@ -506,13 +506,13 @@ class EvidenceTests(FeatureTestBase):
     def testRangeMap1(self):
         # range is set1: chr22:18632931-19279166
         pslDbTbl = PslDbSrc.obtain("set1")
-        evidFeatureMap = EvidenceFeatureMap.dbFactory(pslDbTbl.conn, pslDbTbl.table,
-                                                      "chr22", 18958026, 19109719,
-                                                      GenomeSeqSrc.obtain("hg19"))
-        self.assertEqual(len(evidFeatureMap.transcripts), 30)
-        overFeats = list(evidFeatureMap.overlapping("chr22", 18958026, 18982141))
-        self.assertEqual(len(overFeats), 12)
-        for trans in evidFeatureMap.transcripts:
+        evidMap = EvidenceMap.dbFactory(pslDbTbl.conn, pslDbTbl.table,
+                                        GenomeSeqSrc.obtain("hg19"),
+                                        "chr22", 18958026, 19109719)
+        self.assertEqual(len(evidMap), 30)
+        overFeats = list(evidMap.overlapping("chr22", 18958026, 18982141))
+        self.assertEqual(len(overFeats), 5)
+        for trans in evidMap:
             self.__checkRnaAln(trans)
 
 

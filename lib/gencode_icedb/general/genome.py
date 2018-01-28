@@ -6,6 +6,9 @@ import os
 from pycbio.hgdata import dnaOps
 from twobitreader import TwoBitFile
 
+# FIXME: is factory really needed?  Derived classes might be better,
+# interaction with command line and subprocess is part of this.
+
 # twobitreader warning, pull request was submitted.
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning, module='twobitreader')
@@ -58,14 +61,11 @@ class GenomeReaderFactory(object):
             self.twoBitFile = twoBitFile
         if self.twoBitFile is None:
             raise Exception("no twoBitFile available")
-        self.genomeReader = None
 
     def obtain(self):
-        if self.genomeReader is None:
-            self.genomeReader = GenomeReader(TwoBitFile(self.twoBitFile))
-        return self.genomeReader
+        return GenomeReader(TwoBitFile(self.twoBitFile))
 
-    def getOptionArgs(self, allowUpdate):
+    def getOptionArgs(self):
         "create a vector of options and values for passing to another program"
         args = []
         if self.twoBitFile is not None:
@@ -83,3 +83,11 @@ class GenomeReaderFactory(object):
         """create a factory given options parse from command line"""
         # this will check sanity of options
         return GenomeReaderFactory(opts.genomeSeqs)
+
+    @staticmethod
+    def factoryFromUcscDb(ucscDb):
+        """create a factory from a file in ucsc locations, checking for cluster location"""
+        tb = "/scratch/data/{ucscDb}/{ucscDb}.2bit".format(ucscDb=ucscDb)
+        if not os.path.exists(tb):
+            tb = "/hive/data/genomes/{ucscDb}/{ucscDb}.2bit".format(ucscDb=ucscDb)
+        return GenomeReaderFactory(tb)

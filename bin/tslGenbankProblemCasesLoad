@@ -3,7 +3,8 @@ import icedbProgSetup  # noqa: F401
 import argparse
 from gencode_icedb.tsl.genbankProblemCasesDb import GenbankProblemCaseDbTable
 from pycbio.tsv.tabFile import TabFile
-from pycbio.hgdata.hgLite import hgSqliteConnect
+from pycbio.hgdata.hgLite import sqliteConnect
+
 
 def parseArgs():
     desc = """Load problem case tab file generate gbffGetProblemCases by
@@ -21,7 +22,7 @@ def parseArgs():
 def genbankProblemCasesLoad(opts):
     "main function"
     rows = TabFile(opts.problemTabFile)
-    conn = hgSqliteConnect(opts.sqliteDb, create=True)
+    conn = sqliteConnect(opts.sqliteDb, create=True)
     problemTable = GenbankProblemCaseDbTable(conn, opts.table, create=True)
     problemTable.loads(rows)
     conn.close()

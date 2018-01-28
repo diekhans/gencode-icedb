@@ -8,7 +8,7 @@ import argparse
 from pycbio.hgdata import hgDb
 from pycbio.hgdata.psl import Psl, PslBlock, reverseCoords
 from pycbio.hgdata.cigar import ExonerateCigar, OP_ALIGNED, OP_TINSERT, OP_TDELETE
-from pycbio.hgdata.hgLite import hgSqliteConnect
+from pycbio.hgdata.hgLite import sqliteConnect
 from pycbio.hgdata.hgLite import PslDbTable
 from pycbio.hgdata.coords import Coords
 from pycbio.sys import dbOps, fileOps, loggingOps
@@ -286,7 +286,7 @@ def cdnaEnsemblAligns(opts):
     accverSubset = fileOps.readFileLines(opts.accverList) if opts.accverList is not None else None
     ensChromRanges = ucscToEnsChroms(opts.chromSpecs, asmReport) if opts.chromSpecs is not None else None
     psls = converter.ensemblCDnasToPsls(opts.ensemblCDnaDb, opts.limit, accverSubset, ensChromRanges)
-    conn = hgSqliteConnect(opts.sqliteDb, create=True)
+    conn = sqliteConnect(opts.sqliteDb, create=True)
     pslDbTable = PslDbTable(conn, opts.table, create=True)
     pslDbTable.loads(psls)
     conn.close()

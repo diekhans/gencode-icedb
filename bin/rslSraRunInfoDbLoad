@@ -2,7 +2,7 @@
 import icedbProgSetup  # noqa: F401
 import sys
 import argparse
-from gencode_icedb.rsl.rslModel import sqliteConnect, RunMetadata
+from gencode_icedb.rsl.rslModel import rslConnect, RunMetadata
 from pycbio.sys import loggingOps
 from pycbio.tsv import TsvReader
 
@@ -59,7 +59,7 @@ def dbLoad(dbconn, recs):
 
 def rslSraRunInfoDbLoad(opts):
     recs = readRunInfo(opts.srcsymid, opts.runinfoTsv)
-    dbconn = sqliteConnect(opts.rsldb)
+    dbconn = rslConnect(opts.rsldb, readonly=False)
     RunMetadata.create_table(fail_silently=True)
     dbLoad(dbconn, recs)
 

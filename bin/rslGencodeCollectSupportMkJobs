@@ -3,7 +3,7 @@ import icedbProgSetup  # noqa: F401
 import os
 import argparse
 from pycbio.sys import fileOps
-from pycbio.hgdata.hgLite import hgSqliteConnect
+from pycbio.hgdata.hgLite import sqliteConnect
 from pycbio.hgdata.hgLite import GencodeAttrsDbTable
 from gencode_icedb.general import gencodeDb
 from gencode_icedb.general.genome import GenomeReaderFactory
@@ -36,7 +36,7 @@ class JobGenerator(object):
         self.suppProg = os.path.join(icedbProgSetup.binDir, "rslGencodeCollectSupportJob")
 
     def __generateJob(self, gencodeIds, batchFh, expectedFh):
-        cmd = [self.suppProg] + self.genomeReaderFactory.getOptionArgs(allowUpdate=False)
+        cmd = [self.suppProg] + self.genomeReaderFactory.getOptionArgs()
         resultTsv = os.path.join(self.resultDir, "{}.supp.tsv".format(gencodeIds[0]))
         cmd.extend([self.gencodeDb, self.sjDb, "{{check out exists {}}}".format(resultTsv)])
         cmd.extend(gencodeIds)
@@ -53,7 +53,7 @@ class JobGenerator(object):
 def rslGencodeCollectSupportMkJobs(opts):
     "main function"
     genomeReaderFactory = GenomeReaderFactory.factoryFromCmdOptions(opts)
-    gencodeConn = hgSqliteConnect(opts.gencodeDb, readOnly=True)
+    gencodeConn = sqliteConnect(opts.gencodeDb, readOnly=True)
     attrsDbTable = GencodeAttrsDbTable(gencodeConn, gencodeDb.gencode_attrs_table)
     gencodeIds = sorted(attrsDbTable.getAllGeneIds())
     if opts.maxgenes is not None:

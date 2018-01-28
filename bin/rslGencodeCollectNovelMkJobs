@@ -37,7 +37,7 @@ class JobGenerator(object):
         self.novelProg = os.path.join(icedbProgSetup.binDir, "rslGencodeCollectNovelJob")
 
     def __generateJob(self, genomeCoords, batchFh, expectedFh):
-        cmd = [self.novelProg] + self.genomeReaderFactory.getOptionArgs(allowUpdate=False)
+        cmd = [self.novelProg] + self.genomeReaderFactory.getOptionArgs()
         resultTsv = os.path.join(self.resultDir, "{}.novel.tsv".format(genomeCoords))
         cmd.extend([self.gencodeDb, self.sjDb, "{{check out exists {}}}".format(resultTsv), genomeCoords])
         print(*cmd, file=batchFh)

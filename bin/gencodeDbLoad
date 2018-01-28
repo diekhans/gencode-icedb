@@ -4,7 +4,7 @@ import argparse
 from pycbio.hgdata.hgLite import GencodeAttrsDbTable, GencodeTranscriptSourceDbTable, GenePredDbTable, GencodeTranscriptionSupportLevelDbTable, GencodeTagDbTable
 from pycbio.hgdata import hgDb
 from pycbio.sys import fileOps
-from pycbio.hgdata.hgLite import hgSqliteConnect
+from pycbio.hgdata.hgLite import sqliteConnect
 from gencode_icedb.general import gencodeDb
 
 
@@ -121,7 +121,7 @@ def loadTags(conn, hgdbConn, tags, transIdSubset):
 def gencodeDbLoad(opts):
     "main function"
     transIdSubset = loadTransIds(opts.transIds) if opts.transIds is not None else None
-    conn = hgSqliteConnect(opts.sqliteDb, create=True)
+    conn = sqliteConnect(opts.sqliteDb, create=True)
     hgdbConn = None
     if opts.hgdb is not None:
         hgdbConn = hgDb.connect(opts.hgdb)

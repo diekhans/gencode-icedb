@@ -17,7 +17,7 @@ def setDatabaseConn(dbconn):
     _database_proxy.initialize(dbconn)
 
 
-def sqliteConnect(rsldb, readonly=False, timeout=None, synchronous=None):
+def rslConnect(rsldb, readonly=True, timeout=None, synchronous=None):
     "connect to sqlite3 database and bind to model"
     kwargs = {}
     if timeout is not None:
@@ -31,8 +31,8 @@ def sqliteConnect(rsldb, readonly=False, timeout=None, synchronous=None):
     return dbconn
 
 
-def sqliteClose(rslDb):
-    "close database if not-null and open"
+def rslClose(rslDb):
+    "close database"
     # not sure why it might be in closed state even after open, maybe lazy open?
     if not rslDb.is_closed():
         rslDb.close()

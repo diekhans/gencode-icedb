@@ -3,11 +3,17 @@ Types related to support levels.
 """
 from pycbio.sys.symEnum import SymEnum
 
-# FIXME: make this consistent with RSL stuff
+# FIXME: make organization consistent between TSL and RSL stuff
 
 UCSC_RNA_ALN_TBL = "ucsc_rna_aln"
 UCSC_EST_ALN_TBL = "ucsc_est_aln"
 ENSEMBL_RNA_ALN_TBL = "ensembl_rna_aln"
+
+GENCODE_ANN_TBL = "gencode_ann"
+GENCODE_ATTRS_TBL = "gencode_attrs"
+GENCODE_TAG_TBL = "gencode_tag                        "
+GENCODE_TRANSCRIPT_SOURCE_TBL = "gencode_transcript_source          "
+GENCODE_TRANSCRIPTION_SUPPORT_LEVEL_TBL = "gencode_transcription_support_level"
 
 
 class TrascriptionSupportLevel(SymEnum):
