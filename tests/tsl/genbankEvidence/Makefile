@@ -5,7 +5,6 @@ include ${ROOT}/tests/testDefs.mk
 # always use public database, since hgwdev might be ahead
 export HGDB_CONF=hg.pub.conf
 
-gencodeOrg = human
 ensemblVer = 87_38
 ensemblCDnaDb = homo_sapiens_cdna_${ensemblVer}
 grcRefAssembly = GRCh38
@@ -38,7 +37,7 @@ ensemblTests: ensemblChrMTest ensemblIdListTest
 
 ensemblChrMTest: mkdirs
 	@rm -f output/$@.db
-	${tslGetEnsemblRnaAligns} --ensChrom=MT ${ensemblCDnaDb} ${grcRefAssemblyReport} output/$@.db ensemblCDnaAln
+	${tslGetEnsemblRnaAligns} --chromSpec=chrM ${ensemblCDnaDb} ${grcRefAssemblyReport} output/$@.db ensemblCDnaAln
 	sqlite3 --batch output/$@.db 'select * from ensemblCDnaAln;' | cut -f 2- | sort > output/$@.sort.psl
 	diff expected/$@.sort.psl output/$@.sort.psl
 

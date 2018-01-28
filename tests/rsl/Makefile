@@ -153,35 +153,29 @@ $(call gencodeTestDbSetup,output/$@/gencode.db)
 ${rnaSeqDbSetup}
 endef
 
-# uncomment to test mock sequences
-#forceMockGenomeSeqs = --forceMockGenomeSeqs
-
-# uncomment to update mock in supportCollectAllTest
-#updateMockGenomeSeqs = --updateMockGenomeSeqs
-
-genomeSeqsSpecs = --genomeSeqs=${genomeSeqsHg38} --mockGenomeSeqs=input/set1.hs.mock-genome.tsv
+genomeSeqsSpecs = --genomeSeqs=${genomeSeqsHg38}
 
 
 supportCollectAllTest: mkdirs
 	${gencodeSupportTestSetup}
-	${rslGencodeCollectSupport} ${genomeSeqsSpecs} ${updateMockGenomeSeqs} ${forceMockGenomeSeqs} output/$@/gencode.db output/$@/rnaseq.db output/$@.supp.tsv
+	${rslGencodeCollectSupport} ${genomeSeqsSpecs} output/$@/gencode.db output/$@/rnaseq.db output/$@.supp.tsv
 	${diff} expected/$@.supp.tsv output/$@.supp.tsv
 
 supportCollectGenesTest: mkdirs
 	${gencodeSupportTestSetup}
-	${rslGencodeCollectSupport} ${genomeSeqsSpecs} ${forceMockGenomeSeqs} output/$@/gencode.db output/$@/rnaseq.db output/$@.supp.tsv ENSG00000235169.7
+	${rslGencodeCollectSupport} ${genomeSeqsSpecs} output/$@/gencode.db output/$@/rnaseq.db output/$@.supp.tsv ENSG00000235169.7
 	${diff} expected/$@.supp.tsv output/$@.supp.tsv
 
 supportCollectTransTest: mkdirs
 	${gencodeSupportTestSetup}
-	${rslGencodeCollectSupport} ${genomeSeqsSpecs} ${forceMockGenomeSeqs} output/$@/gencode.db output/$@/rnaseq.db output/$@.supp.tsv ENST00000444870.6 ENST00000462356.5
+	${rslGencodeCollectSupport} ${genomeSeqsSpecs} output/$@/gencode.db output/$@/rnaseq.db output/$@.supp.tsv ENST00000444870.6 ENST00000462356.5
 	${diff} expected/$@.supp.tsv output/$@.supp.tsv
 
 supportCollectMkJobsTest: mkdirs
 	${gencodeSupportTestSetup}
 	${rslGencodeCollectSupportMkJobs} --maxgenes=10 ${genomeSeqsSpecs} output/$@/gencode.db output/$@/rnaseq.db output/$@.work
-	sed -Ee 's#^.*(/bin/rslGencodeCollectSupport)#??\1#' output/$@.work/batch.jobs > output/$@.work/batch.jobs.cleaned
-	${diff} expected/$@.batch.jobs.cleaned output/$@.work/batch.jobs.cleaned
+	sed -Ee 's#^.*(/bin/rslGencodeCollectSupport)#??\1#' output/$@.work/batch.jobs > output/$@.batch.jobs.cleaned
+	${diff} expected/$@.batch.jobs.cleaned output/$@.batch.jobs.cleaned
 	${jobsToCmds} output/$@.work/batch.jobs | bash -e  
 	ls -1 output/$@.work/results/ > output/$@.results.lst
 	${diff} expected/$@.results.lst output/$@.results.lst
@@ -210,8 +204,8 @@ novelSplitTest: mkdirs
 novelMkJobsTest: mkdirs
 	${gencodeSupportTestSetup}
 	${rslGencodeCollectNovelMkJobs} --testRange=chr22:10640100-17601091 --windowSize=1000000 ${genomeSeqsSpecs} output/$@/gencode.db output/$@/rnaseq.db output/$@.work
-	sed -Ee 's#^.*(/bin/rslGencodeCollectNovel)#??\1#' output/$@.work/batch.jobs > output/$@.work/batch.jobs.cleaned
-	${diff} expected/$@.batch.jobs.cleaned output/$@.work/batch.jobs.cleaned
+	sed -Ee 's#^.*(/bin/rslGencodeCollectNovel)#??\1#' output/$@.work/batch.jobs > output/$@.batch.jobs.cleaned
+	${diff} expected/$@.batch.jobs.cleaned output/$@.batch.jobs.cleaned
 	${jobsToCmds} output/$@.work/batch.jobs | bash -e  
 	ls -1 output/$@.work/results/ > output/$@.results.lst
 	${diff} expected/$@.results.lst output/$@.results.lst

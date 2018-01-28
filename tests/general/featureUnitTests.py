@@ -10,10 +10,11 @@ from pycbio.sys.testCaseBase import TestCaseBase
 from gencode_icedb.general.genome import GenomeReaderFactory
 from gencode_icedb.general.evidFeatures import EvidenceFeatureMap, EvidencePslFactory
 from gencode_icedb.general.annotFeatures import AnnotationGenePredFactory
+from pycbio.hgdata.hgLite import hgSqliteConnect
 from pycbio.hgdata.hgLite import PslDbTable, GenePredDbTable
 from pycbio.hgdata.genePred import GenePredReader
 from pycbio.sys.pprint2 import nswpprint
-import sqlite3
+
 
 debugResults = False   # print out results for updated expected
 noCheckResults = False  # don't check results
@@ -64,7 +65,7 @@ class PslDbSrc(object):
         self.dbTbl = None
 
     def __build(self):
-        self.conn = sqlite3.connect(":memory:")
+        self.conn = hgSqliteConnect(None)
         self.dbTbl = PslDbTable(self.conn, self.name, create=True)
         self.dbTbl.loadPslFile(getInputFile(self.pslFile))
 
@@ -102,7 +103,7 @@ class GenePredDbSrc(object):
         self.dbTbl = None
 
     def __build(self):
-        self.conn = sqlite3.connect(":memory:")
+        self.conn = hgSqliteConnect(None)
         self.dbTbl = GenePredDbTable(self.conn, self.name, create=True)
         self.dbTbl.loadGenePredFile(getInputFile(self.genePredFile))
 

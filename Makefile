@@ -8,7 +8,8 @@ progs = icedbProgSetup.py \
 	rslSraRunInfoFilter rslSraRunInfoDbLoad rslMappingMetadataDbLoad \
 	rslMkStarSjOutSplits \
 	rslGencodeCollectSupport rslGencodeCollectSupportMkJobs rslGencodeCollectSupportFinishJobs \
-	rslGencodeCollectNovel rslGencodeCollectNovelMkJobs rslGencodeCollectNovelFinishJobs
+	rslGencodeCollectNovel rslGencodeCollectNovelMkJobs rslGencodeCollectNovelFinishJobs \
+	tests/tsl/classify/bin/createTestData
 
 all::
 	(cd src && ${MAKE})
@@ -20,7 +21,7 @@ mondoTest::
 	(cd tests && ${MAKE} mondoTest)
 
 lint:
-	flake8-3 tests/general lib/gencode_icedb ${progs:%=bin/%}
+	flake8-3 tests lib/gencode_icedb ${progs:%=bin/%}
 
 clean::
 	(cd src && ${MAKE} clean)

@@ -3,7 +3,8 @@ import icedbProgSetup  # noqa: F401
 import argparse
 from pycbio.hgdata.hgLite import GencodeAttrsDbTable, GencodeTranscriptSourceDbTable, GenePredDbTable, GencodeTranscriptionSupportLevelDbTable, GencodeTagDbTable
 from pycbio.hgdata import hgDb
-import sqlite3
+from pycbio.sys import fileOps
+from pycbio.hgdata.hgLite import hgSqliteConnect
 from gencode_icedb.general import gencodeDb
 
 
@@ -13,7 +14,7 @@ def parseArgs():
     parser.add_argument('--hgdb',
                         help="""load from mysql hgdb instead of files""")
     parser.add_argument('--version',
-                        help="""If specified, get construct names from this version, this should include leading V or VM""")
+                        help="""If specified, construct names from this version, this should include leading V or VM""")
     parser.add_argument('--attrs',
                         help="""TSV file or table of GENCODE attributes""")
     parser.add_argument('--transcriptSource',
@@ -26,6 +27,8 @@ def parseArgs():
                         help="""file or table of genePreds to load""")
     parser.add_argument('--pseudoGenes',
                         help="""file or table of pseudo genePreds to load""")
+    parser.add_argument('--transIds',
+                        help="""file of transcript ids subset to load.  Only works with tables.""")
     parser.add_argument('sqliteDb',
                         help="""database to load""")
     opts = parser.parse_args()
@@ -47,22 +50,35 @@ def parseArgs():
     return opts
 
 
-def loadHgDbTable(hgdbConn, tbl):
+def loadTransIds(transIdFile):
+    transIdSubset = frozenset(fileOps.iterLines(transIdFile))
+    if len(transIdSubset) == 0:
+        raise Exception("no transcript ids found in file: {}".format(transIdFile))
+    return transIdSubset
+
+
+def loadHgDbTable(hgdbConn, tbl, transIdCol, transIdSubset):
     cur = hgdbConn.cursor()
+    if transIdSubset is not None:
+        sql = "SELECT * FROM {} WHERE {} IN ({})".format(tbl, transIdCol, ','.join(len(transIdSubset) * ['%s']))
+        sqlArgs = tuple(transIdSubset)
+    else:
+        sql = "SELECT * FROM {}".format(tbl)
+        sqlArgs = ()
     try:
-        cur.execute("SELECT * FROM {}".format(tbl))
+        cur.execute(sql, sqlArgs)
         return cur.fetchall()
     finally:
         cur.close()
 
 
-def loadAnnotations(conn, hgdbConn, genes, pseudoGenes):
+def loadAnnotations(conn, hgdbConn, genes, pseudoGenes, transIdSubset):
     annDbTable = GenePredDbTable(conn, gencodeDb.gencode_ann_table, create=True)
     if hgdbConn is not None:
         if genes is not None:
-            annDbTable.loadsWithBin(loadHgDbTable(hgdbConn, genes))
+            annDbTable.loadsWithBin(loadHgDbTable(hgdbConn, genes, "name", transIdSubset))
         if pseudoGenes is not None:
-            annDbTable.loadsWithBin(loadHgDbTable(hgdbConn, pseudoGenes))
+            annDbTable.loadsWithBin(loadHgDbTable(hgdbConn, pseudoGenes, "name", transIdSubset))
     else:
         if genes is not None:
             annDbTable.loadGenePredFile(genes)
@@ -70,54 +86,55 @@ def loadAnnotations(conn, hgdbConn, genes, pseudoGenes):
             annDbTable.loadGenePredFile(pseudoGenes)
 
 
-def loadAttrs(conn, hgdbConn, attrs):
+def loadAttrs(conn, hgdbConn, attrs, transIdSubset):
     attrsDbTable = GencodeAttrsDbTable(conn, gencodeDb.gencode_attrs_table, create=True)
     if hgdbConn is not None:
-        attrsDbTable.loads(loadHgDbTable(hgdbConn, attrs))
+        attrsDbTable.loads(loadHgDbTable(hgdbConn, attrs, "transcriptId", transIdSubset))
     else:
         attrsDbTable.loadTsv(attrs)
 
 
-def loadTransSource(conn, hgdbConn, transSource):
+def loadTransSource(conn, hgdbConn, transSource, transIdSubset):
     transSourceDbTable = GencodeTranscriptSourceDbTable(conn, gencodeDb.gencode_transcript_source_table, create=True)
     if hgdbConn is not None:
-        transSourceDbTable.loads(loadHgDbTable(hgdbConn, transSource))
+        transSourceDbTable.loads(loadHgDbTable(hgdbConn, transSource, "transcriptId", transIdSubset))
     else:
         transSourceDbTable.loadTsv(transSource)
 
 
-def loadTransSupportLevel(conn, hgdbConn, transSupportLevel):
+def loadTransSupportLevel(conn, hgdbConn, transSupportLevel, transIdSubset):
     transSourceDbTable = GencodeTranscriptionSupportLevelDbTable(conn, gencodeDb.gencode_transcription_support_level_table, create=True)
     if hgdbConn is not None:
-        transSourceDbTable.loads(loadHgDbTable(hgdbConn, transSupportLevel))
+        transSourceDbTable.loads(loadHgDbTable(hgdbConn, transSupportLevel, "transcriptId", transIdSubset))
     else:
         transSourceDbTable.loadTsv(transSupportLevel)
 
 
-def loadTags(conn, hgdbConn, tags):
+def loadTags(conn, hgdbConn, tags, transIdSubset):
     tagsDbTable = GencodeTagDbTable(conn, gencodeDb.gencode_tag_table, create=True)
     if hgdbConn is not None:
-        tagsDbTable.loads(loadHgDbTable(hgdbConn, tags))
+        tagsDbTable.loads(loadHgDbTable(hgdbConn, tags, "transcriptId", transIdSubset))
     else:
         tagsDbTable.loadTsv(tags)
 
 
 def gencodeDbLoad(opts):
     "main function"
-    conn = sqlite3.connect(opts.sqliteDb)
+    transIdSubset = loadTransIds(opts.transIds) if opts.transIds is not None else None
+    conn = hgSqliteConnect(opts.sqliteDb, create=True)
     hgdbConn = None
     if opts.hgdb is not None:
         hgdbConn = hgDb.connect(opts.hgdb)
     if (opts.genes is not None) or (opts.pseudoGenes is not None):
-        loadAnnotations(conn, hgdbConn, opts.genes, opts.pseudoGenes)
+        loadAnnotations(conn, hgdbConn, opts.genes, opts.pseudoGenes, transIdSubset)
     if opts.attrs is not None:
-        loadAttrs(conn, hgdbConn, opts.attrs)
+        loadAttrs(conn, hgdbConn, opts.attrs, transIdSubset)
     if opts.transcriptSource is not None:
-        loadTransSource(conn, hgdbConn, opts.transcriptSource)
+        loadTransSource(conn, hgdbConn, opts.transcriptSource, transIdSubset)
     if opts.transcriptionSupportLevel is not None:
-        loadTransSupportLevel(conn, hgdbConn, opts.transcriptionSupportLevel)
+        loadTransSupportLevel(conn, hgdbConn, opts.transcriptionSupportLevel, transIdSubset)
     if opts.tags is not None:
-        loadTags(conn, hgdbConn, opts.tags)
+        loadTags(conn, hgdbConn, opts.tags, transIdSubset)
     if hgdbConn is not None:
         hgdbConn.close()
     conn.close()
