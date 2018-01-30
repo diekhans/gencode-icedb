@@ -76,10 +76,10 @@ def compareFeature(annotFeat, evidFeat):
 def compareMegWithEvidence(annotTrans, evidTrans):
     """Compare a multi-exon annotation with a given piece of evidence"""
     if len(evidTrans.features) != len(annotTrans.features):
-        return EvidenceComparison.featMismatch
+        return EvidenceComparison.feat_mismatch
     worstCmpr = EvidenceComparison.good
     for iFeat in range(len(annotTrans.features)):
-        cmpr = compareFeature(annotTrans.features[iFeat], evidTrans[iFeat])
+        cmpr = compareFeature(annotTrans.features[iFeat], evidTrans.features[iFeat])
         if cmpr > worstCmpr:  # > is worse
             worstCmpr = cmpr
     return worstCmpr

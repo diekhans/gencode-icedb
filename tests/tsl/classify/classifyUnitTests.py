@@ -27,12 +27,12 @@ class TestData(object):
         try:
             self.ucscRnas = EvidenceMap.dbFactory(conn, UCSC_RNA_ALN_TBL, self.genomeReader)
             self.ucscEsts = EvidenceMap.dbFactory(conn, UCSC_EST_ALN_TBL, self.genomeReader)
-            self.ensemblRna = EvidenceMap.dbFactory(conn, ENSEMBL_RNA_ALN_TBL, self.genomeReader)
+            self.ensemblRnas = EvidenceMap.dbFactory(conn, ENSEMBL_RNA_ALN_TBL, self.genomeReader)
         finally:
             conn.close()
         conn = sqliteConnect(annotDb)
         try:
-            self.annon = AnnotationMap.dbFactory(conn, GENCODE_ANN_TBL, self.genomeReader)
+            self.annots = AnnotationMap.dbFactory(conn, GENCODE_ANN_TBL, self.genomeReader)
         finally:
             conn.close()
 
@@ -43,10 +43,25 @@ class EvidCompareTest(TestCaseBase):
 
     @classmethod
     def setUpClass(cls):
-        cls.evidenceCache = TestData("hg38", "output/hsEvid.db", "output/hsGencode.db")
+        cls.data = TestData("hg38", "output/hsEvid.db", "output/hsGencode.db")
+
+    def __evalWithEvid(self, annotTrans, etype, evidTrans):
+        sup = compareMegWithEvidence(annotTrans, evidTrans)
+        print("annot: {} {}: {} => {}".format(annotTrans.rna.name, etype, evidTrans.rna.name, str(sup)))
+
+    def __evalAnnotTransEvidSrc(self, annotTrans, etype, evidMap):
+        for evidTrans in evidMap.overlapping(annotTrans.chrom.name, annotTrans.chrom.start, annotTrans.chrom.end, annotTrans.rna.strand):
+            self.__evalWithEvid(annotTrans, etype, evidTrans)
+
+    def __evalAnnotTrans(self, annotTrans):
+        self.__evalAnnotTransEvidSrc(annotTrans, "ucscRna", self.data.ucscRnas)
+        self.__evalAnnotTransEvidSrc(annotTrans, "ucscEst", self.data.ucscEsts)
+        self.__evalAnnotTransEvidSrc(annotTrans, "ensemblRna", self.data.ensemblRnas)
 
     def testShit(self):
-        pass
+        for annotTrans in self.data.annots:
+            if len(annotTrans.features) >= 3:  # multi-exon only
+                self.__evalAnnotTrans(annotTrans)
 
 
 def suite():

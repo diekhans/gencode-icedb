@@ -9,12 +9,15 @@ from pycbio.ncbi.assembly import AssemblyReport
 from pycbio.sys import fileOps
 from gencode_icedb.tsl.supportDefs import UCSC_RNA_ALN_TBL, UCSC_EST_ALN_TBL, ENSEMBL_RNA_ALN_TBL
 
+import logging
 from testlib import TestCases
 
 def parseArgs():
     desc = """Create test data from TSV specifying test genes.  This
     get GENCODE genePreds and evidence PSLs."""
     parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument('--debug', action="store_true", default=False,
+                        help="""Enable debug logging""")
     parser.add_argument('testCaseTsv',
                         help="""TSV contain gene/transcripts to obtain.""")
     parser.add_argument('gencodeVersion',
@@ -46,8 +49,7 @@ def getEnsemblAlns(ensemblCDnaDb, assemblyReport, ranges, evidDb):
     pipettor.run(cmd)
 
 def buildEvidDb(testCases, assemblyReport, ucscDb, ensemblCDnaDb, evidDb):
-    if os.path.exists(evidDb):
-        os.unlink(evidDb)  # start fresh
+    fileOps.rmFiles(evidDb)
     ranges = testCases.getRanges()
     getUcscAlns(ucscDb, "rna", ranges, evidDb)
     getUcscAlns(ucscDb, "est", ranges, evidDb)
@@ -63,6 +65,7 @@ def writeTransIdsTmpFile(testCases):
 
 
 def buildGencodeDb(testCases, ucscDb, gencodeVersion, gencodeDb):
+    fileOps.rmFiles(gencodeDb)
     transIdTmp = writeTransIdsTmpFile(testCases)
     cmd = [os.path.join(binDir, "gencodeDbLoad"),
            "--hgdb={}".format(ucscDb),
@@ -76,6 +79,11 @@ def buildGencodeDb(testCases, ucscDb, gencodeVersion, gencodeDb):
 
 
 def createTestData(args):
+    if args.debug:
+        logging.getLogger().setLevel(logging.DEBUG)
+        pipettor.setDefaultLogger(logging.getLogger())
+        pipettor.setDefaultLogLevel(logging.DEBUG)
+        logging.debug("Debugging enabled")  #FIXME for some reason, this is required to start output
     testCases = TestCases(args.testCaseTsv)
     buildGencodeDb(testCases, args.ucscDb, args.gencodeVersion, args.gencodeDb)
     buildEvidDb(testCases, args.assemblyReport, args.ucscDb, args.ensemblCDnaDb, args.evidDb)

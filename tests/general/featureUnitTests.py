@@ -31,52 +31,42 @@ def getInputFile(base):
 class GenomeSeqSrc(object):
     "caching genome reader"
 
-    srcs = None  # initialized below
-
-    def __init__(self, db, twoBit):
-        self.db = db
-        self.twoBit = twoBit
-        self.factory = None
-
-    def __obtain(self):
-        if self.factory is None:
-            self.factory = GenomeReaderFactory(self.twoBit)
-        return self.factory.obtain()
+    srcs = {
+        "hg19": "/hive/data/genomes/hg19/hg19.2bit",
+        "mm10": "/hive/data/genomes/mm10/mm10.2bit",
+    }
+    readers = {}
 
     @classmethod
     def obtain(cls, db):
-        return cls.srcs[db].__obtain()
-
-
-GenomeSeqSrc.srcs = {
-    "hg19": GenomeSeqSrc("hg19", "/hive/data/genomes/hg19/hg19.2bit"),
-    "mm10": GenomeSeqSrc("mm10", "/hive/data/genomes/mm10/mm10.2bit"),
-}
+        reader = cls.readers.get(db)
+        if reader is None:
+            reader = cls.readers[db] = GenomeReaderFactory(cls.srcs[db]).obtain()
+        return reader
 
 
 class PslDbSrc(object):
     "caching psl sqlite database"
-    srcs = None  # initialized below
+    srcs = {
+        "set1": "set1.ucsc-mrna.psl",
+        "hg38-mm10.transMap": "hg38-mm10.transMap.psl"
+    }
+    pslTbls = {}
 
-    def __init__(self, name, pslFile):
-        self.name = name
-        self.pslFile = pslFile
-        self.conn = None
-        self.dbTbl = None
-
-    def __build(self):
-        self.conn = sqliteConnect(None)
-        self.dbTbl = PslDbTable(self.conn, self.name, create=True)
-        self.dbTbl.loadPslFile(getInputFile(self.pslFile))
-
-    def __obtain(self):
-        if self.conn is None:
-            self.__build()
-        return self.dbTbl
+    @classmethod
+    def __loadDbTbl(cls, name):
+        conn = sqliteConnect(None)
+        dbTbl = PslDbTable(conn, "psls", create=True)
+        dbTbl.loadPslFile(getInputFile(cls.srcs[name]))
+        cls.pslTbls[name] = dbTbl
+        return dbTbl
 
     @classmethod
     def obtain(cls, name):
-        return cls.srcs[name].__obtain()
+        dbTbl = cls.pslTbls.get(name)
+        if dbTbl is None:
+            dbTbl = cls.__loadDbTbl(name)
+        return dbTbl
 
     @classmethod
     def obtainPsl(cls, name, acc):
@@ -86,35 +76,27 @@ class PslDbSrc(object):
         return psls[0]
 
 
-PslDbSrc.srcs = {
-    "set1": PslDbSrc("set1", "set1.ucsc-mrna.psl"),
-    "hg38-mm10.transMap": PslDbSrc("set1", "hg38-mm10.transMap.psl"),
-}
-
-
 class GenePredDbSrc(object):
     "caching genpred sqlite database"
-    srcs = None  # initialized below
+    srcs = {
+        "set1": "set1.gencodeCompV19.gp"
+    }
+    genePredTbls = {}
 
-    def __init__(self, name, genePredFile):
-        self.name = name
-        self.genePredFile = genePredFile
-        self.conn = None
-        self.dbTbl = None
-
-    def __build(self):
-        self.conn = sqliteConnect(None)
-        self.dbTbl = GenePredDbTable(self.conn, self.name, create=True)
-        self.dbTbl.loadGenePredFile(getInputFile(self.genePredFile))
-
-    def __obtain(self):
-        if self.conn is None:
-            self.__build()
-        return self.dbTbl
+    @classmethod
+    def __loadDbTbl(cls, name):
+        conn = sqliteConnect(None)
+        dbTbl = GenePredDbTable(conn, name, create=True)
+        dbTbl.loadGenePredFile(getInputFile(cls.srcs[name]))
+        cls.genePredTbls[name] = dbTbl
+        return dbTbl
 
     @classmethod
     def obtain(cls, name):
-        return cls.srcs[name].__obtain()
+        dbTbl = cls.genePredTbls.get(name)
+        if dbTbl is None:
+            dbTbl = cls.__loadDbTbl(name)
+        return dbTbl
 
     @classmethod
     def obtainGenePred(cls, name, acc):
@@ -124,9 +106,6 @@ class GenePredDbSrc(object):
         return gps[0]
 
 
-GenePredDbSrc.srcs = {
-    "set1": GenePredDbSrc("set1", "set1.gencodeCompV19.gp")
-}
 
 
 class FeatureTestBase(TestCaseBase):

@@ -1,13 +1,6 @@
 ROOT = ../../..
 include ${ROOT}/config.mk
-include ${ROOT}/tests/testDefs.mk
-
-hsGencodeVer = V27
-hsEnsemblVer = 91_38
-hgEnsemblCDnaDb = homo_sapiens_cdna_${hsEnsemblVer}
-hsGrcRefAssembly = GRCh38
-hsGrcRefAssemblyReport = ../genbankEvidence/input/GCF_000001405.36_GRCh38.p10_assembly_report.txt
-hsUcscGenomeDb = hg38
+include ${ROOT}/tests/tsl/tslTestDefs.mk
 
 hsEvidDb = output/hsEvid.db
 hsGencodeDb = output/hsGencode.db
@@ -22,7 +15,7 @@ classifyUnitTests: ${testInputDone}
 
 ${testInputDone}: bin/createTestData input/v27-test-cases.tsv
 	@mkdir -p output
-	bin/createTestData input/v27-test-cases.tsv ${hsGencodeVer} ${hsUcscGenomeDb} ${hgEnsemblCDnaDb} ${hsGrcRefAssemblyReport} ${hsEvidDb} ${hsGencodeDb}
+	bin/createTestData input/v27-test-cases.tsv ${hsGencodeVer} ${hsUcscGenomeDb} ${hsEnsemblCDnaDb} ${hsGrcRefAssemblyReport} ${hsEvidDb} ${hsGencodeDb}
 	touch $@
 
 

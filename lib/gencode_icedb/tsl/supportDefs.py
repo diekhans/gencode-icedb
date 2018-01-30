@@ -46,6 +46,7 @@ class EvidenceComparison(SymEnum):
     large_indel_size = 12  # give indel exceeds a threshold
     large_indel_content = 14  # indel context if a given exon exceeded
     internal_unaligned = 15  # intron contains unaligned
+    feat_mismatch = 16  # different number of features
 
     # endsMedium = 2
     # endsWeak = 3

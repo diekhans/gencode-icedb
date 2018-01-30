@@ -124,7 +124,7 @@ def gencodeDbLoad(opts):
     conn = sqliteConnect(opts.sqliteDb, create=True)
     hgdbConn = None
     if opts.hgdb is not None:
-        hgdbConn = hgDb.connect(opts.hgdb)
+        hgdbConn = hgDb.connect(opts.hgdb, useAutoSqlConv=True)
     if (opts.genes is not None) or (opts.pseudoGenes is not None):
         loadAnnotations(conn, hgdbConn, opts.genes, opts.pseudoGenes, transIdSubset)
     if opts.attrs is not None:

@@ -1,15 +1,6 @@
 ROOT = ../../..
 include ${ROOT}/config.mk
-include ${ROOT}/tests/testDefs.mk
-
-# always use public database, since hgwdev might be ahead
-export HGDB_CONF=hg.pub.conf
-
-ensemblVer = 87_38
-ensemblCDnaDb = homo_sapiens_cdna_${ensemblVer}
-grcRefAssembly = GRCh38
-grcRefAssemblyReport = input/GCF_000001405.36_GRCh38.p10_assembly_report.txt
-ucscGenomeDb = hg38
+include ${ROOT}/tests/tsl/tslTestDefs.mk
 
 test:: ucscTests ensemblTests problemCasesTests
 
@@ -20,31 +11,31 @@ ucscTests: ucscRnaChrMTest ucscEstChrMTest
 
 ucscRnaChrMTest: mkdirs
 	rm -f output/$@.db
-	${tslGetUcscRnaAligns} -chromSpec=chrM ${ucscGenomeDb} rna output/$@.db ucscRnaAligns
-	sqlite3 --batch output/$@.db 'select * from ucscRnaAligns;' | cut -f 2- | sort > output/$@.sort.psl
+	${tslGetUcscRnaAligns} -chromSpec=chrM ${hsUcscGenomeDb} rna output/$@.db ${UCSC_RNA_ALN_TBL}
+	sqlite3 --batch output/$@.db 'select * from ${UCSC_RNA_ALN_TBL};' | cut -f 2- | sort > output/$@.sort.psl
 	diff expected/$@.sort.psl output/$@.sort.psl
 
 ucscEstChrMTest: mkdirs
 	rm -f output/$@.db
-	${tslGetUcscRnaAligns} -chromSpec=chrM ${ucscGenomeDb} est output/$@.db ucscEstAligns
-	sqlite3 --batch output/$@.db 'select * from ucscEstAligns;' | cut -f 2- | sort > output/$@.sort.psl
+	${tslGetUcscRnaAligns} -chromSpec=chrM ${hsUcscGenomeDb} est output/$@.db ${UCSC_EST_ALN_TBL}
+	sqlite3 --batch output/$@.db 'select * from ${UCSC_EST_ALN_TBL};' | cut -f 2- | sort > output/$@.sort.psl
 	diff expected/$@.sort.psl output/$@.sort.psl
 
 ##
 # Ensembl
-##n
+##
 ensemblTests: ensemblChrMTest ensemblIdListTest
 
 ensemblChrMTest: mkdirs
 	@rm -f output/$@.db
-	${tslGetEnsemblRnaAligns} --chromSpec=chrM ${ensemblCDnaDb} ${grcRefAssemblyReport} output/$@.db ensemblCDnaAln
-	sqlite3 --batch output/$@.db 'select * from ensemblCDnaAln;' | cut -f 2- | sort > output/$@.sort.psl
+	${tslGetEnsemblRnaAligns} --chromSpec=chrM ${hsEnsemblCDnaDb} ${hsGrcRefAssemblyReport} output/$@.db ${ENSEMBL_RNA_ALN_TBL}
+	sqlite3 --batch output/$@.db 'select * from ${ENSEMBL_RNA_ALN_TBL};' | cut -f 2- | sort > output/$@.sort.psl
 	diff expected/$@.sort.psl output/$@.sort.psl
 
 ensemblIdListTest: mkdirs
 	@rm -f output/$@.db
-	${tslGetEnsemblRnaAligns} --accverList=input/ensembl-cdna.acc ${ensemblCDnaDb} ${grcRefAssemblyReport} output/$@.db ensemblCDnaAln
-	sqlite3 --batch output/$@.db 'select * from ensemblCDnaAln;' | cut -f 2- | sort > output/$@.sort.psl
+	${tslGetEnsemblRnaAligns} --accverList=input/ensembl-cdna.acc ${hsEnsemblCDnaDb} ${hsGrcRefAssemblyReport} output/$@.db ${ENSEMBL_RNA_ALN_TBL}
+	sqlite3 --batch output/$@.db 'select * from ${ENSEMBL_RNA_ALN_TBL};' | cut -f 2- | sort > output/$@.sort.psl
 	diff expected/$@.sort.psl output/$@.sort.psl
 
 ##
