@@ -8,6 +8,9 @@ featureMondoTester = ./bin/featureMondoTester
 
 .SECONDARY:
 
+hsUcscGenomeDb = hg38
+hsGencodeVer = V27
+hsGencodeCompTbl = wgEncodeGencodeComp${hsGencodeVer}
 
 test:   featureUnitTests \
 	gencodeDbLoadTest \
@@ -59,14 +62,14 @@ genePredIntronsSet1Test: mkdirs
 mondoTest: pslMondoTest gpMondoTest gencodeDbMondoTest
 
 pslMondoTest: mkdirs
-	time ${featureMondoTester} hg38 all_mrna psl
+	time ${featureMondoTester} ${hsUcscGenomeDb} all_mrna psl
 
 gpMondoTest: mkdirs
-	time ${featureMondoTester} hg38 wgEncodeGencodeCompV26 genepred
+	time ${featureMondoTester} ${hsUcscGenomeDb} ${hsGencodeCompTbl} genepred
 
 gencodeDbMondoTest: mkdirs
 	rm -f output/$@.db
-	time ${gencodeDbLoad} --hgdb=hg38 --version=V26 output/$@.db
+	time ${gencodeDbLoad} --hgdb=${hsUcscGenomeDb} --version=${hsGencodeVer} output/$@.db
 
 mkdirs:
 	@mkdir -p output

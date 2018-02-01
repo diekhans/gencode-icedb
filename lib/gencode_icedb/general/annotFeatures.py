@@ -8,10 +8,9 @@ from gencode_icedb.general.spliceJuncs import spliceJuncsGetSeqs
 from gencode_icedb.tsl import minIntronSize
 from gencode_icedb.general.transFeatures import ExonFeature, IntronFeature, TranscriptFeatures, Utr5RegionFeature, CdsRegionFeature, Utr3RegionFeature, NonCodingRegionFeature
 
-
 class AnnotationGenePredFactory(object):
     """
-    factory to create annotation features from genePreds
+    Factory to create annotation features from genePreds.
     """
 
     def __init__(self, genomeReader=None, chromSizeFunc=None):
@@ -152,31 +151,21 @@ class AnnotationGenePredFactory(object):
         trans.features = tuple(self.__buildFeatures(gp, trans))
         return trans
 
+class AnnotationGenePredDbFactory(AnnotationGenePredFactory):
+    """
+    Factory to create annotation features from genePreds in an sqlite3 databases.
+    """
+    def __init__(self, conn, table, genomeReader):
+        """genomeReader maybe None if splice sites are not desired """
+        super(AnnotationGenePredDbFactory, self).__init__(genomeReader)
+        self.genePredDbTable = GenePredDbTable(conn, table)
 
-class AnnotationMap(list):
-    "table of annotation TranscriptFeatures objects"
+    def overlappingGen(self, chrom, start, end, strand=None):
+        """generator get overlapping annotations as TranscriptFeatures"""
+        for gp in self.genePredDbTable.getRangeOverlap(chrom, start, end, strand):
+            yield self.fromGenePred(gp)
 
-    def __init__(self):
-        self.byName = defaultdict(list)
-        self.byRange = RangeFinder()
-
-    def add(self, annotTrans):
-        self.byName[annotTrans.name].append(annotTrans)
-        self.byRange.add(annotTrans.chrom.name, annotTrans.chrom.start, annotTrans.chrom.end, annotTrans, annotTrans.rna.strand)
-        self.append(annotTrans)
-
-    @staticmethod
-    def dbFactory(conn, table, genomeReader, chrom=None, start=None, end=None):
-        """Factory from a sqlite3 databases.  This can load a range or an entire
-        table."""
-        assert (chrom is None) == (start is None) == (end is None), "chrom, start, end must all be None or all specified"
-        gpDbTable = GenePredDbTable(conn, table)
-        annotFactory = AnnotationGenePredFactory(genomeReader)
-        annotMap = AnnotationMap()
-        if chrom is None:
-            gpGen = gpDbTable.getAll()
-        else:
-            gpGen = gpDbTable.getRangeOverlap(chrom, start, end)
-        for gp in gpGen:
-            annotMap.add(annotFactory.fromGenePred(gp))
-        return annotMap
+    def allGen(self):
+        """generator get overlapping annotations as TranscriptFeatures"""
+        for gp in self.genePredDbTable.getAll():
+            yield self.fromGenePred(gp)

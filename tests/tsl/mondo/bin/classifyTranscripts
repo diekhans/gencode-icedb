@@ -1,0 +1,29 @@
+#!/usr/bin/env python3
+
+from __future__ import print_function
+import sys
+import os
+if __name__ == '__main__':
+    rootDir = "../../.."
+    sys.path = [os.path.join(rootDir, "lib"),
+                os.path.join(rootDir, "extern/pycbio/lib")] + sys.path
+
+from pycbio.hgdata.hgLite import sqliteConnect, PslDbTable, GenePredDbTable
+from gencode_icedb.tsl.supportDefs import UCSC_RNA_ALN_TBL, UCSC_EST_ALN_TBL, ENSEMBL_RNA_ALN_TBL
+from gencode_icedb.tsl.supportClassify import compareMegWithEvidence
+
+    def __init__(self, ucscDb, evidDb, annotDb):
+        self.genomeReader = GenomeReaderFactory.factoryFromUcscDb(ucscDb).obtain()
+        conn = sqliteConnect(evidDb)
+        try:
+
+
+            self.ucscRnas = EvidenceMap.dbFactory(conn, UCSC_RNA_ALN_TBL, self.genomeReader)
+            self.ucscEsts = EvidenceMap.dbFactory(conn, UCSC_EST_ALN_TBL, self.genomeReader)
+            self.ensemblRnas = EvidenceMap.dbFactory(conn, ENSEMBL_RNA_ALN_TBL, self.genomeReader)
+
+                    conn = sqliteConnect(annotDb)
+        try:
+            self.annots = AnnotationMap.dbFactory(conn, GENCODE_ANN_TBL, self.genomeReader)
+        finally:
+            conn.close()

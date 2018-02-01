@@ -13,9 +13,8 @@ from gencode_icedb.general.transFeatures import ExonFeature, IntronFeature, Tran
 
 class EvidencePslFactory(object):
     """
-    Factory to create evidence features from PSLs
+    Factory to create evidence features from PSLs.
     """
-
     def __init__(self, genomeReader):
         """genomeReader maybe None if splice sites are not desired """
         self.genomeReader = genomeReader
@@ -103,34 +102,18 @@ class EvidencePslFactory(object):
         trans.features = tuple(self.__buildFeatures(psl, trans))
         return trans
 
+class EvidencePslDbFactory(EvidencePslFactory):
+    """
+    Factory to create evidence features from a PSLs in an sqlite3 database.
+    """
+    def __init__(self, conn, table, genomeReader):
+        """genomeReader maybe None if splice sites are not desired """
+        super(EvidencePslDbFactory, self).__init__(genomeReader)
+        self.pslDbTable = PslDbTable(conn, table)
 
-class EvidenceMap(list):
-    "map by overall coordinates of TranscriptFeatures objects"
-
-    def __init__(self):
-        self.byName = defaultdict(list)
-        self.byRange = RangeFinder()
-
-    def overlapping(self, chrom, start, end, strand=None):
-        "generator over Features overlaping the specified range"
-        return self.byRange.overlapping(chrom, start, end, strand)
-
-    def add(self, trans):
-        self.append(trans)
-        self.byRange.add(trans.chrom.name, trans.chrom.start, trans.chrom.end, trans, trans.chrom.strand)
-
-    @staticmethod
-    def dbFactory(conn, table, genomeReader, chrom=None, start=None, end=None):
-        """Factory from a sqlite3 databases.  This can load a range or an entire
-        table."""
-        assert (chrom is None) == (start is None) == (end is None), "chrom, start, end must all be None or all specified"
-        pslDbTable = PslDbTable(conn, table)
-        evidFactory = EvidencePslFactory(genomeReader)
-        evidMap = EvidenceMap()
-        if chrom is None:
-            pslGen = pslDbTable.getAll()
-        else:
-            pslGen = pslDbTable.getTRangeOverlap(chrom, start, end)
-        for psl in pslGen:
-            evidMap.add(evidFactory.fromPsl(psl))
-        return evidMap
+    def overlappingGen(self, chrom, start, end, qStrand=None):
+        """Generator get overlapping alignments as TranscriptFeatures.
+        """
+        for psl in self.pslDbTable.getTRangeOverlap(chrom, start, end):
+            if psl.getQStrand() == qStrand:
+                yield self.fromPsl(psl)

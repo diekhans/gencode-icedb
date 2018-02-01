@@ -8,7 +8,7 @@ if __name__ == '__main__':
 import unittest
 from pycbio.sys.testCaseBase import TestCaseBase
 from gencode_icedb.general.genome import GenomeReaderFactory
-from gencode_icedb.general.evidFeatures import EvidenceMap, EvidencePslFactory
+from gencode_icedb.general.evidFeatures import EvidencePslFactory
 from gencode_icedb.general.annotFeatures import AnnotationGenePredFactory
 from pycbio.hgdata.hgLite import sqliteConnect
 from pycbio.hgdata.hgLite import PslDbTable, GenePredDbTable
@@ -106,8 +106,6 @@ class GenePredDbSrc(object):
         return gps[0]
 
 
-
-
 class FeatureTestBase(TestCaseBase):
     def _assertFeatures(self, trans, expect):
         if debugResults:
@@ -122,8 +120,7 @@ class EvidenceTests(FeatureTestBase):
         return PslDbSrc.obtainPsl("set1", acc)
 
     def __pslToEvidTranscript(self, psl):
-        factory = EvidencePslFactory(GenomeSeqSrc.obtain("hg19"))
-        return factory.fromPsl(psl)
+        return EvidencePslFactory(GenomeSeqSrc.obtain("hg19")).fromPsl(psl)
 
     def __checkRnaAln(self, trans):
         "validate that full RNA is covered by alignment"
@@ -481,18 +478,6 @@ class EvidenceTests(FeatureTestBase):
         self.assertFalse(exon1.rnaOverlaps(exon2b))
         self.__checkRnaAln(aln1)
         self.__checkRnaAln(aln2)
-
-    def testRangeMap1(self):
-        # range is set1: chr22:18632931-19279166
-        pslDbTbl = PslDbSrc.obtain("set1")
-        evidMap = EvidenceMap.dbFactory(pslDbTbl.conn, pslDbTbl.table,
-                                        GenomeSeqSrc.obtain("hg19"),
-                                        "chr22", 18958026, 19109719)
-        self.assertEqual(len(evidMap), 30)
-        overFeats = list(evidMap.overlapping("chr22", 18958026, 18982141))
-        self.assertEqual(len(overFeats), 5)
-        for trans in evidMap:
-            self.__checkRnaAln(trans)
 
 
 class AnnotationTests(FeatureTestBase):

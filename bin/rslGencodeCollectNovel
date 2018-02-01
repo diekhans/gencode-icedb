@@ -8,7 +8,7 @@ from pycbio.hgdata.hgLite import sqliteConnect, GencodeAttrsDbTable
 from gencode_icedb.general import gencodeDb
 from gencode_icedb.general.genome import GenomeReaderFactory
 from gencode_icedb.general.transFeatures import IntronFeature
-from gencode_icedb.general.annotFeatures import AnnotationMap
+from gencode_icedb.general.annotFeatures import AnnotationGenePredDbFactory
 from gencode_icedb.rsl.rslModel import rslConnect, SjSupportReader
 from gencode_icedb.rsl.intronSupportCounter import IntronSupportCounter
 
@@ -42,6 +42,7 @@ resultsHeader = ("chrom", "intronStart", "intronEnd", "strand", "intronMotif",
 
 class NovelFinder(object):
     def __init__(self, gencodeConn, sjConn, genomeReader, minUniqueMapped):
+        self.annotReader = AnnotationGenePredDbFactory(gencodeConn, gencodeDb.gencode_ann_table, genomeReader)
         self.attrsDbTable = GencodeAttrsDbTable(gencodeConn, gencodeDb.gencode_attrs_table)
         self.attrsCache = dict()  # by transcriptId
         self.sjSupportReader = SjSupportReader(sjDbConn=sjConn)
@@ -49,7 +50,6 @@ class NovelFinder(object):
         self.minUniqueMapped = minUniqueMapped
 
         # genes are counts for range
-        self.rangeTranscripts = None
         self.rangeSupportCnts = IntronSupportCounter(genomeReader)
 
     def __loadRangeSupport(self, genomeCoords):
@@ -58,12 +58,8 @@ class NovelFinder(object):
             if (sjSupp.strand in ('+', '-')) and (genomeCoords.start <= sjSupp.chromStart) and (sjSupp.chromStart < genomeCoords.end):
                 self.rangeSupportCnts.sumSjSupp(sjSupp)
 
-    def __loadRangeTranscripts(self, genomeCoords):
-        self.rangeTranscripts = AnnotationMap.dbFactory(self.attrsDbTable.conn, gencodeDb.gencode_ann_table, self.genomeReader,
-                                                        genomeCoords.name, genomeCoords.start, genomeCoords.end)
-
     def __getOverlappingTrans(self, intron):
-        return list(self.rangeTranscripts.byRange.overlapping(intron.chrom, intron.chromStart, intron.chromEnd, intron.strand))
+        return list(self.annotReader.overlappingGen(intron.chrom, intron.chromStart, intron.chromEnd, intron.strand))
 
     def __haveIntron(self, intron, trans):
         # already strand-filtered
@@ -114,7 +110,6 @@ class NovelFinder(object):
 
     def collectNovel(self, genomeCoords, resultsWriter):
         self.__loadRangeSupport(genomeCoords)
-        self.__loadRangeTranscripts(genomeCoords)
         resultsWriter.writerow(resultsHeader)
         self.__analyzeRange(resultsWriter)
 

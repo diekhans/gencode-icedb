@@ -1,7 +1,7 @@
 # force sort to be consistent
 export LC_ALL=C
 
-
+gencodeDbLoad = ${BINDIR}/gencodeDbLoad
 tslGetUcscRnaAligns = ${BINDIR}/tslGetUcscRnaAligns
 tslGetEnsemblRnaAligns = ${BINDIR}/tslGetEnsemblRnaAligns
 tslGbffGetProblemCases = ${BINDIR}/tslGbffGetProblemCases

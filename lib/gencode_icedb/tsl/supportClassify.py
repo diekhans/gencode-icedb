@@ -83,3 +83,11 @@ def compareMegWithEvidence(annotTrans, evidTrans):
         if cmpr > worstCmpr:  # > is worse
             worstCmpr = cmpr
     return worstCmpr
+
+
+class SupportClassifier(object):
+    """TSL classifier for transcripts with evidence and annotations in sqlite3
+    databases"""
+    def __init__(self, evidDbConn, annoDbConn, genomeReader):
+
+        EvidencePslFactory(genomeReader)

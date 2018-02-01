@@ -100,7 +100,7 @@ static struct dyString* makeQuery(char *sqlTemplate, char *table,
                                   struct ChromSpec *chromSpec) {
     struct dyString *query = dyStringNew(256);
     dyStringPrintf(query, sqlTemplate, table);
-    if (chromSpec->chrom != NULL) {
+    if (chromSpec != NULL) {
         dyStringPrintf(query, " WHERE (%s = \"%s\")", chromCol, chromSpec->chrom);
         if (chromSpec->start < chromSpec->end) {
             dyStringPrintf(query, " AND ");
