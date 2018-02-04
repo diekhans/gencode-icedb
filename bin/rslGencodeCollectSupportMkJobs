@@ -35,7 +35,7 @@ class JobGenerator(object):
         self.resultDir = os.path.join(workDir, "results")
         self.suppProg = os.path.join(icedbProgSetup.binDir, "rslGencodeCollectSupportJob")
 
-    def __generateJob(self, gencodeIds, batchFh, expectedFh):
+    def _generateJob(self, gencodeIds, batchFh, expectedFh):
         cmd = [self.suppProg] + self.genomeReaderFactory.getOptionArgs()
         resultTsv = os.path.join(self.resultDir, "{}.supp.tsv".format(gencodeIds[0]))
         cmd.extend([self.gencodeDb, self.sjDb, "{{check out exists {}}}".format(resultTsv)])
@@ -46,7 +46,7 @@ class JobGenerator(object):
     def generateJobs(self, gencodeIds, genesPerJob, batchFh, expectedFh):
         iNext = 0
         while iNext < len(gencodeIds):
-            self.__generateJob(gencodeIds[iNext: iNext + genesPerJob], batchFh, expectedFh)
+            self._generateJob(gencodeIds[iNext: iNext + genesPerJob], batchFh, expectedFh)
             iNext += genesPerJob
 
 

@@ -264,7 +264,7 @@ class ExonFeature(StructureFeature):
         "does RNA range overlap another exon?"
         return (self.rna.start < feat2.rna.end) and (self.rna.end > feat2.rna.start)
 
-    def __countAlignedBases(self):
+    def _countAlignedBases(self):
         alignedCnt = 0
         for blk in self.alignFeatures:
             if isinstance(blk, AlignedFeature):
@@ -276,7 +276,7 @@ class ExonFeature(StructureFeature):
         """if there are alignment subfeatures, return the actual number of
         aligned bases, otherwise, the RNA for an annotation"""
         if len(self.alignFeatures) > 0:
-            return self.__countAlignedBases()
+            return self._countAlignedBases()
         else:
             return len(self.rna)
 

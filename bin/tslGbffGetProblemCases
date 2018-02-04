@@ -64,7 +64,7 @@ class SplitAcc(list):
 class OrgProblemCases(list):
     "collect organism problem cases and convert to accession ranges"
 
-    def __popRange(self, idx):
+    def _popRange(self, idx):
         reason = self[idx].reason
         startAcc = endAcc = SplitAcc(self[idx].acc)
         idx += 1
@@ -81,7 +81,7 @@ class OrgProblemCases(list):
         self.sort(key=lambda opc: (opc.acc,))
         idx = 0
         while idx < len(self):
-            problemCase, idx = self.__popRange(idx)
+            problemCase, idx = self._popRange(idx)
             fileOps.prRow(tabFh, problemCase)
 
 

@@ -59,7 +59,7 @@ class RowFilter(object):
         self.selectSubset = loadSelectSubset(selectSubsetTsv) if selectSubsetTsv is not None else None
 
     @staticmethod
-    def __publicRowFilter(row):
+    def _publicRowFilter(row):
         # avgLength of more than zero will check if for rows with no data
         return ((int(row["avgLength"]) >= minRunLength)
                 and (row["LibrarySource"] in sourceFilter)
@@ -68,14 +68,14 @@ class RowFilter(object):
                 and (row["Platform"] in platformFilter))
 
     @staticmethod
-    def __gtexRowFilter(row):
+    def _gtexRowFilter(row):
         # avgLength check is for rows with no data
         return ((int(row["avgLength"]) > 0)
                 and (row["SRAStudy"] == gtexStudy))
 
     def __call__(self, row):
-        return (((self.public and self.__publicRowFilter(row))
-                 or (self.gtex and self.__gtexRowFilter(row)))
+        return (((self.public and self._publicRowFilter(row))
+                 or (self.gtex and self._gtexRowFilter(row)))
                 and ((self.selectSubset is None) or (row["Run"] in self.selectSubset)))
 
 

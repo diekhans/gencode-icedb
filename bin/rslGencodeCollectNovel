@@ -52,16 +52,16 @@ class NovelFinder(object):
         # genes are counts for range
         self.rangeSupportCnts = IntronSupportCounter(genomeReader)
 
-    def __loadRangeSupport(self, genomeCoords):
+    def _loadRangeSupport(self, genomeCoords):
         # only use ones that start in this window
         for sjSupp in self.sjSupportReader.fetch(genomeCoords.name, genomeCoords.start, genomeCoords.end):
             if (sjSupp.strand in ('+', '-')) and (genomeCoords.start <= sjSupp.chromStart) and (sjSupp.chromStart < genomeCoords.end):
                 self.rangeSupportCnts.sumSjSupp(sjSupp)
 
-    def __getOverlappingTrans(self, intron):
+    def _getOverlappingTrans(self, intron):
         return list(self.annotReader.overlappingGen(intron.chrom, intron.chromStart, intron.chromEnd, intron.strand))
 
-    def __haveIntron(self, intron, trans):
+    def _haveIntron(self, intron, trans):
         # already strand-filtered
         for feat in trans.features:
             if (isinstance(feat, IntronFeature) and (intron.chromStart == feat.chrom.start)
@@ -69,26 +69,26 @@ class NovelFinder(object):
                 return True
         return False
 
-    def __anyHaveIntron(self, intron, overlappingTranses):
+    def _anyHaveIntron(self, intron, overlappingTranses):
         for trans in overlappingTranses:
-            if self.__haveIntron(intron, trans):
+            if self._haveIntron(intron, trans):
                 return True
         return False
 
-    def __getTransAttrs(self, transcriptId):
+    def _getTransAttrs(self, transcriptId):
         attrs = self.attrsCache.get(transcriptId)
         if attrs is None:
             self.attrsCache[transcriptId] = attrs = self.attrsDbTable.getByTranscriptId(transcriptId)
         return attrs
 
-    def __getContainingGenes(self, intron, overlappingTranses):
+    def _getContainingGenes(self, intron, overlappingTranses):
         geneIds = set()
         for trans in overlappingTranses:
-            geneIds.add(self.__getTransAttrs(trans.rna.name).geneId)
+            geneIds.add(self._getTransAttrs(trans.rna.name).geneId)
         return geneIds
 
-    def __reportNovel(self, intron, sjCounts, overlappingTranses, resultsWriter):
-        geneIds = self.__getContainingGenes(intron, overlappingTranses)
+    def _reportNovel(self, intron, sjCounts, overlappingTranses, resultsWriter):
+        geneIds = self._getContainingGenes(intron, overlappingTranses)
         resultsWriter.writerow([intron.chrom, intron.chromStart, intron.chromEnd,
                                 intron.strand, intron.intronMotif,
                                 sjCounts.numExprs,
@@ -96,22 +96,22 @@ class NovelFinder(object):
                                 sjCounts.numMultiMapReads,
                                 setOps.setJoin(geneIds, ",")])
 
-    def __analyzeSj(self, intron, sjCounts, resultsWriter):
-        overlappingTranses = self.__getOverlappingTrans(intron)
-        if not self.__anyHaveIntron(intron, overlappingTranses):
-            self.__reportNovel(intron, sjCounts, overlappingTranses, resultsWriter)
+    def _analyzeSj(self, intron, sjCounts, resultsWriter):
+        overlappingTranses = self._getOverlappingTrans(intron)
+        if not self._anyHaveIntron(intron, overlappingTranses):
+            self._reportNovel(intron, sjCounts, overlappingTranses, resultsWriter)
 
-    def __analyzeRange(self, resultsWriter):
+    def _analyzeRange(self, resultsWriter):
         for intron in sorted(self.rangeSupportCnts.keys()):
             if intron.strand in ('+', '-'):
                 sjCounts = self.rangeSupportCnts[intron]
                 if sjCounts.numUniqueMapReads >= self.minUniqueMapped:
-                    self.__analyzeSj(intron, sjCounts, resultsWriter)
+                    self._analyzeSj(intron, sjCounts, resultsWriter)
 
     def collectNovel(self, genomeCoords, resultsWriter):
-        self.__loadRangeSupport(genomeCoords)
+        self._loadRangeSupport(genomeCoords)
         resultsWriter.writerow(resultsHeader)
-        self.__analyzeRange(resultsWriter)
+        self._analyzeRange(resultsWriter)
 
 
 def rslGencodeCollectNovel(opts):

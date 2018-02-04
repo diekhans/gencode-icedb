@@ -62,13 +62,13 @@ class GencodeIntronEvidSet(list):
         self.novel = []
         # this mixes transcript loci by PAR, sorted out with get
         self.byTranscriptId = defaultdict(list)
-        self.__loadEvid(evidTsv)
+        self._loadEvid(evidTsv)
 
-    def __loadEvid(self, evidTsv):
+    def _loadEvid(self, evidTsv):
         for evid in GencodeIntronEvidReader(evidTsv):
-            self.__loadEvidRec(evid)
+            self._loadEvidRec(evid)
 
-    def __loadEvidRec(self, evid):
+    def _loadEvidRec(self, evid):
         self.append(evid)
         if len(evid.transcripts) == 0:
             self.novel.append(evid)

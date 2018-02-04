@@ -45,17 +45,17 @@ class ArrayExpressRuns(defaultdict):
     def __init__(self, sdrfTsv, scientificName):
         super(ArrayExpressRuns, self).__init__(list)
         self.scientificName = scientificName
-        self.__load(sdrfTsv)
+        self._load(sdrfTsv)
 
-    def __keepRow(self, row):
+    def _keepRow(self, row):
         return row.characteristics_organism == self.scientificName
 
-    def __load(self, sdrfTsv):
+    def _load(self, sdrfTsv):
         for row in arrayExpressSdrfReader(sdrfTsv):
-            if self.__keepRow(row):
-                self.__addRow(row)
+            if self._keepRow(row):
+                self._addRow(row)
 
-    def __addRow(self, row):
+    def _addRow(self, row):
         run = row.comment_ena_run
         self[run].append(row)
         if len(self[run]) > 2:
@@ -76,11 +76,11 @@ class ArrayExpressRegister(object):
         self.verbose = verbose
         self.database = SqliteDatabase(pathConfig.dataDatabase())
 
-    def __verbPr(self, msg, rnaSeqRun):
+    def _verbPr(self, msg, rnaSeqRun):
         if self.verbose:
             sys.stderr.write(msg + ": " + self.rnaSeqSetName + "/" + rnaSeqRun + "\n")
 
-    def __registerRun(self, loader, run):
+    def _registerRun(self, loader, run):
         fq1 = run[0]
         fq2 = run[1] if len(run) > 1 else None
         status = loader.registerRun(fq1.comment_ena_run, self.description,
@@ -89,7 +89,7 @@ class ArrayExpressRegister(object):
                                     os.path.split(fq1.comment_fastq_uri)[1],
                                     fq2.comment_fastq_uri if fq2 is not None else None,
                                     os.path.split(fq2.comment_fastq_uri)[1] if fq2 is not None else None)
-        self.__verbPr(str(status), fq1.comment_ena_run)
+        self._verbPr(str(status), fq1.comment_ena_run)
 
     def load(self, sdrfTsv):
         loader = rnaSeqData.RnaSeqDataLoader(self.database, self.pathConfig,
@@ -97,4 +97,4 @@ class ArrayExpressRegister(object):
                                              self.skipExisting)
         runs = ArrayExpressRuns(sdrfTsv, self.scientificName)
         for run in runs.itervalues():
-            self.__registerRun(loader, run)
+            self._registerRun(loader, run)

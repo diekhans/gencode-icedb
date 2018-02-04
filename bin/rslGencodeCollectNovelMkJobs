@@ -36,26 +36,26 @@ class JobGenerator(object):
         self.resultDir = os.path.join(workDir, "results")
         self.novelProg = os.path.join(icedbProgSetup.binDir, "rslGencodeCollectNovelJob")
 
-    def __generateJob(self, genomeCoords, batchFh, expectedFh):
+    def _generateJob(self, genomeCoords, batchFh, expectedFh):
         cmd = [self.novelProg] + self.genomeReaderFactory.getOptionArgs()
         resultTsv = os.path.join(self.resultDir, "{}.novel.tsv".format(genomeCoords))
         cmd.extend([self.gencodeDb, self.sjDb, "{{check out exists {}}}".format(resultTsv), genomeCoords])
         print(*cmd, file=batchFh)
         print(resultTsv, file=expectedFh)
 
-    def __generateChromJob(self, chrom, chromSize, batchFh, expectedFh, testRange):
+    def _generateChromJob(self, chrom, chromSize, batchFh, expectedFh, testRange):
         chromStart = 0
         while chromStart < chromSize:
             chromEnd = min(chromStart + self.windowSize, chromSize)
             genomeCoords = Coords(chrom, chromStart, chromEnd)
             if (testRange is None) or genomeCoords.overlaps(testRange):
-                self.__generateJob(genomeCoords, batchFh, expectedFh)
+                self._generateJob(genomeCoords, batchFh, expectedFh)
             chromStart = chromEnd
 
     def generateJobs(self, batchFh, expectedFh, testRange):
         for chrom in self.genomeReader.getChroms():
             if (testRange is None) or (chrom == testRange.name):
-                self.__generateChromJob(chrom, self.genomeReader.getChromSize(chrom), batchFh, expectedFh, testRange)
+                self._generateChromJob(chrom, self.genomeReader.getChromSize(chrom), batchFh, expectedFh, testRange)
 
 
 def rslGencodeCollectSupportMkJobs(opts):

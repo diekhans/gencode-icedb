@@ -14,9 +14,9 @@ class StarMappingParameters(list):
     def __init__(self, mappingParamsTsv):
         self.byMappingParamSymId = dict()
         for row in TsvReader(mappingParamsTsv):
-            self.__loadRow(row)
+            self._loadRow(row)
 
-    def __loadRow(self, row):
+    def _loadRow(self, row):
         if row.mapping_param_symid in self.byMappingParamSymId:
             raise Exception("duplicate mapping_param_symid: {}".format(row.mapping_param_symid))
         self.byMappingParamSymId[row.mapping_param_symid] = row
@@ -34,10 +34,10 @@ class StarResultsDir(list):
     def __init__(self, starResultsTsv):
         self.rootDir = os.path.abspath(os.path.dirname(starResultsTsv))
         for row in TsvReader(starResultsTsv, typeMap=self.typeMap):
-            self.__loadRow(row)
+            self._loadRow(row)
         if len(self) == 0:
             raise Exception("no data in STAR results TSV: {}".format(starResultsTsv))
 
-    def __loadRow(self, row):
+    def _loadRow(self, row):
         setattr(row, "sjoutPath", os.path.join(self.rootDir, row.sjout))
         self.append(row)

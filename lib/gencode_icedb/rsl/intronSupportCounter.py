@@ -63,7 +63,7 @@ class IntronSupportCounter(defaultdict):
         self.genomeReader = genomeReader
         self.genoneMotifCache = {}  # indexed by genome coords
 
-    def __getIntronMotifFromGenome(self, chrom, chromStart, chromEnd, strand):
+    def _getIntronMotifFromGenome(self, chrom, chromStart, chromEnd, strand):
         key = (chrom, chromStart, chromEnd, strand)
         intronMotif = self.genoneMotifCache.get(key)
         if intronMotif is None:
@@ -71,16 +71,16 @@ class IntronSupportCounter(defaultdict):
             self.genoneMotifCache[key] = intronMotif
         return intronMotif
 
-    def __getSjSuppIntronMotif(self, sjSupp):
+    def _getSjSuppIntronMotif(self, sjSupp):
         "Return motif for start support. if it's not one known by STAR, look up in genome."
         if sjSupp.intronMotif == "??/??":
-            return self.__getIntronMotifFromGenome(sjSupp.chrom, sjSupp.chromStart, sjSupp.chromEnd, sjSupp.strand)
+            return self._getIntronMotifFromGenome(sjSupp.chrom, sjSupp.chromStart, sjSupp.chromEnd, sjSupp.strand)
         else:
             return sjSupp.intronMotif
 
     def sumSjSupp(self, sjSupp):
         intron = IntronCoords(sjSupp.chrom, sjSupp.chromStart, sjSupp.chromEnd, sjSupp.strand,
-                              self.__getSjSuppIntronMotif(sjSupp))
+                              self._getSjSuppIntronMotif(sjSupp))
         self[intron].sum(sjSupp)  # defaultdict will create
 
     def __getIntronFeatMotif(self, intronFeat):

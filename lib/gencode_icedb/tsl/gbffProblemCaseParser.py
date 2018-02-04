@@ -34,16 +34,16 @@ class RecordInfoParser(object):
     def __str__(self):
         return "accv={accv} organism={organism} isNedo={isNedo} isAthersysRage={isAthersysRage} isOrestes=${isOrestes}".format(self)
 
-    def __isCloneLibLine(self, line):
+    def _isCloneLibLine(self, line):
         return re.match("^ +/clone_lib=", line) is not None
 
-    def __parseLineForVersion(self, line):
+    def _parseLineForVersion(self, line):
         m = re.match("^VERSION     (\S+)", line)
         if m is not None:
             assert self.accv is None
             self.accv = m.group(1)
 
-    def __parseLineForOrganism(self, line):
+    def _parseLineForOrganism(self, line):
         m = re.match("^  ORGANISM  (.*)$", line)
         if m is not None:
             assert self.organism is None
@@ -53,11 +53,11 @@ class RecordInfoParser(object):
                 self.organism = Organism.mm
 
     def parseLine(self, line):
-        self.__parseLineForVersion(line)
-        self.__parseLineForOrganism(line)
+        self._parseLineForVersion(line)
+        self._parseLineForOrganism(line)
         if re.search("NEDO .*cDNA sequencing project", line):
             self.isNedo = True
-        elif self.__isCloneLibLine(line):
+        elif self._isCloneLibLine(line):
             if line.find("Athersys RAGE Library") >= 0:
                 self.isAthersysRage = True
             elif re.search("(\\s|^)ORESTES(\\s|$)", line) is not None:
@@ -81,7 +81,7 @@ class GbffParser(object):
     def __init__(self, gbffInFh):
         self.gbffInFh = gbffInFh
 
-    def __skipToRecord(self):
+    def _skipToRecord(self):
         while True:
             line = self.gbffInFh.readline()
             if len(line) == 0:
@@ -89,26 +89,26 @@ class GbffParser(object):
             if line.startswith("LOCUS "):
                 return line
 
-    def __recordLineReader(self):
+    def _recordLineReader(self):
         while True:
             line = self.gbffInFh.readline()
             if ((len(line) == 0) or line.startswith("//")):
                 break
             yield line
 
-    def __scanRecord(self):
+    def _scanRecord(self):
         """Scan the next GBFF record, this is crude pattern matching,
         not a true parser."""
         # note, LOCUS first line has been skipped
         recInfo = RecordInfoParser()
-        for line in self.__recordLineReader():
+        for line in self._recordLineReader():
             recInfo.parseLine(line)
         return recInfo.toProblemCase()
 
     def scanFile(self):
         problemCases = []
-        while self.__skipToRecord():
-            problemCase = self.__scanRecord()
+        while self._skipToRecord():
+            problemCase = self._scanRecord()
             if problemCase is not None:
                 problemCases.append(problemCase)
         return problemCases
@@ -121,9 +121,9 @@ class GbffProblemCaseParser(object):
         self.problemEntries = []
         self.maxProcesses = maxProcesses
         for gbffIn in gbffInputs:
-            self.__scanGbffFile(gbffIn)
+            self._scanGbffFile(gbffIn)
 
-    def __scanGbffFile(self, gbffIn):
+    def _scanGbffFile(self, gbffIn):
         with fileOps.opengz(gbffIn) as gbffInFh:
             parser = GbffParser(gbffInFh)
             for problemEntry in parser.scanFile():

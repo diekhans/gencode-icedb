@@ -26,41 +26,41 @@ class AnnotationGenePredFactory(object):
         else:
             self.chromSizeFunc = lambda chrom: None
 
-    def __buildFeatures(self, gp, trans):
+    def _buildFeatures(self, gp, trans):
         iBlkStart = 0
         rnaStart = 0
         features = []
         while iBlkStart < len(gp.exons):
-            iBlkEnd, qCount = self.__findExonEnd(gp, iBlkStart)
+            iBlkEnd, qCount = self._findExonEnd(gp, iBlkStart)
             rnaEnd = rnaStart + qCount
-            features.append(self.__makeExon(gp, iBlkStart, iBlkEnd, rnaStart, rnaEnd, trans, len(features)))
+            features.append(self._makeExon(gp, iBlkStart, iBlkEnd, rnaStart, rnaEnd, trans, len(features)))
             if iBlkEnd < len(gp.exons):
-                features.append(self.__makeIntron(gp, iBlkEnd, rnaEnd, trans, len(features)))
+                features.append(self._makeIntron(gp, iBlkEnd, rnaEnd, trans, len(features)))
             rnaStart = rnaEnd
             iBlkStart = iBlkEnd
         return features
 
-    def __tGapSize(self, gp, iBlk):
+    def _tGapSize(self, gp, iBlk):
         "size of gap before the block"
         return gp.exons[iBlk].start - gp.exons[iBlk - 1].end
 
-    def __findExonEnd(self, gp, iBlkStart):
+    def _findExonEnd(self, gp, iBlkStart):
         "finds half-open end of blocks covering current exon and total base, less closed gaps"
         iBlkEnd = iBlkStart + 1
         qCount = gp.exons[iBlkStart].size()
-        while (iBlkEnd < len(gp.exons)) and (self.__tGapSize(gp, iBlkEnd) < minIntronSize):
+        while (iBlkEnd < len(gp.exons)) and (self._tGapSize(gp, iBlkEnd) < minIntronSize):
             qCount += gp.exons[iBlkEnd].size()
             iBlkEnd += 1
         return iBlkEnd, qCount
 
-    def __getUtr5Annot(self, annot, rnaNext, exon, annotFeatures):
+    def _getUtr5Annot(self, annot, rnaNext, exon, annotFeatures):
         utr5 = Utr5RegionFeature(exon, len(annotFeatures),
                                  exon.chrom.subrange(annot.start, annot.end),
                                  exon.rna.subrange(rnaNext, rnaNext + annot.size()))
         annotFeatures.append(utr5)
         return utr5.rna.end
 
-    def __getCdsAnnot(self, annot, rnaNext, exon, frame, annotFeatures):
+    def _getCdsAnnot(self, annot, rnaNext, exon, frame, annotFeatures):
         cds = CdsRegionFeature(exon, len(annotFeatures),
                                exon.chrom.subrange(annot.start, annot.end),
                                exon.rna.subrange(rnaNext, rnaNext + annot.size()),
@@ -68,40 +68,40 @@ class AnnotationGenePredFactory(object):
         annotFeatures.append(cds)
         return cds.rna.end
 
-    def __getUtr3Annot(self, annot, rnaNext, exon, annotFeatures):
+    def _getUtr3Annot(self, annot, rnaNext, exon, annotFeatures):
         utr3 = Utr3RegionFeature(exon, len(annotFeatures),
                                  exon.chrom.subrange(annot.start, annot.end),
                                  exon.rna.subrange(rnaNext, rnaNext + annot.size()))
         annotFeatures.append(utr3)
         return utr3.rna.end
 
-    def __getCodingFeatures(self, blk, rnaNext, exon, annotFeatures):
+    def _getCodingFeatures(self, blk, rnaNext, exon, annotFeatures):
         annot = blk.featureSplit()
         if blk.gene.strand == '+':
             if annot.utr5 is not None:
-                rnaNext = self.__getUtr5Annot(annot.utr5, rnaNext, exon, annotFeatures)
+                rnaNext = self._getUtr5Annot(annot.utr5, rnaNext, exon, annotFeatures)
             if annot.cds is not None:
-                rnaNext = self.__getCdsAnnot(annot.cds, rnaNext, exon, Frame(blk.frame), annotFeatures)
+                rnaNext = self._getCdsAnnot(annot.cds, rnaNext, exon, Frame(blk.frame), annotFeatures)
             if annot.utr3 is not None:
-                rnaNext = self.__getUtr3Annot(annot.utr3, rnaNext, exon, annotFeatures)
+                rnaNext = self._getUtr3Annot(annot.utr3, rnaNext, exon, annotFeatures)
         else:
             if annot.utr3 is not None:
-                rnaNext = self.__getUtr3Annot(annot.utr3, rnaNext, exon, annotFeatures)
+                rnaNext = self._getUtr3Annot(annot.utr3, rnaNext, exon, annotFeatures)
             if annot.cds is not None:
-                rnaNext = self.__getCdsAnnot(annot.cds, rnaNext, exon, Frame(blk.frame) - blk.size(), annotFeatures)
+                rnaNext = self._getCdsAnnot(annot.cds, rnaNext, exon, Frame(blk.frame) - blk.size(), annotFeatures)
             if annot.utr5 is not None:
-                rnaNext = self.__getUtr5Annot(annot.utr5, rnaNext, exon, annotFeatures)
+                rnaNext = self._getUtr5Annot(annot.utr5, rnaNext, exon, annotFeatures)
         return rnaNext
 
-    def __addCodingFeatures(self, gp, iBlkStart, iBlkEnd, rnaStart, rnaEnd, exon):
+    def _addCodingFeatures(self, gp, iBlkStart, iBlkEnd, rnaStart, rnaEnd, exon):
         annotFeatures = []
         rnaNext = rnaStart
         for iBlk in range(iBlkStart, iBlkEnd):
-            rnaNext = self.__getCodingFeatures(gp.exons[iBlk], rnaNext, exon, annotFeatures)
+            rnaNext = self._getCodingFeatures(gp.exons[iBlk], rnaNext, exon, annotFeatures)
         assert rnaNext == rnaEnd
         exon.annotFeatures = tuple(annotFeatures)
 
-    def __addNonCodingFeatures(self, gp, iBlkStart, iBlkEnd, rnaStart, rnaEnd, exon):
+    def _addNonCodingFeatures(self, gp, iBlkStart, iBlkEnd, rnaStart, rnaEnd, exon):
         nonCodingFeatures = []
         rnaNext = rnaStart
         for iBlk in range(iBlkStart, iBlkEnd):
@@ -113,17 +113,17 @@ class AnnotationGenePredFactory(object):
         assert rnaNext == rnaEnd, "rnaNext={}, rnaEnd={}".format(rnaNext, rnaEnd)
         exon.annotFeatures = tuple(nonCodingFeatures)
 
-    def __makeExon(self, gp, iBlkStart, iBlkEnd, rnaStart, rnaEnd, trans, iFeat):
+    def _makeExon(self, gp, iBlkStart, iBlkEnd, rnaStart, rnaEnd, trans, iFeat):
         exon = ExonFeature(trans, iFeat,
                            trans.chrom.subrange(gp.exons[iBlkStart].start, gp.exons[iBlkEnd - 1].end),
                            trans.rna.subrange(rnaStart, rnaEnd))
         if trans.cdsChromStart is not None:
-            self.__addCodingFeatures(gp, iBlkStart, iBlkEnd, rnaStart, rnaEnd, exon)
+            self._addCodingFeatures(gp, iBlkStart, iBlkEnd, rnaStart, rnaEnd, exon)
         else:
-            self.__addNonCodingFeatures(gp, iBlkStart, iBlkEnd, rnaStart, rnaEnd, exon)
+            self._addNonCodingFeatures(gp, iBlkStart, iBlkEnd, rnaStart, rnaEnd, exon)
         return exon
 
-    def __getSpliceSites(self, gp, iBlkNext):
+    def _getSpliceSites(self, gp, iBlkNext):
         if self.genomeReader is None:
             return (None, None)
         else:
@@ -131,8 +131,8 @@ class AnnotationGenePredFactory(object):
                                       gp.exons[iBlkNext - 1].end,
                                       gp.exons[iBlkNext].start, gp.strand)
 
-    def __makeIntron(self, gp, iBlkNext, rnaEnd, trans, iFeat):
-        donorSeq, acceptorSeq = self.__getSpliceSites(gp, iBlkNext)
+    def _makeIntron(self, gp, iBlkNext, rnaEnd, trans, iFeat):
+        donorSeq, acceptorSeq = self._getSpliceSites(gp, iBlkNext)
         return IntronFeature(trans, iFeat,
                              trans.chrom.subrange(gp.exons[iBlkNext - 1].end, gp.exons[iBlkNext].start),
                              trans.rna.subrange(rnaEnd, rnaEnd), donorSeq, acceptorSeq)
@@ -148,7 +148,7 @@ class AnnotationGenePredFactory(object):
         chrom = Coords(gp.chrom, gp.txStart, gp.txEnd, '+', self.chromSizeFunc(gp.chrom))
         rna = Coords(gp.name, 0, rnaSize, gp.strand, rnaSize)
         trans = TranscriptFeatures(chrom, rna, cdsChromStart, cdsChromEnd)
-        trans.features = tuple(self.__buildFeatures(gp, trans))
+        trans.features = tuple(self._buildFeatures(gp, trans))
         return trans
 
 class AnnotationGenePredDbFactory(AnnotationGenePredFactory):

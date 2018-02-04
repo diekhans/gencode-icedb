@@ -177,29 +177,29 @@ class SupportClassifier(object):
         if detailsFh is not None:
             fileOps.prRowv(detailsFh, "transcriptId", "evidSrc", "evidId", "evidEval")
 
-    def __writeDetails(self, detailsFh, annotTrans, evidSrc, evidTrans, evidEval):
+    def _writeDetails(self, detailsFh, annotTrans, evidSrc, evidTrans, evidEval):
         fileOps.prRowv(detailsFh, annotTrans.rna.name, evidSrc, evidTrans.rna.name, evidEval)
 
-    def __compareWithEvidence(self, annotTrans, evidSrc, evidTrans, evidCollector, detailsFh):
+    def _compareWithEvidence(self, annotTrans, evidSrc, evidTrans, evidCollector, detailsFh):
         evidEval = compareMegWithEvidence(annotTrans, evidTrans)
         if detailsFh is not None:
-            self.__writeDetails(detailsFh, annotTrans, evidSrc, evidTrans, evidEval)
+            self._writeDetails(detailsFh, annotTrans, evidSrc, evidTrans, evidEval)
         if evidEval < EvidenceEval.feat_mismatch:
             evidCollector.add(AnnotationEvidenceEval(annotTrans, evidSrc, evidTrans, evidEval))
 
-    def __collectTransSupport(self, annotTrans, evidCache, detailsFh):
+    def _collectTransSupport(self, annotTrans, evidCache, detailsFh):
         evidCollector = AnnotationEvidenceCollector(annotTrans)
         for evidSrc in EvidenceSource:
             for evidTrans in evidCache.get(evidSrc):
-                self.__compareWithEvidence(annotTrans, evidSrc, evidTrans, evidCollector, detailsFh)
+                self._compareWithEvidence(annotTrans, evidSrc, evidTrans, evidCollector, detailsFh)
         return evidCollector
 
-    def __classifyTrans(self, annotTrans, evidCache, tslFh, detailsFh):
-        evidCollector = self.__collectTransSupport(annotTrans, evidCache, detailsFh)
+    def _classifyTrans(self, annotTrans, evidCache, tslFh, detailsFh):
+        evidCollector = self._collectTransSupport(annotTrans, evidCache, detailsFh)
 
     def classifyGeneTranscripts(self, geneAnnotTranses, tslFh, detailsFh=None):
         """classify a list of transcripts, which must be all on the same chromosome
         and should be from the same gene."""
         evidCache = EvidenceCache(self.evidReader, _findAnnotBounds(geneAnnotTranses))
         for annotTrans in geneAnnotTranses:
-            self.__classifyTrans(annotTrans, evidCache, tslFh, detailsFh)
+            self._classifyTrans(annotTrans, evidCache, tslFh, detailsFh)

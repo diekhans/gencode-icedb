@@ -27,19 +27,18 @@ class GenomeReader(object):
             self.close()
 
     def close(self):
-        "twobit package doesn't have close"
-        del self.twoBitReader
+        # FIXME: pickup twobit close()
         self.twoBitReader = None
         self.chrom = self.size = None
 
-    def __obtainChrom(self, chrom):
+    def _obtainChrom(self, chrom):
         if self.chrom != chrom:
             self.twoBitSeq = self.twoBitReader[chrom]
             self.chrom = chrom
             self.size = len(self.twoBitSeq)
 
     def get(self, chrom, start, end, strand=None):
-        self.__obtainChrom(chrom)
+        self._obtainChrom(chrom)
         if strand == '-':
             start, end = dnaOps.reverseCoords(start, end, self.size)
         seq = self.twoBitSeq[start:end]
@@ -54,7 +53,7 @@ class GenomeReader(object):
         return sorted(self.twoBitReader.keys())
 
     def getChromSize(self, chrom):
-        self.__obtainChrom(chrom)
+        self._obtainChrom(chrom)
         return self.size
 
 

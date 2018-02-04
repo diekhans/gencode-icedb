@@ -26,13 +26,13 @@ class TmpUncompress(object):
     """Wrapper for possibly compressed files to pass to programs that can't read
     them."""
     def __init__(self, dataFile, tmpDir=None):
-        self.__dataFile = dataFile
-        self.__tmpUncompressed = None
+        self._dataFile = dataFile
+        self._tmpUncompressed = None
         if fileOps.isCompressed(dataFile):
-            self.__tmpUncompressed = self.__getTmpFile(dataFile, tmpDir)
-            pipettor.run([fileOps.decompressCmd(dataFile), dataFile], stdout=self.__tmpUncompressed, logger=logging.getLogger())
+            self._tmpUncompressed = self._getTmpFile(dataFile, tmpDir)
+            pipettor.run([fileOps.decompressCmd(dataFile), dataFile], stdout=self._tmpUncompressed, logger=logging.getLogger())
 
-    def __getTmpFile(self, dataFile, tmpDir):
+    def _getTmpFile(self, dataFile, tmpDir):
         # drop compressed extension, keep next extension
         uncompName = os.path.basename(os.path.splitext(dataFile)[0])
         uncompBase, uncompExt = os.path.splitext(uncompName)
@@ -42,7 +42,7 @@ class TmpUncompress(object):
     @property
     def path(self):
         "get path to use to access file"
-        return self.__tmpUncompressed if self.__tmpUncompressed is not None else self.__dataFile
+        return self._tmpUncompressed if self._tmpUncompressed is not None else self._dataFile
 
     def __str__(self):
         return self.path
@@ -52,10 +52,10 @@ class TmpUncompress(object):
 
     def finish(self):
         """done with file, purge tmp file if create"""
-        if self.__tmpUncompressed is not None:
-            if os.path.exists(self.__tmpUncompressed):
-                os.unlink(self.__tmpUncompressed)
-            self.__tmpUncompressed = None
+        if self._tmpUncompressed is not None:
+            if os.path.exists(self._tmpUncompressed):
+                os.unlink(self._tmpUncompressed)
+            self._tmpUncompressed = None
 
 
 def getNewTmpDir(tmpDir):

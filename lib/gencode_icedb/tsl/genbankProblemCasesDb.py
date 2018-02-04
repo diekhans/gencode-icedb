@@ -28,12 +28,12 @@ class GenbankProblemCaseDbTable(HgLiteTable):
     """
     Storage for problem cases
     """
-    __createSql = """CREATE TABLE {table} (
+    _createSql = """CREATE TABLE {table} (
             startAcc text not null,
             endAcc text not null,
             reason text not null);"""
-    __insertSql = """INSERT INTO {table} ({columns}) VALUES ({values});"""
-    __indexSql = """CREATE UNIQUE INDEX {table}_startAcc on {table} (startAcc);
+    _insertSql = """INSERT INTO {table} ({columns}) VALUES ({values});"""
+    _indexSql = """CREATE UNIQUE INDEX {table}_startAcc on {table} (startAcc);
                     CREATE UNIQUE INDEX {table}_endAcc on {table} (endAcc);"""
     columnNames = ("startAcc", "endAcc", "reason")
 
@@ -44,15 +44,15 @@ class GenbankProblemCaseDbTable(HgLiteTable):
 
     def create(self):
         """create table"""
-        self._create(self.__createSql)
+        self._create(self._createSql)
 
     def index(self):
         """create index after loading"""
-        self._index(self.__indexSql)
+        self._index(self._indexSql)
 
     def loads(self, rows):
         """load rows into table.  Each element of row is a list, tuple, or GenbankProblemCase"""
-        self._inserts(self.__insertSql, self.columnNames, rows)
+        self._inserts(self._insertSql, self.columnNames, rows)
 
     def get(self, acc):
         "retrieve a record by accession, or None"

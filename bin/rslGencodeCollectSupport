@@ -45,7 +45,7 @@ class SupportCounter(object):
         self.annFactory = AnnotationGenePredFactory(genomeReader)
         self.genomeReader = genomeReader
 
-    def __getAttrsById(self, gencodeId):
+    def _getAttrsById(self, gencodeId):
         "try gene, then transcript id"
         attrs = self.attrsDbTable.getByGeneId(gencodeId)
         if len(attrs) > 0:
@@ -55,7 +55,7 @@ class SupportCounter(object):
             return [attr]
         raise Exception("can't find GENCODE gene or transcript with id {}".format(gencodeId))
 
-    def __getTranscripts(self, attrs):
+    def _getTranscripts(self, attrs):
         """return list of transcripts annotations, which would be empty if the annotations
         were on alts that were not aligned"""
         transes = []
@@ -64,7 +64,7 @@ class SupportCounter(object):
                 transes.append(self.annFactory.fromGenePred(gp))
         return transes
 
-    def __getPrimaryTranscript(self, transes):
+    def _getPrimaryTranscript(self, transes):
         "get primary transcript, dropping PAR, alts, etc"
         byChrom = defaultdict(list)
         for trans in transes:
@@ -79,31 +79,31 @@ class SupportCounter(object):
         chroms.sort(key=lambda c: len(c))
         return byChrom[chroms[0]]
 
-    def __splitAttrsByTrans(self, attrs):
+    def _splitAttrsByTrans(self, attrs):
         attrsByTrans = dict()
         for attr in attrs:
             attrsByTrans[attr.transcriptId] = attr
         return attrsByTrans
 
-    def __getBounds(self, transes):
+    def _getBounds(self, transes):
         start = min([a.chrom.start for a in transes])
         end = max([a.chrom.end for a in transes])
         return transes[0].chrom.name, start, end
 
-    def __sumSupportsByIntron(self, chrom, start, end):
+    def _sumSupportsByIntron(self, chrom, start, end):
         intronSupportCnts = IntronSupportCounter(self.genomeReader)
         for sjSupp in self.sjSupportReader.fetch(chrom, start, end):
             intronSupportCnts.sumSjSupp(sjSupp)
         return intronSupportCnts
 
-    def __sumSupportForTranses(self, transes, attrsByTrans):
+    def _sumSupportForTranses(self, transes, attrsByTrans):
         """Sums support by introns for SJ in the range, so transcripts should be a locus,
         either transcripts in one gene locus or one transcript.  Collecting all upfront
         prevents multiple queries for shared introns."""
-        chrom, start, end = self.__getBounds(transes)
-        return self.__sumSupportsByIntron(chrom, start, end)
+        chrom, start, end = self._getBounds(transes)
+        return self._sumSupportsByIntron(chrom, start, end)
 
-    def __collectTransIntronSupport(self, trans, transAttrs, intronFeat, intronSupportCnts, resultsWriter):
+    def _collectTransIntronSupport(self, trans, transAttrs, intronFeat, intronSupportCnts, resultsWriter):
         intron, sjCounts = intronSupportCnts.getIntronFeatCounts(intronFeat)
         resultsWriter.writerow([transAttrs.geneId, transAttrs.geneName,
                                 transAttrs.transcriptId,
@@ -114,30 +114,30 @@ class SupportCounter(object):
                                 sjCounts.numUniqueMapReads,
                                 sjCounts.numMultiMapReads])
 
-    def __collectTranscriptSupport(self, trans, transAttrs, intronSupportCnts, resultsWriter):
+    def _collectTranscriptSupport(self, trans, transAttrs, intronSupportCnts, resultsWriter):
         for feat in trans.features:
             if isinstance(feat, IntronFeature):
-                self.__collectTransIntronSupport(trans, transAttrs, feat, intronSupportCnts, resultsWriter)
+                self._collectTransIntronSupport(trans, transAttrs, feat, intronSupportCnts, resultsWriter)
 
-    def __collectTranscriptsSupport(self, transes, attrsByTrans, resultsWriter):
-        intronSupportCnts = self.__sumSupportForTranses(transes, resultsWriter)
+    def _collectTranscriptsSupport(self, transes, attrsByTrans, resultsWriter):
+        intronSupportCnts = self._sumSupportForTranses(transes, resultsWriter)
         for trans in transes:
-            self.__collectTranscriptSupport(trans, attrsByTrans[trans.rna.name], intronSupportCnts, resultsWriter)
+            self._collectTranscriptSupport(trans, attrsByTrans[trans.rna.name], intronSupportCnts, resultsWriter)
 
-    def __collectSupportId(self, gencodeId, resultsWriter):
-        attrs = self.__getAttrsById(gencodeId)
-        transes = self.__getTranscripts(attrs)
+    def _collectSupportId(self, gencodeId, resultsWriter):
+        attrs = self._getAttrsById(gencodeId)
+        transes = self._getTranscripts(attrs)
         if len(transes) > 0:
-            self.__collectTranscriptsSupport(self.__getPrimaryTranscript(transes),
-                                             self.__splitAttrsByTrans(attrs),
-                                             resultsWriter)
+            self._collectTranscriptsSupport(self._getPrimaryTranscript(transes),
+                                            self._splitAttrsByTrans(attrs),
+                                            resultsWriter)
 
     def collectSupport(self, gencodeIds, resultsWriter):
         if len(gencodeIds) == 0:
             gencodeIds = self.attrsDbTable.getAllGeneIds()
         resultsWriter.writerow(resultsHeader)
         for gencodeId in gencodeIds:
-            self.__collectSupportId(gencodeId, resultsWriter)
+            self._collectSupportId(gencodeId, resultsWriter)
 
 
 def rslGencodeCollectSupport(opts):

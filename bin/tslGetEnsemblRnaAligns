@@ -79,7 +79,7 @@ class CDnaSizeFinder(object):
         self.hgFixedConn = hgDb.connect(hgFixedDb)
         self.eclient = eutils.client.Client()
 
-    def __getSizeUcsc(self, accver):
+    def _getSizeUcsc(self, accver):
         acc, ver = accver.split('.')
         cur = self.hgFixedConn.cursor()
         try:
@@ -93,7 +93,7 @@ class CDnaSizeFinder(object):
         finally:
             cur.close()
 
-    def __getSizeEutils(self, accver):
+    def _getSizeEutils(self, accver):
         esr = self.eclient.esearch(db='nuccore', term=accver)
         if len(esr.ids) == 0:
             return None
@@ -103,9 +103,9 @@ class CDnaSizeFinder(object):
         return efr.gbseqs[0].length
 
     def getSize(self, accver):
-        size = self.__getSizeUcsc(accver)
+        size = self._getSizeUcsc(accver)
         if size is None:
-            size = self.__getSizeEutils(accver)
+            size = self._getSizeEutils(accver)
         return size
 
 
@@ -237,7 +237,7 @@ class EnsemblCDnaConverter(object):
         self.asmReport = asmReport
         self.reportedUnmappedChrs = set()
 
-    def __findChromInfo(self, row):
+    def _findChromInfo(self, row):
         # unplaced use GenBank acccession, some case use sequenceName with CHR_
         # prefix, which are patches embedded in full chroms, and are ignored
         chrom = row["name"]
@@ -256,13 +256,13 @@ class EnsemblCDnaConverter(object):
             return None
         return chromInfo
 
-    def __convertToPsl(self, row):
+    def _convertToPsl(self, row):
         "return psl or None"
         qSize = self.cDnaSizeFinder.getSize(row["hit_name"])
         if qSize is None:
             print("Note: UCSC and eutils esearch can't find `{}'".format(row["hit_name"]), file=sys.stderr)
             return None
-        chromInfo = self.__findChromInfo(row)
+        chromInfo = self._findChromInfo(row)
         if chromInfo is None:
             return None
         return pslFromEnsembl(row, qSize, chromInfo.ucscStyleName, chromInfo.sequenceLength)
@@ -273,7 +273,7 @@ class EnsemblCDnaConverter(object):
         psls = set()
         for row in ensemblCDnaQuery(ensemblCDnaDb, limit, accverSubset, ensChromRanges):
             logging.getLogger().debug("Ensembl cDNA row: {}".format(row))
-            psl = self.__convertToPsl(row)
+            psl = self._convertToPsl(row)
             if psl is not None:
                 psls.add(psl)
         return list(sorted(psls, key=lambda p: (p.tName, p.tStart, p.tEnd)))
