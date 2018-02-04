@@ -100,7 +100,7 @@ class GenePredDbSrc(object):
 
     @classmethod
     def obtainGenePred(cls, name, acc):
-        gps = cls.obtain(name).getByName(acc)
+        gps = list(cls.obtain(name).getByName(acc))
         if len(gps) == 0:
             raise Exception("genePred not found: {}".format(acc))
         return gps[0]
