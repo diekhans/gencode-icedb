@@ -26,6 +26,15 @@ class TrascriptionSupportLevel(SymEnum):
     tsl5 = 5
 
 
+class EvidenceSource(SymEnum):
+    """Source of evidence used in support"""
+    __slots__ = ()
+
+    UCSC_RNA = 1
+    ENSEMBL_RNA = 2
+    UCSC_EST = 2
+
+
 class EvidenceType(SymEnum):
     """Type of evidence used in support"""
     __slots__ = ()
@@ -34,7 +43,7 @@ class EvidenceType(SymEnum):
     EST = 2
 
 
-class EvidenceComparison(SymEnum):
+class EvidenceEval(SymEnum):
     """One or more of these attributes describe the support provided to an annotation
     by a given piece of evidence"""
     __slots__ = ()
@@ -46,7 +55,9 @@ class EvidenceComparison(SymEnum):
     large_indel_size = 12  # give indel exceeds a threshold
     large_indel_content = 14  # indel context if a given exon exceeded
     internal_unaligned = 15  # intron contains unaligned
-    feat_mismatch = 16  # different number of features
+
+    feat_mismatch = 50  # different number of features
+    no_support = 100
 
     # endsMedium = 2
     # endsWeak = 3

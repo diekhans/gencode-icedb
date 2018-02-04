@@ -102,6 +102,7 @@ class EvidencePslFactory(object):
         trans.features = tuple(self.__buildFeatures(psl, trans))
         return trans
 
+
 class EvidencePslDbFactory(EvidencePslFactory):
     """
     Factory to create evidence features from a PSLs in an sqlite3 database.
@@ -111,9 +112,13 @@ class EvidencePslDbFactory(EvidencePslFactory):
         super(EvidencePslDbFactory, self).__init__(genomeReader)
         self.pslDbTable = PslDbTable(conn, table)
 
-    def overlappingGen(self, chrom, start, end, qStrand=None):
-        """Generator get overlapping alignments as TranscriptFeatures.
+    def overlappingGen(self, chrom, start, end, rnaStrand=None, minExons=0):
+        """Generator of overlapping alignments as TranscriptFeatures.
         """
-        for psl in self.pslDbTable.getTRangeOverlap(chrom, start, end):
-            if psl.getQStrand() == qStrand:
-                yield self.fromPsl(psl)
+        strand = (None if rnaStrand is None
+                  else ('+', '++') if rnaStrand == '+' else ('-', '+-'))
+        extraWhere = "blockCount > {}".format(minExons) if minExons > 0 else None
+        for psl in self.pslDbTable.getTRangeOverlap(chrom, start, end, strand=strand, extraWhere=extraWhere):
+            trans = self.fromPsl(psl)
+            if len(trans.features) >= minExons + (minExons - 1):
+                yield trans

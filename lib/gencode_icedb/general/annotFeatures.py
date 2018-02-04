@@ -160,10 +160,21 @@ class AnnotationGenePredDbFactory(AnnotationGenePredFactory):
         super(AnnotationGenePredDbFactory, self).__init__(genomeReader)
         self.genePredDbTable = GenePredDbTable(conn, table)
 
+    def byNameGen(self, names):
+        """generator get annotations as TranscriptFeatures by name"""
+        #FIXME: optimize to one query
+        for name in names:
+            for gp in self.genePredDbTable.getByName(name):
+                yield self.fromGenePred(gp)
+
     def overlappingGen(self, chrom, start, end, strand=None):
         """generator get overlapping annotations as TranscriptFeatures"""
-        for gp in self.genePredDbTable.getRangeOverlap(chrom, start, end, strand):
-            yield self.fromGenePred(gp)
+        extraWhere = "blockCount > {}".format(minExons) if minExons > 0 else None
+        for gp in self.genePredDbTable.getRangeOverlap(chrom, start, end, strand=strand, extraWhere=extraWhere):
+            trans = self.fromGenePred(gp)
+            if len(trans.features) >= minExons + (minExons - 1):
+                yield trans
+
 
     def allGen(self):
         """generator get overlapping annotations as TranscriptFeatures"""
