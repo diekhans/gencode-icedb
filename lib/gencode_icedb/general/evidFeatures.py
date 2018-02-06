@@ -2,9 +2,6 @@
 Convert alignments (PSL) to features, closing and tracking gaps.
 """
 from __future__ import print_function
-from collections import defaultdict
-from pycbio.hgdata.rangeFinder import RangeFinder
-from pycbio.hgdata.hgLite import PslDbTable
 from pycbio.hgdata.coords import Coords
 from gencode_icedb.general.spliceJuncs import spliceJuncsGetSeqs
 from gencode_icedb.tsl import minIntronSize
@@ -101,24 +98,3 @@ class EvidencePslFactory(object):
         trans = TranscriptFeatures(chrom, rna)
         trans.features = tuple(self._buildFeatures(psl, trans))
         return trans
-
-
-class EvidencePslDbFactory(EvidencePslFactory):
-    """
-    Factory to create evidence features from a PSLs in an sqlite3 database.
-    """
-    def __init__(self, conn, table, genomeReader):
-        """genomeReader maybe None if splice sites are not desired """
-        super(EvidencePslDbFactory, self).__init__(genomeReader)
-        self.pslDbTable = PslDbTable(conn, table)
-
-    def overlappingGen(self, chrom, start, end, rnaStrand=None, minExons=0):
-        """Generator of overlapping alignments as TranscriptFeatures.
-        """
-        strand = (None if rnaStrand is None
-                  else ('+', '++') if rnaStrand == '+' else ('-', '+-'))
-        extraWhere = "blockCount > {}".format(minExons) if minExons > 0 else None
-        for psl in self.pslDbTable.getTRangeOverlap(chrom, start, end, strand=strand, extraWhere=extraWhere):
-            trans = self.fromPsl(psl)
-            if len(trans.features) >= minExons + (minExons - 1):
-                yield trans

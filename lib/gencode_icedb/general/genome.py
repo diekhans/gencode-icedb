@@ -27,7 +27,7 @@ class GenomeReader(object):
             self.close()
 
     def close(self):
-        # FIXME: pickup twobit close()
+        self.twoBitReader.close()
         self.twoBitReader = None
         self.chrom = self.size = None
 

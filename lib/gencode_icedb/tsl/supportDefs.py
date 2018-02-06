@@ -5,16 +5,6 @@ from pycbio.sys.symEnum import SymEnum
 
 # FIXME: make organization consistent between TSL and RSL stuff
 
-UCSC_RNA_ALN_TBL = "ucsc_rna_aln"
-UCSC_EST_ALN_TBL = "ucsc_est_aln"
-ENSEMBL_RNA_ALN_TBL = "ensembl_rna_aln"
-
-GENCODE_ANN_TBL = "gencode_ann"
-GENCODE_ATTRS_TBL = "gencode_attrs"
-GENCODE_TAG_TBL = "gencode_tag                        "
-GENCODE_TRANSCRIPT_SOURCE_TBL = "gencode_transcript_source          "
-GENCODE_TRANSCRIPTION_SUPPORT_LEVEL_TBL = "gencode_transcription_support_level"
-
 
 class TrascriptionSupportLevel(SymEnum):
     """Transcription support levels"""
@@ -24,15 +14,6 @@ class TrascriptionSupportLevel(SymEnum):
     tsl3 = 3
     tsl4 = 4
     tsl5 = 5
-
-
-class EvidenceSource(SymEnum):
-    """Source of evidence used in support"""
-    __slots__ = ()
-
-    UCSC_RNA = 1
-    ENSEMBL_RNA = 2
-    UCSC_EST = 2
 
 
 class EvidenceType(SymEnum):

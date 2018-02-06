@@ -18,11 +18,9 @@ The current algorithm is:
 from collections import namedtuple
 from pycbio.sys import fileOps
 from pycbio.hgdata.coords import Coords
-from pycbio.hgdata.hgLite import sqliteConnect
 from gencode_icedb.general.transFeatures import ExonFeature, IntronFeature, ChromInsertFeature, RnaInsertFeature
-from gencode_icedb.tsl.supportDefs import EvidenceSource, EvidenceEval
-from gencode_icedb.tsl.supportDefs import UCSC_RNA_ALN_TBL, UCSC_EST_ALN_TBL, ENSEMBL_RNA_ALN_TBL
-from gencode_icedb.general.evidFeatures import EvidencePslDbFactory
+from gencode_icedb.tsl.supportDefs import EvidenceEval
+from gencode_icedb.general.evidenceDb import EvidenceSource
 
 #FIXME: needed to separate from geneAnnot DB more (as might be comming from ensembl db)
 
@@ -30,6 +28,7 @@ from gencode_icedb.general.evidFeatures import EvidencePslDbFactory
 exonPolymorhicSizeLimit = 12
 # fraction of allowed total indel size relative exon length
 exonPolymorhicFactionLimit = 0.05
+
 
 def _checkMegExonIndels(evidExon):
     "check for allowed indel polymorphism"
@@ -90,6 +89,7 @@ def compareMegWithEvidence(annotTrans, evidTrans):
             worstCmpr = cmpr
     return worstCmpr
 
+
 def _findAnnotBounds(geneTranses):
     name = geneTranses[0].chrom.name
     start = geneTranses[0].chrom.start
@@ -107,29 +107,6 @@ def _findAnnotBounds(geneTranses):
     return Coords(name, start, end, strand)
 
 
-class EvidenceReader(object):
-    """Container for sources of evidence."""
-
-    evidSrcToTbl = {
-        EvidenceSource.UCSC_RNA: UCSC_RNA_ALN_TBL,
-        EvidenceSource.ENSEMBL_RNA: UCSC_EST_ALN_TBL,
-        EvidenceSource.UCSC_EST: ENSEMBL_RNA_ALN_TBL,
-    }
-
-    def __init__(self, evidDb, genomeReader):
-        self.evidDbConn = sqliteConnect(evidDb, readOnly=True)
-        self.evidTbls = {evidSrc: EvidencePslDbFactory(self.evidDbConn, self.evidSrcToTbl[evidSrc], genomeReader)
-                         for evidSrc in EvidenceSource}
-
-    def get(self, evidSrc):
-        "return table object to use for reading from appropriate table"
-        return self.evidTbls[evidSrc]
-
-    def close(self):
-        self.evidDbConn.close()
-        self.evidDbConn = None
-
-
 class EvidenceCache(object):
     """Cache for a range of evidence, normally for one gene"""
     def __init__(self, evidReader, bounds):
@@ -140,10 +117,8 @@ class EvidenceCache(object):
     def get(self, evidSrc):
         "get a type of evidence"
         if self.evidTbls[evidSrc] is None:
-            # sort for testing purposes
-            dbTbl = self.evidReader.get(evidSrc)
-            self.evidTbls[evidSrc] = tuple(sorted(dbTbl.overlappingGen(self.bounds.name, self.bounds.start, self.bounds.end,
-                                                                       rnaStrand=self.bounds.strand, minExons=2),
+            self.evidTbls[evidSrc] = tuple(sorted(self.evidReader.overlappingGen(evidSrc, self.bounds.name, self.bounds.start, self.bounds.end,
+                                                                                 rnaStrand=self.bounds.strand, minExons=2),
                                                   key=lambda a: (a.rna.name, a.chrom.name, a.chrom.start)))
         return self.evidTbls[evidSrc]
 
@@ -168,12 +143,12 @@ class SupportClassifier(object):
     """TSL classifier for transcripts with evidence and annotations in sqlite3
     databases. Classification on a per-transcript basis, however it is grouped
     by gene to gives good locality of the evidence."""
-    def __init__(self, evidDb, genomeReader):
-        self.evidReader = EvidenceReader(evidDb, genomeReader)
+    def __init__(self, evidReader, genomeReader):
+        self.evidReader = evidReader
 
     @staticmethod
     def writeTsvHeaders(tslFh, detailsFh=None):
-        fileOps.prRowv(detailsFh, "transcriptId", "level")
+        fileOps.prRowv(tslFh, "transcriptId", "level")
         if detailsFh is not None:
             fileOps.prRowv(detailsFh, "transcriptId", "evidSrc", "evidId", "evidEval")
 

@@ -28,7 +28,7 @@ def parseArgs():
                         help="""Ensembl database for cDNAs""")
     parser.add_argument('assemblyReport',
                         help="""NCBI assembly report for mapping chromosome names""")
-    parser.add_argument('evidDb',
+    parser.add_argument('evidDb', dest="evidDbFile",
                         help="""evidence database to load alignments into""")
     parser.add_argument('gencodeDb',
                         help="""database to load gencode annotations into""")
@@ -37,23 +37,23 @@ def parseArgs():
 def mkChromSpecs(opt, ranges):
     return ["{}={}".format(opt, str(r)) for r in ranges]
 
-def getUcscAlns(ucscDb, alntype, ranges, evidDb):
+def getUcscAlns(ucscDb, alntype, ranges, evidDbFile):
     cmd = [os.path.join(binDir, "tslGetUcscRnaAligns"),
-           ucscDb, alntype, evidDb,
+           ucscDb, alntype, evidDbFile,
            UCSC_RNA_ALN_TBL if alntype == "rna" else UCSC_EST_ALN_TBL] + mkChromSpecs("-chromSpec", ranges)
     pipettor.run(cmd)
 
-def getEnsemblAlns(ensemblCDnaDb, assemblyReport, ranges, evidDb):
+def getEnsemblAlns(ensemblCDnaDb, assemblyReport, ranges, evidDbFile):
     cmd = [os.path.join(binDir, "tslGetEnsemblRnaAligns"),
-           ensemblCDnaDb, assemblyReport, evidDb, ENSEMBL_RNA_ALN_TBL] + mkChromSpecs("--chromSpec", ranges)
+           ensemblCDnaDb, assemblyReport, evidDbFile, ENSEMBL_RNA_ALN_TBL] + mkChromSpecs("--chromSpec", ranges)
     pipettor.run(cmd)
 
-def buildEvidDb(testCases, assemblyReport, ucscDb, ensemblCDnaDb, evidDb):
-    fileOps.rmFiles(evidDb)
+def buildEvidDb(testCases, assemblyReport, ucscDb, ensemblCDnaDb, evidDbFile):
+    fileOps.rmFiles(evidDbFile)
     ranges = testCases.getRanges()
-    getUcscAlns(ucscDb, "rna", ranges, evidDb)
-    getUcscAlns(ucscDb, "est", ranges, evidDb)
-    getEnsemblAlns(ensemblCDnaDb, assemblyReport, ranges, evidDb)
+    getUcscAlns(ucscDb, "rna", ranges, evidDbFile)
+    getUcscAlns(ucscDb, "est", ranges, evidDbFile)
+    getEnsemblAlns(ensemblCDnaDb, assemblyReport, ranges, evidDbFile)
 
 def writeTransIdsTmpFile(testCases):
     transIdTmp = fileOps.tmpFileGet("transIds")
@@ -86,6 +86,6 @@ def createTestData(args):
         logging.debug("Debugging enabled")  #FIXME for some reason, this is required to start output
     testCases = TestCases(args.testCaseTsv)
     buildGencodeDb(testCases, args.ucscDb, args.gencodeVersion, args.gencodeDb)
-    buildEvidDb(testCases, args.assemblyReport, args.ucscDb, args.ensemblCDnaDb, args.evidDb)
+    buildEvidDb(testCases, args.assemblyReport, args.ucscDb, args.ensemblCDnaDb, args.evidDbFile)
 
 createTestData(parseArgs())

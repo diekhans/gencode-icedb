@@ -1,12 +1,10 @@
 from __future__ import print_function
-from collections import defaultdict
-from pycbio.hgdata.hgLite import GenePredDbTable
 from pycbio.hgdata.coords import Coords
 from pycbio.hgdata.frame import Frame
-from pycbio.hgdata.rangeFinder import RangeFinder
 from gencode_icedb.general.spliceJuncs import spliceJuncsGetSeqs
 from gencode_icedb.tsl import minIntronSize
 from gencode_icedb.general.transFeatures import ExonFeature, IntronFeature, TranscriptFeatures, Utr5RegionFeature, CdsRegionFeature, Utr3RegionFeature, NonCodingRegionFeature
+
 
 class AnnotationGenePredFactory(object):
     """
@@ -137,7 +135,7 @@ class AnnotationGenePredFactory(object):
                              trans.chrom.subrange(gp.exons[iBlkNext - 1].end, gp.exons[iBlkNext].start),
                              trans.rna.subrange(rnaEnd, rnaEnd), donorSeq, acceptorSeq)
 
-    def fromGenePred(self, gp):
+    def fromGenePred(self, gp, metaData=None):
         "convert a genePred to an AnnotTranscript"
         rnaSize = gp.getLenExons()
         if gp.cdsStart < gp.cdsEnd:
@@ -147,33 +145,6 @@ class AnnotationGenePredFactory(object):
 
         chrom = Coords(gp.chrom, gp.txStart, gp.txEnd, '+', self.chromSizeFunc(gp.chrom))
         rna = Coords(gp.name, 0, rnaSize, gp.strand, rnaSize)
-        trans = TranscriptFeatures(chrom, rna, cdsChromStart, cdsChromEnd)
+        trans = TranscriptFeatures(chrom, rna, cdsChromStart, cdsChromEnd, metaData)
         trans.features = tuple(self._buildFeatures(gp, trans))
         return trans
-
-class AnnotationGenePredDbFactory(AnnotationGenePredFactory):
-    """
-    Factory to create annotation features from genePreds in an sqlite3 databases.
-    """
-    def __init__(self, conn, table, genomeReader):
-        """genomeReader maybe None if splice sites are not desired """
-        super(AnnotationGenePredDbFactory, self).__init__(genomeReader)
-        self.genePredDbTable = GenePredDbTable(conn, table)
-
-    def byNameGen(self, names):
-        """generator get annotations as TranscriptFeatures by name"""
-        #FIXME: optimize to one query
-        for name in names:
-            for gp in self.genePredDbTable.getByName(name):
-                yield self.fromGenePred(gp)
-
-    def overlappingGen(self, chrom, start, end, strand=None):
-        """generator get overlapping annotations as TranscriptFeatures"""
-        for gp in self.genePredDbTable.getRangeOverlap(chrom, start, end, strand=strand):
-            yield self.fromGenePred(gp)
-
-
-    def allGen(self):
-        """generator get overlapping annotations as TranscriptFeatures"""
-        for gp in self.genePredDbTable.getAll():
-            yield self.fromGenePred(gp)

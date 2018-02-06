@@ -2,6 +2,7 @@
 Features of a transcript annotation or alignment.
 """
 from __future__ import print_function
+import copy
 from pycbio.hgdata import dnaOps
 from pycbio.hgdata.frame import Frame
 from pycbio.hgdata.bed import Bed
@@ -347,15 +348,16 @@ class TranscriptFeatures(TransFeature):
     features are kept in chromosome order (positive strand).
     """
     name = "trans"
-    __slots__ = ("chrom", "rna", "cdsChromStart", "cdsChromEnd", "features")
+    __slots__ = ("chrom", "rna", "cdsChromStart", "cdsChromEnd", "features", "metaData")
 
-    def __init__(self, chrom, rna, cdsChromStart=None, cdsChromEnd=None):
+    def __init__(self, chrom, rna, cdsChromStart=None, cdsChromEnd=None, metaData=None):
         super(TranscriptFeatures, self).__init__(None, None, chrom, rna)
         self.chrom = chrom
         self.rna = rna
         self.cdsChromStart = cdsChromStart
         self.cdsChromEnd = cdsChromEnd
         self.features = None
+        self.metaData = metaData
 
     def __str__(self):
         return "t={}/{}, rna={}/{} {}".format(str(self.chrom), self.chrom.strand,
@@ -401,6 +403,7 @@ class TranscriptFeatures(TransFeature):
         rcCdsChromStart, rcCdsChromEnd = None, None if self.cdsChromStart is None else dnaOps.reverseCoords(self.cdsChromStart, self.cdsChromEnd, self.chrom.size)
 
         rcTrans = TranscriptFeatures(self.chrom.reverse(), self.rna.reverse(),
-                                     rcCdsChromStart, rcCdsChromEnd)
+                                     rcCdsChromStart, rcCdsChromEnd,
+                                     copy.deepcopy(self.metaData))
         rcTrans.features = _reverseComplementChildren(rcTrans, self.features)
         return rcTrans
