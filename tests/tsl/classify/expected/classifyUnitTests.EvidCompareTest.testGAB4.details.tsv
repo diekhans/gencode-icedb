@@ -1,4 +1,4 @@
-transcriptId	evidSrc	evidId	evidEval
+transcriptId	evidSrc	evidId	evidSupport
 ENST00000400588.5	UCSC_RNA	AB076978.1	good
 ENST00000400588.5	UCSC_RNA	AK057252.1	feat_mismatch
 ENST00000400588.5	ENSEMBL_RNA	AB076978.1	good

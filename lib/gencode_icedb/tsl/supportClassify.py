@@ -15,19 +15,46 @@ The current algorithm is:
      - tsl4 - the best supporting EST is flagged as suspect
      - tsl5 - no single transcript supports the model structure
 """
-from collections import namedtuple
+import re
+from collections import namedtuple, defaultdict
 from pycbio.sys import fileOps
 from pycbio.hgdata.coords import Coords
-from gencode_icedb.general.transFeatures import ExonFeature, IntronFeature, ChromInsertFeature, RnaInsertFeature
-from gencode_icedb.tsl.supportDefs import EvidenceEval
+from gencode_icedb.general.transFeatures import ExonFeature, ChromInsertFeature, RnaInsertFeature
+from gencode_icedb.tsl.supportDefs import EvidenceSupport, TrascriptionSupportLevel
 from gencode_icedb.general.evidenceDb import EvidenceSource
 
-#FIXME: needed to separate from geneAnnot DB more (as might be comming from ensembl db)
 
 # limits on size of as single indel in an exon.
 exonPolymorhicSizeLimit = 12
 # fraction of allowed total indel size relative exon length
 exonPolymorhicFactionLimit = 0.05
+
+
+# FIXME from ccds2/modules/gencode/src/lib/gencode/data/gencodeGenes.py, migrate to new module
+def _transIsSingleExon(annotTrans):
+    return len([feat for feat in annotTrans.features if isinstance(feat, ExonFeature)]) <= 1
+
+
+def _geneIsTslIgnored(annotTrans):
+    bioType = annotTrans.metaData.attrs.transcriptType
+    geneName = annotTrans.metaData.attrs.geneName
+    # FIXME: this was part of ccds gencodeGenes module, we need to make that independent and use it here
+    # trans.isPseudo()
+    if (bioType.find("pseudogene") >= 0) and (bioType.find("transcribed") < 0):
+        return True
+    # trans.isOlfactoryReceptor()
+    if re.match("^OR[0-9].+", geneName):
+        return True
+    # trans.isHLA()
+    if geneName.find("HLA-") == 0:
+        return True
+    # trans.isImmunoglobin()
+    if bioType.startswith("IG_"):
+        return True
+    # trans.isTCellReceptor())
+    if bioType.startswith("TR_"):
+        return True
+    return False
 
 
 def _checkMegExonIndels(evidExon):
@@ -45,12 +72,12 @@ def _checkMegExonIndels(evidExon):
     for aln in evidExon.alignFeatures:
         indelSize = getIndelSize(aln)
         if indelSize > exonPolymorhicSizeLimit:
-            return EvidenceEval.large_indel_size
+            return EvidenceSupport.large_indel_size
         totalIndelSize += indelSize
     if totalIndelSize > exonPolymorhicFactionLimit * len(evidExon.chrom):
-        return EvidenceEval.large_indel_content
+        return EvidenceSupport.large_indel_content
     else:
-        return EvidenceEval.polymorphic
+        return EvidenceSupport.polymorphic
 
 
 def _compareMegExon(annotExon, evidExon):
@@ -58,16 +85,16 @@ def _compareMegExon(annotExon, evidExon):
     if len(evidExon.alignFeatures) > 1:
         return _checkMegExonIndels(evidExon)
     else:
-        return EvidenceEval.good
+        return EvidenceSupport.good
 
 
 def _compareIntron(annotIntron, evidIntron):
     if annotIntron.chrom != evidIntron.chrom:
-        return EvidenceEval.exon_boundry_mismatch
+        return EvidenceSupport.exon_boundry_mismatch
     elif len(evidIntron.alignFeatures) > 1:
-        return EvidenceEval.internal_unaligned
+        return EvidenceSupport.internal_unaligned
     else:
-        return EvidenceEval.good
+        return EvidenceSupport.good
 
 
 def _compareFeature(annotFeat, evidFeat):
@@ -81,8 +108,8 @@ def _compareFeature(annotFeat, evidFeat):
 def compareMegWithEvidence(annotTrans, evidTrans):
     """Compare a multi-exon annotation with a given piece of evidence"""
     if len(evidTrans.features) != len(annotTrans.features):
-        return EvidenceEval.feat_mismatch
-    worstCmpr = EvidenceEval.good
+        return EvidenceSupport.feat_mismatch
+    worstCmpr = EvidenceSupport.good
     for iFeat in range(len(annotTrans.features)):
         cmpr = _compareFeature(annotTrans.features[iFeat], evidTrans.features[iFeat])
         if cmpr > worstCmpr:  # > is worse
@@ -124,43 +151,64 @@ class EvidenceCache(object):
 
 
 class AnnotationEvidenceEval(namedtuple("AnnotationEvidence",
-                                        ("annotId", "evidSrc", "evidId", "evidEval"))):
+                                        ("annotId", "evidSrc", "evidId", "support"))):
     """Evaluation of an annotation against an evidence alignment."""
     slots = ()
 
 
-class AnnotationEvidenceCollector(object):
-    """Collection of evidence supporting a transcript annotation"""
+class AnnotationEvidenceCollector(defaultdict):
+    """Collection of evidence supporting a transcript annotation,
+    indexed by EvidenceSource"""
     def __init__(self, annotTrans):
         self.annotTrans = annotTrans
-        self.evidEvals = []
+        super(AnnotationEvidenceCollector, self).__init__(list)
 
-    def add(self, evidEval):
-        self.evidEvals.append(evidEval)
+    def add(self, evidSrc, evidEval):
+        self[evidSrc].append(evidEval)
+
+
+def _countFullSupport(evidEvals):
+    return len([ev for ev in evidEvals if ev.support == EvidenceSupport.good])
+
+
+def _calculateTsl(evidCollector):
+    """compute TSL from evidence in evidCollector"""
+    rnaGoodCnt = _countFullSupport(evidCollector[EvidenceSource.UCSC_RNA])
+    if rnaGoodCnt == 0:
+        rnaGoodCnt = _countFullSupport(evidCollector[EvidenceSource.ENSEMBL_RNA])
+    if rnaGoodCnt > 0:
+        return TrascriptionSupportLevel.tsl1
+    estGoodCnt = _countFullSupport(evidCollector[EvidenceSource.UCSC_EST])
+    if estGoodCnt > 2:
+        return TrascriptionSupportLevel.tsl2
+    if estGoodCnt == 1:
+        return TrascriptionSupportLevel.tsl3
+    return TrascriptionSupportLevel.tsl5
 
 
 class SupportClassifier(object):
     """TSL classifier for transcripts with evidence and annotations in sqlite3
     databases. Classification on a per-transcript basis, however it is grouped
     by gene to gives good locality of the evidence."""
-    def __init__(self, evidReader, genomeReader):
+    def __init__(self, evidReader):
         self.evidReader = evidReader
 
     @staticmethod
     def writeTsvHeaders(tslFh, detailsFh=None):
         fileOps.prRowv(tslFh, "transcriptId", "level")
         if detailsFh is not None:
-            fileOps.prRowv(detailsFh, "transcriptId", "evidSrc", "evidId", "evidEval")
+            fileOps.prRowv(detailsFh, "transcriptId", "evidSrc", "evidId", "evidSupport")
 
-    def _writeDetails(self, detailsFh, annotTrans, evidSrc, evidTrans, evidEval):
-        fileOps.prRowv(detailsFh, annotTrans.rna.name, evidSrc, evidTrans.rna.name, evidEval)
+    def _writeDetails(self, detailsFh, annotTrans, evidSrc, evidTrans, evidSupport):
+        fileOps.prRowv(detailsFh, annotTrans.rna.name, evidSrc, evidTrans.rna.name, evidSupport)
 
     def _compareWithEvidence(self, annotTrans, evidSrc, evidTrans, evidCollector, detailsFh):
-        evidEval = compareMegWithEvidence(annotTrans, evidTrans)
+        evidSupport = compareMegWithEvidence(annotTrans, evidTrans)
         if detailsFh is not None:
-            self._writeDetails(detailsFh, annotTrans, evidSrc, evidTrans, evidEval)
-        if evidEval < EvidenceEval.feat_mismatch:
-            evidCollector.add(AnnotationEvidenceEval(annotTrans, evidSrc, evidTrans, evidEval))
+            self._writeDetails(detailsFh, annotTrans, evidSrc, evidTrans, evidSupport)
+        if evidSupport < EvidenceSupport.feat_mismatch:
+            evidCollector.add(evidSrc,
+                              AnnotationEvidenceEval(annotTrans, evidSrc, evidTrans, evidSupport))
 
     def _collectTransSupport(self, annotTrans, evidCache, detailsFh):
         evidCollector = AnnotationEvidenceCollector(annotTrans)
@@ -170,7 +218,12 @@ class SupportClassifier(object):
         return evidCollector
 
     def _classifyTrans(self, annotTrans, evidCache, tslFh, detailsFh):
-        evidCollector = self._collectTransSupport(annotTrans, evidCache, detailsFh)
+        if _transIsSingleExon(annotTrans) or _geneIsTslIgnored(annotTrans):
+            tsl = TrascriptionSupportLevel.tslNA
+        else:
+            evidCollector = self._collectTransSupport(annotTrans, evidCache, detailsFh)
+            tsl = _calculateTsl(evidCollector)
+        fileOps.prRowv(tslFh, annotTrans.rna.name, tsl)
 
     def classifyGeneTranscripts(self, geneAnnotTranses, tslFh, detailsFh=None):
         """classify a list of transcripts, which must be all on the same chromosome

@@ -11,7 +11,6 @@ from gencode_icedb.general.genome import GenomeReaderFactory
 from gencode_icedb.general.gencodeDb import UcscGencodeReader
 from gencode_icedb.general.evidenceDb import EvidenceSource, EvidenceReader
 from gencode_icedb.tsl.supportClassify import compareMegWithEvidence, SupportClassifier
-from gencode_icedb.tsl.supportDefs import EvidenceEval
 
 
 class EvidCompareTest(TestCaseBase):
@@ -44,23 +43,18 @@ class EvidCompareTest(TestCaseBase):
         for evidSrc in EvidenceSource:
             self.__evalAnnotTransEvidSrc(annotTrans, evidSrc)
 
-    def XtestShit(self):
-        for annotTrans in self.gencodeReader.allGen():
-            if len(annotTrans.features) >= 3:  # multi-exon only
-                self.__evalAnnotTrans(annotTrans)
-
     def testGAB4(self):
         geneId = "ENSG00000215568.7"
         geneAnnotTranses = list(self.gencodeReader.getByGeneId(geneId))
-        classifier = SupportClassifier(self.evidenceReader, self.genomeReader)
+        classifier = SupportClassifier(self.evidenceReader)
         outTslTsv = self.getOutputFile(".tsl.tsv")
         outDetailsTsv = self.getOutputFile(".details.tsv")
-        with open(outTslTsv, 'w') as tslTsvFh, \
-              open(outDetailsTsv, 'w') as detailsTsvFh:
+        with open(outTslTsv, 'w') as tslTsvFh, open(outDetailsTsv, 'w') as detailsTsvFh:
             classifier.writeTsvHeaders(tslTsvFh, detailsTsvFh)
             classifier.classifyGeneTranscripts(geneAnnotTranses, tslTsvFh, detailsTsvFh)
         self.diffFiles(self.getExpectedFile(".tsl.tsv"), outTslTsv)
         self.diffFiles(self.getExpectedFile(".details.tsv"), outDetailsTsv)
+
 
 def suite():
     ts = unittest.TestSuite()

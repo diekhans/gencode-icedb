@@ -24,7 +24,7 @@ class EvidenceType(SymEnum):
     EST = 2
 
 
-class EvidenceEval(SymEnum):
+class EvidenceSupport(SymEnum):
     """One or more of these attributes describe the support provided to an annotation
     by a given piece of evidence"""
     __slots__ = ()
