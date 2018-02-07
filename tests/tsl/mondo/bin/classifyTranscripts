@@ -1,29 +1,72 @@
 #!/usr/bin/env python3
-
 from __future__ import print_function
 import sys
-import os
-if __name__ == '__main__':
-    rootDir = "../../.."
-    sys.path = [os.path.join(rootDir, "lib"),
-                os.path.join(rootDir, "extern/pycbio/lib")] + sys.path
-
-from pycbio.hgdata.hgLite import sqliteConnect, PslDbTable, GenePredDbTable
-from gencode_icedb.tsl.supportDefs import UCSC_RNA_ALN_TBL, UCSC_EST_ALN_TBL, ENSEMBL_RNA_ALN_TBL
-from gencode_icedb.tsl.supportClassify import compareMegWithEvidence
-
-    def __init__(self, ucscDb, evidDbFile, annotDbFile):
-        self.genomeReader = GenomeReaderFactory.factoryFromUcscDb(ucscDbFile).obtain()
-        conn = sqliteConnect(evidDbFile)
-        try:
+import argparse
+from contextlib import ExitStack
+from collections import defaultdict
+sys.path.insert(0, "../../../bin")
+import icedbProgSetup  # noqa: F401
+from pycbio.hgdata.coords import Coords
+from gencode_icedb.general.gencodeDb import UcscGencodeReader
+from gencode_icedb.general.evidenceDb import EvidenceReader
+from gencode_icedb.tsl.supportClassify import SupportClassifier
 
 
-            self.ucscRnas = EvidenceMap.dbFactory(conn, UCSC_RNA_ALN_TBL, self.genomeReader)
-            self.ucscEsts = EvidenceMap.dbFactory(conn, UCSC_EST_ALN_TBL, self.genomeReader)
-            self.ensemblRnas = EvidenceMap.dbFactory(conn, ENSEMBL_RNA_ALN_TBL, self.genomeReader)
+def parseArgs():
+    desc = """Create test data from TSV specifying test genes.  This
+    get GENCODE genePreds and evidence PSLs."""
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument('--chromSpec', action="append", dest="chromSpecs", type=Coords.parse,
+                        help="""Restrict to this chromosome or chromosome range (UCSC chromosome naming), maybe repeated, used for testing."""
+                        """  Genes that start in this range are used, which allows for specification of adjacent ranges without over counting."""
+                        """  The start of the gene is defined by the first base of transcript regardless of strand""")
+    parser.add_argument('--detailsTsv',
+                        help="""write details to this TSV file""")
+    parser.add_argument('ucscDb',
+                        help="""UCSC assembly database name to find twobin""")
+    parser.add_argument('gencodeDb',
+                        help="""GENCODE sqlite3 database""")
+    parser.add_argument('evidenceDb',
+                        help="""evidence sqlite3 database""")
+    parser.add_argument('tslTsv',
+                        help="""output of TSL categories""")
+    return parser.parse_args()
 
-                    conn = sqliteConnect(annotDb)
-        try:
-            self.annots = AnnotationMap.dbFactory(conn, GENCODE_ANN_TBL, self.genomeReader)
-        finally:
-            conn.close()
+
+def genTranscripts(gencodeReader, chromSpecs):
+    if chromSpecs is None:
+        return gencodeReader.getAll()
+    else:
+        for cs in chromSpecs:
+            for transAnnot in gencodeReader.getStartingInBounds(cs.name, cs.start, cs.end):
+                yield transAnnot
+
+
+def groupTranscripts(annotTranses):
+    groupMap = defaultdict(list)
+    for trans in annotTranses:
+        groupMap[trans.metaData.attrs.geneId].append(trans)
+    grouped = []
+    for geneId in groupMap.keys():
+        grouped.append(groupMap[geneId])
+    return grouped
+
+
+def classifyGeneTranscripts(evidenceReader, geneGroupedTrans, tslTsvFh, detailsTsvFh):
+    classifier = SupportClassifier(evidenceReader)
+    classifier.writeTsvHeaders(tslTsvFh, detailsTsvFh)
+    for geneTranses in geneGroupedTrans:
+        classifier.classifyGeneTranscripts(geneTranses, tslTsvFh, detailsTsvFh)
+
+
+def classifyTranscripts(args):
+    gencodeReader = UcscGencodeReader(args.gencodeDb)
+    evidenceReader = EvidenceReader(args.evidenceDb)
+    geneGroupedTranses = groupTranscripts(genTranscripts(gencodeReader, args.chromSpecs))
+    with ExitStack() as stack:
+        tslTsvFh = stack.enter_context(open(args.tslTsv, "w"))
+        detailsTsvFh = stack.enter_context(open(args.detailsTsv, "w")) if args.detailsTsv is not None else None
+        classifyGeneTranscripts(evidenceReader, geneGroupedTranses, tslTsvFh, detailsTsvFh)
+
+
+classifyTranscripts(parseArgs())

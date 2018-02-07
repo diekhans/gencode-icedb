@@ -30,7 +30,7 @@ evidenceSourceTableMap = {
 
 class EvidenceReader(object):
     """Object for accessing alignment evidence data"""
-    def __init__(self, evidDbFile, genomeReader):
+    def __init__(self, evidDbFile, genomeReader=None):
         self.conn = sqliteConnect(evidDbFile)
         self.dbTables = {}  # by EvidenceSource
         for evidSrc in EvidenceSource:
@@ -45,13 +45,13 @@ class EvidenceReader(object):
         if self.conn is not None:
             self.close()
 
-    def overlappingGen(self, evidSrc, chrom, start, end, rnaStrand=None, minExons=0):
+    def genOverlapping(self, evidSrc, chrom, start, end, rnaStrand=None, minExons=0):
         """Generator of overlapping alignments as TranscriptFeatures.
         """
         dbTable = self.dbTables[evidSrc]
         strand = (None if rnaStrand is None
                   else ('+', '++') if rnaStrand == '+' else ('-', '+-'))
-        extraWhere = "blockCount > {}".format(minExons) if minExons > 0 else None
+        extraWhere = "blockCount >= {}".format(minExons) if minExons > 0 else None
         for psl in dbTable.getTRangeOverlap(chrom, start, end, strand=strand, extraWhere=extraWhere):
             trans = self.evidFactory.fromPsl(psl)
             if len(trans.features) >= minExons + (minExons - 1):

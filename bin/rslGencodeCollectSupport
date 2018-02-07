@@ -39,8 +39,8 @@ resultsHeader = ("geneId", "geneName", "transcriptId", "transcriptType",
 
 class SupportCounter(object):
     def __init__(self, gencodeConn, sjConn, genomeReader):
-        self.attrsDbTable = GencodeAttrsDbTable(gencodeConn, gencodeDb.gencode_attrs_table)
-        self.annDbTable = GenePredDbTable(gencodeConn, gencodeDb.gencode_ann_table)
+        self.attrsDbTable = GencodeAttrsDbTable(gencodeConn, gencodeDb.GENCODE_ATTRS_TABLE)
+        self.annDbTable = GenePredDbTable(gencodeConn, gencodeDb.GENCODE_ANN_TABLE)
         self.sjSupportReader = SjSupportReader(sjDbConn=sjConn)
         self.annFactory = AnnotationGenePredFactory(genomeReader)
         self.genomeReader = genomeReader
@@ -134,7 +134,7 @@ class SupportCounter(object):
 
     def collectSupport(self, gencodeIds, resultsWriter):
         if len(gencodeIds) == 0:
-            gencodeIds = self.attrsDbTable.getAllGeneIds()
+            gencodeIds = self.attrsDbTable.getGeneIds()
         resultsWriter.writerow(resultsHeader)
         for gencodeId in gencodeIds:
             self._collectSupportId(gencodeId, resultsWriter)

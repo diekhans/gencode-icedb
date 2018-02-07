@@ -54,8 +54,8 @@ def rslGencodeCollectSupportMkJobs(opts):
     "main function"
     genomeReaderFactory = GenomeReaderFactory.factoryFromCmdOptions(opts)
     gencodeConn = sqliteConnect(opts.gencodeDb, readOnly=True)
-    attrsDbTable = GencodeAttrsDbTable(gencodeConn, gencodeDb.gencode_attrs_table)
-    gencodeIds = sorted(attrsDbTable.getAllGeneIds())
+    attrsDbTable = GencodeAttrsDbTable(gencodeConn, gencodeDb.GENCODE_ATTRS_TABLE)
+    gencodeIds = sorted(attrsDbTable.getGeneIds())
     if opts.maxgenes is not None:
         gencodeIds = gencodeIds[0:opts.maxgenes]
     jobGen = JobGenerator(opts.gencodeDb, opts.sjDb, genomeReaderFactory, opts.workDir)

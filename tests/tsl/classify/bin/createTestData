@@ -1,16 +1,16 @@
 #!/bin/env python3
+from __future__ import print_function
 import os
-binDir = os.path.join(os.path.dirname(__file__), "../../../../bin")
-import runpy
-runpy.run_path(os.path.join(binDir, "icedbProgSetup.py"))
+import sys
+sys.path.insert(0, "../../../bin")
+import icedbProgSetup  # noqa: F401
 import argparse
 import pipettor
-from pycbio.ncbi.assembly import AssemblyReport
-from pycbio.sys import fileOps
-from gencode_icedb.tsl.supportDefs import UCSC_RNA_ALN_TBL, UCSC_EST_ALN_TBL, ENSEMBL_RNA_ALN_TBL
-
 import logging
+from pycbio.sys import fileOps
+from gencode_icedb.general.evidenceDb import UCSC_RNA_ALN_TBL, UCSC_EST_ALN_TBL, ENSEMBL_RNA_ALN_TBL
 from testlib import TestCases
+
 
 def parseArgs():
     desc = """Create test data from TSV specifying test genes.  This
@@ -21,32 +21,35 @@ def parseArgs():
     parser.add_argument('testCaseTsv',
                         help="""TSV contain gene/transcripts to obtain.""")
     parser.add_argument('gencodeVersion',
-                        help="""GENCODE version in the from V27 or VM13""")
+                        help="""GENCODE version in the form V27 or VM13""")
     parser.add_argument('ucscDb',
                         help="""UCSC database for GENCODE and RNA/ESTs""")
     parser.add_argument('ensemblCDnaDb',
                         help="""Ensembl database for cDNAs""")
     parser.add_argument('assemblyReport',
                         help="""NCBI assembly report for mapping chromosome names""")
-    parser.add_argument('evidDb', dest="evidDbFile",
+    parser.add_argument('evidDb',
                         help="""evidence database to load alignments into""")
     parser.add_argument('gencodeDb',
                         help="""database to load gencode annotations into""")
     return parser.parse_args()
 
+
 def mkChromSpecs(opt, ranges):
     return ["{}={}".format(opt, str(r)) for r in ranges]
 
+
 def getUcscAlns(ucscDb, alntype, ranges, evidDbFile):
-    cmd = [os.path.join(binDir, "tslGetUcscRnaAligns"),
-           ucscDb, alntype, evidDbFile,
+    cmd = ["tslGetUcscRnaAligns", ucscDb, alntype, evidDbFile,
            UCSC_RNA_ALN_TBL if alntype == "rna" else UCSC_EST_ALN_TBL] + mkChromSpecs("-chromSpec", ranges)
     pipettor.run(cmd)
 
+
 def getEnsemblAlns(ensemblCDnaDb, assemblyReport, ranges, evidDbFile):
-    cmd = [os.path.join(binDir, "tslGetEnsemblRnaAligns"),
-           ensemblCDnaDb, assemblyReport, evidDbFile, ENSEMBL_RNA_ALN_TBL] + mkChromSpecs("--chromSpec", ranges)
+    cmd = ["tslGetEnsemblRnaAligns", ensemblCDnaDb, assemblyReport, evidDbFile,
+           ENSEMBL_RNA_ALN_TBL] + mkChromSpecs("--chromSpec", ranges)
     pipettor.run(cmd)
+
 
 def buildEvidDb(testCases, assemblyReport, ucscDb, ensemblCDnaDb, evidDbFile):
     fileOps.rmFiles(evidDbFile)
@@ -54,6 +57,7 @@ def buildEvidDb(testCases, assemblyReport, ucscDb, ensemblCDnaDb, evidDbFile):
     getUcscAlns(ucscDb, "rna", ranges, evidDbFile)
     getUcscAlns(ucscDb, "est", ranges, evidDbFile)
     getEnsemblAlns(ensemblCDnaDb, assemblyReport, ranges, evidDbFile)
+
 
 def writeTransIdsTmpFile(testCases):
     transIdTmp = fileOps.tmpFileGet("transIds")
@@ -67,7 +71,7 @@ def writeTransIdsTmpFile(testCases):
 def buildGencodeDb(testCases, ucscDb, gencodeVersion, gencodeDb):
     fileOps.rmFiles(gencodeDb)
     transIdTmp = writeTransIdsTmpFile(testCases)
-    cmd = [os.path.join(binDir, "gencodeDbLoad"),
+    cmd = ["gencodeDbLoad",
            "--hgdb={}".format(ucscDb),
            "--version={}".format(gencodeVersion),
            "--transIds={}".format(transIdTmp),
@@ -83,9 +87,10 @@ def createTestData(args):
         logging.getLogger().setLevel(logging.DEBUG)
         pipettor.setDefaultLogger(logging.getLogger())
         pipettor.setDefaultLogLevel(logging.DEBUG)
-        logging.debug("Debugging enabled")  #FIXME for some reason, this is required to start output
+        logging.debug("Debugging enabled")  # FIXME for some reason, this is required to start output
     testCases = TestCases(args.testCaseTsv)
     buildGencodeDb(testCases, args.ucscDb, args.gencodeVersion, args.gencodeDb)
-    buildEvidDb(testCases, args.assemblyReport, args.ucscDb, args.ensemblCDnaDb, args.evidDbFile)
+    buildEvidDb(testCases, args.assemblyReport, args.ucscDb, args.ensemblCDnaDb, args.evidDb)
+
 
 createTestData(parseArgs())

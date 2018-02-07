@@ -69,6 +69,14 @@ struct ChromSpec {
     int end;
 };
 
+/* a verbose message about a psl */
+static void pslVerb(int level, char* msg, struct psl* psl) {
+    verbose(level, "%s: %s:%d-%d <=> %s:%d-%d (%s)\n", msg,
+            psl->qName, psl->qStart, psl->qEnd,
+            psl->tName, psl->tStart, psl->tEnd,
+            psl->strand);
+}
+
 /* parse chrome spec */
 static struct ChromSpec* parseChromSpec(char* db,
                                         char* chromSpecStr) {
@@ -120,11 +128,15 @@ static struct psl* loadPslsRange(struct sqlConnection *hgConn, char *table,
         "tSize, tStart, tEnd, blockCount, blockSizes, qStarts, tStarts "
         "FROM %s LEFT JOIN hgFixed.gbCdnaInfo ON (qName = acc)";
     struct dyString *query = makeQuery(sqlTemplate, table, "tName", "tStart", "tEnd", chromSpec);
+    verbose(3, "%s: %s\n", sqlGetDatabase(hgConn), dyStringContents(query));
+
     struct sqlResult *sr = sqlGetResult(hgConn, dyStringContents(query));
     char **row;
     struct psl *psls = NULL;
     while ((row = sqlNextRow(sr)) != NULL) {
-        slAddHead(&psls, pslLoad(row));
+        struct psl* psl = pslLoad(row); 
+        slAddHead(&psls, psl);
+        pslVerb(3, "load", psl);
     }
     dyStringFree(&query);
     return psls;
@@ -273,6 +285,7 @@ static sqlite3_stmt* prepPslInsert(sqlite3 *conn,
 /* write a single PSL to the database */
 static void writePslToDb(struct psl *psl,
                          sqlite3_stmt* stmt) {
+    pslVerb(3, "store", psl);
     static struct dyString *blockSizesBuf = NULL, *qStartsBuf = NULL, *tStartsBuf = NULL;
     if (blockSizesBuf == NULL) {
         blockSizesBuf = dyStringNew(512);

@@ -73,7 +73,7 @@ def loadHgDbTable(hgdbConn, tbl, transIdCol, transIdSubset):
 
 
 def loadAnnotations(conn, hgdbConn, genes, pseudoGenes, transIdSubset):
-    annDbTable = GenePredDbTable(conn, gencodeDb.gencode_ann_table, create=True)
+    annDbTable = GenePredDbTable(conn, gencodeDb.GENCODE_ANN_TABLE, create=True)
     if hgdbConn is not None:
         if genes is not None:
             annDbTable.loadsWithBin(loadHgDbTable(hgdbConn, genes, "name", transIdSubset))
@@ -87,7 +87,7 @@ def loadAnnotations(conn, hgdbConn, genes, pseudoGenes, transIdSubset):
 
 
 def loadAttrs(conn, hgdbConn, attrs, transIdSubset):
-    attrsDbTable = GencodeAttrsDbTable(conn, gencodeDb.gencode_attrs_table, create=True)
+    attrsDbTable = GencodeAttrsDbTable(conn, gencodeDb.GENCODE_ATTRS_TABLE, create=True)
     if hgdbConn is not None:
         attrsDbTable.loads(loadHgDbTable(hgdbConn, attrs, "transcriptId", transIdSubset))
     else:
@@ -95,7 +95,7 @@ def loadAttrs(conn, hgdbConn, attrs, transIdSubset):
 
 
 def loadTransSource(conn, hgdbConn, transSource, transIdSubset):
-    transSourceDbTable = GencodeTranscriptSourceDbTable(conn, gencodeDb.gencode_transcript_source_table, create=True)
+    transSourceDbTable = GencodeTranscriptSourceDbTable(conn, gencodeDb.GENCODE_TRANSCRIPT_SOURCE_TABLE, create=True)
     if hgdbConn is not None:
         transSourceDbTable.loads(loadHgDbTable(hgdbConn, transSource, "transcriptId", transIdSubset))
     else:
@@ -103,7 +103,7 @@ def loadTransSource(conn, hgdbConn, transSource, transIdSubset):
 
 
 def loadTransSupportLevel(conn, hgdbConn, transSupportLevel, transIdSubset):
-    transSourceDbTable = GencodeTranscriptionSupportLevelDbTable(conn, gencodeDb.gencode_transcription_support_level_table, create=True)
+    transSourceDbTable = GencodeTranscriptionSupportLevelDbTable(conn, gencodeDb.GENCODE_TRANSCRIPTION_SUPPORT_LEVEL_TABLE, create=True)
     if hgdbConn is not None:
         transSourceDbTable.loads(loadHgDbTable(hgdbConn, transSupportLevel, "transcriptId", transIdSubset))
     else:
@@ -111,7 +111,7 @@ def loadTransSupportLevel(conn, hgdbConn, transSupportLevel, transIdSubset):
 
 
 def loadTags(conn, hgdbConn, tags, transIdSubset):
-    tagsDbTable = GencodeTagDbTable(conn, gencodeDb.gencode_tag_table, create=True)
+    tagsDbTable = GencodeTagDbTable(conn, gencodeDb.GENCODE_TAG_TABLE, create=True)
     if hgdbConn is not None:
         tagsDbTable.loads(loadHgDbTable(hgdbConn, tags, "transcriptId", transIdSubset))
     else:

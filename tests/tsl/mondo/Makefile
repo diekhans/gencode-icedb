@@ -11,9 +11,12 @@ evidDb = ${evidDir}/hsEvid.db
 
 annonDir = annon.d
 annonDb = ${annonDir}/hsAnnon.db
+inDbs = ${evidDb} ${annonDb}
 
 
-test:: ${evidDb} ${annonDb}
+test::
+
+
 
 ##
 # Building of evidence db (~1.25 hours)

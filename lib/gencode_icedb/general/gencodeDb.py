@@ -1,10 +1,14 @@
 """
 Read GENCODE annotations from a database.
 """
-
+import six
 from pycbio.sys.objDict import ObjDict
-from pycbio.hgdata.hgLite import sqliteConnect, GenePredDbTable, GencodeAttrsDbTable, GencodeTagDbTable
+from pycbio.hgdata.hgLite import sqliteConnect, SqliteCursor, GenePredDbTable, GencodeAttrsDbTable, GencodeTagDbTable
+from pycbio.hgdata.genePred import GenePred
+from pycbio.hgdata.rangeFinder import Binner
 from gencode_icedb.general.annotFeatures import AnnotationGenePredFactory
+
+# FIXME: use Coords here
 
 # tables in sqlite databases
 GENCODE_ANN_TABLE = "gencode_ann"
@@ -14,9 +18,14 @@ GENCODE_TRANSCRIPTION_SUPPORT_LEVEL_TABLE = "gencode_transcription_support_level
 GENCODE_TAG_TABLE = "gencode_tag"
 
 
+def _isChrYPar(annotTrans):
+    return ("PAR" in annotTrans.metaData.tags) and (annotTrans.chrom.name == "chrY")
+
+
 class UcscGencodeReader(object):
     """Object for accessing a GENCODE sqlite database with UCSC tables """
-    def __init__(self, gencodeDbFile, genomeReader):
+    def __init__(self, gencodeDbFile, genomeReader=None, filterChrYPar=True):
+        self.filterChrYPar = filterChrYPar
         self.conn = sqliteConnect(gencodeDbFile)
         self.genePredDbTable = GenePredDbTable(self.conn, GENCODE_ANN_TABLE)
         self.attrDbTable = GencodeAttrsDbTable(self.conn, GENCODE_ATTRS_TABLE)
@@ -37,29 +46,67 @@ class UcscGencodeReader(object):
         metaData.tags = frozenset([t.tag for t in self.tagDbTable.getByTranscriptId(gp.name)])
         return metaData
 
-    def _makeTransAnnon(self, gp):
-        return self.annotFactory.fromGenePred(gp, self._getMetaData(gp))
+    def _makeTransAnnot(self, gp):
+        "will return None if chrY PAR trans and these are being filtered"
+        transAnnot = self.annotFactory.fromGenePred(gp, self._getMetaData(gp))
+        if self.filterChrYPar and _isChrYPar(transAnnot):
+            return None
+        else:
+            return transAnnot
 
     def getGeneIds(self):
         return self.attrDbTable.getGeneIds()
 
     def getByGeneId(self, geneId):
-        transIds = list(self.attrDbTable.getGeneTranscriptIds(geneId))
-        return list(self.byNameGen(transIds))
+        transIds = self.attrDbTable.getGeneTranscriptIds(geneId)
+        return self.getByTranscriptId(transIds)
 
-    def byNameGen(self, names):
-        """generator get annotations as TranscriptFeatures by name"""
-        # FIXME: optimize to one query, need gene name query instead
-        for name in names:
-            for gp in self.genePredDbTable.getByName(name):
-                yield self._makeTransAnnon(gp)
+    def getStartingInBounds(self, chrom, start, end):
+        """Get the annotations genes that *start* in the range. To get whole
+        chrom, start and end maybe None.
+        """
+        columns = ",".join(GenePredDbTable.columnNames)
+        if start is None:
+            rangeWhere = "(chrom = '{}')".format(chrom)
+        else:
+            # note: end is at txStart+1
+            rangeWhere = Binner.getOverlappingSqlExpr("bin", "chrom", "txStart", "txStart+1", chrom, start, end)
+        sql = "SELECT {columns} FROM {table} WHERE {rangeWhere}".format(columns=columns, table=GENCODE_ANN_TABLE, rangeWhere=rangeWhere)
+        transAnnots = []
+        with SqliteCursor(self.conn, rowFactory=lambda cur, row: GenePred(row)) as cur:
+            cur.execute(sql)
+            for gp in cur:
+                transAnnot = self._makeTransAnnot(gp)
+                if transAnnot is not None:
+                     transAnnots.append(transAnnot)
+        return transAnnots
 
-    def overlappingGen(self, chrom, start, end, strand=None):
+    def getByTranscriptId(self, transIds):
+        """get annotations as TranscriptFeatures by transcript id (or ids)"""
+        if isinstance(transIds, six.string_types):
+            transIds = [transIds]
+        transAnnots = []
+        for transId in transIds:
+            for gp in self.genePredDbTable.getByName(transId):
+                transAnnot = self._makeTransAnnot(gp)
+                if transAnnot is not None:
+                     transAnnots.append(transAnnot)
+        return transAnnots
+
+    def getOverlapping(self, chrom, start, end, strand=None):
         """generator get overlapping annotations as TranscriptFeatures"""
+        transAnnots = []
         for gp in self.genePredDbTable.getRangeOverlap(chrom, start, end, strand=strand):
-            yield self._makeTransAnnon(gp)
+            transAnnot = self._makeTransAnnot(gp)
+            if transAnnot is not None:
+                transAnnots.append(transAnnot)
+        return transAnnots
 
-    def allGen(self):
+    def getAll(self):
         """generator get overlapping annotations as TranscriptFeatures"""
+        transAnnots = []
         for gp in self.genePredDbTable.getAll():
-            yield self._makeTransAnnon(gp)
+            transAnnot = self._makeTransAnnot(gp)
+            if transAnnot is not None:
+                transAnnots.append(transAnnot)
+        return transAnnots

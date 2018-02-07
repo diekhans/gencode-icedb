@@ -36,25 +36,45 @@ class EvidCompareTest(TestCaseBase):
         print("annot: {} {}: {} => {}".format(annotTrans.rna.name, str(evidSrc), evidTrans.rna.name, str(sup)))
 
     def __evalAnnotTransEvidSrc(self, annotTrans, evidSrc):
-        for evidTrans in self.evidenceReader.overlappingGen(evidSrc, annotTrans.chrom.name, annotTrans.chrom.start, annotTrans.chrom.end, annotTrans.rna.strand):
+        for evidTrans in self.evidenceReader.getOverlapping(evidSrc, annotTrans.chrom.name, annotTrans.chrom.start, annotTrans.chrom.end, annotTrans.rna.strand):
             self.__evalWithEvid(annotTrans, evidSrc, evidTrans)
 
     def __evalAnnotTrans(self, annotTrans):
         for evidSrc in EvidenceSource:
             self.__evalAnnotTransEvidSrc(annotTrans, evidSrc)
 
-    def testGAB4(self):
-        geneId = "ENSG00000215568.7"
-        geneAnnotTranses = list(self.gencodeReader.getByGeneId(geneId))
+    def __classifyTest(self, annotTranses, noDiff=False):
         classifier = SupportClassifier(self.evidenceReader)
         outTslTsv = self.getOutputFile(".tsl.tsv")
         outDetailsTsv = self.getOutputFile(".details.tsv")
         with open(outTslTsv, 'w') as tslTsvFh, open(outDetailsTsv, 'w') as detailsTsvFh:
             classifier.writeTsvHeaders(tslTsvFh, detailsTsvFh)
-            classifier.classifyGeneTranscripts(geneAnnotTranses, tslTsvFh, detailsTsvFh)
-        self.diffFiles(self.getExpectedFile(".tsl.tsv"), outTslTsv)
-        self.diffFiles(self.getExpectedFile(".details.tsv"), outDetailsTsv)
+            classifier.classifyGeneTranscripts(annotTranses, tslTsvFh, detailsTsvFh)
+        if not noDiff:
+            self.diffFiles(self.getExpectedFile(".tsl.tsv"), outTslTsv)
+            self.diffFiles(self.getExpectedFile(".details.tsv"), outDetailsTsv)
 
+    def __classifyGeneTest(self, geneId):
+        geneTranses = self.gencodeReader.getByGeneId(geneId)
+        if len(geneTranses) == 0:
+            raise Exception("no transcripts found for {}".format(geneId))
+        self.__classifyTest(geneTranses)
+
+    def __classifyTransTest(self, transId, noDiff=False):
+        transes = self.gencodeReader.getByTranscriptId(transId)
+        if len(transes) == 0:
+            raise Exception("no transcripts found for {}".format(transId))
+        self.__classifyTest(transes, noDiff)
+
+    def testGAB4(self):
+        self.__classifyGeneTest("ENSG00000215568.7")
+
+    def testBCR(self):
+        self.__classifyGeneTest("ENSG00000186716.20")
+
+    def skip_testDebug(self):
+        "Debug a transcript"
+        self.__classifyTransTest("ENST00000359540.7", noDiff=True)
 
 def suite():
     ts = unittest.TestSuite()
