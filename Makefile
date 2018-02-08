@@ -31,4 +31,4 @@ clean::
 	(cd tests && ${MAKE} clean)
 	rm -rf  ${OBJDIR}
 	find . -type f -name '*.pyc' -exec rm -f {} \;
-	find . -type d -name __pycache__ -exec rmdir {} \;
+	find . -depth -type d -name __pycache__ -exec rmdir {} \;
