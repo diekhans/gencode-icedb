@@ -80,8 +80,8 @@ class GencodeTranscriptSupportDetails(BaseModel):
     id = PrimaryKeyField()
     transcriptId = CharField(index=True,
                              help_text="""GENCODE trancript id""")
-    evidSrc = EvidenceSource(index=True,
-                             help_text="""Evidence source""")
+    evidSrc = EvidenceSourceField(index=True,
+                                  help_text="""Evidence source""")
     evidId = CharField(index=True,
                        help_text="""Evidence identifier""")
     evidSupport = EvidenceSupportField(index=True,

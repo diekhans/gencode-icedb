@@ -36,7 +36,7 @@ class JobGenerator(object):
         cmd = [self.suppProg]
         resultTsv = os.path.join(self.resultDir, "{}.tsl.tsv".format(gencodeIds[0]))
         detailsTsv = os.path.join(self.resultDir, "{}.details.tsv".format(gencodeIds[0]))
-        cmd.extend([self.gencodeDb, self.evidenceDb, "--detailsTsv=".format(detailsTsv), "{{check out exists {}}}".format(resultTsv)])
+        cmd.extend([self.gencodeDb, self.evidenceDb, "--detailsTsv={}".format(detailsTsv), "{{check out exists {}}}".format(resultTsv)])
         cmd.extend(gencodeIds)
         print(*cmd, file=batchFh)
         print(resultTsv, file=expectedFh)

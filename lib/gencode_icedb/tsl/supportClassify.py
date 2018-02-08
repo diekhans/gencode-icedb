@@ -89,7 +89,7 @@ def _compareMegExon(annotExon, evidExon):
 
 
 def _compareIntron(annotIntron, evidIntron):
-    if annotIntron.chrom != evidIntron.chrom:
+    if not annotIntron.chrom.eqAbsLoc(evidIntron.chrom):
         return EvidenceSupport.exon_boundry_mismatch
     elif len(evidIntron.alignFeatures) > 1:
         return EvidenceSupport.internal_unaligned

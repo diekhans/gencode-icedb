@@ -1,7 +1,4 @@
-# force sort to be consistent
-export LC_ALL=C
-.SECONDARY:
-
+include ${ROOT}/tests/testDefs.mk
 
 gencodeDbLoad = ${BINDIR}/gencodeDbLoad
 tslGetUcscRnaAligns = ${BINDIR}/tslGetUcscRnaAligns

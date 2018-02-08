@@ -33,6 +33,7 @@ supportCollectTransTest: ${gencodeTestDb} ${sjTestDb} mkdirs
 	${diff} expected/$@.supp.tsv output/$@.supp.tsv
 
 supportCollectMkJobsTest: mkdirs
+	rm -rf output/$@.work
 	${rslGencodeCollectSupportMkJobs} --maxgenes=10 ${genomeSeqsSpecs} ${gencodeTestDb} ${sjTestDb} output/$@.work
 	sed -Ee 's#^.*(/bin/rslGencodeCollectSupport)#??\1#' output/$@.work/batch.jobs > output/$@.batch.jobs.cleaned
 	${diff} expected/$@.batch.jobs.cleaned output/$@.batch.jobs.cleaned
@@ -60,6 +61,7 @@ novelSplitTest: mkdirs
 	${diff} expected/$@.win2.novel.tsv output/$@.win2.novel.tsv
 
 novelMkJobsTest: mkdirs
+	rm -rf output/$@.work
 	${rslGencodeCollectNovelMkJobs} --testRange=chr22:10640100-17601091 --windowSize=1000000 ${genomeSeqsSpecs} ${gencodeTestDb} ${sjTestDb} output/$@.work
 	sed -Ee 's#^.*(/bin/rslGencodeCollectNovel)#??\1#' output/$@.work/batch.jobs > output/$@.batch.jobs.cleaned
 	${diff} expected/$@.batch.jobs.cleaned output/$@.batch.jobs.cleaned

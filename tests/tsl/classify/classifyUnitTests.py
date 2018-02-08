@@ -16,8 +16,8 @@ from gencode_icedb.tsl.supportClassify import compareMegWithEvidence, SupportCla
 class EvidCompareTest(TestCaseBase):
     """low-level comparison tests"""
     UCSC_DB = "hg38"
-    EVIDENCE_DB = "output/hsEvid.db"
-    GENCODE_DB = "output/hsGencode.db"
+    EVIDENCE_DB = "output/evid.db"
+    GENCODE_DB = "output/gencode.db"
 
     @classmethod
     def setUpClass(cls):

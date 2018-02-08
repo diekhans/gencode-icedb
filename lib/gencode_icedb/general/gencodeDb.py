@@ -26,8 +26,9 @@ def _isChrYPar(annotTrans):
 class UcscGencodeReader(object):
     """Object for accessing a GENCODE sqlite database with UCSC tables """
     def __init__(self, gencodeDbFile, genomeReader=None, filterChrYPar=True):
-        self.filterChrYPar = filterChrYPar
+        self.conn = None
         self.conn = sqliteConnect(gencodeDbFile)
+        self.filterChrYPar = filterChrYPar
         self.genePredDbTable = GenePredDbTable(self.conn, GENCODE_ANN_TABLE)
         self.attrDbTable = GencodeAttrsDbTable(self.conn, GENCODE_ATTRS_TABLE)
         self.tagDbTable = GencodeTagDbTable(self.conn, GENCODE_TAG_TABLE)
@@ -98,21 +99,21 @@ class UcscGencodeReader(object):
         """get annotations as TranscriptFeatures by a gene or transcript id"""
         attrs = self.attrDbTable.getByGeneId(gencodeId)
         if len(attrs) > 0:
-            return self.getByGeneIds(gencodeId)
+            return self.getByGeneId(gencodeId)
         else:
             attrs = self.attrDbTable.getByTranscriptId(gencodeId)
-            if len(attrs) > 0:
+            if attrs is None:
                 return self.getByTranscriptIds(gencodeId)
             else:
                 raise Exception("Not a valid GENCODE gene or transcript id: {}".format(gencodeId))
 
-    def _getByGencodeIds(self, gencodeIds):
+    def getByGencodeIds(self, gencodeIds):
         """get annotations as TranscriptFeatures by gene or transcript id (or ids)"""
         if isinstance(gencodeIds, six.string_types):
             gencodeIds = [gencodeIds]
         transAnnots = []
         for gencodeId in gencodeIds:
-            transAnnots.extend(self.getByGencodeId(gencodeId))
+            transAnnots.extend(self._getByGencodeId(gencodeId))
         return transAnnots
 
     def getOverlapping(self, chrom, start, end, strand=None):
