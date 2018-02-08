@@ -5,6 +5,9 @@ from gencode_icedb.general.spliceJuncs import spliceJuncsGetSeqs
 from gencode_icedb.tsl import minIntronSize
 from gencode_icedb.general.transFeatures import ExonFeature, IntronFeature, TranscriptFeatures, Utr5RegionFeature, CdsRegionFeature, Utr3RegionFeature, NonCodingRegionFeature
 
+# FIXME: use term other the metadata, call attributes and merge in attrs table
+# FIXME: consistent variable naming: annot, annotTrans transAnnot ..
+
 
 class AnnotationGenePredFactory(object):
     """

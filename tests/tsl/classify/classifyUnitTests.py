@@ -72,9 +72,13 @@ class EvidCompareTest(TestCaseBase):
     def testBCR(self):
         self.__classifyGeneTest("ENSG00000186716.20")
 
+    def testIL17RA(self):
+        self.__classifyGeneTest("ENSG00000177663.13")
+
     def skip_testDebug(self):
         "Debug a transcript"
         self.__classifyTransTest("ENST00000359540.7", noDiff=True)
+
 
 def suite():
     ts = unittest.TestSuite()

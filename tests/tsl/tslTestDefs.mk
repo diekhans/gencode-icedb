@@ -1,11 +1,16 @@
 # force sort to be consistent
 export LC_ALL=C
+.SECONDARY:
+
 
 gencodeDbLoad = ${BINDIR}/gencodeDbLoad
 tslGetUcscRnaAligns = ${BINDIR}/tslGetUcscRnaAligns
 tslGetEnsemblRnaAligns = ${BINDIR}/tslGetEnsemblRnaAligns
 tslGbffGetProblemCases = ${BINDIR}/tslGbffGetProblemCases
 tslGenbankProblemCasesLoad = ${BINDIR}/tslGenbankProblemCasesLoad
+tslGencodeCollectSupport = ${BINDIR}/tslGencodeCollectSupport
+tslGencodeCollectSupportMkJobs = ${BINDIR}/tslGencodeCollectSupportMkJobs
+tslGencodeCollectSupportFinishJobs = ${BINDIR}/tslGencodeCollectSupportFinishJobs
 
 hsGencodeVer = V27
 hsEnsemblVer = 91_38

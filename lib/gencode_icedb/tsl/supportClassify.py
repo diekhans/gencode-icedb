@@ -15,7 +15,6 @@ The current algorithm is:
      - tsl4 - the best supporting EST is flagged as suspect
      - tsl5 - no single transcript supports the model structure
 """
-import sys
 import re
 from collections import namedtuple, defaultdict
 from pycbio.sys import fileOps

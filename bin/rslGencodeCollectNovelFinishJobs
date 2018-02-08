@@ -4,7 +4,7 @@ import os
 import argparse
 from pycbio.sys import fileOps
 from pycbio.tsv import TsvReader
-from gencode_icedb.rsl.rslModel import rslConnect, GencodeNovel
+from gencode_icedb.rsl.rslModels import rslConnect, GencodeIntronNovel
 
 bulk_size = 75   # size of each bulk insert
 
@@ -32,7 +32,7 @@ resultsTsvTypeMap = {
 def resultsDbLoad(resultsConn, recs):
     with resultsConn.atomic():
         for idx in range(0, len(recs), bulk_size):
-            GencodeNovel.insert_many(recs[idx:idx + bulk_size]).execute()
+            GencodeIntronNovel.insert_many(recs[idx:idx + bulk_size]).execute()
 
 
 def rowToDict(row):
@@ -57,9 +57,9 @@ def rslGencodeCollectNovelFinishJobs(opts):
     "main function"
 
     fileOps.ensureFileDir(opts.resultsDb)
-    resultsConn = rslConnect(opts.resultsDb, readonly=False)
-    GencodeNovel.drop_table(fail_silently=True)
-    GencodeNovel.create_table()
+    resultsConn = rslConnect(opts.resultsDb, create=True, readonly=False)
+    GencodeIntronNovel.drop_table(fail_silently=True)
+    GencodeIntronNovel.create_table()
     expectedTsvs = fileOps.readFileLines(os.path.join(opts.workDir, "expected.lst"))
     collectResults(resultsConn, expectedTsvs)
     resultsConn.close()

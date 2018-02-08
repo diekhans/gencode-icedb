@@ -2,7 +2,7 @@
 import icedbProgSetup  # noqa: F401
 import sys
 import argparse
-from gencode_icedb.rsl.rslModel import rslConnect, RunMetadata, MappingMetadata, MappingParameters
+from gencode_icedb.rsl.rslModels import rslConnect, RunMetadata, MappingMetadata, MappingParameters
 from gencode_icedb.rsl.rslModelCache import MappingParametersCache
 from gencode_icedb.rsl.starResultsDir import StarMappingParameters, StarResultsDir
 from pycbio.sys import loggingOps
@@ -65,7 +65,7 @@ def rslMappingMetadataDbLoad(opts):
     starMappingParams = StarMappingParameters(opts.mappingParamsTsv)
     starResultsDir = StarResultsDir(opts.starResultsDirTsv)
 
-    dbconn = rslConnect(opts.rsldb, readonly=False)
+    dbconn = rslConnect(opts.rsldb, create=True, readonly=False)
     mappingParamsCache = dbLoadMappingParameters(dbconn, starMappingParams)
     dbLoadMappingMetadata(dbconn, mappingParamsCache, starResultsDir)
 

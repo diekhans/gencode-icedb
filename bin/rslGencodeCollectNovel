@@ -7,7 +7,7 @@ from pycbio.hgdata.coords import Coords
 from gencode_icedb.general.gencodeDb import UcscGencodeReader
 from gencode_icedb.general.genome import GenomeReaderFactory
 from gencode_icedb.general.transFeatures import IntronFeature
-from gencode_icedb.rsl.rslModel import rslConnect, SjSupportReader
+from gencode_icedb.rsl.rslModels import rslConnect, SjSupportReader
 from gencode_icedb.rsl.intronSupportCounter import IntronSupportCounter
 
 
@@ -55,7 +55,7 @@ class NovelFinder(object):
                 self.rangeSupportCnts.sumSjSupp(sjSupp)
 
     def _getOverlappingTrans(self, intron):
-        return list(self.annotReader.genOverlapping(intron.chrom, intron.chromStart, intron.chromEnd, intron.strand))
+        return self.annotReader.getOverlapping(intron.chrom, intron.chromStart, intron.chromEnd, intron.strand)
 
     def _haveIntron(self, intron, trans):
         # already strand-filtered

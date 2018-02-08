@@ -4,8 +4,7 @@ PeeWee data models for RNA-Seq metadata and splice junctions.
 from __future__ import print_function
 import os
 from peewee import Proxy, Model, PrimaryKeyField, ForeignKeyField, CharField, TextField, IntegerField
-from playhouse.apsw_ext import APSWDatabase
-import apsw
+from gencode_icedb.general.peeweeOps import peeweeConnect, peeweeClose
 from collections import namedtuple
 import pysam
 
@@ -17,33 +16,15 @@ def setDatabaseConn(dbconn):
     _database_proxy.initialize(dbconn)
 
 
-def rslConnect(rsldb, readonly=True, timeout=None, synchronous=None):
+def rslConnect(sqliteDb, create=False, readonly=True, timeout=None, synchronous=None):
     "connect to sqlite3 database and bind to model"
-    kwargs = {}
-    if timeout is not None:
-        kwargs["timeout"] = timeout
-    if readonly:
-        kwargs["flags"] = apsw.SQLITE_OPEN_READONLY
-    dbconn = APSWDatabase(rsldb, **kwargs)
-    setDatabaseConn(dbconn)
-    if synchronous is not None:
-        sqliteSetSynchronous(dbconn, synchronous)
-    return dbconn
+    return peeweeConnect(sqliteDb, setDatabaseConn, create=create, readonly=readonly, timeout=timeout, synchronous=synchronous)
 
 
-def rslClose(rslDb):
+def rslClose(conn):
     "close database"
-    # not sure why it might be in closed state even after open, maybe lazy open?
-    if not rslDb.is_closed():
-        rslDb.close()
-
-
-def sqliteSetSynchronous(dbconn, mode):
-    if mode is False:
-        mode = "OFF"
-    elif mode is True:
-        mode = "NORMAL"
-    dbconn.execute_sql("PRAGMA synchronous={}".format(mode))
+    # FIXME should reset proxy
+    peeweeClose(conn)
 
 
 class BaseModel(Model):
@@ -162,12 +143,12 @@ class SjSupportReader(object):
                 yield SjSupport.factory(line.split("\t"))
 
 
-class GencodeSupport(BaseModel):
+class GencodeIntronSupport(BaseModel):
     """Results from comparing support to GENCODE.  De-normalized and not
     linked for now"""
     # FIXME: not so sure de-normalized is best, need to keep checking for
-    # duplication in code and have record that are sometimes GencodeSupport
-    # and sometimes GencodeNovel
+    # duplication in code and have record that are sometimes GencodeIntronSupport
+    # and sometimes GencodeIntronNovel
     id = PrimaryKeyField()
     geneId = CharField(index=True,
                        help_text="""GENCODE gene id""")
@@ -191,7 +172,7 @@ class GencodeSupport(BaseModel):
                                     help_text="""total number of multi-mapping reads""")
 
 
-class GencodeNovel(BaseModel):
+class GencodeIntronNovel(BaseModel):
     """Support for novel intron from comparing support to GENCODE."""
     id = PrimaryKeyField()
     chrom = CharField(help_text="""Chromosome""")

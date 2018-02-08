@@ -10,7 +10,7 @@ from gencode_icedb.general import gencodeDb
 from gencode_icedb.general.genome import GenomeReaderFactory
 from gencode_icedb.general.transFeatures import IntronFeature
 from gencode_icedb.general.annotFeatures import AnnotationGenePredFactory
-from gencode_icedb.rsl.rslModel import rslConnect, rslClose, SjSupportReader
+from gencode_icedb.rsl.rslModels import rslConnect, rslClose, SjSupportReader
 from gencode_icedb.rsl.intronSupportCounter import IntronSupportCounter
 
 # FIXME: both support and novel could be collected in one pass.
@@ -38,6 +38,7 @@ resultsHeader = ("geneId", "geneName", "transcriptId", "transcriptType",
 
 
 class SupportCounter(object):
+    # FIXME: switch to gencodeDb.py module, attrs from metadata field
     def __init__(self, gencodeConn, sjConn, genomeReader):
         self.attrsDbTable = GencodeAttrsDbTable(gencodeConn, gencodeDb.GENCODE_ATTRS_TABLE)
         self.annDbTable = GenePredDbTable(gencodeConn, gencodeDb.GENCODE_ANN_TABLE)
@@ -144,7 +145,7 @@ def rslGencodeCollectSupport(opts):
     "entry point"
     genomeReader = GenomeReaderFactory.factoryFromCmdOptions(opts).obtain()
 
-    gencodeConn = sqliteConnect(opts.gencodeDb, readOnly=True)
+    gencodeConn = sqliteConnect(opts.gencodeDb, readonly=True)
     sjConn = rslConnect(opts.sjDb, readonly=True)
     supportCounter = SupportCounter(gencodeConn, sjConn, genomeReader)
 

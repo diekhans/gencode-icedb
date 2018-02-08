@@ -1,14 +1,16 @@
 ROOT = ../..
 include ${ROOT}/config.mk
 
+subdirs = evidence classify
+
 all::
 
-test:: genbankEvidence.test classify.test
+test:: ${subdirs:%=%.test}
 
 %.test:
 	(cd $* && ${MAKE} test)
 
-clean:: genbankEvidence.clean
+clean:: ${subdirs%=%.clean}
 
 %.clean:
 	(cd $* && ${MAKE} clean)

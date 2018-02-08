@@ -2,7 +2,7 @@
 Objects use to implement caches of database model objects
 """
 from __future__ import print_function
-from gencode_icedb.rsl.rslModel import MappingParameters
+from gencode_icedb.rsl.rslModels import MappingParameters
 
 
 class MappingParametersCache(object):

@@ -4,6 +4,7 @@ include ${ROOT}/config.mk
 progs = icedbProgSetup.py \
 	gencodeDbLoad \
 	tslGbffGetProblemCases tslGenbankProblemCasesLoad tslGetEnsemblRnaAligns \
+	tslGencodeCollectSupport tslGencodeCollectSupportMkJobs tslGencodeCollectSupportFinishJobs \
 	rslEncodeDccQuery \
 	rslSraRunInfoFilter rslSraRunInfoDbLoad rslMappingMetadataDbLoad \
 	rslMkStarSjOutSplits \
@@ -11,8 +12,7 @@ progs = icedbProgSetup.py \
 	rslGencodeCollectNovel rslGencodeCollectNovelMkJobs rslGencodeCollectNovelFinishJobs
 
 testprogs = \
-	tests/tsl/classify/bin/createTestData \
-	tests/tsl/mondo/bin/classifyTranscripts
+	tests/tsl/classify/bin/createTestData
 
 all::
 	(cd src && ${MAKE})

@@ -1,45 +1,39 @@
 #!/usr/bin/env python3
 from __future__ import print_function
-import sys
+import icedbProgSetup  # noqa: F401
 import argparse
 from contextlib import ExitStack
 from collections import defaultdict
-sys.path.insert(0, "../../../bin")
-import icedbProgSetup  # noqa: F401
-from pycbio.hgdata.coords import Coords
+from pycbio.sys import fileOps
 from gencode_icedb.general.gencodeDb import UcscGencodeReader
 from gencode_icedb.general.evidenceDb import EvidenceReader
 from gencode_icedb.tsl.supportClassify import SupportClassifier
+
+# FIXME: rsl uses csv.writer, make all consisten
 
 
 def parseArgs():
     desc = """Create test data from TSV specifying test genes.  This
     get GENCODE genePreds and evidence PSLs."""
     parser = argparse.ArgumentParser(description=desc)
-    parser.add_argument('--chromSpec', action="append", dest="chromSpecs", type=Coords.parse,
-                        help="""Restrict to this chromosome or chromosome range (UCSC chromosome naming), maybe repeated, used for testing."""
-                        """  Genes that start in this range are used, which allows for specification of adjacent ranges without over counting."""
-                        """  The start of the gene is defined by the first base of transcript regardless of strand""")
     parser.add_argument('--detailsTsv',
                         help="""write details to this TSV file""")
-    parser.add_argument('ucscDb',
-                        help="""UCSC assembly database name to find twobin""")
     parser.add_argument('gencodeDb',
-                        help="""GENCODE sqlite3 database""")
+                        help="""GENCODE sqlite3 database from gencodeDbLoad""")
     parser.add_argument('evidenceDb',
                         help="""evidence sqlite3 database""")
     parser.add_argument('tslTsv',
                         help="""output of TSL categories""")
+    parser.add_argument('gencodeIds', nargs='*', default=[],
+                        help="""GENCODE gene or transcript ids, including versions.  If not are specified, all transcript are processed""")
     return parser.parse_args()
 
 
-def genTranscripts(gencodeReader, chromSpecs):
-    if chromSpecs is None:
+def getTranscripts(gencodeReader, gencodeIds):
+    if len(gencodeIds) == 0:
         return gencodeReader.getAll()
     else:
-        for cs in chromSpecs:
-            for transAnnot in gencodeReader.getStartingInBounds(cs.name, cs.start, cs.end):
-                yield transAnnot
+        return gencodeReader.getByGencodeIds(gencodeIds)
 
 
 def groupTranscripts(annotTranses):
@@ -59,14 +53,19 @@ def classifyGeneTranscripts(evidenceReader, geneGroupedTrans, tslTsvFh, detailsT
         classifier.classifyGeneTranscripts(geneTranses, tslTsvFh, detailsTsvFh)
 
 
-def classifyTranscripts(args):
+def tslGencodeCollectSupport(args):
     gencodeReader = UcscGencodeReader(args.gencodeDb)
     evidenceReader = EvidenceReader(args.evidenceDb)
-    geneGroupedTranses = groupTranscripts(genTranscripts(gencodeReader, args.chromSpecs))
+    geneGroupedTranses = groupTranscripts(getTranscripts(gencodeReader, args.gencodeIds))
+    fileOps.ensureFileDir(args.tslTsv)
+    if args.detailsTsv is not None:
+        fileOps.ensureFileDir(args.detailsTsv)
+    tslTmpTsv = fileOps.atomicTmpFile(args.tslTsv)
     with ExitStack() as stack:
-        tslTsvFh = stack.enter_context(open(args.tslTsv, "w"))
+        tslTsvFh = stack.enter_context(open(tslTmpTsv, "w"))
         detailsTsvFh = stack.enter_context(open(args.detailsTsv, "w")) if args.detailsTsv is not None else None
         classifyGeneTranscripts(evidenceReader, geneGroupedTranses, tslTsvFh, detailsTsvFh)
+    fileOps.atomicInstall(tslTmpTsv, args.tslTsv)
 
 
-classifyTranscripts(parseArgs())
+tslGencodeCollectSupport(parseArgs())

@@ -9,6 +9,7 @@ from pycbio.hgdata.rangeFinder import Binner
 from gencode_icedb.general.annotFeatures import AnnotationGenePredFactory
 
 # FIXME: use Coords here
+# FIXME: rename module to gencodeReader.py
 
 # tables in sqlite databases
 GENCODE_ANN_TABLE = "gencode_ann"
@@ -59,7 +60,7 @@ class UcscGencodeReader(object):
 
     def getByGeneId(self, geneId):
         transIds = self.attrDbTable.getGeneTranscriptIds(geneId)
-        return self.getByTranscriptId(transIds)
+        return self.getByTranscriptIds(transIds)
 
     def getStartingInBounds(self, chrom, start, end):
         """Get the annotations genes that *start* in the range. To get whole
@@ -78,10 +79,10 @@ class UcscGencodeReader(object):
             for gp in cur:
                 transAnnot = self._makeTransAnnot(gp)
                 if transAnnot is not None:
-                     transAnnots.append(transAnnot)
+                    transAnnots.append(transAnnot)
         return transAnnots
 
-    def getByTranscriptId(self, transIds):
+    def getByTranscriptIds(self, transIds):
         """get annotations as TranscriptFeatures by transcript id (or ids)"""
         if isinstance(transIds, six.string_types):
             transIds = [transIds]
@@ -90,11 +91,33 @@ class UcscGencodeReader(object):
             for gp in self.genePredDbTable.getByName(transId):
                 transAnnot = self._makeTransAnnot(gp)
                 if transAnnot is not None:
-                     transAnnots.append(transAnnot)
+                    transAnnots.append(transAnnot)
+        return transAnnots
+
+    def _getByGencodeId(self, gencodeId):
+        """get annotations as TranscriptFeatures by a gene or transcript id"""
+        attrs = self.attrDbTable.getByGeneId(gencodeId)
+        if len(attrs) > 0:
+            return self.getByGeneIds(gencodeId)
+        else:
+            attrs = self.attrDbTable.getByTranscriptId(gencodeId)
+            if len(attrs) > 0:
+                return self.getByTranscriptIds(gencodeId)
+            else:
+                raise Exception("Not a valid GENCODE gene or transcript id: {}".format(gencodeId))
+
+    def _getByGencodeIds(self, gencodeIds):
+        """get annotations as TranscriptFeatures by gene or transcript id (or ids)"""
+        if isinstance(gencodeIds, six.string_types):
+            gencodeIds = [gencodeIds]
+        transAnnots = []
+        for gencodeId in gencodeIds:
+            transAnnots.extend(self.getByGencodeId(gencodeId))
         return transAnnots
 
     def getOverlapping(self, chrom, start, end, strand=None):
         """generator get overlapping annotations as TranscriptFeatures"""
+        # FIXME: is this needed?
         transAnnots = []
         for gp in self.genePredDbTable.getRangeOverlap(chrom, start, end, strand=strand):
             transAnnot = self._makeTransAnnot(gp)

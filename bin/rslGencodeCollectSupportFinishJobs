@@ -4,7 +4,7 @@ import os
 import argparse
 from pycbio.sys import fileOps
 from pycbio.tsv import TsvReader
-from gencode_icedb.rsl.rslModel import rslConnect, GencodeSupport
+from gencode_icedb.rsl.rslModels import rslConnect, GencodeIntronSupport
 
 bulk_size = 75   # size of each bulk insert
 
@@ -20,6 +20,14 @@ def parseArgs():
     return parser.parse_args()
 
 
+def rowToDict(row):
+    "convert TSV row to a dict that can be loaded into the database"
+    rowdict = {}
+    for col in row._columns_:
+        rowdict[col] = getattr(row, col)
+    return rowdict
+
+
 resultsTsvTypeMap = {
     "intronStart": int,
     "intronEnd": int,
@@ -30,14 +38,7 @@ resultsTsvTypeMap = {
 def resultsDbLoad(resultsConn, recs):
     with resultsConn.atomic():
         for idx in range(0, len(recs), bulk_size):
-            GencodeSupport.insert_many(recs[idx:idx + bulk_size]).execute()
-
-
-def rowToDict(row):
-    rowdict = {}
-    for col in row._columns_:
-        rowdict[col] = getattr(row, col)
-    return rowdict
+            GencodeIntronSupport.insert_many(recs[idx:idx + bulk_size]).execute()
 
 
 def loadResultsTsv(resultsTsv):
@@ -54,9 +55,9 @@ def collectResults(resultsConn, expectedTsvs):
 def rslGencodeCollectSupportFinishJobs(opts):
     "main function"
     fileOps.ensureFileDir(opts.resultsDb)
-    resultsConn = rslConnect(opts.resultsDb, readonly=False)
-    GencodeSupport.drop_table(fail_silently=True)
-    GencodeSupport.create_table()
+    resultsConn = rslConnect(opts.resultsDb, create=True, readonly=False)
+    GencodeIntronSupport.drop_table(fail_silently=True)
+    GencodeIntronSupport.create_table()
     expectedTsvs = fileOps.readFileLines(os.path.join(opts.workDir, "expected.lst"))
     collectResults(resultsConn, expectedTsvs)
     resultsConn.close()
