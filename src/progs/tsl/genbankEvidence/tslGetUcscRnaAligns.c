@@ -11,7 +11,7 @@
 
 /* usage message and abort */
 static void usage(char *msg) {
-    static char* usageMsg = "tslGetUcscRnaAligns ucscDb type sqliteDb sqliteTable\n"
+    static char* usageMsg = "tslGetUcscRnaAligns ucscDb type sqliteDb\n"
         "\n"
         "Load PSL alignments from UCSC all_mrna or all_est tables into an SQLite\n"
         "database.  EST PSLs will be reverse-complement if estOrientInfo table\n"
@@ -19,6 +19,7 @@ static void usage(char *msg) {
         "\n"
         "Options:\n"
         "  -verbose=n\n"
+        "  -table=tbl - load this table, defaults to ucsc_rna_aln or ucsc_est_aln.\n"
         "  -chromSpec=spec - restrict to this chrom or chrom range, for testing.\n"
         "   Maybe repeated. Duplicates caused alignments being in multiple ranges\n"
         "   are discarded.\n"
@@ -27,8 +28,13 @@ static void usage(char *msg) {
 }
 static struct optionSpec optionSpecs[] = {
     {"chromSpec", OPTION_STRING|OPTION_MULTI},
+    {"table", OPTION_STRING},
     {NULL, 0}
 };
+
+static char *UCSC_RNA_ALN_TBL = "ucsc_rna_aln";
+static char *UCSC_EST_ALN_TBL = "ucsc_est_aln";
+
 
 static char *pslCreateSqliteTbl =
     "CREATE TABLE {table} ("
@@ -359,7 +365,7 @@ static void tslGetUcscRnaAligns(char *ucscDb, char *type, char *sqliteDb, char *
 /* entry */
 int main(int argc, char** argv) {
     optionInit(&argc, argv, optionSpecs);
-    if (argc != 5)
+    if (argc != 4)
         usage("wrong # args");
     if (!(sameString(argv[2], "rna") || sameString(argv[2], "est"))) {
         usage("expected type of `rna' or `est'");
@@ -369,6 +375,8 @@ int main(int argc, char** argv) {
     if (chromSpecStrs != NULL) {
         chromSpecs = parseChromSpecs(argv[1], chromSpecStrs);
     }
-    tslGetUcscRnaAligns(argv[1], argv[2], argv[3], argv[4], chromSpecs);
+    char *sqliteTable = optionVal("table",
+                                  (sameString(argv[2], "rna") ? UCSC_RNA_ALN_TBL : UCSC_EST_ALN_TBL));
+    tslGetUcscRnaAligns(argv[1], argv[2], argv[3], sqliteTable, chromSpecs);
     return 0;
 }

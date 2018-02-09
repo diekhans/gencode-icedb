@@ -118,17 +118,18 @@ def compareMegWithEvidence(annotTrans, evidTrans):
 
 
 def _findAnnotBounds(geneTranses):
+    annotId = geneTranses[0].rna.name
     name = geneTranses[0].chrom.name
     start = geneTranses[0].chrom.start
     end = geneTranses[0].chrom.end
     strand = geneTranses[0].rna.strand
     for geneTrans in geneTranses:
         if geneTrans.chrom.name != name:
-            raise Exception("Bug: mix of chromosomes provided")
+            raise Exception("Bug: mix of chromosomes provided: {} and {}".format(geneTrans.rna.name, annotId))
         if geneTrans.chrom.strand != '+':
-            raise Exception("Bug: assumes positive chromosome strand")
+            raise Exception("Bug: assumes positive chromosome strand: {} and {}".format(geneTrans.rna.name, annotId))
         if geneTrans.rna.strand != strand:
-            raise Exception("Bug: mix of RNA strand provided")
+            raise Exception("Bug: mix of RNA strand provided: {} and {}".format(geneTrans.rna.name, annotId))
         start = min(geneTrans.chrom.start, start)
         end = max(geneTrans.chrom.end, end)
     return Coords(name, start, end, strand)

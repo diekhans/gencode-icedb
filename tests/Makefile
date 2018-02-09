@@ -20,3 +20,4 @@ clean:: ${subdirs:%=%.clean}
 
 %.clean:
 	(cd $* && ${MAKE} clean)
+

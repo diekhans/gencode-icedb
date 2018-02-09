@@ -40,6 +40,8 @@ def parseArgs():
                         help="""limit on query results, used for tests""")
     parser.add_argument('--accverList',
                         help="""file with list of accession/versions to process, used for testing.""")
+    parser.add_argument('--table', default="ensembl_rna_aln",
+                        help="""table to load alignments""")
     parser.add_argument('--chromSpec', action="append", dest="chromSpecs", type=Coords.parse,
                         help="""Restrict to this chromosome or chromosome range (UCSC chromosome naming), maybe repeated, used for testing.""")
     parser.add_argument('ensemblCDnaDb',
@@ -48,8 +50,6 @@ def parseArgs():
                         help="""NCBI assembly report for mapping chromosome names""")
     parser.add_argument('sqliteDb',
                         help="""database to load alignments into""")
-    parser.add_argument('table',
-                        help="""table to load alignments""")
     opts = parser.parse_args()
     loggingOps.setupFromCmd(opts, sys.argv[0])
     return opts

@@ -16,8 +16,9 @@ hsGrcRefAssembly = GRCh38
 hsGrcRefAssemblyReport = ${ROOT}/tests/tsl/etc/GCF_000001405.36_GRCh38.p10_assembly_report.txt
 hsUcscGenomeDb = hg38
 
-# always use public database, since hgwdev might be ahead
-export HGDB_CONF=${ROOT}/tests/tsl/etc/hg.pub.conf
+# use public database
+# FIXME disabled due to PAR tag bug in V27 (hgwdev has been updated).
+#export HGDB_CONF=${ROOT}/tests/tsl/etc/hg.pub.conf
 
 # table names (match py definition)
 UCSC_RNA_ALN_TBL = ucsc_rna_aln

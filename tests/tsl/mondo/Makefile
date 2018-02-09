@@ -11,12 +11,21 @@ evidDb = ${evidDir}/hsEvid.db
 
 annonDir = annon.d
 annonDb = ${annonDir}/hsAnnon.db
-inDbs = ${evidDb} ${annonDb}
+
+tslDb = output/tsl.db
+
+workDir = output/workDir
 
 
 test::
+	@echo "run setupTest or finishup test"
 
+setupTest: ${annonDb} ${evidDb}
+	${tslGencodeCollectSupportMkJobs} --genesPerJob=10 ${annonDb} ${evidDb} ${workDir}
 
+finishupTest:
+	@mkdir -p $(dir ${tslDb})
+	${tslGencodeCollectSupportFinishJobs} ${workDir} ${tslDb}
 
 ##
 # Building of evidence db (~1.25 hours)
@@ -25,10 +34,11 @@ test::
 ${evidDb}:
 	@mkdir -p $(dir $@)
 	rm -f ${evidDb} ${evidDb}.tmp
-	${tslGetEnsemblRnaAligns} ${hsEnsemblCDnaDb} ${hsGrcRefAssemblyReport} ${evidDb}.tmp ${ENSEMBL_RNA_ALN_TBL}
-	${tslGetUcscRnaAligns} ${hsUcscGenomeDb} rna ${evidDb}.tmp ${UCSC_RNA_ALN_TBL}
-	${tslGetUcscRnaAligns} ${hsUcscGenomeDb} est ${evidDb}.tmp ${UCSC_EST_ALN_TBL}
+	${tslGetEnsemblRnaAligns} ${hsEnsemblCDnaDb} ${hsGrcRefAssemblyReport} ${evidDb}.tmp
+	${tslGetUcscRnaAligns} ${hsUcscGenomeDb} rna ${evidDb}.tmp
+	${tslGetUcscRnaAligns} ${hsUcscGenomeDb} est ${evidDb}.tmp
 	mv -f ${evidDb}.tmp ${evidDb}
+
 ##
 # building annotation db (~20 seconds)
 ##

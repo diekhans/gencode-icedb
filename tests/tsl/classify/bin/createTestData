@@ -40,14 +40,12 @@ def mkChromSpecs(opt, ranges):
 
 
 def getUcscAlns(ucscDb, alntype, ranges, evidDbFile):
-    cmd = ["tslGetUcscRnaAligns", ucscDb, alntype, evidDbFile,
-           UCSC_RNA_ALN_TBL if alntype == "rna" else UCSC_EST_ALN_TBL] + mkChromSpecs("-chromSpec", ranges)
+    cmd = ["tslGetUcscRnaAligns", ucscDb, alntype, evidDbFile] + mkChromSpecs("-chromSpec", ranges)
     pipettor.run(cmd)
 
 
 def getEnsemblAlns(ensemblCDnaDb, assemblyReport, ranges, evidDbFile):
-    cmd = ["tslGetEnsemblRnaAligns", ensemblCDnaDb, assemblyReport, evidDbFile,
-           ENSEMBL_RNA_ALN_TBL] + mkChromSpecs("--chromSpec", ranges)
+    cmd = ["tslGetEnsemblRnaAligns", ensemblCDnaDb, assemblyReport, evidDbFile] + mkChromSpecs("--chromSpec", ranges)
     pipettor.run(cmd)
 
 
