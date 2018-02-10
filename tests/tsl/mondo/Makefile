@@ -37,6 +37,7 @@ ${evidDb}:
 	${tslGetEnsemblRnaAligns} ${hsEnsemblCDnaDb} ${hsGrcRefAssemblyReport} ${evidDb}.tmp
 	${tslGetUcscRnaAligns} ${hsUcscGenomeDb} rna ${evidDb}.tmp
 	${tslGetUcscRnaAligns} ${hsUcscGenomeDb} est ${evidDb}.tmp
+	${tslGenbankProblemCasesLoad} ${ROOT}/data/hs.genbank-problem-cases.tsv ${evidDb}.tmp
 	mv -f ${evidDb}.tmp ${evidDb}
 
 ##
