@@ -26,8 +26,8 @@ supportCollectMkJobsTest: ${testInputDone} mkdirs
 	ls -1 output/$@.work/results/ > output/$@.results.lst
 	${diff} expected/$@.results.lst output/$@.results.lst
 	${tslGencodeCollectSupportFinishJobs} output/$@.work output/$@.db
-	$(call sqldumpdiff,GencodeTranscriptSupport)
-	$(call sqldumpdiff,GencodeTranscriptSupportDetails)
+	$(call sqldumpdiff,gencode_transcript_support)
+	$(call sqldumpdiff,gencode_transcript_support_details)
 
 
 ${testInputDone}: bin/createTestData input/v27-test-cases.tsv

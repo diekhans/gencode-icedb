@@ -3,8 +3,8 @@ import icedbProgSetup  # noqa: F401
 import os
 import argparse
 from pycbio.sys import fileOps
-from pycbio.tsv import TsvReader
-from gencode_icedb.rsl.rslModels import rslConnect, GencodeIntronSupport
+from pycbio.tsv import TsvReader, tsvRowToDict
+from gencode_icedb.rsl.rslModels import rslConnect, rslClose, GencodeIntronSupport
 
 bulk_size = 75   # size of each bulk insert
 
@@ -20,14 +20,6 @@ def parseArgs():
     return parser.parse_args()
 
 
-def rowToDict(row):
-    "convert TSV row to a dict that can be loaded into the database"
-    rowdict = {}
-    for col in row._columns_:
-        rowdict[col] = getattr(row, col)
-    return rowdict
-
-
 resultsTsvTypeMap = {
     "intronStart": int,
     "intronEnd": int,
@@ -35,32 +27,32 @@ resultsTsvTypeMap = {
     "numMultiMapReads": int}
 
 
-def resultsDbLoad(resultsConn, recs):
-    with resultsConn.atomic():
+def resultsDbLoad(conn, recs):
+    with conn.atomic():
         for idx in range(0, len(recs), bulk_size):
             GencodeIntronSupport.insert_many(recs[idx:idx + bulk_size]).execute()
 
 
 def loadResultsTsv(resultsTsv):
-    return [rowToDict(row) for row in TsvReader(resultsTsv, typeMap=resultsTsvTypeMap)]
+    return [tsvRowToDict(row) for row in TsvReader(resultsTsv, typeMap=resultsTsvTypeMap)]
 
 
-def collectResults(resultsConn, expectedTsvs):
+def collectResults(conn, expectedTsvs):
     recs = []
     for resultsTsv in expectedTsvs:
         recs.extend(loadResultsTsv(resultsTsv))
-    resultsDbLoad(resultsConn, recs)
+    resultsDbLoad(conn, recs)
 
 
 def rslGencodeCollectSupportFinishJobs(opts):
     "main function"
     fileOps.ensureFileDir(opts.resultsDb)
-    resultsConn = rslConnect(opts.resultsDb, create=True, readonly=False)
+    conn = rslConnect(opts.resultsDb, create=True, readonly=False)
     GencodeIntronSupport.drop_table(fail_silently=True)
     GencodeIntronSupport.create_table()
     expectedTsvs = fileOps.readFileLines(os.path.join(opts.workDir, "expected.lst"))
-    collectResults(resultsConn, expectedTsvs)
-    resultsConn.close()
+    collectResults(conn, expectedTsvs)
+    rslClose(conn)
 
 
 rslGencodeCollectSupportFinishJobs(parseArgs())

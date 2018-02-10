@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 import icedbProgSetup  # noqa: F401
 import argparse
-from gencode_icedb.tsl.genbankProblemCasesDb import GenbankProblemCaseDbTable
-from pycbio.tsv.tabFile import TabFile
-from pycbio.hgdata.hgLite import sqliteConnect
+from pycbio.tsv import TsvReader, tsvRowToDict
+from gencode_icedb.tsl.tslModels import tslConnect, tslClose, GenbankProblemReason, GenbankProblemCase
 
 
 def parseArgs():
@@ -14,18 +13,30 @@ def parseArgs():
                         help="""tab file with problem accessions and reasons""")
     parser.add_argument('sqliteDb',
                         help="""database to load problems into""")
-    parser.add_argument('table',
-                        help="""table to load problems into""")
     return parser.parse_args()
+
+
+problemCasesTsvTypeMap = {
+    "reason": GenbankProblemReason
+}
+
+
+def loadProblemCasesTsv(problemCasesTsv):
+    return [tsvRowToDict(row) for row in TsvReader(problemCasesTsv, typeMap=problemCasesTsvTypeMap)]
+
+
+def problemCasesDbLoad(conn, recs):
+    with conn.atomic():
+        GenbankProblemCase.insert_many(recs).execute()
 
 
 def genbankProblemCasesLoad(opts):
     "main function"
-    rows = TabFile(opts.problemTabFile)
-    conn = sqliteConnect(opts.sqliteDb, create=True)
-    problemTable = GenbankProblemCaseDbTable(conn, opts.table, create=True)
-    problemTable.loads(rows)
-    conn.close()
+    recs = loadProblemCasesTsv(opts.problemTabFile)
+    conn = tslConnect(opts.sqliteDb, create=True)
+    GenbankProblemCase.create_table(fail_silently=True)
+    problemCasesDbLoad(conn, recs)
+    tslClose(conn)
 
 
 genbankProblemCasesLoad(parseArgs())

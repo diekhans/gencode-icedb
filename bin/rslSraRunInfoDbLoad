@@ -2,7 +2,7 @@
 import icedbProgSetup  # noqa: F401
 import sys
 import argparse
-from gencode_icedb.rsl.rslModels import rslConnect, RunMetadata
+from gencode_icedb.rsl.rslModels import rslConnect, rslClose, RunMetadata
 from pycbio.sys import loggingOps
 from pycbio.tsv import TsvReader
 
@@ -51,17 +51,18 @@ def readRunInfo(srcsymid, runinfoTsv):
     return [makeRunMetaRec(srcsymid, row) for row in TsvReader(runinfoTsv)]
 
 
-def dbLoad(dbconn, recs):
-    with dbconn.atomic():
+def dbLoad(conn, recs):
+    with conn.atomic():
         for idx in range(0, len(recs), bulk_size):
             RunMetadata.insert_many(recs[idx:idx + bulk_size]).execute()
 
 
 def rslSraRunInfoDbLoad(opts):
     recs = readRunInfo(opts.srcsymid, opts.runinfoTsv)
-    dbconn = rslConnect(opts.rsldb, create=True, readonly=False)
+    conn = rslConnect(opts.rsldb, create=True, readonly=False)
     RunMetadata.create_table(fail_silently=True)
-    dbLoad(dbconn, recs)
+    dbLoad(conn, recs)
+    rslClose(conn)
 
 
 rslSraRunInfoDbLoad(parseArgs())

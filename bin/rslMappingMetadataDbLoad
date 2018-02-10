@@ -2,7 +2,7 @@
 import icedbProgSetup  # noqa: F401
 import sys
 import argparse
-from gencode_icedb.rsl.rslModels import rslConnect, RunMetadata, MappingMetadata, MappingParameters
+from gencode_icedb.rsl.rslModels import rslConnect, rslClose, RunMetadata, MappingMetadata, MappingParameters
 from gencode_icedb.rsl.rslModelCache import MappingParametersCache
 from gencode_icedb.rsl.starResultsDir import StarMappingParameters, StarResultsDir
 from pycbio.sys import loggingOps
@@ -33,12 +33,12 @@ def ensureMappingParam(params, mappingParamsCache):
         mappingParamsCache.create(params.mapping_param_symid, params.assembly, params.gene_set, params.commands, params.comments)
 
 
-def dbLoadMappingParameters(dbconn, starMappingParams):
+def dbLoadMappingParameters(conn, starMappingParams):
     """load mapping parameters into database if they don't already exist,
     return cache of MappingParameters objects."""
     MappingParameters.create_table(fail_silently=True)
     mappingParamsCache = MappingParametersCache()
-    with dbconn.atomic():
+    with conn.atomic():
         for params in starMappingParams:
             ensureMappingParam(params, mappingParamsCache)
     return mappingParamsCache
@@ -53,10 +53,10 @@ def createMappingMetadata(starResult, mappingParamsCache):
     mappingMetadata.save()
 
 
-def dbLoadMappingMetadata(dbconn, mappingParamsCache, starResultsDir):
+def dbLoadMappingMetadata(conn, mappingParamsCache, starResultsDir):
     """load mapping metadata"""
     MappingMetadata.create_table(fail_silently=True)
-    with dbconn.atomic():
+    with conn.atomic():
         for starResult in starResultsDir:
             createMappingMetadata(starResult, mappingParamsCache)
 
@@ -65,9 +65,10 @@ def rslMappingMetadataDbLoad(opts):
     starMappingParams = StarMappingParameters(opts.mappingParamsTsv)
     starResultsDir = StarResultsDir(opts.starResultsDirTsv)
 
-    dbconn = rslConnect(opts.rsldb, create=True, readonly=False)
-    mappingParamsCache = dbLoadMappingParameters(dbconn, starMappingParams)
-    dbLoadMappingMetadata(dbconn, mappingParamsCache, starResultsDir)
+    conn = rslConnect(opts.rsldb, create=True, readonly=False)
+    mappingParamsCache = dbLoadMappingParameters(conn, starMappingParams)
+    dbLoadMappingMetadata(conn, mappingParamsCache, starResultsDir)
+    rslClose(conn)
 
 
 rslMappingMetadataDbLoad(parseArgs())

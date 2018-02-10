@@ -4,9 +4,9 @@ from __future__ import print_function
 import icedbProgSetup  # noqa: F401
 import re
 import argparse
+from collections import namedtuple
 from pycbio.sys import fileOps
 from gencode_icedb.tsl.gbffProblemCaseParser import gbffProblemCaseParse, Organism
-from gencode_icedb.tsl.genbankProblemCasesDb import GenbankProblemCase
 # Note: wanted to do this via eutils, however NCBI can't
 # query on clone library
 
@@ -30,13 +30,20 @@ def parseArgs():
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('--maxProcess', type=int, default=2,
                         help="maximum number of process to use for parallel parse")
-    parser.add_argument('hsTabOut',
+    parser.add_argument('hsTsvOut',
                         help="output for human")
-    parser.add_argument('mmTabOut',
+    parser.add_argument('mmTsvOut',
                         help="output for mouse")
     parser.add_argument('gbffInputs', nargs="*",
                         help="Genbank Flat Files, maybe compressed")
     return parser.parse_args()
+
+
+class GenbankProblemCase(namedtuple("GenbankProblemCase",
+                                    ("startAcc", "endAcc", "reason"))):
+    """a range of problem case"""
+    __slots__ = ()
+    pass
 
 
 class SplitAcc(list):
@@ -77,12 +84,13 @@ class OrgProblemCases(list):
                 break
         return (GenbankProblemCase(str(startAcc), str(endAcc), reason), idx)
 
-    def writeRanges(self, tabFh):
+    def writeRanges(self, tsvFh):
+        fileOps.prRowv(tsvFh, "startAcc", "endAcc", "reason")
         self.sort(key=lambda opc: (opc.acc,))
         idx = 0
         while idx < len(self):
             problemCase, idx = self._popRange(idx)
-            fileOps.prRow(tabFh, problemCase)
+            fileOps.prRow(tsvFh, problemCase)
 
 
 def collectProblemCases(gbffInputs, maxProcess):
@@ -93,15 +101,15 @@ def collectProblemCases(gbffInputs, maxProcess):
     return byOrgProblemCases
 
 
-def writeProblemCases(orgProblemCases, tabOut):
-    with open(tabOut, "w") as tabFh:
-        orgProblemCases.writeRanges(tabFh)
+def writeProblemCases(orgProblemCases, tsvOut):
+    with open(tsvOut, "w") as tsvFh:
+        orgProblemCases.writeRanges(tsvFh)
 
 
 def gbffGetProblemCases(opts):
     byOrgProblemCases = collectProblemCases(opts.gbffInputs, opts.maxProcess)
-    writeProblemCases(byOrgProblemCases[Organism.hs], opts.hsTabOut)
-    writeProblemCases(byOrgProblemCases[Organism.mm], opts.mmTabOut)
+    writeProblemCases(byOrgProblemCases[Organism.hs], opts.hsTsvOut)
+    writeProblemCases(byOrgProblemCases[Organism.mm], opts.mmTsvOut)
 
 
 gbffGetProblemCases(parseArgs())

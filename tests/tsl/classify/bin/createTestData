@@ -8,7 +8,6 @@ import argparse
 import pipettor
 import logging
 from pycbio.sys import fileOps
-from gencode_icedb.general.evidenceDb import UCSC_RNA_ALN_TBL, UCSC_EST_ALN_TBL, ENSEMBL_RNA_ALN_TBL
 from testlib import TestCases
 
 
@@ -49,13 +48,20 @@ def getEnsemblAlns(ensemblCDnaDb, assemblyReport, ranges, evidDbFile):
     pipettor.run(cmd)
 
 
+def getProblemCases(ucscDb, evidDbFile):
+    tsvPre = "hs" if ucscDb.startswith("hg") else "mm"
+    probTsv = os.path.join(icedbProgSetup.rootDir, "data", "{}.genbank-problem-cases.tsv".format(tsvPre))
+    cmd = ["tslGenbankProblemCasesLoad", probTsv, evidDbFile]
+    pipettor.run(cmd)
+
+
 def buildEvidDb(testCases, assemblyReport, ucscDb, ensemblCDnaDb, evidDbFile):
     fileOps.rmFiles(evidDbFile)
     ranges = testCases.getRanges()
     getUcscAlns(ucscDb, "rna", ranges, evidDbFile)
     getUcscAlns(ucscDb, "est", ranges, evidDbFile)
     getEnsemblAlns(ensemblCDnaDb, assemblyReport, ranges, evidDbFile)
-
+    getProblemCases(ucscDb, evidDbFile)
 
 def writeTransIdsTmpFile(testCases):
     transIdTmp = fileOps.tmpFileGet("transIds")

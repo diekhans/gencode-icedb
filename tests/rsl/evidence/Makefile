@@ -44,15 +44,15 @@ dbLoadTests: sraRunInfoDbLoad1Test \
 sraRunInfoDbLoad1Test: mkdirs
 	rm -f output/$@.db
 	${rslSraRunInfoDbLoad} output/$@.db input/set1.hs.run-info.tsv
-	$(call sqldumpdiff,RunMetadata)
+	$(call sqldumpdiff,run_metadata)
 
 mappingMetadataDbLoadTest: mkdirs
 	rm -f output/$@.db
 	${rslSraRunInfoDbLoad} output/$@.db input/set1.hs.run-info.tsv
 	${rslMappingMetadataDbLoad} output/$@.db input/set1.hs.mapping-params.tsv input/set1.hs.stardir.tsv
-	$(call sqldumpdiff,RunMetadata)
-	$(call sqldumpdiff,MappingParameters)
-	$(call sqldumpdiff,MappingMetadata)
+	$(call sqldumpdiff,run_metadata)
+	$(call sqldumpdiff,mapping_parameters)
+	$(call sqldumpdiff,mapping_metadata)
 
 ##
 # build of tabix database

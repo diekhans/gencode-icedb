@@ -10,13 +10,13 @@ test:: ucscTests ensemblTests problemCasesTests
 ucscTests: ucscRnaChrMTest ucscEstChrMTest
 
 ucscRnaChrMTest: mkdirs
-	rm -f output/$@.db
+	@rm -f output/$@.db
 	${tslGetUcscRnaAligns} -chromSpec=chrM ${hsUcscGenomeDb} rna output/$@.db
 	sqlite3 --batch output/$@.db 'select * from ${UCSC_RNA_ALN_TBL};' | cut -f 2- | sort > output/$@.sort.psl
 	diff expected/$@.sort.psl output/$@.sort.psl
 
 ucscEstChrMTest: mkdirs
-	rm -f output/$@.db
+	@rm -f output/$@.db
 	${tslGetUcscRnaAligns} -chromSpec=chrM ${hsUcscGenomeDb} est output/$@.db
 	sqlite3 --batch output/$@.db 'select * from ${UCSC_EST_ALN_TBL};' | cut -f 2- | sort > output/$@.sort.psl
 	diff expected/$@.sort.psl output/$@.sort.psl
@@ -44,14 +44,15 @@ ensemblIdListTest: mkdirs
 problemCasesTests: problemCasesParseTest problemCasesLoadTest
 
 problemCasesParseTest: mkdirs
-	${tslGbffGetProblemCases} --maxProcess=2 output/hs.$@.tab output/mm.$@.tab input/problem1.gbff input/problem2.gbff
-	diff expected/hs.$@.tab output/hs.$@.tab
-	diff expected/mm.$@.tab output/mm.$@.tab
+	${tslGbffGetProblemCases} --maxProcess=2 output/hs.$@.tsv output/mm.$@.tsv input/problem1.gbff input/problem2.gbff
+	diff expected/hs.$@.tsv output/hs.$@.tsv
+	diff expected/mm.$@.tsv output/mm.$@.tsv
 
 problemCasesLoadTest: mkdirs
-	${tslGenbankProblemCasesLoad} expected/hs.problemCasesParseTest.tab output/$@.db problemCases
-	sqlite3 --batch output/$@.db 'select * from problemCases;' > output/$@.tab
-	diff expected/hs.problemCasesParseTest.tab output/$@.tab
+	@rm -f output/$@.db
+	${tslGenbankProblemCasesLoad} expected/hs.problemCasesParseTest.tsv output/$@.db
+	sqlite3 --batch --header output/$@.db 'select startAcc, endAcc, reason from genbank_problem_case;' > output/$@.tsv
+	diff expected/hs.problemCasesParseTest.tsv output/$@.tsv
 
 mkdirs:
 	@mkdir -p output

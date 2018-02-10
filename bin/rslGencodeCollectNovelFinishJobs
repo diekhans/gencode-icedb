@@ -3,8 +3,8 @@ import icedbProgSetup  # noqa: F401
 import os
 import argparse
 from pycbio.sys import fileOps
-from pycbio.tsv import TsvReader
-from gencode_icedb.rsl.rslModels import rslConnect, GencodeIntronNovel
+from pycbio.tsv import TsvReader, tsvRowToDict
+from gencode_icedb.rsl.rslModels import rslConnect, rslClose, GencodeIntronNovel
 
 bulk_size = 75   # size of each bulk insert
 
@@ -29,40 +29,33 @@ resultsTsvTypeMap = {
     "numMultiMapReads": int}
 
 
-def resultsDbLoad(resultsConn, recs):
-    with resultsConn.atomic():
+def resultsDbLoad(conn, recs):
+    with conn.atomic():
         for idx in range(0, len(recs), bulk_size):
             GencodeIntronNovel.insert_many(recs[idx:idx + bulk_size]).execute()
 
 
-def rowToDict(row):
-    rowdict = {}
-    for col in row._columns_:
-        rowdict[col] = getattr(row, col)
-    return rowdict
-
-
 def loadResultsTsv(resultsTsv):
-    return [rowToDict(row) for row in TsvReader(resultsTsv, typeMap=resultsTsvTypeMap)]
+    return [tsvRowToDict(row) for row in TsvReader(resultsTsv, typeMap=resultsTsvTypeMap)]
 
 
-def collectResults(resultsConn, expectedTsvs):
+def collectResults(conn, expectedTsvs):
     recs = []
     for resultsTsv in expectedTsvs:
         recs.extend(loadResultsTsv(resultsTsv))
-    resultsDbLoad(resultsConn, recs)
+    resultsDbLoad(conn, recs)
 
 
 def rslGencodeCollectNovelFinishJobs(opts):
     "main function"
 
     fileOps.ensureFileDir(opts.resultsDb)
-    resultsConn = rslConnect(opts.resultsDb, create=True, readonly=False)
+    conn = rslConnect(opts.resultsDb, create=True, readonly=False)
     GencodeIntronNovel.drop_table(fail_silently=True)
     GencodeIntronNovel.create_table()
     expectedTsvs = fileOps.readFileLines(os.path.join(opts.workDir, "expected.lst"))
-    collectResults(resultsConn, expectedTsvs)
-    resultsConn.close()
+    collectResults(conn, expectedTsvs)
+    rslClose(conn)
 
 
 rslGencodeCollectNovelFinishJobs(parseArgs())

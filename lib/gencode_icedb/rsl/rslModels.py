@@ -4,7 +4,7 @@ PeeWee data models for RNA-Seq metadata and splice junctions.
 from __future__ import print_function
 import os
 from peewee import Proxy, Model, PrimaryKeyField, ForeignKeyField, CharField, TextField, IntegerField
-from gencode_icedb.general.peeweeOps import peeweeConnect, peeweeClose
+from gencode_icedb.general.peeweeOps import peeweeConnect, peeweeClose, peeweeClassToTableName, PeeweeModelMixins
 from collections import namedtuple
 import pysam
 
@@ -27,11 +27,12 @@ def rslClose(conn):
     peeweeClose(conn)
 
 
-class BaseModel(Model):
+class BaseModel(Model, PeeweeModelMixins):
     "base for peewee models, used to bind proxy"
 
     class Meta:
         database = _database_proxy
+        table_function = peeweeClassToTableName
 
 
 class RunMetadata(BaseModel):

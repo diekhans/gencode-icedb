@@ -41,7 +41,7 @@ supportCollectMkJobsTest: mkdirs
 	ls -1 output/$@.work/results/ > output/$@.results.lst
 	${diff} expected/$@.results.lst output/$@.results.lst
 	${rslGencodeCollectSupportFinishJobs} output/$@.work output/$@.db
-	$(call sqldumpdiff,GencodeIntronSupport)
+	$(call sqldumpdiff,gencode_intron_support)
 
 ##
 # test of novel
@@ -69,7 +69,7 @@ novelMkJobsTest: mkdirs
 	ls -1 output/$@.work/results/ > output/$@.results.lst
 	${diff} expected/$@.results.lst output/$@.results.lst
 	${rslGencodeCollectNovelFinishJobs} output/$@.work output/$@.db
-	$(call sqldumpdiff,GencodeIntronNovel)
+	$(call sqldumpdiff,gencode_intron_novel)
 
 # create test input databases
 ${gencodeTestDb}:

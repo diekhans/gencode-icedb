@@ -7,7 +7,7 @@ from pycbio.hgdata.coords import Coords
 from gencode_icedb.general.gencodeDb import UcscGencodeReader
 from gencode_icedb.general.genome import GenomeReaderFactory
 from gencode_icedb.general.transFeatures import IntronFeature
-from gencode_icedb.rsl.rslModels import rslConnect, SjSupportReader
+from gencode_icedb.rsl.rslModels import rslConnect, rslClose, SjSupportReader
 from gencode_icedb.rsl.intronSupportCounter import IntronSupportCounter
 
 
@@ -39,9 +39,9 @@ resultsHeader = ("chrom", "intronStart", "intronEnd", "strand", "intronMotif",
 
 
 class NovelFinder(object):
-    def __init__(self, annotReader, sjConn, genomeReader, minUniqueMapped):
+    def __init__(self, annotReader, conn, genomeReader, minUniqueMapped):
         self.annotReader = annotReader
-        self.sjSupportReader = SjSupportReader(sjDbConn=sjConn)
+        self.sjSupportReader = SjSupportReader(sjDbConn=conn)
         self.genomeReader = genomeReader
         self.minUniqueMapped = minUniqueMapped
 
@@ -109,8 +109,8 @@ def rslGencodeCollectNovel(opts):
     genomeCoords = Coords.parse(opts.chromRange)
     genomeReader = GenomeReaderFactory.factoryFromCmdOptions(opts).obtain()
     annotReader = UcscGencodeReader(opts.gencodeDb, genomeReader)
-    sjConn = rslConnect(opts.sjDb, readonly=True)
-    novelFinder = NovelFinder(annotReader, sjConn, genomeReader, opts.minUniqueMapped)
+    conn = rslConnect(opts.sjDb, readonly=True)
+    novelFinder = NovelFinder(annotReader, conn, genomeReader, opts.minUniqueMapped)
 
     fileOps.ensureFileDir(opts.resultsTsv)
     resultsTmpTsv = fileOps.atomicTmpFile(opts.resultsTsv)
@@ -118,8 +118,7 @@ def rslGencodeCollectNovel(opts):
         novelFinder.collectNovel(genomeCoords, csv.writer(fh, dialect=csv.excel_tab,
                                                           lineterminator='\n'))
     fileOps.atomicInstall(resultsTmpTsv, opts.resultsTsv)
-    if not sjConn.is_closed():  # FIXME: not sure why it is in the is_closed state, maybe lazy open?
-        sjConn.close()
+    rslClose(conn)
 
 
 rslGencodeCollectNovel(parseArgs())

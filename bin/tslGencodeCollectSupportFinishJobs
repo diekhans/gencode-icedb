@@ -3,9 +3,9 @@ import icedbProgSetup  # noqa: F401
 import os
 import argparse
 from pycbio.sys import fileOps
-from pycbio.tsv import TsvReader
+from pycbio.tsv import TsvReader, tsvRowToDict
 from gencode_icedb.tsl.supportDefs import TrascriptionSupportLevel, EvidenceSupport
-from gencode_icedb.tsl.tslModels import tslConnect, GencodeTranscriptSupport, GencodeTranscriptSupportDetails
+from gencode_icedb.tsl.tslModels import tslConnect, tslClose, GencodeTranscriptSupport, GencodeTranscriptSupportDetails
 from gencode_icedb.general.evidenceDb import EvidenceSource
 
 bulk_size = 75   # size of each bulk insert
@@ -22,34 +22,26 @@ def parseArgs():
     return parser.parse_args()
 
 
-def rowToDict(row):
-    "convert TSV row to a dict that can be loaded into the database"
-    rowdict = {}
-    for col in row._columns_:
-        rowdict[col] = getattr(row, col)
-    return rowdict
-
-
 resultsTsvTypeMap = {
     "level": TrascriptionSupportLevel
 }
 
 
-def resultsDbLoad(resultsConn, recs):
-    with resultsConn.atomic():
+def resultsDbLoad(conn, recs):
+    with conn.atomic():
         for idx in range(0, len(recs), bulk_size):
             GencodeTranscriptSupport.insert_many(recs[idx:idx + bulk_size]).execute()
 
 
 def loadResultsTsv(resultsTsv):
-    return [rowToDict(row) for row in TsvReader(resultsTsv, typeMap=resultsTsvTypeMap)]
+    return [tsvRowToDict(row) for row in TsvReader(resultsTsv, typeMap=resultsTsvTypeMap)]
 
 
-def collectResults(resultsConn, expectedTsvs):
+def collectResults(conn, expectedTsvs):
     recs = []
     for resultsTsv in expectedTsvs:
         recs.extend(loadResultsTsv(resultsTsv))
-    resultsDbLoad(resultsConn, recs)
+    resultsDbLoad(conn, recs)
 
 
 resultDetailsTsvTypeMap = {
@@ -58,14 +50,14 @@ resultDetailsTsvTypeMap = {
 }
 
 
-def resultDetailsDbLoad(resultsConn, recs):
-    with resultsConn.atomic():
+def resultDetailsDbLoad(conn, recs):
+    with conn.atomic():
         for idx in range(0, len(recs), bulk_size):
             GencodeTranscriptSupportDetails.insert_many(recs[idx:idx + bulk_size]).execute()
 
 
 def loadResultDetailsTsv(resultDetailsTsv):
-    return [rowToDict(row) for row in TsvReader(resultDetailsTsv, typeMap=resultDetailsTsvTypeMap)]
+    return [tsvRowToDict(row) for row in TsvReader(resultDetailsTsv, typeMap=resultDetailsTsvTypeMap)]
 
 
 def resultsTsvToDetailsPath(resultsTsv):
@@ -74,24 +66,24 @@ def resultsTsvToDetailsPath(resultsTsv):
     return "{}.details.tsv".format(p1[0])
 
 
-def collectResultDetails(resultsConn, expectedTsvs):
+def collectResultDetails(conn, expectedTsvs):
     recs = []
     for resultsTsv in expectedTsvs:
         recs.extend(loadResultDetailsTsv(resultsTsvToDetailsPath(resultsTsv)))
-    resultDetailsDbLoad(resultsConn, recs)
+    resultDetailsDbLoad(conn, recs)
 
 
 def tslGencodeCollectSupportFinishJobs(opts):
     "main function"
     fileOps.ensureFileDir(opts.resultsDb)
-    resultsConn = tslConnect(opts.resultsDb, create=True, readonly=False)
+    conn = tslConnect(opts.resultsDb, create=True, readonly=False)
     GencodeTranscriptSupport.drop_table(fail_silently=True)
     GencodeTranscriptSupport.create_table()
     GencodeTranscriptSupportDetails.drop_table(fail_silently=True)
     GencodeTranscriptSupportDetails.create_table()
     expectedTsvs = fileOps.readFileLines(os.path.join(opts.workDir, "expected.lst"))
-    collectResults(resultsConn, expectedTsvs)
-    resultsConn.close()
+    collectResults(conn, expectedTsvs)
+    tslClose(conn)
 
 
 tslGencodeCollectSupportFinishJobs(parseArgs())
