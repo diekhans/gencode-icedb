@@ -2,8 +2,11 @@
 Read evidence alignments from a database.
 """
 from pycbio.sys.symEnum import SymEnum
+from pycbio.sys.objDict import ObjDict
 from pycbio.hgdata.hgLite import sqliteConnect, PslDbTable
 from gencode_icedb.general.evidFeatures import EvidencePslFactory
+from gencode_icedb.general.transFeatures import countFeaturesOfType, ExonFeature
+from gencode_icedb.tsl.genbankProblemCases import GenbankProblemCases
 
 
 class EvidenceSource(SymEnum):
@@ -33,15 +36,16 @@ class EvidenceReader(object):
         self.dbTables = {}  # by EvidenceSource
         for evidSrc in EvidenceSource:
             self.dbTables[evidSrc] = PslDbTable(self.conn, evidenceSourceTableMap[evidSrc])
+        self.genbankProblems = GenbankProblemCases(self.conn)
         self.evidFactory = EvidencePslFactory(genomeReader)
 
     def close(self):
         self.conn.close()
         self.conn = None
 
-    def __del__(self):
-        if self.conn is not None:
-            self.close()
+    def _makeTrans(self, psl):
+        attrs = ObjDict(genbankProblem=self.genbankProblems.getProblem(psl.qName))
+        return self.evidFactory.fromPsl(psl, attrs)
 
     def genOverlapping(self, evidSrc, chrom, start, end, rnaStrand=None, minExons=0):
         """Generator of overlapping alignments as TranscriptFeatures.
@@ -51,6 +55,6 @@ class EvidenceReader(object):
                   else ('+', '++') if rnaStrand == '+' else ('-', '+-'))
         extraWhere = "blockCount >= {}".format(minExons) if minExons > 0 else None
         for psl in dbTable.getTRangeOverlap(chrom, start, end, strand=strand, extraWhere=extraWhere):
-            trans = self.evidFactory.fromPsl(psl)
-            if len(trans.features) >= minExons + (minExons - 1):
+            trans = self._makeTrans(psl)
+            if countFeaturesOfType(trans.features, ExonFeature) >= minExons:
                 yield trans

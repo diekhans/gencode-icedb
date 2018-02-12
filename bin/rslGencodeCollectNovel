@@ -74,7 +74,7 @@ class NovelFinder(object):
     def _getContainingGenes(self, intron, overlappingTranses):
         geneIds = set()
         for trans in overlappingTranses:
-            geneIds.add(trans.metaData.attrs.geneId)
+            geneIds.add(trans.attrs.geneId)
         return geneIds
 
     def _reportNovel(self, intron, sjCounts, overlappingTranses, resultsWriter):

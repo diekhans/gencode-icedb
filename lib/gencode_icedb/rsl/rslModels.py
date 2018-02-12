@@ -133,9 +133,6 @@ class SjSupportReader(object):
             finally:
                 self.tb = None
 
-    def __del__(self):
-        self.close()
-
     def fetch(self, chrom, start, end):
         """Query returning SjSupport.  Use zero-based, half open coordinates.
         in chrom is not in index, nothing is returned"""

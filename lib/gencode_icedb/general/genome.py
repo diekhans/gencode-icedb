@@ -22,10 +22,6 @@ class GenomeReader(object):
         self.twoBitReader = twoBitReader
         self.chrom = self.size = None
 
-    def __del__(self):
-        if self.twoBitReader is not None:
-            self.close()
-
     def close(self):
         self.twoBitReader.close()
         self.twoBitReader = None

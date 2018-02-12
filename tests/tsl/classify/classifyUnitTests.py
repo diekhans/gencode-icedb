@@ -11,7 +11,6 @@ from gencode_icedb.general.genome import GenomeReaderFactory
 from gencode_icedb.general.gencodeDb import UcscGencodeReader
 from gencode_icedb.tsl.evidenceDb import EvidenceSource, EvidenceReader
 from gencode_icedb.tsl.supportClassify import compareMegWithEvidence, SupportClassifier
-from gencode_icedb.tsl.genbankProblemCases import GenbankProblemCases
 
 
 class EvidCompareTest(TestCaseBase):
@@ -25,7 +24,6 @@ class EvidCompareTest(TestCaseBase):
         cls.genomeReader = GenomeReaderFactory.factoryFromUcscDb(cls.UCSC_DB).obtain()
         cls.gencodeReader = UcscGencodeReader(cls.GENCODE_DB, cls.genomeReader)
         cls.evidenceReader = EvidenceReader(cls.EVIDENCE_DB, cls.genomeReader)
-        cls.genbankProblems = GenbankProblemCases(cls.evidenceReader.conn)
 
     @classmethod
     def tearDownClass(cls):
@@ -46,7 +44,7 @@ class EvidCompareTest(TestCaseBase):
             self.__evalAnnotTransEvidSrc(annotTrans, evidSrc)
 
     def __classifyTest(self, annotTranses, noDiff=False):
-        classifier = SupportClassifier(self.evidenceReader, self.genbankProblems)
+        classifier = SupportClassifier(self.evidenceReader)
         outTslTsv = self.getOutputFile(".tsl.tsv")
         outDetailsTsv = self.getOutputFile(".details.tsv")
         with open(outTslTsv, 'w') as tslTsvFh, open(outDetailsTsv, 'w') as detailsTsvFh:

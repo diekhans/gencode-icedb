@@ -36,8 +36,8 @@ def _transIsSingleExon(annotTrans):
 
 
 def _geneIsTslIgnored(annotTrans):
-    bioType = annotTrans.metaData.attrs.transcriptType
-    geneName = annotTrans.metaData.attrs.geneName
+    bioType = annotTrans.attrs.transcriptType
+    geneName = annotTrans.attrs.geneName
     # FIXME: this was part of ccds gencodeGenes module, we need to make that independent and use it here
     # trans.isPseudo()
     if (bioType.find("pseudogene") >= 0) and (bioType.find("transcribed") < 0):
@@ -169,31 +169,50 @@ class AnnotationEvidenceCollector(defaultdict):
 
 
 def _countFullSupport(evidEvals):
-    return len([ev for ev in evidEvals if ev.support <= EvidenceSupport.polymorphic])
+    """count support from normal and suspect evidence"""
+    supporting = [ev for ev in evidEvals if ev.support <= EvidenceSupport.polymorphic]
+    return (len([ev for ev in supporting if ev.suspect is None]),
+            len([ev for ev in supporting if ev.suspect is not None]))
+
+
+def _calculateRnaTsl(evidCollector):
+    """support from RNAs in a given set"""
+    goodCnt, suspectCnt = _countFullSupport(evidCollector)
+    if goodCnt >= 1:
+        return TrascriptionSupportLevel.tsl1
+    elif suspectCnt >= 1:
+        return TrascriptionSupportLevel.tsl2
+    else:
+        return TrascriptionSupportLevel.tsl5
+
+
+def _calculateEstTsl(evidCollector):
+    """support from ESTs in a given set"""
+    goodCnt, suspectCnt = _countFullSupport(evidCollector)
+    if goodCnt >= 2:
+        return TrascriptionSupportLevel.tsl2
+    elif goodCnt == 1:
+        return TrascriptionSupportLevel.tsl3
+    elif suspectCnt >= 1:
+        return TrascriptionSupportLevel.tsl4
+    else:
+        return TrascriptionSupportLevel.tsl5
 
 
 def _calculateTsl(evidCollector):
     """compute TSL from evidence in evidCollector"""
-    rnaSupportedCnt = _countFullSupport(evidCollector[EvidenceSource.UCSC_RNA])
-    if rnaSupportedCnt == 0:
-        rnaSupportedCnt = _countFullSupport(evidCollector[EvidenceSource.ENSEMBL_RNA])
-    if rnaSupportedCnt > 0:
-        return TrascriptionSupportLevel.tsl1
-    estSupportedCnt = _countFullSupport(evidCollector[EvidenceSource.UCSC_EST])
-    if estSupportedCnt > 2:
-        return TrascriptionSupportLevel.tsl2
-    if estSupportedCnt == 1:
-        return TrascriptionSupportLevel.tsl3
-    return TrascriptionSupportLevel.tsl5
+    ucscRnaTsl = _calculateRnaTsl(evidCollector[EvidenceSource.UCSC_RNA])
+    ensemblRnaTsl = _calculateRnaTsl(evidCollector[EvidenceSource.ENSEMBL_RNA])
+    estRnaTsl = _calculateEstTsl(evidCollector[EvidenceSource.UCSC_EST])
+    return min(ucscRnaTsl, ensemblRnaTsl, estRnaTsl)
 
 
 class SupportClassifier(object):
     """TSL classifier for transcripts with evidence and annotations in sqlite3
     databases. Classification on a per-transcript basis, however it is grouped
     by gene to gives good locality of the evidence."""
-    def __init__(self, evidReader, problemCases):
+    def __init__(self, evidReader):
         self.evidReader = evidReader
-        self.problemCases = problemCases
 
     @staticmethod
     def writeTsvHeaders(tslTsvFh, detailsTsvFh=None):
@@ -207,7 +226,7 @@ class SupportClassifier(object):
 
     def _compareWithEvidence(self, annotTrans, evidSrc, evidTrans, evidCollector, detailsTsvFh):
         evidSupport = compareMegWithEvidence(annotTrans, evidTrans)
-        suspect = self.problemCases.getProblem(evidTrans.rna.name)
+        suspect = evidTrans.attrs.genbankProblem
         if detailsTsvFh is not None:
             self._writeDetails(detailsTsvFh, annotTrans, evidSrc, evidTrans, evidSupport, suspect)
         if evidSupport < EvidenceSupport.feat_mismatch:

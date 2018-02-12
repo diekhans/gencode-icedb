@@ -87,7 +87,7 @@ class EvidencePslFactory(object):
         intron.alignFeatures = tuple(alignFeatures)
         return intron
 
-    def fromPsl(self, psl):
+    def fromPsl(self, psl, attrs=None):
         "convert a psl to an TranscriptFeatures object"
         chrom = Coords(psl.tName, psl.tStart, psl.tEnd, '+', psl.tSize)
         if psl.getTStrand() == '-':
@@ -95,6 +95,6 @@ class EvidencePslFactory(object):
         rna = Coords(psl.qName, psl.qStart, psl.qEnd, '+', psl.qSize)
         if psl.getQStrand() == '-':
             rna = rna.reverse()
-        trans = TranscriptFeatures(chrom, rna)
+        trans = TranscriptFeatures(chrom, rna, attrs=attrs)
         trans.features = tuple(self._buildFeatures(psl, trans))
         return trans

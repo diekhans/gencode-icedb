@@ -9,6 +9,7 @@ from pycbio.sys import fileOps
 from gencode_icedb.tsl.gbffProblemCaseParser import parseGbff, Organism
 from gencode_icedb.tsl.genbankProblemCasesDb import GenbankProblemCase
 
+
 def parseArgs():
     desc = """Scan genbank flat files looking for known problem libraries.
     This should be run on a cluster.
@@ -95,7 +96,6 @@ class OrgProblemCases(list):
         self.sort(key=lambda opc: (opc.startAcc,))
         for problemCase in self._genRanges():
             fileOps.prRow(tsvFh, problemCase)
-
 
 
 def gbffProblemCaseParse(gbffInputs):

@@ -5,7 +5,6 @@ from gencode_icedb.general.spliceJuncs import spliceJuncsGetSeqs
 from gencode_icedb.tsl import minIntronSize
 from gencode_icedb.general.transFeatures import ExonFeature, IntronFeature, TranscriptFeatures, Utr5RegionFeature, CdsRegionFeature, Utr3RegionFeature, NonCodingRegionFeature
 
-# FIXME: use term other the metadata, call attributes and merge in attrs table
 # FIXME: consistent variable naming: annot, annotTrans transAnnot ..
 
 
@@ -138,7 +137,7 @@ class AnnotationGenePredFactory(object):
                              trans.chrom.subrange(gp.exons[iBlkNext - 1].end, gp.exons[iBlkNext].start),
                              trans.rna.subrange(rnaEnd, rnaEnd), donorSeq, acceptorSeq)
 
-    def fromGenePred(self, gp, metaData=None):
+    def fromGenePred(self, gp, attrs=None):
         "convert a genePred to an AnnotTranscript"
         rnaSize = gp.getLenExons()
         if gp.cdsStart < gp.cdsEnd:
@@ -148,6 +147,6 @@ class AnnotationGenePredFactory(object):
 
         chrom = Coords(gp.chrom, gp.txStart, gp.txEnd, '+', self.chromSizeFunc(gp.chrom))
         rna = Coords(gp.name, 0, rnaSize, gp.strand, rnaSize)
-        trans = TranscriptFeatures(chrom, rna, cdsChromStart, cdsChromEnd, metaData)
+        trans = TranscriptFeatures(chrom, rna, cdsChromStart, cdsChromEnd, attrs)
         trans.features = tuple(self._buildFeatures(gp, trans))
         return trans

@@ -2,8 +2,7 @@
 Parse problem cases from set of genbank flat files.
 """
 import re
-from collections import namedtuple
-from pycbio.sys import fileOps, symEnum
+from pycbio.sys import fileOps
 from gencode_icedb.tsl.supportDefs import Organism, GenbankProblemReason, EvidenceType
 from gencode_icedb.tsl.genbankProblemCasesDb import GenbankProblemCase
 

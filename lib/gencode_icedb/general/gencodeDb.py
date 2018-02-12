@@ -20,7 +20,7 @@ GENCODE_TAG_TABLE = "gencode_tag"
 
 
 def _isChrYPar(annotTrans):
-    return ("PAR" in annotTrans.metaData.tags) and (annotTrans.chrom.name == "chrY")
+    return ("PAR" in annotTrans.attrs.tags) and (annotTrans.chrom.name == "chrY")
 
 
 class UcscGencodeReader(object):
@@ -38,19 +38,15 @@ class UcscGencodeReader(object):
         self.conn.close()
         self.conn = None
 
-    def __del__(self):
-        if self.conn is not None:
-            self.close()
-
-    def _getMetaData(self, gp):
-        metaData = ObjDict()
-        metaData.attrs = self.attrDbTable.getrByTranscriptId(gp.name)
-        metaData.tags = frozenset([t.tag for t in self.tagDbTable.getByTranscriptId(gp.name)])
-        return metaData
+    def _getAttrs(self, gp):
+        attrs = ObjDict()
+        attrs.update(self.attrDbTable.getrByTranscriptId(gp.name)._asdict())
+        attrs.tags = frozenset([t.tag for t in self.tagDbTable.getByTranscriptId(gp.name)])
+        return attrs
 
     def _makeTransAnnot(self, gp):
         "will return None if chrY PAR trans and these are being filtered"
-        transAnnot = self.annotFactory.fromGenePred(gp, self._getMetaData(gp))
+        transAnnot = self.annotFactory.fromGenePred(gp, self._getAttrs(gp))
         if self.filterChrYPar and _isChrYPar(transAnnot):
             return None
         else:

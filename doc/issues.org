@@ -1,1 +1,2 @@
 * tslGbffGetProblemCases should be run on cluster, drop multiprocessor mode.
+* make clear genbank problem vs suspect (problem makes a gb suspect)

@@ -40,15 +40,15 @@ def getTranscripts(gencodeReader, gencodeIds):
 def groupTranscripts(annotTranses):
     groupMap = defaultdict(list)
     for trans in annotTranses:
-        groupMap[trans.metaData.attrs.geneId].append(trans)
+        groupMap[trans.attrs.geneId].append(trans)
     grouped = []
     for geneId in groupMap.keys():
         grouped.append(groupMap[geneId])
     return grouped
 
 
-def classifyGeneTranscripts(evidenceReader, genbankProblems, geneGroupedTrans, tslTsvFh, detailsTsvFh):
-    classifier = SupportClassifier(evidenceReader, genbankProblems)
+def classifyGeneTranscripts(evidenceReader, geneGroupedTrans, tslTsvFh, detailsTsvFh):
+    classifier = SupportClassifier(evidenceReader)
     classifier.writeTsvHeaders(tslTsvFh, detailsTsvFh)
     for geneTranses in geneGroupedTrans:
         classifier.classifyGeneTranscripts(geneTranses, tslTsvFh, detailsTsvFh)
@@ -66,7 +66,7 @@ def tslGencodeCollectSupport(args):
     with ExitStack() as stack:
         tslTsvFh = stack.enter_context(open(tslTmpTsv, "w"))
         detailsTsvFh = stack.enter_context(open(args.detailsTsv, "w")) if args.detailsTsv is not None else None
-        classifyGeneTranscripts(evidenceReader, genbankProblems, geneGroupedTranses, tslTsvFh, detailsTsvFh)
+        classifyGeneTranscripts(evidenceReader, geneGroupedTranses, tslTsvFh, detailsTsvFh)
     fileOps.atomicInstall(tslTmpTsv, args.tslTsv)
 
 

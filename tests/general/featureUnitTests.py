@@ -6,8 +6,10 @@ if __name__ == '__main__':
     sys.path = [os.path.join(rootDir, "lib"),
                 os.path.join(rootDir, "extern/pycbio/lib")] + sys.path
 import unittest
+from pycbio.sys.objDict import ObjDict
 from pycbio.sys.testCaseBase import TestCaseBase
 from gencode_icedb.general.genome import GenomeReaderFactory
+from gencode_icedb.general.transFeatures import getFeaturesOfType, ExonFeature, Utr3RegionFeature
 from gencode_icedb.general.evidFeatures import EvidencePslFactory
 from gencode_icedb.general.annotFeatures import AnnotationGenePredFactory
 from pycbio.hgdata.hgLite import sqliteConnect
@@ -21,7 +23,6 @@ noCheckResults = False  # don't check results
 
 if debugResults or noCheckResults:
     print("WARNING: debug variables set", file=sys.stderr)
-
 
 def getInputFile(base):
     "from input relative to test file"
@@ -784,6 +785,28 @@ class AnnotationTests(FeatureTestBase):
             trans = factory.fromGenePred(gp)
             bed = trans.toBed("100,0,0")
             self.assertEqual(len(bed.getRow()), 12)
+
+    def testAttrs(self):
+        def getUtr3Feature(trans):
+            # test case has one 3'UTR feature
+            for e in getFeaturesOfType(trans.features, ExonFeature):
+                for u in getFeaturesOfType(e.annotFeatures, Utr3RegionFeature):
+                    return u
+
+        factory = AnnotationGenePredFactory(GenomeSeqSrc.obtain("hg19"))
+        tattrs = ObjDict(name = "Fred")
+        uattrs = ObjDict(name = "Barney")
+        trans = factory.fromGenePred(self.__getSet1Gp("ENST00000334029.2"), tattrs)
+        # has one 3'UTR feature, so use it for the attrs
+        utr3 = getUtr3Feature(trans)
+        utr3.attrs = uattrs
+
+        rcTrans = trans.reverseComplement()
+        rcUtr3 = getUtr3Feature(rcTrans)
+        self.assertEqual("Fred", rcTrans.attrs.name)
+        self.assertEqual("Barney", rcUtr3.attrs.name)
+
+
 
 
 def suite():

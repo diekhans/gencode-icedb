@@ -5,6 +5,7 @@ from pycbio.sys.symEnum import SymEnum
 
 # FIXME: make organization consistent between TSL and RSL stuff
 
+
 class Organism(SymEnum):
     hs = 1
     mm = 2

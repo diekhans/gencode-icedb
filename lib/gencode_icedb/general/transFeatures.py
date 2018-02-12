@@ -2,10 +2,12 @@
 Features of a transcript annotation or alignment.
 """
 from __future__ import print_function
-import copy
+from copy import deepcopy
+from pycbio.hgdata.coords import Coords
 from pycbio.hgdata import dnaOps
 from pycbio.hgdata.frame import Frame
 from pycbio.hgdata.bed import Bed
+from pycbio.sys.objDict import ObjDict
 from gencode_icedb.general.spliceJuncs import SpliceJuncs, spliceJuncsClassify
 
 
@@ -19,23 +21,48 @@ def _reverseComplementChildren(rcParent, features):
     return tuple(rcFeatures)
 
 
+def getFeaturesOfType(feats, types):
+    """Get of features that are of one of the specified types in the
+    list of features..  The types argument can be one type of a list of
+    types"""
+    if isinstance(types, type):
+        types = (types,)
+    return [f for f in feats if isinstance(f, types)]
+
+
+def countFeaturesOfType(feats, types):
+    """Count number of features that are of one of the specified types in the
+    list of features..  The types argument can be one type of a list of
+    types"""
+    if isinstance(types, type):
+        types = (types,)
+    return sum([1 for f in feats if isinstance(f, types)])
+
+
 class TransFeature(object):
     """A feature of annotation or alignment to the genome.  The RNA range is
     in genomic coordinates and it's length may not match the length of the
     feature in gapped feature types, due to gap closing.  For introns, are the
     interbase coordinates of the intron, which might not be equal if there are
     unaligned bases in the intron.  It is possible for either the chrom or RNA
-    range to be None."""
-    __slots__ = ("parent", "iParent", "chrom", "rna")
+    range to be None.
+
+    Attributes maybe associated with any feature.  It supplied, they are of
+    type ObjDict and thus addressable by field name. The attrs property will
+    be None if not supply, so this much be checked first.
+    """
+    __slots__ = ("parent", "iParent", "chrom", "rna", "attrs")
     name = None  # overridden by derived case
 
-    def __init__(self, parent, iParent, chrom, rna):
-        assert (chrom is None) or ((chrom.start is not None) and (chrom.end is not None))
-        assert (rna is None) or ((rna.start is not None) and (rna.end is not None))
+    def __init__(self, parent, iParent, chrom, rna, attrs):
+        assert (chrom is None) or (isinstance(chrom, Coords) and (chrom.start is not None) and (chrom.end is not None))
+        assert (rna is None) or (isinstance(rna, Coords) and (rna.start is not None) and (rna.end is not None))
+        assert (attrs is None) or isinstance(attrs, ObjDict)
         self.parent = parent
         self.iParent = iParent
         self.chrom = chrom
         self.rna = rna
+        self.attrs = attrs
 
     def __str__(self):
         "default str(), uses name"
@@ -91,14 +118,14 @@ class TransFeature(object):
 
     def reverseComplement(self, rcParent, iRcParent):
         "default reverseComplement when __init__ takes just coordinates"
-        return self.__class__(rcParent, iRcParent, self.chrom.reverse(), self.rna.reverse())
+        return self.__class__(rcParent, iRcParent, self.chrom.reverse(), self.rna.reverse(), deepcopy(self.attrs))
 
 
 class AlignmentFeature(TransFeature):
     "ABC for alignment features"
-    def __init__(self, parent, iParent, chrom, rna):
+    def __init__(self, parent, iParent, chrom, rna, attrs=None):
         assert isinstance(parent, StructureFeature)
-        super(AlignmentFeature, self).__init__(parent, iParent, chrom, rna)
+        super(AlignmentFeature, self).__init__(parent, iParent, chrom, rna, attrs)
 
     def prevFeat(self):
         """Return the next feature in this sequence of features.  This maybe a
@@ -136,11 +163,11 @@ class ChromInsertFeature(AlignmentFeature):
     name = "cins"
     __slots__ = ()
 
-    def __init__(self, parent, iParent, chrom):
-        super(ChromInsertFeature, self).__init__(parent, iParent, chrom, None)
+    def __init__(self, parent, iParent, chrom, attrs=None):
+        super(ChromInsertFeature, self).__init__(parent, iParent, chrom, None, attrs)
 
     def reverseComplement(self, rcParent, iRcParent):
-        return ChromInsertFeature(rcParent, iRcParent, self.chrom.reverse())
+        return ChromInsertFeature(rcParent, iRcParent, self.chrom.reverse(), deepcopy(self.attrs))
 
 
 class RnaInsertFeature(AlignmentFeature):
@@ -148,17 +175,17 @@ class RnaInsertFeature(AlignmentFeature):
     name = "rins"
     __slots__ = ()
 
-    def __init__(self, parent, iParent, rna):
-        super(RnaInsertFeature, self).__init__(parent, iParent, None, rna)
+    def __init__(self, parent, iParent, rna, attrs=None):
+        super(RnaInsertFeature, self).__init__(parent, iParent, None, rna, attrs)
 
     def reverseComplement(self, rcParent, iRcParent):
-        return RnaInsertFeature(rcParent, iRcParent, self.rna.reverse())
+        return RnaInsertFeature(rcParent, iRcParent, self.rna.reverse(), deepcopy(self.attrs))
 
 
 class AnnotationFeature(TransFeature):
     "ABC for annotation features"
-    def __init__(self, parent, iParent, chrom, rna):
-        super(AnnotationFeature, self).__init__(parent, iParent, chrom, rna)
+    def __init__(self, parent, iParent, chrom, rna, attrs=None):
+        super(AnnotationFeature, self).__init__(parent, iParent, chrom, rna, attrs)
 
     def prevFeat(self):
         """Return the next feature in this sequence of features.  This maybe a
@@ -196,9 +223,9 @@ class CdsRegionFeature(AnnotationFeature):
     name = "CDS"
     __slots__ = ("frame")
 
-    def __init__(self, parent, iParent, chrom, rna, frame):
+    def __init__(self, parent, iParent, chrom, rna, frame, attrs=None):
         assert(isinstance(frame, Frame))
-        super(CdsRegionFeature, self).__init__(parent, iParent, chrom, rna)
+        super(CdsRegionFeature, self).__init__(parent, iParent, chrom, rna, attrs)
         self.frame = frame
 
     def __str__(self):
@@ -207,7 +234,7 @@ class CdsRegionFeature(AnnotationFeature):
     def reverseComplement(self, rcParent, iRcParent):
         rcRna = self.rna.reverse()
         rcFrame = self.frame + len(rcRna)
-        return CdsRegionFeature(rcParent, iRcParent, self.chrom.reverse(), rcRna, rcFrame)
+        return CdsRegionFeature(rcParent, iRcParent, self.chrom.reverse(), rcRna, rcFrame, deepcopy(self.attrs))
 
 
 class Utr3RegionFeature(AnnotationFeature):
@@ -224,9 +251,9 @@ class NonCodingRegionFeature(AnnotationFeature):
 
 class StructureFeature(TransFeature):
     "ABC for structural features"
-    def __init__(self, parent, iParent, chrom, rna):
+    def __init__(self, parent, iParent, chrom, rna, attrs=None):
         assert isinstance(parent, TranscriptFeatures)
-        super(StructureFeature, self).__init__(parent, iParent, chrom, rna)
+        super(StructureFeature, self).__init__(parent, iParent, chrom, rna, attrs)
 
 
 class ExonFeature(StructureFeature):
@@ -234,8 +261,8 @@ class ExonFeature(StructureFeature):
     name = "exon"
     __slots__ = ("annotFeatures", "alignFeatures")
 
-    def __init__(self, parent, iParent, chrom, rna):
-        super(ExonFeature, self).__init__(parent, iParent, chrom, rna)
+    def __init__(self, parent, iParent, chrom, rna, attrs=None):
+        super(ExonFeature, self).__init__(parent, iParent, chrom, rna, attrs)
         self.annotFeatures = self.alignFeatures = None
 
     def toStrTree(self):
@@ -256,7 +283,7 @@ class ExonFeature(StructureFeature):
             self._dumpChildren(fh, indent + 2, self.alignFeatures)
 
     def reverseComplement(self, rcParent, iRcParent):
-        rcExon = ExonFeature(rcParent, iRcParent, self.chrom.reverse(), self.rna.reverse())
+        rcExon = ExonFeature(rcParent, iRcParent, self.chrom.reverse(), self.rna.reverse(), deepcopy(self.attrs))
         rcExon.annotFeatures = _reverseComplementChildren(rcExon, self.annotFeatures)
         rcExon.alignFeatures = _reverseComplementChildren(rcExon, self.alignFeatures)
         return rcExon
@@ -292,8 +319,8 @@ class IntronFeature(StructureFeature):
     name = "intron"
     __slots__ = ("donorSeq", "acceptorSeq", "spliceJuncs", "alignFeatures")
 
-    def __init__(self, parent, iParent, chrom, rna, donorSeq, acceptorSeq):
-        super(IntronFeature, self).__init__(parent, iParent, chrom, rna)
+    def __init__(self, parent, iParent, chrom, rna, donorSeq, acceptorSeq, attrs=None):
+        super(IntronFeature, self).__init__(parent, iParent, chrom, rna, attrs)
         self.donorSeq = self.acceptorSeq = self.spliceJuncs = None
         if donorSeq is not None:
             self.spliceJuncs = spliceJuncsClassify(donorSeq, acceptorSeq)
@@ -333,7 +360,7 @@ class IntronFeature(StructureFeature):
 
     def reverseComplement(self, rcParent, iRcParent):
         rcIntron = IntronFeature(rcParent, iRcParent, self.chrom.reverse(), self.rna.reverse(),
-                                 self.donorSeq, self.acceptorSeq)
+                                 self.donorSeq, self.acceptorSeq, deepcopy(self.attrs))
         rcIntron.alignFeatures = _reverseComplementChildren(rcIntron, self.alignFeatures)
         return rcIntron
 
@@ -348,16 +375,15 @@ class TranscriptFeatures(TransFeature):
     features are kept in chromosome order (positive strand).
     """
     name = "trans"
-    __slots__ = ("chrom", "rna", "cdsChromStart", "cdsChromEnd", "features", "metaData")
+    __slots__ = ("chrom", "rna", "cdsChromStart", "cdsChromEnd", "features")
 
-    def __init__(self, chrom, rna, cdsChromStart=None, cdsChromEnd=None, metaData=None):
-        super(TranscriptFeatures, self).__init__(None, None, chrom, rna)
+    def __init__(self, chrom, rna, cdsChromStart=None, cdsChromEnd=None, attrs=None):
+        super(TranscriptFeatures, self).__init__(None, None, chrom, rna, attrs)
         self.chrom = chrom
         self.rna = rna
         self.cdsChromStart = cdsChromStart
         self.cdsChromEnd = cdsChromEnd
         self.features = None
-        self.metaData = metaData
 
     def __str__(self):
         return "t={}/{}, rna={}/{} {}".format(str(self.chrom), self.chrom.strand,
@@ -378,6 +404,7 @@ class TranscriptFeatures(TransFeature):
 
     def toBed(self, itemRgb=""):
         """convert transcript and CDS to a Bed object"""
+        # FIXME: shouldn't me method, but I/O object
         blocks = []
         for feat in self.features:
             if isinstance(feat, ExonFeature):
@@ -404,6 +431,6 @@ class TranscriptFeatures(TransFeature):
 
         rcTrans = TranscriptFeatures(self.chrom.reverse(), self.rna.reverse(),
                                      rcCdsChromStart, rcCdsChromEnd,
-                                     copy.deepcopy(self.metaData))
+                                     deepcopy(self.attrs))
         rcTrans.features = _reverseComplementChildren(rcTrans, self.features)
         return rcTrans
