@@ -6,8 +6,9 @@ from contextlib import ExitStack
 from collections import defaultdict
 from pycbio.sys import fileOps
 from gencode_icedb.general.gencodeDb import UcscGencodeReader
-from gencode_icedb.general.evidenceDb import EvidenceReader
+from gencode_icedb.tsl.evidenceDb import EvidenceReader
 from gencode_icedb.tsl.supportClassify import SupportClassifier
+from gencode_icedb.tsl.genbankProblemCases import GenbankProblemCases
 
 # FIXME: rsl uses csv.writer, make all consisten
 
@@ -46,8 +47,8 @@ def groupTranscripts(annotTranses):
     return grouped
 
 
-def classifyGeneTranscripts(evidenceReader, geneGroupedTrans, tslTsvFh, detailsTsvFh):
-    classifier = SupportClassifier(evidenceReader)
+def classifyGeneTranscripts(evidenceReader, genbankProblems, geneGroupedTrans, tslTsvFh, detailsTsvFh):
+    classifier = SupportClassifier(evidenceReader, genbankProblems)
     classifier.writeTsvHeaders(tslTsvFh, detailsTsvFh)
     for geneTranses in geneGroupedTrans:
         classifier.classifyGeneTranscripts(geneTranses, tslTsvFh, detailsTsvFh)
@@ -56,6 +57,7 @@ def classifyGeneTranscripts(evidenceReader, geneGroupedTrans, tslTsvFh, detailsT
 def tslGencodeCollectSupport(args):
     gencodeReader = UcscGencodeReader(args.gencodeDb)
     evidenceReader = EvidenceReader(args.evidenceDb)
+    genbankProblems = GenbankProblemCases(evidenceReader.conn)
     geneGroupedTranses = groupTranscripts(getTranscripts(gencodeReader, args.gencodeIds))
     fileOps.ensureFileDir(args.tslTsv)
     if args.detailsTsv is not None:
@@ -64,7 +66,7 @@ def tslGencodeCollectSupport(args):
     with ExitStack() as stack:
         tslTsvFh = stack.enter_context(open(tslTmpTsv, "w"))
         detailsTsvFh = stack.enter_context(open(args.detailsTsv, "w")) if args.detailsTsv is not None else None
-        classifyGeneTranscripts(evidenceReader, geneGroupedTranses, tslTsvFh, detailsTsvFh)
+        classifyGeneTranscripts(evidenceReader, genbankProblems, geneGroupedTranses, tslTsvFh, detailsTsvFh)
     fileOps.atomicInstall(tslTmpTsv, args.tslTsv)
 
 

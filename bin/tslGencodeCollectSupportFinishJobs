@@ -6,7 +6,7 @@ from pycbio.sys import fileOps
 from pycbio.tsv import TsvReader, tsvRowToDict
 from gencode_icedb.tsl.supportDefs import TrascriptionSupportLevel, EvidenceSupport
 from gencode_icedb.tsl.tslModels import tslConnect, tslClose, GencodeTranscriptSupport, GencodeTranscriptSupportDetails
-from gencode_icedb.general.evidenceDb import EvidenceSource
+from gencode_icedb.tsl.evidenceDb import EvidenceSource
 
 bulk_size = 75   # size of each bulk insert
 

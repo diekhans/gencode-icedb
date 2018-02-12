@@ -63,6 +63,7 @@ def buildEvidDb(testCases, assemblyReport, ucscDb, ensemblCDnaDb, evidDbFile):
     getEnsemblAlns(ensemblCDnaDb, assemblyReport, ranges, evidDbFile)
     getProblemCases(ucscDb, evidDbFile)
 
+
 def writeTransIdsTmpFile(testCases):
     transIdTmp = fileOps.tmpFileGet("transIds")
     with open(transIdTmp, 'w') as fh:

@@ -4,9 +4,8 @@ PeeWee data models for RNA-Seq metadata and splice junctions.
 from __future__ import print_function
 from peewee import Proxy, Model, Field, PrimaryKeyField, CharField
 from gencode_icedb.general.peeweeOps import peeweeConnect, peeweeClose, peeweeClassToTableName, PeeweeModelMixins
-from gencode_icedb.general.evidenceDb import EvidenceSource
-from gencode_icedb.tsl.supportDefs import TrascriptionSupportLevel, EvidenceSupport
-from gencode_icedb.tsl.genbankProblemCases import GenbankProblemReason
+from gencode_icedb.tsl.evidenceDb import EvidenceSource
+from gencode_icedb.tsl.supportDefs import TrascriptionSupportLevel, EvidenceSupport, GenbankProblemReason
 
 _database_proxy = Proxy()
 
@@ -27,13 +26,6 @@ def tslClose(conn):
     peeweeClose(conn)
 
 
-class BaseModel(Model, PeeweeModelMixins):
-    "base for peewee models, used to bind proxy"
-    class Meta:
-        database = _database_proxy
-        table_function = peeweeClassToTableName
-
-
 class TrascriptionSupportLevelField(Field):
     """A field storing a TrascriptionSupportLevel python enumeration as a string in the database."""
     db_field = 'text'
@@ -43,15 +35,6 @@ class TrascriptionSupportLevelField(Field):
 
     def python_value(self, value):
         return TrascriptionSupportLevel(value)
-
-
-class GencodeTranscriptSupport(BaseModel):
-    """Transcript-level support"""
-    id = PrimaryKeyField()
-    transcriptId = CharField(index=True,
-                             help_text="""GENCODE trancript id""")
-    level = TrascriptionSupportLevelField(index=True,
-                                          help_text="""GENCODE TSL""")
 
 
 class EvidenceSourceField(Field):
@@ -76,6 +59,36 @@ class EvidenceSupportField(Field):
         return EvidenceSupport(value)
 
 
+class GenbankProblemReasonField(Field):
+    """A field storing an GenbankProblemReason python enumeration as a string in the database."""
+    db_field = 'text'
+
+    def db_value(self, value):
+        return None if value is None else str(value)
+
+    def python_value(self, value):
+        if (value is None) or (value is ''):
+            return None
+        else:
+            return GenbankProblemReason(value)
+
+
+class BaseModel(Model, PeeweeModelMixins):
+    "base for peewee models, used to bind proxy"
+    class Meta:
+        database = _database_proxy
+        table_function = peeweeClassToTableName
+
+
+class GencodeTranscriptSupport(BaseModel):
+    """Transcript-level support"""
+    id = PrimaryKeyField()
+    transcriptId = CharField(index=True,
+                             help_text="""GENCODE trancript id""")
+    level = TrascriptionSupportLevelField(index=True,
+                                          help_text="""GENCODE TSL""")
+
+
 class GencodeTranscriptSupportDetails(BaseModel):
     """Transcript-level support"""
     id = PrimaryKeyField()
@@ -87,24 +100,5 @@ class GencodeTranscriptSupportDetails(BaseModel):
                        help_text="""Evidence identifier""")
     evidSupport = EvidenceSupportField(index=True,
                                        help_text="""Support provided by this piece of evidence""")
-
-
-class GenbankProblemReasonField(Field):
-    """A field storing an GenbankProblemReason python enumeration as a string in the database."""
-    db_field = 'text'
-
-    def db_value(self, value):
-        return str(value)
-
-    def python_value(self, value):
-        return GenbankProblemReason(value)
-
-
-class GenbankProblemCase(BaseModel):
-    """GenBank problem case, stored as a range of accessions"""
-    id = PrimaryKeyField()
-    startAcc = CharField(help_text="""Starting GenBank accession in range, without version""")
-    endAcc = CharField(index=False,
-                       help_text="""Ending GenBank accession in range, without version""")
-    reason = GenbankProblemReasonField(index=False,
-                                       help_text="""Problem reason""")
+    suspect = GenbankProblemReasonField(index=False, null=True,
+                                        help_text="""If not NULL evidence is suspect with this reason""")

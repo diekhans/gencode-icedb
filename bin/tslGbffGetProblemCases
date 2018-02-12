@@ -6,13 +6,13 @@ import re
 import argparse
 from collections import namedtuple
 from pycbio.sys import fileOps
-from gencode_icedb.tsl.gbffProblemCaseParser import gbffProblemCaseParse, Organism
-# Note: wanted to do this via eutils, however NCBI can't
-# query on clone library
-
+from gencode_icedb.tsl.gbffProblemCaseParser import parseGbff, Organism
+from gencode_icedb.tsl.genbankProblemCasesDb import GenbankProblemCase
 
 def parseArgs():
     desc = """Scan genbank flat files looking for known problem libraries.
+    This should be run on a cluster.
+
     Should scan:
         gbpri*.seq.gz
         gbrod*.seq.gz
@@ -28,8 +28,6 @@ def parseArgs():
    done by the UCSC GenBank pipeline.
 """
     parser = argparse.ArgumentParser(description=desc)
-    parser.add_argument('--maxProcess', type=int, default=2,
-                        help="maximum number of process to use for parallel parse")
     parser.add_argument('hsTsvOut',
                         help="output for human")
     parser.add_argument('mmTsvOut',
@@ -39,62 +37,76 @@ def parseArgs():
     return parser.parse_args()
 
 
-class GenbankProblemCase(namedtuple("GenbankProblemCase",
-                                    ("startAcc", "endAcc", "reason"))):
-    """a range of problem case"""
+class SplitAcc(namedtuple("SplitAcc", ("alpha", "numeric", "version"))):
+    """split accession into (alpha, numeric, version).  Numeric is still string."""
     __slots__ = ()
-    pass
 
-
-class SplitAcc(list):
-    "split accssion into (alpha, numeric, version)"
-    __slots__ = ("alpha", "numeric", "version")
-
-    def __init__(self, acc):
-        parts = re.split("([A-Z]+)([0-9]+)\\.([0-9]+)", acc)
-        if len(parts) != 5:
+    @staticmethod
+    def parse(acc):
+        m = re.match("^([A-Z]+)([0-9]+)(\\.([0-9]+))?$", acc)
+        if not m:
             raise Exception("can't parse accession \"{}\"".format(acc))
-        # keep as chars, but compare as ints
-        self.alpha = parts[1]
-        self.numeric = parts[2]
-        self.version = parts[3]
+        return SplitAcc(m.group(1), m.group(2), m.group(4))
 
     def __str__(self):
-        return "{}{}.{}".format(self.alpha, self.numeric, self.version)
+        if self.version is None:
+            return "{}{}".format(self.alpha, self.numeric)
+        else:
+            return "{}{}.{}".format(self.alpha, self.numeric, self.version)
 
-    def isIncr(self, accSplit):
+    @property
+    def acc(self):
+        return "{}{}".format(self.alpha, self.numeric)
+
+    def isIncrOf(self, accSplit):
         """is accSplit numeric part one more than this part and the
         rest the same"""
         return (accSplit.alpha == self.alpha) and (int(accSplit.numeric) == int(self.numeric) + 1) and (accSplit.version == self.version)
 
 
 class OrgProblemCases(list):
-    "collect organism problem cases and convert to accession ranges"
+    """collect organism problem cases and convert from single accession to
+    accession ranges"""
 
-    def _popRange(self, idx):
+    def _findRange(self, idx):
+        organism = self[idx].organism
+        etype = self[idx].etype
         reason = self[idx].reason
-        startAcc = endAcc = SplitAcc(self[idx].acc)
+        startAcc = endAcc = SplitAcc.parse(self[idx].startAcc)
         idx += 1
-        while (idx < len(self)) and (self[idx].reason == reason):
-            nextAcc = SplitAcc(self[idx].acc)
-            if endAcc.isIncr(nextAcc):
+        while ((idx < len(self)) and (self[idx].organism == organism)
+               and (self[idx].etype == etype) and (self[idx].reason == reason)):
+            nextAcc = SplitAcc.parse(self[idx].startAcc)
+            if endAcc.isIncrOf(nextAcc):
                 endAcc = nextAcc
                 idx += 1
             else:
                 break
-        return (GenbankProblemCase(str(startAcc), str(endAcc), reason), idx)
+        return (GenbankProblemCase(organism, etype, startAcc.acc, endAcc.acc, reason), idx)
 
-    def writeRanges(self, tsvFh):
-        fileOps.prRowv(tsvFh, "startAcc", "endAcc", "reason")
-        self.sort(key=lambda opc: (opc.acc,))
+    def _genRanges(self):
         idx = 0
         while idx < len(self):
-            problemCase, idx = self._popRange(idx)
+            problemCase, idx = self._findRange(idx)
+            yield problemCase
+
+    def writeRanges(self, tsvFh):
+        fileOps.prRowv(tsvFh, "organism", "etype", "startAcc", "endAcc", "reason")
+        self.sort(key=lambda opc: (opc.startAcc,))
+        for problemCase in self._genRanges():
             fileOps.prRow(tsvFh, problemCase)
 
 
-def collectProblemCases(gbffInputs, maxProcess):
-    problemEntries = gbffProblemCaseParse(gbffInputs, maxProcess)
+
+def gbffProblemCaseParse(gbffInputs):
+    problemCases = []
+    for gbffInput in gbffInputs:
+        problemCases.extend(parseGbff(gbffInput))
+    return problemCases
+
+
+def collectProblemCases(gbffInputs):
+    problemEntries = gbffProblemCaseParse(gbffInputs)
     byOrgProblemCases = {o: OrgProblemCases() for o in Organism}
     for problemEntry in problemEntries:
         byOrgProblemCases[problemEntry.organism].append(problemEntry)
@@ -107,7 +119,7 @@ def writeProblemCases(orgProblemCases, tsvOut):
 
 
 def gbffGetProblemCases(opts):
-    byOrgProblemCases = collectProblemCases(opts.gbffInputs, opts.maxProcess)
+    byOrgProblemCases = collectProblemCases(opts.gbffInputs)
     writeProblemCases(byOrgProblemCases[Organism.hs], opts.hsTsvOut)
     writeProblemCases(byOrgProblemCases[Organism.mm], opts.mmTsvOut)
 

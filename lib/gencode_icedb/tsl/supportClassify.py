@@ -21,7 +21,7 @@ from pycbio.sys import fileOps
 from pycbio.hgdata.coords import Coords
 from gencode_icedb.general.transFeatures import ExonFeature, ChromInsertFeature, RnaInsertFeature
 from gencode_icedb.tsl.supportDefs import EvidenceSupport, TrascriptionSupportLevel
-from gencode_icedb.general.evidenceDb import EvidenceSource
+from gencode_icedb.tsl.evidenceDb import EvidenceSource
 
 
 # limits on size of as single indel in an exon.
@@ -152,7 +152,7 @@ class EvidenceCache(object):
 
 
 class AnnotationEvidenceEval(namedtuple("AnnotationEvidence",
-                                        ("annotId", "evidSrc", "evidId", "support"))):
+                                        ("annotId", "evidSrc", "evidId", "support", "suspect"))):
     """Evaluation of an annotation against an evidence alignment."""
     slots = ()
 
@@ -191,25 +191,28 @@ class SupportClassifier(object):
     """TSL classifier for transcripts with evidence and annotations in sqlite3
     databases. Classification on a per-transcript basis, however it is grouped
     by gene to gives good locality of the evidence."""
-    def __init__(self, evidReader):
+    def __init__(self, evidReader, problemCases):
         self.evidReader = evidReader
+        self.problemCases = problemCases
 
     @staticmethod
     def writeTsvHeaders(tslTsvFh, detailsTsvFh=None):
         fileOps.prRowv(tslTsvFh, "transcriptId", "level")
         if detailsTsvFh is not None:
-            fileOps.prRowv(detailsTsvFh, "transcriptId", "evidSrc", "evidId", "evidSupport")
+            fileOps.prRowv(detailsTsvFh, "transcriptId", "evidSrc", "evidId", "evidSupport", "suspect")
 
-    def _writeDetails(self, detailsTsvFh, annotTrans, evidSrc, evidTrans, evidSupport):
-        fileOps.prRowv(detailsTsvFh, annotTrans.rna.name, evidSrc, evidTrans.rna.name, evidSupport)
+    def _writeDetails(self, detailsTsvFh, annotTrans, evidSrc, evidTrans, evidSupport, suspect):
+        fileOps.prRowv(detailsTsvFh, annotTrans.rna.name, evidSrc, evidTrans.rna.name, evidSupport,
+                       "" if suspect is None else suspect)
 
     def _compareWithEvidence(self, annotTrans, evidSrc, evidTrans, evidCollector, detailsTsvFh):
         evidSupport = compareMegWithEvidence(annotTrans, evidTrans)
+        suspect = self.problemCases.getProblem(evidTrans.rna.name)
         if detailsTsvFh is not None:
-            self._writeDetails(detailsTsvFh, annotTrans, evidSrc, evidTrans, evidSupport)
+            self._writeDetails(detailsTsvFh, annotTrans, evidSrc, evidTrans, evidSupport, suspect)
         if evidSupport < EvidenceSupport.feat_mismatch:
             evidCollector.add(evidSrc,
-                              AnnotationEvidenceEval(annotTrans, evidSrc, evidTrans.rna.name, evidSupport))
+                              AnnotationEvidenceEval(annotTrans, evidSrc, evidTrans.rna.name, evidSupport, suspect))
 
     def _collectTransSupport(self, annotTrans, evidCache, detailsTsvFh):
         evidCollector = AnnotationEvidenceCollector(annotTrans)

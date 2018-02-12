@@ -44,14 +44,14 @@ ensemblIdListTest: mkdirs
 problemCasesTests: problemCasesParseTest problemCasesLoadTest
 
 problemCasesParseTest: mkdirs
-	${tslGbffGetProblemCases} --maxProcess=2 output/hs.$@.tsv output/mm.$@.tsv input/problem1.gbff input/problem2.gbff
+	${tslGbffGetProblemCases} output/hs.$@.tsv output/mm.$@.tsv input/problem1.gbff input/problem2.gbff
 	diff expected/hs.$@.tsv output/hs.$@.tsv
 	diff expected/mm.$@.tsv output/mm.$@.tsv
 
 problemCasesLoadTest: mkdirs
 	@rm -f output/$@.db
 	${tslGenbankProblemCasesLoad} expected/hs.problemCasesParseTest.tsv output/$@.db
-	sqlite3 --batch --header output/$@.db 'select startAcc, endAcc, reason from genbank_problem_case;' > output/$@.tsv
+	sqlite3 --batch --header output/$@.db 'select organism, etype, startAcc, endAcc, reason from genbank_problem_case;' > output/$@.tsv
 	diff expected/hs.problemCasesParseTest.tsv output/$@.tsv
 
 mkdirs:

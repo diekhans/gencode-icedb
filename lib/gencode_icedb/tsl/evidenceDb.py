@@ -5,8 +5,6 @@ from pycbio.sys.symEnum import SymEnum
 from pycbio.hgdata.hgLite import sqliteConnect, PslDbTable
 from gencode_icedb.general.evidFeatures import EvidencePslFactory
 
-# FIXME: is this too specific to TSL to be in general?
-
 
 class EvidenceSource(SymEnum):
     """Source of evidence used in support"""

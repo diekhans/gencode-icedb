@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 import icedbProgSetup  # noqa: F401
 import argparse
-from pycbio.tsv import TsvReader, tsvRowToDict
-from gencode_icedb.tsl.tslModels import tslConnect, tslClose, GenbankProblemReason, GenbankProblemCase
+from pycbio.tsv import TsvReader
+from gencode_icedb.tsl.supportDefs import GenbankProblemReason
+from gencode_icedb.tsl.genbankProblemCasesDb import GenbankProblemCaseDbTable
+from pycbio.db.sqliteOps import sqliteConnect
 
 
 def parseArgs():
@@ -22,21 +24,18 @@ problemCasesTsvTypeMap = {
 
 
 def loadProblemCasesTsv(problemCasesTsv):
-    return [tsvRowToDict(row) for row in TsvReader(problemCasesTsv, typeMap=problemCasesTsvTypeMap)]
-
-
-def problemCasesDbLoad(conn, recs):
-    with conn.atomic():
-        GenbankProblemCase.insert_many(recs).execute()
+    # FIXME: count get apsw to convert reason, so just leave as s tring for now
+    # return [GenbankProblemCase(*row) for row in TsvReader(problemCasesTsv, typeMap=problemCasesTsvTypeMap)]
+    return [row.getRow() for row in TsvReader(problemCasesTsv, typeMap=problemCasesTsvTypeMap)]
 
 
 def genbankProblemCasesLoad(opts):
     "main function"
     recs = loadProblemCasesTsv(opts.problemTabFile)
-    conn = tslConnect(opts.sqliteDb, create=True)
-    GenbankProblemCase.create_table(fail_silently=True)
-    problemCasesDbLoad(conn, recs)
-    tslClose(conn)
+    conn = sqliteConnect(opts.sqliteDb, create=True)
+    dbTbl = GenbankProblemCaseDbTable(conn, create=True)
+    dbTbl.loads(recs)
+    conn.close()
 
 
 genbankProblemCasesLoad(parseArgs())

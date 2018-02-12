@@ -773,3 +773,67 @@ ORIGIN
      4081 actgctgggg ttttgtgtgt gtgagtgtgt gaaagaaata aatccctatt tgttc
 //
 
+LOCUS       JZ923160                 860 bp    mRNA    linear   EST 01-JUN-2016
+DEFINITION  50MK2.15 WSSP Duckweed cDNA library Landoltia punctata cDNA similar
+            to alpha tubulin, mRNA sequence.
+ACCESSION   JZ923160
+VERSION     JZ923160.1  GI:1033690740
+DBLINK      BioSample: LIBEST_028202
+KEYWORDS    EST.
+SOURCE      Landoltia punctata
+  ORGANISM  Landoltia punctata
+            Eukaryota; Viridiplantae; Streptophyta; Embryophyta; Tracheophyta;
+            Spermatophyta; Magnoliophyta; Liliopsida; Araceae; Lemnoideae;
+            Landoltia.
+REFERENCE   1  (bases 1 to 860)
+  AUTHORS   Karben,M., Furman,M. and Mead,J.
+  TITLE     Sequence of alpha tubulin EST clone 50MK2.15
+  JOURNAL   Unpublished (2016)
+COMMENT     Contact: Mead,J.
+            Waksman Student Scholars Program
+            Waksman Institute, Rutgers University
+            190 Frelinghuysen Rd., Piscataway, NJ 08854-8020, USA
+            Tel: 732 445 4661
+            Fax: 732 445 5735
+            Email: mead@waksman.rutgers.edu
+            The alpha- and beta-tubulins are the major components of
+            microtubules. microtubules are one of the major components of the
+            cytoskeleton, and function in many processes, including structural
+            support, intracellular transport, and DNA segregation. Microtubules
+            are assembled from dimers of a- and ß-tubulin.
+            Insert Length: 860   Std Error: 0.00
+            Seq primer: pTriplEX2-FOR.
+FEATURES             Location/Qualifiers
+     source          1..860
+                     /organism="Landoltia punctata"
+                     /mol_type="mRNA"
+                     /db_xref="taxon:50518"
+                     /dev_stage="mixed stages"
+                     /lab_host="E. coli DH5a"
+                     /clone_lib="LIBEST_028202 WSSP Duckweed cDNA library"
+                     /note="Organ: whole plant; Vector: pTriplEX2; Site_1:
+                     SfiI; Landoltia punctata cDNAs were reversed transcribed
+                     from polyA-selected mRNAs.  SfiIA and SfiIB linkers were
+                     added to the cDNAs via the primers used to synthesize
+                     first and second strand cDNAs.  The cDNAs were cut with
+                     SfiI to generate SfiI sticky ends, and the cDNAs were
+                     directionally ligated into SfiIA and SfiIB-cut plasmid
+                     vector pTriplEX2.  Recombinant plasmids were transformed
+                     into E. coli strain DH5a."
+ORIGIN      
+        1 cggtggtttg gcgtcttcat acacgccttt cccccagatc cggcttctct ctctttcaga
+       61 tctgctccgc ttccccgatc tttctccgtt caaacgaaaa tgagggagtg catctcgatc
+      121 cacatcggtc aggctgggat ccaggtcggc aatgcctgct gggagcttta ttgtcttgag
+      181 cacggcatcc agcctgatgg ccaaatgcct agtgacaaga ccgtcggtgg aggcgatgat
+      241 gcattcaaca cctttttcag cgagaccggc gcggggaagc atgttcctcg ggccgttttt
+      301 gtggatctgg agccgacagt catcgacgaa gtgagaactg ggacctatcg ccagctgttc
+      361 caccctgaac agcttatcag cgggaaggag gacgccacca acaattttgc gcgaggccac
+      421 tacaccatcg gcaaggagat tgtcgatctg tgcctggaca ggatccggaa gctggcggac
+      481 aactgcaccg gtcttcaggg cttcctcgtt ttcaacgcgg tcggcggagg cactggatca
+      541 ggcctgggct ctcttctgtt ggagcgtctc tccgtcgact acggcaagaa atcgaagctg
+      601 ggtttcacag tctacccctc gccccaggtc tcgacctcgg tcgtggagcc gtacaacagc
+      661 gtgctctcca cccattcgct gctggagcac accgacgtgg ccgtgctgct cgacaacgaa
+      721 gccatctacg acatctgcag gcgctctctg gacatcgagc gcccgaccta caccaacctg
+      781 aaccgtctgg tctctcaggt gatctcgtcc ctgacggcgt cgctgcggtt cgacggcgcg
+      841 ctgaacgtgg acgtgacgga
+//

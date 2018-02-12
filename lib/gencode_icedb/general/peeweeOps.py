@@ -43,6 +43,7 @@ def peeweeClassToTableName(cls):
     """
     return re.sub("([a-z])([A-Z])", "\\1_\\2", cls.__name__).lower()
 
+
 class PeeweeModelMixins(object):
     """Adds some useful functions to a PeeWee model"""
 

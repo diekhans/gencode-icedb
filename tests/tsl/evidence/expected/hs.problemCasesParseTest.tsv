@@ -1,5 +1,5 @@
-startAcc	endAcc	reason
-AK074070.2	AK074070.2	nedo
-BG217841.1	BG217842.1	athRage
-CU453739.1	CU453739.1	orestes
-DC296167.1	DC296167.1	nedo
+organism	etype	startAcc	endAcc	reason
+hs	RNA	AK074070	AK074070	nedo
+hs	EST	BG217841	BG217842	athRage
+hs	EST	CU453739	CU453739	orestes
+hs	EST	DC296167	DC296167	nedo
