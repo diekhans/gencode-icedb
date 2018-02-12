@@ -30,15 +30,6 @@ def getFeaturesOfType(feats, types):
     return [f for f in feats if isinstance(f, types)]
 
 
-def countFeaturesOfType(feats, types):
-    """Count number of features that are of one of the specified types in the
-    list of features..  The types argument can be one type of a list of
-    types"""
-    if isinstance(types, type):
-        types = (types,)
-    return sum([1 for f in feats if isinstance(f, types)])
-
-
 class TransFeature(object):
     """A feature of annotation or alignment to the genome.  The RNA range is
     in genomic coordinates and it's length may not match the length of the

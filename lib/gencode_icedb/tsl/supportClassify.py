@@ -19,7 +19,7 @@ import re
 from collections import namedtuple, defaultdict
 from pycbio.sys import fileOps
 from pycbio.hgdata.coords import Coords
-from gencode_icedb.general.transFeatures import ExonFeature, ChromInsertFeature, RnaInsertFeature
+from gencode_icedb.general.transFeatures import ExonFeature, ChromInsertFeature, RnaInsertFeature, getFeaturesOfType
 from gencode_icedb.tsl.supportDefs import EvidenceSupport, TrascriptionSupportLevel
 from gencode_icedb.tsl.evidenceDb import EvidenceSource
 
@@ -32,7 +32,7 @@ exonPolymorhicFactionLimit = 0.05
 
 # FIXME these are from the ccds2/modules/gencode/src/lib/gencode/data/gencodeGenes.py, migrate to new module
 def _transIsSingleExon(annotTrans):
-    return len([feat for feat in annotTrans.features if isinstance(feat, ExonFeature)]) <= 1
+    return len(getFeaturesOfType(annotTrans.features, ExonFeature)) <= 1
 
 
 def _geneIsTslIgnored(annotTrans):
@@ -40,7 +40,7 @@ def _geneIsTslIgnored(annotTrans):
     geneName = annotTrans.attrs.geneName
     # FIXME: this was part of ccds gencodeGenes module, we need to make that independent and use it here
     # trans.isPseudo()
-    if (bioType.find("pseudogene") >= 0) and (bioType.find("transcribed") < 0):
+    if (bioType != "polymorphic_pseudogene") and (bioType.find("pseudogene") >= 0) and (bioType.find("transcribed") < 0):
         return True
     # trans.isOlfactoryReceptor()
     if re.match("^OR[0-9].+", geneName):
