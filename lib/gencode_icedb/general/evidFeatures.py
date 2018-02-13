@@ -7,6 +7,8 @@ from gencode_icedb.general.spliceJuncs import spliceJuncsGetSeqs
 from gencode_icedb.tsl import minIntronSize
 from gencode_icedb.general.transFeatures import ExonFeature, IntronFeature, TranscriptFeatures, AlignedFeature, ChromInsertFeature, RnaInsertFeature
 
+# FIXME: rename alignfeaturs.
+
 
 class EvidencePslFactory(object):
     """

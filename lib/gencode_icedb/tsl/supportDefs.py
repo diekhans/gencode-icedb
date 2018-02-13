@@ -49,6 +49,7 @@ class EvidenceSupport(SymEnum):
     internal_unaligned = 15  # intron contains unaligned
 
     feat_mismatch = 50  # different number of features
+    not_useful = 51  # support deemed not useful for other reasons
     no_support = 100
 
     # endsMedium = 2
