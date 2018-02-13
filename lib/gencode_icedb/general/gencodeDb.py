@@ -21,7 +21,7 @@ GENCODE_TAG_TABLE = "gencode_tag"
 
 
 def _isChrYPar(annotTrans):
-    return ("PAR" in annotTrans.attrs.tags) and (annotTrans.chrom.name == "chrY")
+    return ("PAR" in annotTrans.attrs.tags) and (annotTrans.chromLoc.name == "chrY")
 
 
 class UcscGencodeReader(object):
@@ -139,18 +139,18 @@ class UcscGencodeReader(object):
 
 def findAnnotationBounds(geneTranses):
     """find the bounds of a list of gene transcripts on the same chromosome"""
-    annotId = geneTranses[0].rna.name
-    name = geneTranses[0].chrom.name
-    start = geneTranses[0].chrom.start
-    end = geneTranses[0].chrom.end
-    strand = geneTranses[0].rna.strand
+    annotId = geneTranses[0].rnaLoc.name
+    name = geneTranses[0].chromLoc.name
+    start = geneTranses[0].chromLoc.start
+    end = geneTranses[0].chromLoc.end
+    strand = geneTranses[0].rnaLoc.strand
     for geneTrans in geneTranses:
-        if geneTrans.chrom.name != name:
-            raise Exception("Bug: mix of chromosomes provided: {} and {}".format(geneTrans.rna.name, annotId))
-        if geneTrans.chrom.strand != '+':
-            raise Exception("Bug: assumes positive chromosome strand: {} and {}".format(geneTrans.rna.name, annotId))
-        if geneTrans.rna.strand != strand:
-            raise Exception("Bug: mix of RNA strand provided: {} and {}".format(geneTrans.rna.name, annotId))
-        start = min(geneTrans.chrom.start, start)
-        end = max(geneTrans.chrom.end, end)
+        if geneTrans.chromLoc.name != name:
+            raise Exception("Bug: mix of chromosomes provided: {} and {}".format(geneTrans.rnaLoc.name, annotId))
+        if geneTrans.chromLoc.strand != '+':
+            raise Exception("Bug: assumes positive chromosome strand: {} and {}".format(geneTrans.rnaLoc.name, annotId))
+        if geneTrans.rnaLoc.strand != strand:
+            raise Exception("Bug: mix of RNA strand provided: {} and {}".format(geneTrans.rnaLoc.name, annotId))
+        start = min(geneTrans.chromLoc.start, start)
+        end = max(geneTrans.chromLoc.end, end)
     return Coords(name, start, end, strand)

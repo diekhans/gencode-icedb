@@ -41,18 +41,18 @@ class EvidencePslFactory(object):
     def _addAlignedFeature(self, psl, iBlk, exon, alignFeatures):
         blk = psl.blocks[iBlk]
         alignFeatures.append(AlignedFeature(exon, len(alignFeatures),
-                                            exon.chrom.subrange(blk.tStart, blk.tEnd),
-                                            exon.rna.subrange(blk.qStart, blk.qEnd)))
+                                            exon.chromLoc.subrange(blk.tStart, blk.tEnd),
+                                            exon.rnaLoc.subrange(blk.qStart, blk.qEnd)))
 
     def _addUnalignedFeatures(self, psl, iBlk, feat, alignFeatures):
         prevBlk = psl.blocks[iBlk - 1]
         blk = psl.blocks[iBlk]
         if blk.qStart > prevBlk.qEnd:
             alignFeatures.append(RnaInsertFeature(feat, len(alignFeatures),
-                                                  feat.rna.subrange(prevBlk.qEnd, blk.qStart)))
+                                                  feat.rnaLoc.subrange(prevBlk.qEnd, blk.qStart)))
         if blk.tStart > prevBlk.tEnd:
             alignFeatures.append(ChromInsertFeature(feat, len(alignFeatures),
-                                                    feat.chrom.subrange(prevBlk.tEnd, blk.tStart)))
+                                                    feat.chromLoc.subrange(prevBlk.tEnd, blk.tStart)))
 
     def _addAlignFeatures(self, psl, iBlkStart, iBlkEnd, exon):
         alignFeatures = []
@@ -64,8 +64,8 @@ class EvidencePslFactory(object):
 
     def _makeExon(self, psl, iBlkStart, iBlkEnd, trans, iFeat):
         exon = ExonFeature(trans, iFeat,
-                           trans.chrom.subrange(psl.blocks[iBlkStart].tStart, psl.blocks[iBlkEnd - 1].tEnd),
-                           trans.rna.subrange(psl.blocks[iBlkStart].qStart, psl.blocks[iBlkEnd - 1].qEnd))
+                           trans.chromLoc.subrange(psl.blocks[iBlkStart].tStart, psl.blocks[iBlkEnd - 1].tEnd),
+                           trans.rnaLoc.subrange(psl.blocks[iBlkStart].qStart, psl.blocks[iBlkEnd - 1].qEnd))
         self._addAlignFeatures(psl, iBlkStart, iBlkEnd, exon)
         return exon
 
@@ -80,8 +80,8 @@ class EvidencePslFactory(object):
         donorSeq, acceptorSeq = self._getSpliceSites(psl, iBlkNext)
         alignFeatures = []
         intron = IntronFeature(trans, iFeat,
-                               trans.chrom.subrange(psl.blocks[iBlkNext - 1].tEnd, psl.blocks[iBlkNext].tStart),
-                               trans.rna.subrange(psl.blocks[iBlkNext - 1].qEnd, psl.blocks[iBlkNext].qStart),
+                               trans.chromLoc.subrange(psl.blocks[iBlkNext - 1].tEnd, psl.blocks[iBlkNext].tStart),
+                               trans.rnaLoc.subrange(psl.blocks[iBlkNext - 1].qEnd, psl.blocks[iBlkNext].qStart),
                                donorSeq, acceptorSeq)
         self._addUnalignedFeatures(psl, iBlkNext, intron, alignFeatures)
         intron.alignFeatures = tuple(alignFeatures)
@@ -89,12 +89,12 @@ class EvidencePslFactory(object):
 
     def fromPsl(self, psl, attrs=None):
         "convert a psl to an TranscriptFeatures object"
-        chrom = Coords(psl.tName, psl.tStart, psl.tEnd, '+', psl.tSize)
+        chromLoc = Coords(psl.tName, psl.tStart, psl.tEnd, '+', psl.tSize)
         if psl.getTStrand() == '-':
-            chrom = chrom.reverse()
-        rna = Coords(psl.qName, psl.qStart, psl.qEnd, '+', psl.qSize)
+            chromLoc = chromLoc.reverse()
+        rnaLoc = Coords(psl.qName, psl.qStart, psl.qEnd, '+', psl.qSize)
         if psl.getQStrand() == '-':
-            rna = rna.reverse()
-        trans = TranscriptFeatures(chrom, rna, attrs=attrs)
+            rnaLoc = rnaLoc.reverse()
+        trans = TranscriptFeatures(chromLoc, rnaLoc, attrs=attrs)
         trans.features = tuple(self._buildFeatures(psl, trans))
         return trans

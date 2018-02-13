@@ -128,23 +128,23 @@ class EvidenceTests(FeatureTestBase):
 
     def __checkRnaAln(self, trans):
         "validate that full RNA is covered by alignment"
-        prevChromEnd = trans.chrom.start
-        prevRnaEnd = trans.rna.start
+        prevChromEnd = trans.chromLoc.start
+        prevRnaEnd = trans.rnaLoc.start
         for feat in trans.features:
             if feat.alignFeatures is not None:
                 for alnFeat in feat.alignFeatures:
-                    if alnFeat.chrom is not None:
-                        self.assertEqual(alnFeat.chrom.start, prevChromEnd,
-                                         msg="trans: {} feat: {} aln: {} chrom.start {} != prevChromEnd {}".format(trans.rna.name, feat, alnFeat, alnFeat.chrom.start, prevChromEnd))
-                        prevChromEnd = alnFeat.chrom.end
-                    if alnFeat.rna is not None:
-                        self.assertEqual(alnFeat.rna.start, prevRnaEnd,
-                                         msg="trans: {} feat: {} aln: {} rna.start {} != prevRnaEnd {}".format(trans.rna.name, feat, alnFeat, alnFeat.rna.start, prevRnaEnd))
-                        prevRnaEnd = alnFeat.rna.end
-        self.assertEqual(prevChromEnd, trans.chrom.end,
-                         msg="trans: {} alignments don't cover chrom range".format(trans.rna.name))
-        self.assertEqual(prevRnaEnd, trans.rna.end,
-                         msg="trans: {} alignments don't cover RNA range".format(trans.rna.name))
+                    if alnFeat.chromLoc is not None:
+                        self.assertEqual(alnFeat.chromLoc.start, prevChromEnd,
+                                         msg="trans: {} feat: {} aln: {} chromLoc.start {} != prevChromEnd {}".format(trans.rnaLoc.name, feat, alnFeat, alnFeat.chromLoc.start, prevChromEnd))
+                        prevChromEnd = alnFeat.chromLoc.end
+                    if alnFeat.rnaLoc is not None:
+                        self.assertEqual(alnFeat.rnaLoc.start, prevRnaEnd,
+                                         msg="trans: {} feat: {} aln: {} rna.start {} != prevRnaEnd {}".format(trans.rnaLoc.name, feat, alnFeat, alnFeat.rnaLoc.start, prevRnaEnd))
+                        prevRnaEnd = alnFeat.rnaLoc.end
+        self.assertEqual(prevChromEnd, trans.chromLoc.end,
+                         msg="trans: {} alignments don't cover chrom range".format(trans.rnaLoc.name))
+        self.assertEqual(prevRnaEnd, trans.rnaLoc.end,
+                         msg="trans: {} alignments don't cover RNA range".format(trans.rnaLoc.name))
 
     def testAF010310(self):
         trans = self.__pslToEvidTranscript(self.__getSet1Psl("AF010310.1"))
@@ -861,7 +861,7 @@ class AnnotationTests(FeatureTestBase):
         i = 0
         for gp in GenePredReader(self.getInputFile("gencodeV26.gp")):
             trans = factory.fromGenePred(gp)
-            self.assertEqual(trans.rna.name, names[i])
+            self.assertEqual(trans.rnaLoc.name, names[i])
 
     def testAnnotToBed(self):
         """test for conversion to BED"""

@@ -69,7 +69,7 @@ class SupportCounter(object):
         "get primary transcript, dropping PAR, alts, etc"
         byChrom = defaultdict(list)
         for trans in transes:
-            byChrom[trans.chrom.name].append(trans)
+            byChrom[trans.chromLoc.name].append(trans)
         chroms = list(byChrom.keys())
         if len(chroms) == 1:
             return byChrom[chroms[0]]
@@ -87,9 +87,9 @@ class SupportCounter(object):
         return attrsByTrans
 
     def _getBounds(self, transes):
-        start = min([a.chrom.start for a in transes])
-        end = max([a.chrom.end for a in transes])
-        return transes[0].chrom.name, start, end
+        start = min([a.chromLoc.start for a in transes])
+        end = max([a.chromLoc.end for a in transes])
+        return transes[0].chromLoc.name, start, end
 
     def _sumSupportsByIntron(self, chrom, start, end):
         intronSupportCnts = IntronSupportCounter(self.genomeReader)
@@ -123,7 +123,7 @@ class SupportCounter(object):
     def _collectTranscriptsSupport(self, transes, attrsByTrans, resultsWriter):
         intronSupportCnts = self._sumSupportForTranses(transes, resultsWriter)
         for trans in transes:
-            self._collectTranscriptSupport(trans, attrsByTrans[trans.rna.name], intronSupportCnts, resultsWriter)
+            self._collectTranscriptSupport(trans, attrsByTrans[trans.rnaLoc.name], intronSupportCnts, resultsWriter)
 
     def _collectSupportId(self, gencodeId, resultsWriter):
         attrs = self._getAttrsById(gencodeId)
