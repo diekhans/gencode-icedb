@@ -3,19 +3,17 @@ from __future__ import print_function
 import icedbProgSetup  # noqa: F401
 import argparse
 from contextlib import ExitStack
-from collections import defaultdict
 from pycbio.sys import fileOps
 from gencode_icedb.general.gencodeDb import UcscGencodeReader
 from gencode_icedb.tsl.evidenceDb import EvidenceReader
-from gencode_icedb.tsl.supportClassify import SupportClassifier
-from gencode_icedb.tsl.genbankProblemCases import GenbankProblemCases
+from gencode_icedb.tsl.supportClassify import writeTsvHeaders, classifyGeneTranscripts
 
 # FIXME: rsl uses csv.writer, make all consisten
 
 
 def parseArgs():
-    desc = """Create test data from TSV specifying test genes.  This
-    get GENCODE genePreds and evidence PSLs."""
+    desc = """Collect support for gencode annotations.  Normally run in a
+    cluster job."""
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('--detailsTsv',
                         help="""write details to this TSV file""")
@@ -25,40 +23,21 @@ def parseArgs():
                         help="""evidence sqlite3 database""")
     parser.add_argument('tslTsv',
                         help="""output of TSL categories""")
-    parser.add_argument('gencodeIds', nargs='*', default=[],
-                        help="""GENCODE gene or transcript ids, including versions.  If not are specified, all transcript are processed""")
+    parser.add_argument('geneIds', nargs='+',
+                        help="""GENCODE gene ids, including versions.""")
     return parser.parse_args()
 
 
-def getTranscripts(gencodeReader, gencodeIds):
-    if len(gencodeIds) == 0:
-        return gencodeReader.getAll()
-    else:
-        return gencodeReader.getByGencodeIds(gencodeIds)
-
-
-def groupTranscripts(annotTranses):
-    groupMap = defaultdict(list)
-    for trans in annotTranses:
-        groupMap[trans.attrs.geneId].append(trans)
-    grouped = []
-    for geneId in groupMap.keys():
-        grouped.append(groupMap[geneId])
-    return grouped
-
-
-def classifyGeneTranscripts(evidenceReader, geneGroupedTrans, tslTsvFh, detailsTsvFh):
-    classifier = SupportClassifier(evidenceReader)
-    classifier.writeTsvHeaders(tslTsvFh, detailsTsvFh)
-    for geneTranses in geneGroupedTrans:
-        classifier.classifyGeneTranscripts(geneTranses, tslTsvFh, detailsTsvFh)
+def classifyGenes(evidenceReader, genesTrans, tslTsvFh, detailsTsvFh):
+    writeTsvHeaders(tslTsvFh, detailsTsvFh)
+    for geneTranses in genesTrans:
+        classifyGeneTranscripts(evidenceReader, geneTranses, tslTsvFh, detailsTsvFh)
 
 
 def tslGencodeCollectSupport(args):
     gencodeReader = UcscGencodeReader(args.gencodeDb)
     evidenceReader = EvidenceReader(args.evidenceDb)
-    genbankProblems = GenbankProblemCases(evidenceReader.conn)
-    geneGroupedTranses = groupTranscripts(getTranscripts(gencodeReader, args.gencodeIds))
+    genesTranses = gencodeReader.getByGeneIds(args.geneIds)
     fileOps.ensureFileDir(args.tslTsv)
     if args.detailsTsv is not None:
         fileOps.ensureFileDir(args.detailsTsv)
@@ -66,7 +45,7 @@ def tslGencodeCollectSupport(args):
     with ExitStack() as stack:
         tslTsvFh = stack.enter_context(open(tslTmpTsv, "w"))
         detailsTsvFh = stack.enter_context(open(args.detailsTsv, "w")) if args.detailsTsv is not None else None
-        classifyGeneTranscripts(evidenceReader, geneGroupedTranses, tslTsvFh, detailsTsvFh)
+        classifyGenes(evidenceReader, genesTranses, tslTsvFh, detailsTsvFh)
     fileOps.atomicInstall(tslTmpTsv, args.tslTsv)
 
 

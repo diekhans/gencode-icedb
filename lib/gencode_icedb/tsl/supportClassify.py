@@ -18,10 +18,10 @@ The current algorithm is:
 import re
 from collections import namedtuple, defaultdict
 from pycbio.sys import fileOps
-from pycbio.hgdata.coords import Coords
-from gencode_icedb.general.transFeatures import ExonFeature, ChromInsertFeature, RnaInsertFeature, getFeaturesOfType
+from gencode_icedb.general.transFeatures import ExonFeature, ChromInsertFeature, RnaInsertFeature
 from gencode_icedb.tsl.supportDefs import EvidenceSupport, TrascriptionSupportLevel
 from gencode_icedb.tsl.evidenceDb import EvidenceSource
+from gencode_icedb.general.gencodeDb import findAnnotationBounds
 
 
 # limits on size of as single indel in an exon.
@@ -32,7 +32,7 @@ exonPolymorhicFactionLimit = 0.05
 
 # FIXME these are from the ccds2/modules/gencode/src/lib/gencode/data/gencodeGenes.py, migrate to new module
 def _transIsSingleExon(annotTrans):
-    return len(getFeaturesOfType(annotTrans.features, ExonFeature)) <= 1
+    return len(annotTrans.getStructureFeaturesOfType(ExonFeature)) <= 1
 
 
 def _geneIsTslIgnored(annotTrans):
@@ -117,36 +117,18 @@ def compareMegWithEvidence(annotTrans, evidTrans):
     return worstCmpr
 
 
-def _findAnnotBounds(geneTranses):
-    annotId = geneTranses[0].rna.name
-    name = geneTranses[0].chrom.name
-    start = geneTranses[0].chrom.start
-    end = geneTranses[0].chrom.end
-    strand = geneTranses[0].rna.strand
-    for geneTrans in geneTranses:
-        if geneTrans.chrom.name != name:
-            raise Exception("Bug: mix of chromosomes provided: {} and {}".format(geneTrans.rna.name, annotId))
-        if geneTrans.chrom.strand != '+':
-            raise Exception("Bug: assumes positive chromosome strand: {} and {}".format(geneTrans.rna.name, annotId))
-        if geneTrans.rna.strand != strand:
-            raise Exception("Bug: mix of RNA strand provided: {} and {}".format(geneTrans.rna.name, annotId))
-        start = min(geneTrans.chrom.start, start)
-        end = max(geneTrans.chrom.end, end)
-    return Coords(name, start, end, strand)
-
-
 class EvidenceCache(object):
     """Cache for a range of evidence, normally for one gene"""
-    def __init__(self, evidReader, bounds):
-        self.evidReader = evidReader
+    def __init__(self, evidenceReader, bounds):
+        self.evidenceReader = evidenceReader
         self.bounds = bounds
         self.evidBySrc = {evidSrc: None for evidSrc in EvidenceSource}
 
     def get(self, evidSrc):
         "get a type of evidence"
         if self.evidBySrc[evidSrc] is None:
-            overGen = self.evidReader.genOverlapping(evidSrc, self.bounds.name, self.bounds.start, self.bounds.end,
-                                                     rnaStrand=self.bounds.strand, minExons=2)
+            overGen = self.evidenceReader.genOverlapping(evidSrc, self.bounds.name, self.bounds.start, self.bounds.end,
+                                                         rnaStrand=self.bounds.strand, minExons=2)
             self.evidBySrc[evidSrc] = tuple(sorted(overGen, key=lambda a: (a.rna.name, a.chrom.name, a.chrom.start)))
         return self.evidBySrc[evidSrc]
 
@@ -207,50 +189,47 @@ def _calculateTsl(evidCollector):
     return min(ucscRnaTsl, ensemblRnaTsl, estRnaTsl)
 
 
-class SupportClassifier(object):
-    """TSL classifier for transcripts with evidence and annotations in sqlite3
-    databases. Classification on a per-transcript basis, however it is grouped
-    by gene to gives good locality of the evidence."""
-    def __init__(self, evidReader):
-        self.evidReader = evidReader
+def writeTsvHeaders(tslTsvFh, detailsTsvFh=None):
+    fileOps.prRowv(tslTsvFh, "transcriptId", "level")
+    if detailsTsvFh is not None:
+        fileOps.prRowv(detailsTsvFh, "transcriptId", "evidSrc", "evidId", "evidSupport", "suspect")
 
-    @staticmethod
-    def writeTsvHeaders(tslTsvFh, detailsTsvFh=None):
-        fileOps.prRowv(tslTsvFh, "transcriptId", "level")
-        if detailsTsvFh is not None:
-            fileOps.prRowv(detailsTsvFh, "transcriptId", "evidSrc", "evidId", "evidSupport", "suspect")
 
-    def _writeDetails(self, detailsTsvFh, annotTrans, evidSrc, evidTrans, evidSupport, suspect):
-        fileOps.prRowv(detailsTsvFh, annotTrans.rna.name, evidSrc, evidTrans.rna.name, evidSupport,
-                       "" if suspect is None else suspect)
+def _writeDetails(detailsTsvFh, annotTrans, evidSrc, evidTrans, evidSupport, suspect):
+    fileOps.prRowv(detailsTsvFh, annotTrans.rna.name, evidSrc, evidTrans.rna.name, evidSupport,
+                   "" if suspect is None else suspect)
 
-    def _compareWithEvidence(self, annotTrans, evidSrc, evidTrans, evidCollector, detailsTsvFh):
-        evidSupport = compareMegWithEvidence(annotTrans, evidTrans)
-        suspect = evidTrans.attrs.genbankProblem
-        if detailsTsvFh is not None:
-            self._writeDetails(detailsTsvFh, annotTrans, evidSrc, evidTrans, evidSupport, suspect)
-        if evidSupport < EvidenceSupport.feat_mismatch:
-            evidCollector.add(evidSrc,
-                              AnnotationEvidenceEval(annotTrans, evidSrc, evidTrans.rna.name, evidSupport, suspect))
 
-    def _collectTransSupport(self, annotTrans, evidCache, detailsTsvFh):
-        evidCollector = AnnotationEvidenceCollector(annotTrans)
-        for evidSrc in EvidenceSource:
-            for evidTrans in evidCache.get(evidSrc):
-                self._compareWithEvidence(annotTrans, evidSrc, evidTrans, evidCollector, detailsTsvFh)
-        return evidCollector
+def _compareWithEvidence(annotTrans, evidSrc, evidTrans, evidCollector, detailsTsvFh):
+    evidSupport = compareMegWithEvidence(annotTrans, evidTrans)
+    suspect = evidTrans.attrs.genbankProblem
+    if detailsTsvFh is not None:
+        _writeDetails(detailsTsvFh, annotTrans, evidSrc, evidTrans, evidSupport, suspect)
+    if evidSupport < EvidenceSupport.feat_mismatch:
+        evidCollector.add(evidSrc,
+                          AnnotationEvidenceEval(annotTrans, evidSrc, evidTrans.rna.name, evidSupport, suspect))
 
-    def _classifyTrans(self, annotTrans, evidCache, tslTsvFh, detailsTsvFh):
-        if _transIsSingleExon(annotTrans) or _geneIsTslIgnored(annotTrans):
-            tsl = TrascriptionSupportLevel.tslNA
-        else:
-            evidCollector = self._collectTransSupport(annotTrans, evidCache, detailsTsvFh)
-            tsl = _calculateTsl(evidCollector)
-        fileOps.prRowv(tslTsvFh, annotTrans.rna.name, tsl)
 
-    def classifyGeneTranscripts(self, geneAnnotTranses, tslTsvFh, detailsTsvFh=None):
-        """classify a list of transcripts, which must be all on the same chromosome
-        and should be from the same gene."""
-        evidCache = EvidenceCache(self.evidReader, _findAnnotBounds(geneAnnotTranses))
-        for annotTrans in geneAnnotTranses:
-            self._classifyTrans(annotTrans, evidCache, tslTsvFh, detailsTsvFh)
+def _collectTransSupport(annotTrans, evidCache, detailsTsvFh):
+    evidCollector = AnnotationEvidenceCollector(annotTrans)
+    for evidSrc in EvidenceSource:
+        for evidTrans in evidCache.get(evidSrc):
+            _compareWithEvidence(annotTrans, evidSrc, evidTrans, evidCollector, detailsTsvFh)
+    return evidCollector
+
+
+def _classifyTrans(annotTrans, evidCache, tslTsvFh, detailsTsvFh):
+    if _transIsSingleExon(annotTrans) or _geneIsTslIgnored(annotTrans):
+        tsl = TrascriptionSupportLevel.tslNA
+    else:
+        evidCollector = _collectTransSupport(annotTrans, evidCache, detailsTsvFh)
+        tsl = _calculateTsl(evidCollector)
+    fileOps.prRowv(tslTsvFh, annotTrans.rna.name, tsl)
+
+
+def classifyGeneTranscripts(evidenceReader, geneAnnotTranses, tslTsvFh, detailsTsvFh=None):
+    """Classify a list of transcripts, which must be all on the same chromosome
+    and should be from the same gene."""
+    evidCache = EvidenceCache(evidenceReader, findAnnotationBounds(geneAnnotTranses))
+    for annotTrans in geneAnnotTranses:
+        _classifyTrans(annotTrans, evidCache, tslTsvFh, detailsTsvFh)

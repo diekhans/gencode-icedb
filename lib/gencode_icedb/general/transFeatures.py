@@ -21,7 +21,7 @@ def _reverseComplementChildren(rcParent, features):
     return tuple(rcFeatures)
 
 
-def getFeaturesOfType(feats, types):
+def _getFeaturesOfType(feats, types):
     """Get of features that are of one of the specified types in the
     list of features..  The types argument can be one type of a list of
     types"""
@@ -84,10 +84,11 @@ class TransFeature(object):
             pmsg = msg + ": "
             fh.write(pmsg)
             indent += len(pmsg)
-        self._dump(fh, indent)
+        self._dumpDerive(fh, indent)
 
-    def _dump(self, fh, indent):
-        "print current node and children, assumes current indent has been done"
+    def _dumpDerive(self, fh, indent):
+        """print current node and children, assumes current indent has been done,
+        This is overridden by derived classes as needed"""
         fh.write(str(self) + '\n')
 
     @staticmethod
@@ -95,7 +96,7 @@ class TransFeature(object):
         "utility to dump a list of children"
         for feat in features:
             fh.write(indent * " ")
-            feat._dump(fh, indent)
+            feat._dumpDerive(fh, indent)
 
     @property
     def transcript(self):
@@ -119,8 +120,8 @@ class AlignmentFeature(TransFeature):
         super(AlignmentFeature, self).__init__(parent, iParent, chrom, rna, attrs)
 
     def prevFeat(self):
-        """Return the next feature in this sequence of features.  This maybe a
-        child of a different StructureFeature."""
+        """Return the next feature in this sequence of AlignmentFeatures.  This
+        maybe a child of a different StructureFeature."""
         if self.iParent > 0:
             return self.parent.alignFeatures[self.iParent - 1]
         else:
@@ -131,8 +132,8 @@ class AlignmentFeature(TransFeature):
                 return None
 
     def nextFeat(self):
-        """Return the next feature in this sequence of features.  This maybe a
-        child of a different StructureFeature."""
+        """Return the next feature in this sequence of AlignmentFeatures.
+        This maybe a child of a different StructureFeature."""
         if self.iParent < len(self.parent.alignFeatures) - 1:
             return self.parent.alignFeatures[self.iParent + 1]
         else:
@@ -179,7 +180,7 @@ class AnnotationFeature(TransFeature):
         super(AnnotationFeature, self).__init__(parent, iParent, chrom, rna, attrs)
 
     def prevFeat(self):
-        """Return the next feature in this sequence of features.  This maybe a
+        """Return the next feature in this sequence of AnnotationFeatures.  This maybe a
         child of a different StructureFeature."""
         if self.iParent > 0:
             return self.parent.annotFeatures[self.iParent - 1]
@@ -191,8 +192,8 @@ class AnnotationFeature(TransFeature):
                 return None
 
     def nextFeat(self):
-        """Return the next feature in this sequence of features.  This maybe a
-        child of a different StructureFeature."""
+        """Return the next feature in this sequence of AnnotationFeatures.
+        This maybe a child of a different StructureFeature."""
         if self.iParent < len(self.parent.annotFeatures) - 1:
             return self.parent.annotFeatures[self.iParent + 1]
         else:
@@ -242,36 +243,62 @@ class NonCodingRegionFeature(AnnotationFeature):
 
 class StructureFeature(TransFeature):
     "ABC for structural features"
-    def __init__(self, parent, iParent, chrom, rna, attrs=None):
-        assert isinstance(parent, TranscriptFeatures)
-        super(StructureFeature, self).__init__(parent, iParent, chrom, rna, attrs)
-
-
-class ExonFeature(StructureFeature):
-    """exon with target gaps closed."""
-    name = "exon"
     __slots__ = ("annotFeatures", "alignFeatures")
 
     def __init__(self, parent, iParent, chrom, rna, attrs=None):
-        super(ExonFeature, self).__init__(parent, iParent, chrom, rna, attrs)
-        self.annotFeatures = self.alignFeatures = None
+        assert isinstance(parent, TranscriptFeatures)
+        super(StructureFeature, self).__init__(parent, iParent, chrom, rna, attrs)
+        self.annotFeatures = ()
+        self.alignFeatures = ()
+
+    def prevFeat(self):
+        """Return the next feature in this sequence of StructureFeatures."""
+        if self.iParent > 0:
+            return self.parent.features[self.iParent - 1]
+        else:
+            return None
+
+    def nextFeat(self):
+        """Return the next feature in this sequence of StructureFeatures."""
+        if self.iParent < len(self.parent.features) - 1:
+            return self.parent.features[self.iParent + 1]
+        else:
+            return None
+
+    def getAnnotationFeaturesOfType(self, types):
+        """Get of AnnotationFeatures that are of one of the specified types in the
+        list of features..  The types argument can be one type of a list of
+        types"""
+        return _getFeaturesOfType(self.annotFeatures, types)
+
+    def getAlignmentFeaturesOfType(self, types):
+        """Get of AlignmentFeatures that are of one of the specified types in the
+        list of features..  The types argument can be one type of a list of
+        types"""
+        return _getFeaturesOfType(self.alignFeatures, types)
 
     def toStrTree(self):
         """recursively convert to a recursive tuple of strings representing
         the feature tree"""
         r = [str(self)]
-        if self.annotFeatures is not None:
+        if self.annotFeatures:
             r.append(self._getChildrenStrTree(self.annotFeatures))
-        if self.alignFeatures is not None:
+        if self.alignFeatures:
             r.append(self._getChildrenStrTree(self.alignFeatures))
         return tuple(r)
 
-    def _dump(self, fh, indent):
+    def _dumpDerived(self, fh, indent):
         fh.write(str(self) + '\n')
-        if self.annotFeatures is not None:
-            self._dumpChildren(fh, indent + 2, self.annotFeatures)
-        if self.alignFeatures is not None:
-            self._dumpChildren(fh, indent + 2, self.alignFeatures)
+        self._dumpChildren(fh, indent + 2, self.annotFeatures)
+        self._dumpChildren(fh, indent + 2, self.alignFeatures)
+
+
+class ExonFeature(StructureFeature):
+    """exon with target gaps closed."""
+    name = "exon"
+
+    def __init__(self, parent, iParent, chrom, rna, attrs=None):
+        super(ExonFeature, self).__init__(parent, iParent, chrom, rna, attrs)
 
     def reverseComplement(self, rcParent, iRcParent):
         rcExon = ExonFeature(rcParent, iRcParent, self.chrom.reverse(), self.rna.reverse(), deepcopy(self.attrs))
@@ -308,7 +335,7 @@ class IntronFeature(StructureFeature):
     The spliceJuncs field is a SpliceJuncs object or None.
     """
     name = "intron"
-    __slots__ = ("donorSeq", "acceptorSeq", "spliceJuncs", "alignFeatures")
+    __slots__ = ("donorSeq", "acceptorSeq", "spliceJuncs")
 
     def __init__(self, parent, iParent, chrom, rna, donorSeq, acceptorSeq, attrs=None):
         super(IntronFeature, self).__init__(parent, iParent, chrom, rna, attrs)
@@ -319,7 +346,6 @@ class IntronFeature(StructureFeature):
                 self.donorSeq, self.acceptorSeq = donorSeq.lower(), acceptorSeq.lower()
             else:
                 self.donorSeq, self.acceptorSeq = donorSeq.upper(), acceptorSeq.upper()
-        self.alignFeatures = None
 
     def __str__(self):
         if self.donorSeq is None:
@@ -335,19 +361,6 @@ class IntronFeature(StructureFeature):
             return None
         else:
             return "{}/{}".format(self.donorSeq, self.acceptorSeq)
-
-    def toStrTree(self):
-        """recursively convert to a recursive tuple of strings representing
-        the feature tree"""
-        r = [str(self)]
-        if self.alignFeatures is not None:
-            r.append(self._getChildrenStrTree(self.alignFeatures))
-        return tuple(r)
-
-    def _dump(self, fh, indent):
-        fh.write(str(self) + '\n')
-        if self.alignFeatures is not None:
-            self._dumpChildren(fh, indent, self.alignFeatures)
 
     def reverseComplement(self, rcParent, iRcParent):
         rcIntron = IntronFeature(rcParent, iRcParent, self.chrom.reverse(), self.rna.reverse(),
@@ -384,14 +397,13 @@ class TranscriptFeatures(TransFeature):
         """recursively convert to a recursive tuple of strings representing
         the feature tree"""
         r = [str(self)]
-        if self.features is not None:
+        if self.features:
             r.append(self._getChildrenStrTree(self.features))
         return tuple(r)
 
-    def _dump(self, fh, indent):
+    def _dumpDerived(self, fh, indent):
         fh.write(str(self) + '\n')
-        if self.features is not None:
-            self._dumpChildren(fh, indent + 2, self.features)
+        self._dumpChildren(fh, indent + 2, self.features)
 
     def toBed(self, itemRgb=""):
         """convert transcript and CDS to a Bed object"""
@@ -425,3 +437,23 @@ class TranscriptFeatures(TransFeature):
                                      deepcopy(self.attrs))
         rcTrans.features = _reverseComplementChildren(rcTrans, self.features)
         return rcTrans
+
+    def getStructureFeaturesOfType(self, types):
+        """Get of StructureFeatures that are of one of the specified types in the
+        list of features..  The types argument can be one type of a list of
+        types"""
+        return _getFeaturesOfType(self.features, types)
+
+    def getAnnotationFeaturesOfType(self, types):
+        """Get of AnnotationFeatures that are of one of the specified types in the
+        list of features..  The types argument can be one type of a list of
+        types"""
+        return [af for sf in self.features
+                for af in sf.getAnnotationFeaturesOfType(types)]
+
+    def getAlignmentFeaturesOfType(self, types):
+        """Get of AlignmentFeatures that are of one of the specified types in the
+        list of features..  The types argument can be one type of a list of
+        types"""
+        return [af for sf in self.features
+                for af in sf.getAlignmentFeaturesOfType(types)]

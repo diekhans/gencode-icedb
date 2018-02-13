@@ -10,7 +10,7 @@ from pycbio.sys.testCaseBase import TestCaseBase
 from gencode_icedb.general.genome import GenomeReaderFactory
 from gencode_icedb.general.gencodeDb import UcscGencodeReader
 from gencode_icedb.tsl.evidenceDb import EvidenceSource, EvidenceReader
-from gencode_icedb.tsl.supportClassify import compareMegWithEvidence, SupportClassifier
+from gencode_icedb.tsl.supportClassify import compareMegWithEvidence, writeTsvHeaders, classifyGeneTranscripts
 
 
 class EvidCompareTest(TestCaseBase):
@@ -44,12 +44,11 @@ class EvidCompareTest(TestCaseBase):
             self.__evalAnnotTransEvidSrc(annotTrans, evidSrc)
 
     def __classifyTest(self, annotTranses, noDiff=False):
-        classifier = SupportClassifier(self.evidenceReader)
         outTslTsv = self.getOutputFile(".tsl.tsv")
         outDetailsTsv = self.getOutputFile(".details.tsv")
         with open(outTslTsv, 'w') as tslTsvFh, open(outDetailsTsv, 'w') as detailsTsvFh:
-            classifier.writeTsvHeaders(tslTsvFh, detailsTsvFh)
-            classifier.classifyGeneTranscripts(annotTranses, tslTsvFh, detailsTsvFh)
+            writeTsvHeaders(tslTsvFh, detailsTsvFh)
+            classifyGeneTranscripts(self.evidenceReader, annotTranses, tslTsvFh, detailsTsvFh)
         if not noDiff:
             self.diffFiles(self.getExpectedFile(".tsl.tsv"), outTslTsv)
             self.diffFiles(self.getExpectedFile(".details.tsv"), outDetailsTsv)

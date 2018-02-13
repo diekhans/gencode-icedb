@@ -5,7 +5,7 @@ from pycbio.sys.symEnum import SymEnum
 from pycbio.sys.objDict import ObjDict
 from pycbio.hgdata.hgLite import sqliteConnect, PslDbTable
 from gencode_icedb.general.evidFeatures import EvidencePslFactory
-from gencode_icedb.general.transFeatures import getFeaturesOfType, ExonFeature
+from gencode_icedb.general.transFeatures import ExonFeature
 from gencode_icedb.tsl.genbankProblemCases import GenbankProblemCases
 
 
@@ -56,5 +56,5 @@ class EvidenceReader(object):
         extraWhere = "blockCount >= {}".format(minExons) if minExons > 0 else None
         for psl in dbTable.getTRangeOverlap(chrom, start, end, strand=strand, extraWhere=extraWhere):
             trans = self._makeTrans(psl)
-            if len(getFeaturesOfType(trans.features, ExonFeature)) >= minExons:
+            if len(trans.getStructureFeaturesOfType(ExonFeature)) >= minExons:
                 yield trans

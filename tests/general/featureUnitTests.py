@@ -9,7 +9,9 @@ import unittest
 from pycbio.sys.objDict import ObjDict
 from pycbio.sys.testCaseBase import TestCaseBase
 from gencode_icedb.general.genome import GenomeReaderFactory
-from gencode_icedb.general.transFeatures import getFeaturesOfType, ExonFeature, Utr3RegionFeature
+from gencode_icedb.general.transFeatures import ExonFeature
+from gencode_icedb.general.transFeatures import CdsRegionFeature, Utr3RegionFeature
+from gencode_icedb.general.transFeatures import RnaInsertFeature, ChromInsertFeature
 from gencode_icedb.general.evidFeatures import EvidencePslFactory
 from gencode_icedb.general.annotFeatures import AnnotationGenePredFactory
 from pycbio.hgdata.hgLite import sqliteConnect
@@ -23,6 +25,7 @@ noCheckResults = False  # don't check results
 
 if debugResults or noCheckResults:
     print("WARNING: debug variables set", file=sys.stderr)
+
 
 def getInputFile(base):
     "from input relative to test file"
@@ -469,6 +472,50 @@ class EvidenceTests(FeatureTestBase):
                                  ('aln 8469066-8469073 rna=2813-2820',))))))
         self.__checkRnaAln(transRc)
 
+    def testGetAlignmentFeaturesOfType(self):
+        psl = PslDbSrc.obtainPsl("hg38-mm10.transMap", "ENST00000641446")
+        trans = EvidencePslFactory(GenomeSeqSrc.obtain("mm10")).fromPsl(psl)
+        feats = trans.getAlignmentFeaturesOfType((RnaInsertFeature, ChromInsertFeature))
+        featStrs = tuple([str(f) for f in feats])
+        self.assertEquals(featStrs,
+                          ('cins 148039050-148039051 rna=None-None',
+                           'rins None-None rna=15-16',
+                           'rins None-None rna=36-44',
+                           'rins None-None rna=106-115',
+                           'cins 148039141-148041583 rna=None-None',
+                           'rins None-None rna=181-184',
+                           'cins 148041829-148043424 rna=None-None',
+                           'cins 148043663-148044443 rna=None-None',
+                           'cins 148044554-148048072 rna=None-None',
+                           'cins 148048266-148051371 rna=None-None',
+                           'cins 148051622-148051864 rna=None-None',
+                           'cins 148051999-148052098 rna=None-None',
+                           'cins 148052279-148052513 rna=None-None',
+                           'cins 148052696-148053579 rna=None-None',
+                           'rins None-None rna=1760-1869',
+                           'cins 148053681-148054984 rna=None-None',
+                           'cins 148055104-148055372 rna=None-None',
+                           'rins None-None rna=2183-2186',
+                           'rins None-None rna=2217-2297',
+                           'cins 148055597-148055703 rna=None-None',
+                           'cins 148055739-148055749 rna=None-None',
+                           'rins None-None rna=2387-2388',
+                           'rins None-None rna=2463-2464',
+                           'rins None-None rna=2470-2500',
+                           'rins None-None rna=2519-2523',
+                           'rins None-None rna=2552-2568',
+                           'rins None-None rna=2612-2617',
+                           'rins None-None rna=2635-2637',
+                           'cins 148055997-148055998 rna=None-None',
+                           'rins None-None rna=2650-2651',
+                           'cins 148056013-148056018 rna=None-None',
+                           'cins 148056040-148056041 rna=None-None',
+                           'cins 148056046-148056048 rna=None-None',
+                           'rins None-None rna=2700-2703',
+                           'rins None-None rna=2727-2729',
+                           'rins None-None rna=2750-2816',
+                           'cins 148056110-148056150 rna=None-None'))
+
     def testExonRnaOverlap(self):
         aln1 = self.__pslToEvidTranscript(self.__getSet1Psl("AF010310.1"))
         aln2 = self.__pslToEvidTranscript(self.__getSet1Psl("AF120278.1"))
@@ -485,13 +532,13 @@ class AnnotationTests(FeatureTestBase):
     def __getSet1Gp(self, acc):
         return GenePredDbSrc.obtainGenePred("set1", acc)
 
-    def __gpToEvidTranscript(self, gp):
+    def __gpToAnnotTranscript(self, gp):
         factory = AnnotationGenePredFactory(GenomeSeqSrc.obtain("hg19"))
         return factory.fromGenePred(gp)
 
     def testENST00000215794(self):
         # + strand
-        trans = self.__gpToEvidTranscript(self.__getSet1Gp("ENST00000215794.7"))
+        trans = self.__gpToAnnotTranscript(self.__getSet1Gp("ENST00000215794.7"))
         self._assertFeatures(trans,
                              ('t=chr22:18632665-18660164/+, rna=ENST00000215794.7:0-2129/+ 2129',
                               (('exon 18632665-18632989 rna=0-324',
@@ -534,7 +581,7 @@ class AnnotationTests(FeatureTestBase):
 
     def testENST00000334029(self):
         # - strand
-        trans = self.__gpToEvidTranscript(self.__getSet1Gp("ENST00000334029.2"))
+        trans = self.__gpToAnnotTranscript(self.__getSet1Gp("ENST00000334029.2"))
         self._assertFeatures(trans,
                              ('t=chr22:18900294-18923964/+, rna=ENST00000334029.2:0-1985/- 1985',
                               (('exon 18900294-18900875 rna=0-581',
@@ -632,7 +679,7 @@ class AnnotationTests(FeatureTestBase):
 
     def testENST00000334029Rc(self):
         # - strand
-        trans = self.__gpToEvidTranscript(self.__getSet1Gp("ENST00000334029.2"))
+        trans = self.__gpToAnnotTranscript(self.__getSet1Gp("ENST00000334029.2"))
         rcTrans = trans.reverseComplement()
         self.assertEqual(len(rcTrans.features), len(trans.features))
         self._assertFeatures(rcTrans,
@@ -733,9 +780,48 @@ class AnnotationTests(FeatureTestBase):
                                 (('CDS 32403691-32403879 rna=1404-1592 1',),
                                  ("3'UTR 32403879-32404272 rna=1592-1985",))))))
 
+    def testGetStructureFeaturesOfType(self):
+        trans = self.__gpToAnnotTranscript(self.__getSet1Gp("ENST00000334029.2"))
+        feats = trans.getStructureFeaturesOfType(ExonFeature)
+        featStrs = tuple([str(f) for f in feats])
+        self.assertEquals(featStrs,
+                          ('exon 18900294-18900875 rna=0-581',
+                           'exon 18900950-18901039 rna=581-670',
+                           'exon 18904402-18904501 rna=670-769',
+                           'exon 18905828-18906004 rna=769-945',
+                           'exon 18906963-18907110 rna=945-1092',
+                           'exon 18907218-18907311 rna=1092-1185',
+                           'exon 18908854-18908936 rna=1185-1267',
+                           'exon 18909837-18909917 rna=1267-1347',
+                           'exon 18910329-18910446 rna=1347-1464',
+                           'exon 18910627-18910692 rna=1464-1529',
+                           'exon 18912563-18912713 rna=1529-1679',
+                           'exon 18913200-18913235 rna=1679-1714',
+                           'exon 18918502-18918711 rna=1714-1923',
+                           'exon 18923902-18923964 rna=1923-1985'))
+
+    def testGetAnnotationFeaturesOfType(self):
+        trans = self.__gpToAnnotTranscript(self.__getSet1Gp("ENST00000334029.2"))
+        feats = trans.getAnnotationFeaturesOfType(CdsRegionFeature)
+        featStrs = tuple([str(f) for f in feats])
+        self.assertEquals(featStrs,
+                          ('CDS 18900687-18900875 rna=393-581 2',
+                           'CDS 18900950-18901039 rna=581-670 0',
+                           'CDS 18904402-18904501 rna=670-769 2',
+                           'CDS 18905828-18906004 rna=769-945 1',
+                           'CDS 18906963-18907110 rna=945-1092 0',
+                           'CDS 18907218-18907311 rna=1092-1185 0',
+                           'CDS 18908854-18908936 rna=1185-1267 1',
+                           'CDS 18909837-18909917 rna=1267-1347 1',
+                           'CDS 18910329-18910446 rna=1347-1464 0',
+                           'CDS 18910627-18910692 rna=1464-1529 2',
+                           'CDS 18912563-18912713 rna=1529-1679 1',
+                           'CDS 18913200-18913235 rna=1679-1714 0',
+                           'CDS 18918502-18918660 rna=1714-1872 1'))
+
     def testENST00000434390(self):
         # non-coding, - strand
-        trans = self.__gpToEvidTranscript(self.__getSet1Gp("ENST00000434390.1"))
+        trans = self.__gpToAnnotTranscript(self.__getSet1Gp("ENST00000434390.1"))
         rcTrans = trans.reverseComplement()
         self.assertEqual(len(rcTrans.features), len(trans.features))
         self._assertFeatures(rcTrans,
@@ -789,13 +875,11 @@ class AnnotationTests(FeatureTestBase):
     def testAttrs(self):
         def getUtr3Feature(trans):
             # test case has one 3'UTR feature
-            for e in getFeaturesOfType(trans.features, ExonFeature):
-                for u in getFeaturesOfType(e.annotFeatures, Utr3RegionFeature):
-                    return u
+            return trans.getAnnotationFeaturesOfType(Utr3RegionFeature)[0]
 
         factory = AnnotationGenePredFactory(GenomeSeqSrc.obtain("hg19"))
-        tattrs = ObjDict(name = "Fred")
-        uattrs = ObjDict(name = "Barney")
+        tattrs = ObjDict(name="Fred")
+        uattrs = ObjDict(name="Barney")
         trans = factory.fromGenePred(self.__getSet1Gp("ENST00000334029.2"), tattrs)
         # has one 3'UTR feature, so use it for the attrs
         utr3 = getUtr3Feature(trans)
@@ -805,8 +889,6 @@ class AnnotationTests(FeatureTestBase):
         rcUtr3 = getUtr3Feature(rcTrans)
         self.assertEqual("Fred", rcTrans.attrs.name)
         self.assertEqual("Barney", rcUtr3.attrs.name)
-
-
 
 
 def suite():

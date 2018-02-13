@@ -3,6 +3,7 @@ Read GENCODE annotations from a database.
 """
 import six
 from pycbio.sys.objDict import ObjDict
+from pycbio.hgdata.coords import Coords
 from pycbio.hgdata.hgLite import sqliteConnect, SqliteCursor, GenePredDbTable, GencodeAttrsDbTable, GencodeTagDbTable
 from pycbio.hgdata.genePred import GenePred
 from pycbio.hgdata.rangeFinder import Binner
@@ -58,6 +59,10 @@ class UcscGencodeReader(object):
     def getByGeneId(self, geneId):
         transIds = self.attrDbTable.getGeneTranscriptIds(geneId)
         return self.getByTranscriptIds(transIds)
+
+    def getByGeneIds(self, geneIds):
+        "get transcripts for genes as a list of list of transcripts, sorted for reputability"
+        return [self.getByGeneId(geneId) for geneId in sorted(geneIds)]
 
     def getStartingInBounds(self, chrom, start, end):
         """Get the annotations genes that *start* in the range. To get whole
@@ -130,3 +135,22 @@ class UcscGencodeReader(object):
             if transAnnot is not None:
                 transAnnots.append(transAnnot)
         return transAnnots
+
+
+def findAnnotationBounds(geneTranses):
+    """find the bounds of a list of gene transcripts on the same chromosome"""
+    annotId = geneTranses[0].rna.name
+    name = geneTranses[0].chrom.name
+    start = geneTranses[0].chrom.start
+    end = geneTranses[0].chrom.end
+    strand = geneTranses[0].rna.strand
+    for geneTrans in geneTranses:
+        if geneTrans.chrom.name != name:
+            raise Exception("Bug: mix of chromosomes provided: {} and {}".format(geneTrans.rna.name, annotId))
+        if geneTrans.chrom.strand != '+':
+            raise Exception("Bug: assumes positive chromosome strand: {} and {}".format(geneTrans.rna.name, annotId))
+        if geneTrans.rna.strand != strand:
+            raise Exception("Bug: mix of RNA strand provided: {} and {}".format(geneTrans.rna.name, annotId))
+        start = min(geneTrans.chrom.start, start)
+        end = max(geneTrans.chrom.end, end)
+    return Coords(name, start, end, strand)
