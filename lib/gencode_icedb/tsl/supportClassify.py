@@ -57,7 +57,7 @@ def _geneIsTslIgnored(annotTrans):
     return False
 
 
-def _checkMegExonIndels(evidExon):
+def _checkExonIndels(evidExon):
     "check for allowed indel polymorphism"
 
     def getIndelSize(aln):
@@ -68,6 +68,8 @@ def _checkMegExonIndels(evidExon):
         else:
             return 0  # not an indel
 
+    if len(evidExon.alignFeatures) == 1:
+        return EvidenceSupport.good
     totalIndelSize = 0
     for aln in evidExon.alignFeatures:
         indelSize = getIndelSize(aln)
@@ -79,11 +81,9 @@ def _checkMegExonIndels(evidExon):
     else:
         return EvidenceSupport.polymorphic
 
-
-def _compareMegExon(annotExon, evidExon):
-    # boundaries are check with introns, so just check indels
-    if len(evidExon.alignFeatures) > 1:
-        return _checkMegExonIndels(evidExon)
+def _checkIntronIndels(evidIntron):
+    if len(evidIntron.alignFeatures) > 1:
+        return EvidenceSupport.internal_unaligned
     else:
         return EvidenceSupport.good
 
@@ -91,16 +91,15 @@ def _compareMegExon(annotExon, evidExon):
 def _compareIntron(annotIntron, evidIntron):
     if not annotIntron.chromLoc.eqAbsLoc(evidIntron.chromLoc):
         return EvidenceSupport.exon_boundry_mismatch
-    elif len(evidIntron.alignFeatures) > 1:
-        return EvidenceSupport.internal_unaligned
     else:
-        return EvidenceSupport.good
+        return _checkIntronIndels(evidIntron)
 
 
 def _compareFeature(annotFeat, evidFeat):
     assert type(annotFeat) == type(evidFeat)
     if isinstance(annotFeat, ExonFeature):
-        return _compareMegExon(annotFeat, evidFeat)
+        # bounds are checked on introns, not exons
+        return _checkExonIndels(evidFeat)
     else:
         return _compareIntron(annotFeat, evidFeat)
 
@@ -109,12 +108,12 @@ def compareMegWithEvidence(annotTrans, evidTrans):
     """Compare a multi-exon annotation with a given piece of evidence"""
     if len(evidTrans.features) != len(annotTrans.features):
         return EvidenceSupport.feat_mismatch
-    worstCmpr = EvidenceSupport.good
+    worstSupport = EvidenceSupport.good
     for iFeat in range(len(annotTrans.features)):
-        cmpr = _compareFeature(annotTrans.features[iFeat], evidTrans.features[iFeat])
-        if cmpr > worstCmpr:  # > is worse
-            worstCmpr = cmpr
-    return worstCmpr
+        # > is worse
+        worstSupport = max(_compareFeature(annotTrans.features[iFeat], evidTrans.features[iFeat]),
+                           worstSupport)
+    return worstSupport
 
 
 class EvidenceCache(object):
@@ -152,7 +151,7 @@ class AnnotationEvidenceCollector(defaultdict):
 
 def _countFullSupport(evidEvals):
     """count support from normal and suspect evidence"""
-    supporting = [ev for ev in evidEvals if ev.support <= EvidenceSupport.polymorphic]
+    supporting = [ev for ev in evidEvals if ev.support < EvidenceSupport.poor]
     return (len([ev for ev in supporting if ev.suspect is None]),
             len([ev for ev in supporting if ev.suspect is not None]))
 
