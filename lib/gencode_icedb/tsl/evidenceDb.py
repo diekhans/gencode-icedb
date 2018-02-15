@@ -56,5 +56,5 @@ class EvidenceReader(object):
         extraWhere = "blockCount >= {}".format(minExons) if minExons > 0 else None
         for psl in dbTable.getTRangeOverlap(chrom, start, end, strand=strand, extraWhere=extraWhere):
             trans = self._makeTrans(psl)
-            if len(trans.getStructureFeaturesOfType(ExonFeature)) >= minExons:
+            if len(trans.getFeaturesOfType(ExonFeature)) >= minExons:
                 yield trans

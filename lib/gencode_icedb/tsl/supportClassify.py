@@ -32,7 +32,7 @@ exonPolymorhicFactionLimit = 0.05
 
 # FIXME these are from the ccds2/modules/gencode/src/lib/gencode/data/gencodeGenes.py, migrate to new module
 def _transIsSingleExon(annotTrans):
-    return len(annotTrans.getStructureFeaturesOfType(ExonFeature)) <= 1
+    return len(annotTrans.getFeaturesOfType(ExonFeature)) <= 1
 
 
 def _geneIsTslIgnored(annotTrans):

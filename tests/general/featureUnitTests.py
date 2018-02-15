@@ -10,7 +10,7 @@ from pycbio.sys.objDict import ObjDict
 from pycbio.sys.testCaseBase import TestCaseBase
 from gencode_icedb.general.genome import GenomeReaderFactory
 from gencode_icedb.general.transFeatures import ExonFeature
-from gencode_icedb.general.transFeatures import CdsRegionFeature, Utr3RegionFeature
+from gencode_icedb.general.transFeatures import AnnotationFeature, CdsRegionFeature, Utr3RegionFeature
 from gencode_icedb.general.transFeatures import RnaInsertFeature, ChromInsertFeature
 from gencode_icedb.general.evidFeatures import EvidencePslFactory
 from gencode_icedb.general.annotFeatures import AnnotationGenePredFactory
@@ -475,7 +475,7 @@ class EvidenceTests(FeatureTestBase):
     def testGetAlignmentFeaturesOfType(self):
         psl = PslDbSrc.obtainPsl("hg38-mm10.transMap", "ENST00000641446")
         trans = EvidencePslFactory(GenomeSeqSrc.obtain("mm10")).fromPsl(psl)
-        feats = trans.getAlignmentFeaturesOfType((RnaInsertFeature, ChromInsertFeature))
+        feats = trans.getFeaturesOfType((RnaInsertFeature, ChromInsertFeature))
         featStrs = tuple([str(f) for f in feats])
         self.assertEqual(featStrs,
                          ('cins 148039050-148039051 rna=None-None',
@@ -530,23 +530,25 @@ class EvidenceTests(FeatureTestBase):
     def testStructPrevNext(self):
         psl = PslDbSrc.obtainPsl("hg38-mm10.transMap", "ENST00000641446")
         trans = EvidencePslFactory(GenomeSeqSrc.obtain("mm10")).fromPsl(psl)
-        feat = trans.features[0]
-        self.assertTrue(isinstance(feat, ExonFeature))
+        feat = trans.firstFeature(ExonFeature)
+        self.assertIs(feat, trans.features[0])
+        self.assertIsInstance(feat, ExonFeature)
         exonCnt = 1
         lastFeat = None
         while True:
-            feat = feat.nextFeat(ExonFeature)
+            feat = feat.nextFeature(ExonFeature)
             if feat is None:
                 break
             exonCnt += 1
             lastFeat = feat
         self.assertEqual(exonCnt, 14)
 
-        feat = lastFeat
-        self.assertTrue(isinstance(feat, ExonFeature))
+        feat = trans.lastFeature(ExonFeature)
+        self.assertIs(feat, lastFeat)
+        self.assertIsInstance(feat, ExonFeature)
         exonCnt = 1
         while True:
-            feat = feat.prevFeat(ExonFeature)
+            feat = feat.prevFeature(ExonFeature)
             if feat is None:
                 break
             exonCnt += 1
@@ -556,21 +558,22 @@ class EvidenceTests(FeatureTestBase):
         psl = PslDbSrc.obtainPsl("hg38-mm10.transMap", "ENST00000641446")
         trans = EvidencePslFactory(GenomeSeqSrc.obtain("mm10")).fromPsl(psl)
 
-        feat = trans.features[0].alignFeatures[0]
-        rinsCnt = 1 if isinstance(trans, RnaInsertFeature) else 0
+        feat = trans.firstFeature(RnaInsertFeature)
+        self.assertIsInstance(feat, RnaInsertFeature)
+        rinsCnt = 1
         lastFeat = None
         while True:
-            feat = feat.nextFeat(RnaInsertFeature)
+            feat = feat.nextFeature(RnaInsertFeature)
             if feat is None:
                 break
             rinsCnt += 1
             lastFeat = feat
         self.assertEqual(rinsCnt, 18)
 
-        feat = lastFeat
+        feat = trans.lastFeature(RnaInsertFeature)
         rinsCnt = 1
         while True:
-            feat = feat.prevFeat(RnaInsertFeature)
+            feat = feat.prevFeature(RnaInsertFeature)
             if feat is None:
                 break
             rinsCnt += 1
@@ -832,21 +835,22 @@ class AnnotationTests(FeatureTestBase):
     def testAnnotPrevNext(self):
         trans = self.__gpToAnnotTranscript(self.__getSet1Gp("ENST00000334029.2"))
 
-        feat = trans.features[0].annotFeatures[0]
+        feat = trans.firstFeature(AnnotationFeature)
+        self.assertIs(feat, trans.features[0].annotFeatures[0])
         cdsCnt = 1 if isinstance(trans, CdsRegionFeature) else 0
         lastFeat = None
         while True:
-            feat = feat.nextFeat(CdsRegionFeature)
+            feat = feat.nextFeature(CdsRegionFeature)
             if feat is None:
                 break
             cdsCnt += 1
             lastFeat = feat
         self.assertEqual(cdsCnt, 13)
 
-        feat = lastFeat
-        cdsCnt = 1
+        feat = trans.lastFeature(AnnotationFeature)
+        cdsCnt = 1 if isinstance(trans, CdsRegionFeature) else 0
         while True:
-            feat = feat.prevFeat(CdsRegionFeature)
+            feat = feat.prevFeature(CdsRegionFeature)
             if feat is None:
                 break
             cdsCnt += 1
@@ -854,7 +858,7 @@ class AnnotationTests(FeatureTestBase):
 
     def testGetStructureFeaturesOfType(self):
         trans = self.__gpToAnnotTranscript(self.__getSet1Gp("ENST00000334029.2"))
-        feats = trans.getStructureFeaturesOfType(ExonFeature)
+        feats = trans.getFeaturesOfType(ExonFeature)
         featStrs = tuple([str(f) for f in feats])
         self.assertEqual(featStrs,
                          ('exon 18900294-18900875 rna=0-581',
@@ -874,7 +878,7 @@ class AnnotationTests(FeatureTestBase):
 
     def testGetAnnotationFeaturesOfType(self):
         trans = self.__gpToAnnotTranscript(self.__getSet1Gp("ENST00000334029.2"))
-        feats = trans.getAnnotationFeaturesOfType(CdsRegionFeature)
+        feats = trans.getFeaturesOfType(CdsRegionFeature)
         featStrs = tuple([str(f) for f in feats])
         self.assertEqual(featStrs,
                          ('CDS 18900687-18900875 rna=393-581 2',
@@ -947,7 +951,7 @@ class AnnotationTests(FeatureTestBase):
     def testAttrs(self):
         def getUtr3Feature(trans):
             # test case has one 3'UTR feature
-            return trans.getAnnotationFeaturesOfType(Utr3RegionFeature)[0]
+            return trans.getFeaturesOfType(Utr3RegionFeature)[0]
 
         factory = AnnotationGenePredFactory(GenomeSeqSrc.obtain("hg19"))
         tattrs = ObjDict(name="Fred")
