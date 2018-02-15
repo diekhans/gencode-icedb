@@ -33,7 +33,7 @@ class IntronCoords(namedtuple("Intron", ("chrom", "chromStart", "chromEnd", "str
     @staticmethod
     def fromIntronFeat(intronFeat):
         transFeat = intronFeat.transcript
-        return IntronCoords(transFeat.chromLoc.name, intronFeat.chromLoc.start, intronFeat.chromLoc.end, transFeat.rnaLoc.strand, intronFeat.sjBases)
+        return IntronCoords(transFeat.chrom.name, intronFeat.chrom.start, intronFeat.chrom.end, transFeat.rna.strand, intronFeat.sjBases)
 
     @staticmethod
     def fromIntronSupp(supp):
@@ -95,6 +95,6 @@ class IntronSupportCounter(defaultdict):
 
     def getIntronFeatCounts(self, intronFeat):
         """given an Intron feature, get the IntronCoords and IntronSupportCounts objects, creating zero counts if needed"""
-        intron = IntronCoords(intronFeat.transcript.chromLoc.name, intronFeat.chromLoc.start, intronFeat.chromLoc.end,
-                              intronFeat.transcript.rnaLoc.strand, self.__getIntronFeatMotif(intronFeat))
+        intron = IntronCoords(intronFeat.transcript.chrom.name, intronFeat.chrom.start, intronFeat.chrom.end,
+                              intronFeat.transcript.rna.strand, self.__getIntronFeatMotif(intronFeat))
         return (intron, self[intron])   # defaultdict will create

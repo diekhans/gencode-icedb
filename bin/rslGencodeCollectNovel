@@ -60,8 +60,8 @@ class NovelFinder(object):
     def _haveIntron(self, intron, trans):
         # already strand-filtered
         for feat in trans.features:
-            if (isinstance(feat, IntronFeature) and (intron.chromStart == feat.chromLoc.start)
-                and (intron.chromEnd == feat.chromLoc.end)):
+            if (isinstance(feat, IntronFeature) and (intron.chromStart == feat.chrom.start)
+                and (intron.chromEnd == feat.chrom.end)):
                 return True
         return False
 

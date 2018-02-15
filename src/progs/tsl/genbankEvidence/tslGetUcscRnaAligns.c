@@ -129,7 +129,7 @@ static struct dyString* makeQuery(char *sqlTemplate, char *table,
 static struct psl* loadPslsRange(struct sqlConnection *hgConn, char *table,
                                  struct ChromSpec *chromSpec) {
     char *sqlTemplate =
-        "SELECT matches, misMatches, repMatches, nCount, qNumInsert, qBaseInsert, tNumInsert, "
+        "NOSQLINJ SELECT matches, misMatches, repMatches, nCount, qNumInsert, qBaseInsert, tNumInsert, "
         "tBaseInsert, strand, concat(qName,\".\",version), qSize, qStart, qEnd, tName, "
         "tSize, tStart, tEnd, blockCount, blockSizes, qStarts, tStarts "
         "FROM %s LEFT JOIN hgFixed.gbCdnaInfo ON (qName = acc)";
@@ -213,7 +213,7 @@ static char *getOrientInfoKey(char *name, char *chrom,
 static void loadEstOrientInfosRange(struct sqlConnection *hgConn, char *table,
                                     struct ChromSpec *chromSpec,
                                     struct hash* orientInfoMap) {
-    struct dyString *query = makeQuery("SELECT * FROM %s", table, "chrom", "chromStart", "chromEnd", chromSpec);
+    struct dyString *query = makeQuery("NOSQLINJ SELECT * FROM %s", table, "chrom", "chromStart", "chromEnd", chromSpec);
     struct sqlResult *sr = sqlGetResult(hgConn, dyStringContents(query));
     char **row;
     while ((row = sqlNextRow(sr)) != NULL) {

@@ -62,9 +62,9 @@ def _checkExonIndels(evidExon):
 
     def getIndelSize(aln):
         if isinstance(aln, ChromInsertFeature):
-            return len(aln.chromLoc)
+            return len(aln.chrom)
         elif isinstance(aln, RnaInsertFeature):
-            return len(aln.rnaLoc)
+            return len(aln.rna)
         else:
             return 0  # not an indel
 
@@ -76,7 +76,7 @@ def _checkExonIndels(evidExon):
         if indelSize > exonPolymorhicSizeLimit:
             return EvidenceSupport.large_indel_size
         totalIndelSize += indelSize
-    if totalIndelSize > exonPolymorhicFactionLimit * len(evidExon.chromLoc):
+    if totalIndelSize > exonPolymorhicFactionLimit * len(evidExon.chrom):
         return EvidenceSupport.large_indel_content
     else:
         return EvidenceSupport.polymorphic
@@ -90,7 +90,7 @@ def _checkIntronIndels(evidIntron):
 
 
 def _compareIntron(annotIntron, evidIntron):
-    if not annotIntron.chromLoc.eqAbsLoc(evidIntron.chromLoc):
+    if not annotIntron.chrom.eqAbsLoc(evidIntron.chrom):
         return EvidenceSupport.exon_boundry_mismatch
     else:
         return _checkIntronIndels(evidIntron)
@@ -129,7 +129,7 @@ class EvidenceCache(object):
         if self.evidBySrc[evidSrc] is None:
             overGen = self.evidenceReader.genOverlapping(evidSrc, self.bounds.name, self.bounds.start, self.bounds.end,
                                                          rnaStrand=self.bounds.strand, minExons=2)
-            self.evidBySrc[evidSrc] = tuple(sorted(overGen, key=lambda a: (a.rnaLoc.name, a.chromLoc.name, a.chromLoc.start)))
+            self.evidBySrc[evidSrc] = tuple(sorted(overGen, key=lambda a: (a.rna.name, a.chrom.name, a.chrom.start)))
         return self.evidBySrc[evidSrc]
 
 
@@ -196,7 +196,7 @@ def writeTsvHeaders(tslTsvFh, detailsTsvFh=None):
 
 
 def _writeDetails(detailsTsvFh, annotTrans, evidSrc, evidTrans, evidSupport, suspect):
-    fileOps.prRowv(detailsTsvFh, annotTrans.rnaLoc.name, evidSrc, evidTrans.rnaLoc.name, evidSupport,
+    fileOps.prRowv(detailsTsvFh, annotTrans.rna.name, evidSrc, evidTrans.rna.name, evidSupport,
                    "" if suspect is None else suspect)
 
 
@@ -207,7 +207,7 @@ def _compareWithEvidence(annotTrans, evidSrc, evidTrans, evidCollector, detailsT
         _writeDetails(detailsTsvFh, annotTrans, evidSrc, evidTrans, evidSupport, suspect)
     if evidSupport < EvidenceSupport.feat_mismatch:
         evidCollector.add(evidSrc,
-                          AnnotationEvidenceEval(annotTrans, evidSrc, evidTrans.rnaLoc.name, evidSupport, suspect))
+                          AnnotationEvidenceEval(annotTrans, evidSrc, evidTrans.rna.name, evidSupport, suspect))
 
 
 def _collectTransSupport(annotTrans, evidCache, detailsTsvFh):
@@ -224,7 +224,7 @@ def _classifyTrans(annotTrans, evidCache, tslTsvFh, detailsTsvFh):
     else:
         evidCollector = _collectTransSupport(annotTrans, evidCache, detailsTsvFh)
         tsl = _calculateTsl(evidCollector)
-    fileOps.prRowv(tslTsvFh, annotTrans.rnaLoc.name, tsl)
+    fileOps.prRowv(tslTsvFh, annotTrans.rna.name, tsl)
 
 
 def classifyGeneTranscripts(evidenceReader, geneAnnotTranses, tslTsvFh, detailsTsvFh=None):

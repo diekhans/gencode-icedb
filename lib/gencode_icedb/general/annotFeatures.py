@@ -55,25 +55,25 @@ class AnnotationGenePredFactory(object):
 
     def _getUtr5Annot(self, annot, rnaNext, exon, annotFeatures):
         utr5 = Utr5RegionFeature(exon, len(annotFeatures),
-                                 exon.chromLoc.subrange(annot.start, annot.end),
-                                 exon.rnaLoc.subrange(rnaNext, rnaNext + annot.size()))
+                                 exon.chrom.subrange(annot.start, annot.end),
+                                 exon.rna.subrange(rnaNext, rnaNext + annot.size()))
         annotFeatures.append(utr5)
-        return utr5.rnaLoc.end
+        return utr5.rna.end
 
     def _getCdsAnnot(self, annot, rnaNext, exon, frame, annotFeatures):
         cds = CdsRegionFeature(exon, len(annotFeatures),
-                               exon.chromLoc.subrange(annot.start, annot.end),
-                               exon.rnaLoc.subrange(rnaNext, rnaNext + annot.size()),
+                               exon.chrom.subrange(annot.start, annot.end),
+                               exon.rna.subrange(rnaNext, rnaNext + annot.size()),
                                frame)
         annotFeatures.append(cds)
-        return cds.rnaLoc.end
+        return cds.rna.end
 
     def _getUtr3Annot(self, annot, rnaNext, exon, annotFeatures):
         utr3 = Utr3RegionFeature(exon, len(annotFeatures),
-                                 exon.chromLoc.subrange(annot.start, annot.end),
-                                 exon.rnaLoc.subrange(rnaNext, rnaNext + annot.size()))
+                                 exon.chrom.subrange(annot.start, annot.end),
+                                 exon.rna.subrange(rnaNext, rnaNext + annot.size()))
         annotFeatures.append(utr3)
-        return utr3.rnaLoc.end
+        return utr3.rna.end
 
     def _getCodingFeatures(self, blk, rnaNext, exon, annotFeatures):
         annot = blk.featureSplit()
@@ -107,17 +107,17 @@ class AnnotationGenePredFactory(object):
         for iBlk in range(iBlkStart, iBlkEnd):
             gpExon = gp.exons[iBlk]
             nonCodingFeatures.append(NonCodingRegionFeature(exon, len(nonCodingFeatures),
-                                                            exon.chromLoc.subrange(gpExon.start, gpExon.end),
-                                                            exon.rnaLoc.subrange(rnaNext, rnaNext + gpExon.size())))
+                                                            exon.chrom.subrange(gpExon.start, gpExon.end),
+                                                            exon.rna.subrange(rnaNext, rnaNext + gpExon.size())))
             rnaNext += gpExon.size()
         assert rnaNext == rnaEnd, "rnaNext={}, rnaEnd={}".format(rnaNext, rnaEnd)
         exon.annotFeatures = tuple(nonCodingFeatures)
 
     def _makeExon(self, gp, iBlkStart, iBlkEnd, rnaStart, rnaEnd, trans, iFeat):
         exon = ExonFeature(trans, iFeat,
-                           trans.chromLoc.subrange(gp.exons[iBlkStart].start, gp.exons[iBlkEnd - 1].end),
-                           trans.rnaLoc.subrange(rnaStart, rnaEnd))
-        if trans.cdsChromLoc is not None:
+                           trans.chrom.subrange(gp.exons[iBlkStart].start, gp.exons[iBlkEnd - 1].end),
+                           trans.rna.subrange(rnaStart, rnaEnd))
+        if trans.cdsChrom is not None:
             self._addCodingFeatures(gp, iBlkStart, iBlkEnd, rnaStart, rnaEnd, exon)
         else:
             self._addNonCodingFeatures(gp, iBlkStart, iBlkEnd, rnaStart, rnaEnd, exon)
@@ -134,20 +134,20 @@ class AnnotationGenePredFactory(object):
     def _makeIntron(self, gp, iBlkNext, rnaEnd, trans, iFeat):
         donorSeq, acceptorSeq = self._getSpliceSites(gp, iBlkNext)
         return IntronFeature(trans, iFeat,
-                             trans.chromLoc.subrange(gp.exons[iBlkNext - 1].end, gp.exons[iBlkNext].start),
-                             trans.rnaLoc.subrange(rnaEnd, rnaEnd), donorSeq, acceptorSeq)
+                             trans.chrom.subrange(gp.exons[iBlkNext - 1].end, gp.exons[iBlkNext].start),
+                             trans.rna.subrange(rnaEnd, rnaEnd), donorSeq, acceptorSeq)
 
     def fromGenePred(self, gp, attrs=None):
         "convert a genePred to an AnnotTranscript"
         chromSize = self.chromSizeFunc(gp.chrom)
         rnaSize = gp.getLenExons()
         if gp.cdsStart < gp.cdsEnd:
-            cdsChromLoc = Coords(gp.chrom, gp.cdsStart, gp.cdsEnd, strand='+', size=chromSize)
+            cdsChrom = Coords(gp.chrom, gp.cdsStart, gp.cdsEnd, strand='+', size=chromSize)
         else:
-            cdsChromLoc = None
+            cdsChrom = None
 
-        chromLoc = Coords(gp.chrom, gp.txStart, gp.txEnd, '+', chromSize)
-        rnaLoc = Coords(gp.name, 0, rnaSize, gp.strand, rnaSize)
-        trans = TranscriptFeatures(chromLoc, rnaLoc, cdsChromLoc, attrs)
+        chrom = Coords(gp.chrom, gp.txStart, gp.txEnd, '+', chromSize)
+        rna = Coords(gp.name, 0, rnaSize, gp.strand, rnaSize)
+        trans = TranscriptFeatures(chrom, rna, cdsChrom, attrs)
         trans.features = tuple(self._buildFeatures(gp, trans))
         return trans
