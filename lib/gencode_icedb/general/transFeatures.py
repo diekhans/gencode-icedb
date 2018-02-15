@@ -12,7 +12,7 @@ from gencode_icedb.general.spliceJuncs import SpliceJuncs, spliceJuncsClassify
 
 
 def _reverseComplementChildren(rcParent, features):
-    "reverse complement a list of child TransFeatures, return None if features is None"
+    "reverse complement a list of child Features, return None if features is None"
     if features is None:
         return None
     rcFeatures = []
@@ -32,7 +32,7 @@ def _getFeaturesOfType(feats, featureTypes):
     return [f for f in feats if isinstance(f, featureTypes)]
 
 
-class TransFeature(object):
+class Feature(object):
     """A feature of annotation or alignment to the genome.  The RNA range is
     in genomic coordinates and it's length may not match the length of the
     feature in gapped feature types, due to gap closing.  For introns, are the
@@ -144,7 +144,7 @@ class TransFeature(object):
         raise TypeError("prevFeature not valid on features of type {}".format(type(self).__name__))
         self._prevNextNotValue()
 
-class AlignmentFeature(TransFeature):
+class AlignmentFeature(Feature):
     "ABC for alignment features"
     def __init__(self, parent, iParent, chromLoc, rnaLoc, attrs=None):
         assert isinstance(parent, StructureFeature)
@@ -208,7 +208,7 @@ class RnaInsertFeature(AlignmentFeature):
         return RnaInsertFeature(rcParent, iRcParent, self.rnaLoc.reverse(), deepcopy(self.attrs))
 
 
-class AnnotationFeature(TransFeature):
+class AnnotationFeature(Feature):
     "ABC for annotation features"
     def __init__(self, parent, iParent, chromLoc, rnaLoc, attrs=None):
         super(AnnotationFeature, self).__init__(parent, iParent, chromLoc, rnaLoc, attrs)
@@ -277,7 +277,7 @@ class NonCodingRegionFeature(AnnotationFeature):
     __slots__ = ()
 
 
-class StructureFeature(TransFeature):
+class StructureFeature(Feature):
     "ABC for structural features"
     __slots__ = ("annotFeatures", "alignFeatures")
 
@@ -427,7 +427,7 @@ class IntronFeature(StructureFeature):
         return (self.rnaLoc.start <= feat2.rnaLoc.end) and (self.rnaLoc.end >= feat2.rnaLoc.start)
 
 
-class TranscriptFeatures(TransFeature):
+class TranscriptFeatures(Feature):
     """
     Set of features for a transcript derived from an alignment or annotation,
     features are kept in chromosome order (positive strand).
