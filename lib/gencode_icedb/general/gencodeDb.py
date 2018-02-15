@@ -2,6 +2,7 @@
 Read GENCODE annotations from a database.
 """
 import six
+from collections import defaultdict
 from pycbio.sys.objDict import ObjDict
 from pycbio.hgdata.coords import Coords
 from pycbio.hgdata.hgLite import sqliteConnect, SqliteCursor, GenePredDbTable, GencodeAttrsDbTable, GencodeTagDbTable
@@ -104,9 +105,8 @@ class UcscGencodeReader(object):
         else:
             attrs = self.attrDbTable.getByTranscriptId(gencodeId)
             if attrs is None:
-                return self.getByTranscriptIds(gencodeId)
-            else:
                 raise Exception("Not a valid GENCODE gene or transcript id: {}".format(gencodeId))
+            return self.getByTranscriptIds(gencodeId)
 
     def getByGencodeIds(self, gencodeIds):
         """get annotations as TranscriptFeatures by gene or transcript id (or ids)"""
@@ -116,6 +116,15 @@ class UcscGencodeReader(object):
         for gencodeId in gencodeIds:
             transAnnots.extend(self._getByGencodeId(gencodeId))
         return transAnnots
+
+    def getByGencodeIdsGrouped(self, gencodeIds):
+        """get annotations as TranscriptFeatures by gene or transcript id (or ids),
+        group into list or lists by geneId"""
+        byGeneId = defaultdict(list)
+        for transAnnot in self.getByGencodeIds(gencodeIds):
+            byGeneId[transAnnot.attrs.geneId].append(transAnnot)
+        return [[ta for ta in sorted(byGeneId[gi], key=lambda t: t.rnaLoc.name)]
+                for gi in sorted(byGeneId.keys())]
 
     def getOverlapping(self, chrom, start, end, strand=None):
         """generator get overlapping annotations as TranscriptFeatures"""

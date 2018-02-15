@@ -1,8 +1,9 @@
 #!/bin/env python3
 from __future__ import print_function
+
 import os
 import sys
-sys.path.insert(0, "../../../bin")
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../../bin"))
 import icedbProgSetup  # noqa: F401
 import argparse
 import pipettor

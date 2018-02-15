@@ -4,6 +4,7 @@ include ${ROOT}/tests/tsl/tslTestDefs.mk
 
 gencodeDb = output/gencode.db
 evidDb = output/evid.db
+createTestData = bin/createTestData
 
 testInputDone = output/test-input.done
 
@@ -30,9 +31,9 @@ supportCollectMkJobsTest: ${testInputDone} mkdirs
 	$(call sqldumpdiff,gencode_transcript_support_details)
 
 
-${testInputDone}: bin/createTestData input/v27-test-cases.tsv
+${testInputDone}: ${createTestData} input/v27-test-cases.tsv
 	@mkdir -p output
-	bin/createTestData input/v27-test-cases.tsv ${hsGencodeVer} ${hsUcscGenomeDb} ${hsEnsemblCDnaDb} ${hsGrcRefAssemblyReport} ${evidDb} ${gencodeDb}
+	${createTestData} input/v27-test-cases.tsv ${hsGencodeVer} ${hsUcscGenomeDb} ${hsEnsemblCDnaDb} ${hsGrcRefAssemblyReport} ${evidDb} ${gencodeDb}
 	touch $@
 
 

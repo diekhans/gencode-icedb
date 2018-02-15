@@ -81,6 +81,7 @@ def _checkExonIndels(evidExon):
     else:
         return EvidenceSupport.polymorphic
 
+
 def _checkIntronIndels(evidIntron):
     if len(evidIntron.alignFeatures) > 1:
         return EvidenceSupport.internal_unaligned

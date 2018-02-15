@@ -23,21 +23,21 @@ def parseArgs():
                         help="""evidence sqlite3 database""")
     parser.add_argument('tslTsv',
                         help="""output of TSL categories""")
-    parser.add_argument('geneIds', nargs='+',
+    parser.add_argument('gencodeIds', nargs='+',
                         help="""GENCODE gene ids, including versions.""")
     return parser.parse_args()
 
 
-def classifyGenes(evidenceReader, genesTrans, tslTsvFh, detailsTsvFh):
+def classifyGenes(evidenceReader, genesTranses, tslTsvFh, detailsTsvFh):
     writeTsvHeaders(tslTsvFh, detailsTsvFh)
-    for geneTranses in genesTrans:
-        classifyGeneTranscripts(evidenceReader, geneTranses, tslTsvFh, detailsTsvFh)
+    for geneTrans in genesTranses:
+        classifyGeneTranscripts(evidenceReader, geneTrans, tslTsvFh, detailsTsvFh)
 
 
 def tslGencodeCollectSupport(args):
     gencodeReader = UcscGencodeReader(args.gencodeDb)
     evidenceReader = EvidenceReader(args.evidenceDb)
-    genesTranses = gencodeReader.getByGeneIds(args.geneIds)
+    genesTranses = gencodeReader.getByGencodeIdsGrouped(args.gencodeIds)
     fileOps.ensureFileDir(args.tslTsv)
     if args.detailsTsv is not None:
         fileOps.ensureFileDir(args.detailsTsv)

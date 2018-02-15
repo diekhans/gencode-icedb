@@ -2,9 +2,9 @@
 Features of a transcript annotation or alignment.
 """
 from __future__ import print_function
+import sys
 from copy import deepcopy
 from pycbio.hgdata.coords import Coords
-from pycbio.hgdata import dnaOps
 from pycbio.hgdata.frame import Frame
 from pycbio.hgdata.bed import Bed
 from pycbio.sys.objDict import ObjDict
@@ -75,7 +75,7 @@ class TransFeature(object):
             r.append(feat.toStrTree())
         return tuple(r)
 
-    def dump(self, fh, indent=0, msg=None):
+    def dump(self, fh=sys.stderr, indent=0, msg=None):
         """print the tree for debugging purposes., optionally prefixing first line with
         msg and indenting beneath it"""
         if msg is not None:
@@ -307,7 +307,7 @@ class StructureFeature(TransFeature):
             r.append(self._getChildrenStrTree(self.alignFeatures))
         return tuple(r)
 
-    def _dumpImpld(self, fh, indent):
+    def _dumpImpl(self, fh, indent):
         fh.write(str(self) + '\n')
         self._dumpChildren(fh, indent + 2, self.annotFeatures)
         self._dumpChildren(fh, indent + 2, self.alignFeatures)
@@ -369,10 +369,10 @@ class IntronFeature(StructureFeature):
 
     def __str__(self):
         if self.donorSeq is None:
-            sjDesc = None
+            sjDesc = ""
         else:
-            sjDesc = "{}...{} ({})".format(self.donorSeq, self.acceptorSeq, str(self.spliceJuncs))
-        return "intron {} sjBases={}".format(self.coordsStr(), sjDesc)
+            sjDesc = " sjBases={}...{} ({})".format(self.donorSeq, self.acceptorSeq, str(self.spliceJuncs))
+        return "intron {}{}".format(self.coordsStr(), sjDesc)
 
     @property
     def sjBases(self):
@@ -422,7 +422,7 @@ class TranscriptFeatures(TransFeature):
             r.append(self._getChildrenStrTree(self.features))
         return tuple(r)
 
-    def _dumpImpld(self, fh, indent):
+    def _dumpImpl(self, fh, indent):
         fh.write(str(self) + '\n')
         self._dumpChildren(fh, indent + 2, self.features)
 
