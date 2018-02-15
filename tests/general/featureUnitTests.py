@@ -527,6 +527,55 @@ class EvidenceTests(FeatureTestBase):
         self.__checkRnaAln(aln1)
         self.__checkRnaAln(aln2)
 
+    def testStructPrevNext(self):
+        psl = PslDbSrc.obtainPsl("hg38-mm10.transMap", "ENST00000641446")
+        trans = EvidencePslFactory(GenomeSeqSrc.obtain("mm10")).fromPsl(psl)
+        feat = trans.features[0]
+        self.assertTrue(isinstance(feat, ExonFeature))
+        exonCnt = 1
+        lastFeat = None
+        while True:
+            feat = feat.nextFeat(ExonFeature)
+            if feat is None:
+                break
+            exonCnt += 1
+            lastFeat = feat
+        self.assertEqual(exonCnt, 14)
+
+        feat = lastFeat
+        self.assertTrue(isinstance(feat, ExonFeature))
+        exonCnt = 1
+        while True:
+            feat = feat.prevFeat(ExonFeature)
+            if feat is None:
+                break
+            exonCnt += 1
+        self.assertEqual(exonCnt, 14)
+
+    def testAlignPrevNext(self):
+        psl = PslDbSrc.obtainPsl("hg38-mm10.transMap", "ENST00000641446")
+        trans = EvidencePslFactory(GenomeSeqSrc.obtain("mm10")).fromPsl(psl)
+
+        feat = trans.features[0].alignFeatures[0]
+        rinsCnt = 1 if isinstance(trans, RnaInsertFeature) else 0
+        lastFeat = None
+        while True:
+            feat = feat.nextFeat(RnaInsertFeature)
+            if feat is None:
+                break
+            rinsCnt += 1
+            lastFeat = feat
+        self.assertEqual(rinsCnt, 18)
+
+        feat = lastFeat
+        rinsCnt = 1
+        while True:
+            feat = feat.prevFeat(RnaInsertFeature)
+            if feat is None:
+                break
+            rinsCnt += 1
+        self.assertEqual(rinsCnt, 18)
+
 
 class AnnotationTests(FeatureTestBase):
     def __getSet1Gp(self, acc):
@@ -779,6 +828,29 @@ class AnnotationTests(FeatureTestBase):
                                ('exon 32403691-32404272 rna=1404-1985',
                                 (('CDS 32403691-32403879 rna=1404-1592 1',),
                                  ("3'UTR 32403879-32404272 rna=1592-1985",))))))
+
+    def testAnnotPrevNext(self):
+        trans = self.__gpToAnnotTranscript(self.__getSet1Gp("ENST00000334029.2"))
+
+        feat = trans.features[0].annotFeatures[0]
+        cdsCnt = 1 if isinstance(trans, CdsRegionFeature) else 0
+        lastFeat = None
+        while True:
+            feat = feat.nextFeat(CdsRegionFeature)
+            if feat is None:
+                break
+            cdsCnt += 1
+            lastFeat = feat
+        self.assertEqual(cdsCnt, 13)
+
+        feat = lastFeat
+        cdsCnt = 1
+        while True:
+            feat = feat.prevFeat(CdsRegionFeature)
+            if feat is None:
+                break
+            cdsCnt += 1
+        self.assertEqual(cdsCnt, 13)
 
     def testGetStructureFeaturesOfType(self):
         trans = self.__gpToAnnotTranscript(self.__getSet1Gp("ENST00000334029.2"))

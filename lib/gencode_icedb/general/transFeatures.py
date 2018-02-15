@@ -115,8 +115,9 @@ class TransFeature(object):
         """Return the previous feature in the sequence of features.  This maybe a
         child of a different parent.  They may optionally be filtered by type.
         The featureTypes argument can be one type or a tuple of types"""
+        feat = self
         while True:
-            feat = self._prevFeatImpl()
+            feat = feat._prevFeatImpl()
             if (feat is None) or (featureTypes is None) or isinstance(feat, featureTypes):
                 return feat
 
@@ -124,8 +125,9 @@ class TransFeature(object):
         """Return the next feature in the sequence of features.  This maybe a
         child of a different parent.  They may optionally be filtered by type.
         The featureTypes argument can be one type or a tuple of types"""
+        feat = self
         while True:
-            feat = self._nextFeatImpl()
+            feat = feat._nextFeatImpl()
             if (feat is None) or (featureTypes is None) or isinstance(feat, featureTypes):
                 return feat
 
@@ -148,22 +150,26 @@ class AlignmentFeature(TransFeature):
         if self.iParent > 0:
             return self.parent.alignFeatures[self.iParent - 1]
         else:
-            pprev = self.parent._prevFeatImpl()
-            if pprev is not None:
-                return pprev.alignFeatures[:-1]
-            else:
-                return None
+            pprev = self.parent
+            while True:
+                pprev = pprev._prevFeatImpl()
+                if pprev is None:
+                    return None
+                elif len(pprev.alignFeatures) > 1:
+                    return pprev.alignFeatures[-1]
 
     def _nextFeatImpl(self):
         """Return the next feature in this sequence of AlignmentFeatures."""
         if self.iParent < len(self.parent.alignFeatures) - 1:
             return self.parent.alignFeatures[self.iParent + 1]
         else:
-            pnext = self.parent._nextFeatImpl()
-            if pnext is not None:
-                return pnext.alignFeatures[0]
-            else:
-                return None
+            pnext = self.parent
+            while True:
+                pnext = pnext._nextFeatImpl()
+                if pnext is None:
+                    return None
+                elif len(pnext.alignFeatures) > 0:
+                    return pnext.alignFeatures[0]
 
 
 class AlignedFeature(AlignmentFeature):
@@ -206,22 +212,26 @@ class AnnotationFeature(TransFeature):
         if self.iParent > 0:
             return self.parent.annotFeatures[self.iParent - 1]
         else:
-            pprev = self.parent._prevFeatImpl()
-            if pprev is not None:
-                return pprev.annotFeatures[:-1]
-            else:
-                return None
+            pprev = self.parent
+            while True:
+                pprev = pprev._prevFeatImpl()
+                if pprev is None:
+                    return None
+                elif len(pprev.annotFeatures) > 0:
+                    return pprev.annotFeatures[-1]
 
     def _nextFeatImpl(self):
         """Return the next feature in this sequence of AnnotationFeatures."""
         if self.iParent < len(self.parent.annotFeatures) - 1:
             return self.parent.annotFeatures[self.iParent + 1]
         else:
-            pnext = self.parent._nextFeatImpl()
-            if pnext is not None:
-                return pnext.annotFeatures[0]
-            else:
-                return None
+            pnext = self.parent
+            while True:
+                pnext = pnext._nextFeatImpl()
+                if pnext is None:
+                    return None
+                elif len(pnext.annotFeatures) > 0:
+                    return pnext.annotFeatures[0]
 
 
 class Utr5RegionFeature(AnnotationFeature):
