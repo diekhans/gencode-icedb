@@ -561,13 +561,11 @@ class EvidenceTests(FeatureTestBase):
         feat = trans.firstFeature(RnaInsertFeature)
         self.assertIsInstance(feat, RnaInsertFeature)
         rinsCnt = 1
-        lastFeat = None
         while True:
             feat = feat.nextFeature(RnaInsertFeature)
             if feat is None:
                 break
             rinsCnt += 1
-            lastFeat = feat
         self.assertEqual(rinsCnt, 18)
 
         feat = trans.lastFeature(RnaInsertFeature)
@@ -838,13 +836,11 @@ class AnnotationTests(FeatureTestBase):
         feat = trans.firstFeature(AnnotationFeature)
         self.assertIs(feat, trans.features[0].annotFeatures[0])
         cdsCnt = 1 if isinstance(trans, CdsRegionFeature) else 0
-        lastFeat = None
         while True:
             feat = feat.nextFeature(CdsRegionFeature)
             if feat is None:
                 break
             cdsCnt += 1
-            lastFeat = feat
         self.assertEqual(cdsCnt, 13)
 
         feat = trans.lastFeature(AnnotationFeature)

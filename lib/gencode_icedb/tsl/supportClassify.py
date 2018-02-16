@@ -18,11 +18,12 @@ The current algorithm is:
 import re
 from collections import namedtuple, defaultdict
 from pycbio.sys import fileOps
-from gencode_icedb.general.transFeatures import ExonFeature, ChromInsertFeature, RnaInsertFeature
+from gencode_icedb.general.transFeatures import ExonFeature, IntronFeature, ChromInsertFeature, RnaInsertFeature
 from gencode_icedb.tsl.supportDefs import EvidenceSupport, TrascriptionSupportLevel
 from gencode_icedb.tsl.evidenceDb import EvidenceSource
 from gencode_icedb.general.gencodeDb import findAnnotationBounds
 
+# FIXME: splice support count from tsl assignment
 
 # limits on size of as single indel in an exon.
 exonPolymorhicSizeLimit = 12
@@ -89,31 +90,98 @@ def _checkIntronIndels(evidIntron):
         return EvidenceSupport.good
 
 
+def _checkEvidFeatQuality(evidFeat):
+    if isinstance(evidFeat, ExonFeature):
+        return _checkExonIndels(evidFeat)
+    else:
+        return _checkIntronIndels(evidFeat)
+
+
+def checkEvidQuality(evidTrans):
+    "initial validation of the quality of evidence"
+    worstSupport = EvidenceSupport.good
+    for evidFeat in evidTrans.features:
+        worstSupport = max(_checkEvidFeatQuality(evidFeat), worstSupport)
+    return worstSupport
+
+
 def _compareIntron(annotIntron, evidIntron):
     if not annotIntron.chrom.eqAbsLoc(evidIntron.chrom):
         return EvidenceSupport.exon_boundry_mismatch
     else:
-        return _checkIntronIndels(evidIntron)
+        return EvidenceSupport.good
 
 
 def _compareFeature(annotFeat, evidFeat):
-    assert type(annotFeat) == type(evidFeat)
-    if isinstance(annotFeat, ExonFeature):
-        # bounds are checked on introns, not exons
-        return _checkExonIndels(evidFeat)
-    else:
-        return _compareIntron(annotFeat, evidFeat)
-
-
-def compareMegWithEvidence(annotTrans, evidTrans):
-    """Compare a multi-exon annotation with a given piece of evidence"""
-    if len(evidTrans.features) != len(annotTrans.features):
+    if type(annotFeat) != type(evidFeat):
         return EvidenceSupport.feat_mismatch
+    # bounds are checked on introns, not exons, evidence has already been
+    # validated for indels.
+    if isinstance(annotFeat, IntronFeature):
+        return _compareIntron(annotFeat, evidFeat)
+    else:
+        return EvidenceSupport.good
+
+
+def _compareFeatureCounts(annotTrans, evidTrans, allowExtension):
+    """fast check if number of features warrant detailed checking"""
+    if allowExtension:
+        if len(evidTrans.features) < len(annotTrans.features):
+            return EvidenceSupport.feat_count_mismatch
+    else:
+        if len(evidTrans.features) != len(annotTrans.features):
+            return EvidenceSupport.feat_count_mismatch
+    return EvidenceSupport.good
+
+
+def findEvidExonRange(annotTrans, evidTrans):
+    """find the first and last evidence exons that overlap the first and last exons of the
+    transcript.  Return None when there isn't an overlap"""
+    # walk from start to find start and end to find end, as multiple might overlap
+    firstAnnotExon = annotTrans.features[0]
+    firstEvidExon = evidTrans.features[0]
+    while (firstEvidExon is not None) and (not firstEvidExon.chrom.overlaps(firstAnnotExon.chrom)):
+        firstEvidExon = firstEvidExon.nextFeature(ExonFeature)
+
+    lastAnnotExon = annotTrans.features[-1]
+    lastEvidExon = evidTrans.features[-1]
+    while (lastEvidExon is not None) and (not lastEvidExon.chrom.overlaps(lastAnnotExon.chrom)):
+        lastEvidExon = lastEvidExon.prevFeature(ExonFeature)
+
+    return (firstEvidExon, lastEvidExon)
+
+
+def _compareFeatures(annotTrans, firstEvidExon, lastEvidExon):
     worstSupport = EvidenceSupport.good
-    for iFeat in range(len(annotTrans.features)):
-        # > is worse
-        worstSupport = max(_compareFeature(annotTrans.features[iFeat], evidTrans.features[iFeat]),
+
+    iAnnot = 0
+    evidFeat = firstEvidExon
+    while True:
+        worstSupport = max(_compareFeature(annotTrans.features[iAnnot], evidFeat),
                            worstSupport)
+        if evidFeat is lastEvidExon:
+            break
+        evidFeat = evidFeat.nextFeature()
+        iAnnot += 1
+
+    return worstSupport
+
+
+def compareMegWithEvidence(annotTrans, evidTrans, allowExtension=False):
+    """Compare a multi-exon annotation with a given piece of evidence"""
+    # check full evidence first; > is worse
+    worstSupport = checkEvidQuality(evidTrans)
+    if worstSupport >= EvidenceSupport.poor:
+        return worstSupport
+    worstSupport = max(_compareFeatureCounts(annotTrans, evidTrans, allowExtension),
+                       worstSupport)
+    if worstSupport >= EvidenceSupport.poor:
+        return worstSupport
+    firstEvidExon, lastEvidExon = findEvidExonRange(annotTrans, evidTrans)
+    if (firstEvidExon is None) or (lastEvidExon is None):
+        return EvidenceSupport.exon_ends_mismatch
+    worstSupport = max(_compareFeatures(annotTrans, firstEvidExon, lastEvidExon),
+                       worstSupport)
     return worstSupport
 
 
@@ -205,7 +273,7 @@ def _compareWithEvidence(annotTrans, evidSrc, evidTrans, evidCollector, detailsT
     suspect = evidTrans.attrs.genbankProblem
     if detailsTsvFh is not None:
         _writeDetails(detailsTsvFh, annotTrans, evidSrc, evidTrans, evidSupport, suspect)
-    if evidSupport < EvidenceSupport.feat_mismatch:
+    if evidSupport < EvidenceSupport.poor:
         evidCollector.add(evidSrc,
                           AnnotationEvidenceEval(annotTrans, evidSrc, evidTrans.rna.name, evidSupport, suspect))
 

@@ -20,6 +20,7 @@ def _reverseComplementChildren(rcParent, features):
         rcFeatures.append(features[i].reverseComplement(rcParent, len(rcFeatures)))
     return tuple(rcFeatures)
 
+
 def _getFeatureType0(featureTypes):
     """If featureTypes is a type, return it, otherwise return the first one"""
     return featureTypes if isinstance(featureTypes, type) else featureTypes[0]
@@ -117,20 +118,24 @@ class Feature(object):
         "default reverseComplement when __init__ takes just coordinates"
         return self.__class__(rcParent, iRcParent, self.chrom.reverse(), self.rna.reverse(), deepcopy(self.attrs))
 
-    def nextFeature(self, featureTypes):
+    def nextFeature(self, featureTypes=None):
         """Return the next feature in the sequence of features of one of the
         given types.  This maybe a child of a different parent. The
         featureTypes argument can be one type or a tuple of types"""
+        if featureTypes is None:
+            featureTypes = Feature
         feat = self
         while True:
             feat = feat._nextFeatureImpl()
             if (feat is None) or isinstance(feat, featureTypes):
                 return feat
 
-    def prevFeature(self, featureTypes):
+    def prevFeature(self, featureTypes=None):
         """Return the previous feature in the sequence of features of one of the
         given types.  This maybe a child of a different parent. The
         featureTypes argument can be one type or a tuple of types"""
+        if featureTypes is None:
+            featureTypes = Feature
         feat = self
         while True:
             feat = feat._prevFeatureImpl()
@@ -143,6 +148,7 @@ class Feature(object):
     def _prevFeatureImpl(self):
         raise TypeError("prevFeature not valid on features of type {}".format(type(self).__name__))
         self._prevNextNotValue()
+
 
 class AlignmentFeature(Feature):
     "ABC for alignment features"
@@ -315,7 +321,7 @@ class StructureFeature(Feature):
         either AlignmentFeature or AnnotationFeature types."""
         return _getFeaturesOfType(self._getChildList(featureTypes), featureTypes)
 
-    def firstFeature(self, featureTypes):
+    def firstFeature(self, featureTypes=Feature):
         """Get the first child of feature of the specified type.  These must all be
         either AlignmentFeature or AnnotationFeature types."""
         for feat in self._getChildList(featureTypes):
@@ -323,7 +329,7 @@ class StructureFeature(Feature):
                 return feat
         return None
 
-    def lastFeature(self, featureTypes):
+    def lastFeature(self, featureTypes=Feature):
         """Get the last chilkd feature of the specified type.  These must all be
         either AlignmentFeature or AnnotationFeature types."""
         for feat in reversed(self._getChildList(featureTypes)):
@@ -504,7 +510,7 @@ class TranscriptFeatures(Feature):
             return [af for sf in self.features
                     for af in sf.getFeaturesOfType(featureTypes)]
 
-    def firstFeature(self, featureTypes):
+    def firstFeature(self, featureTypes=Feature):
         """Get the first child of feature of the specified type. Types should all be
         valid sibling types of each other."""
         featureType0 = _getFeatureType0(featureTypes)
@@ -519,7 +525,7 @@ class TranscriptFeatures(Feature):
                     return feat
         return None
 
-    def lastFeature(self, featureTypes):
+    def lastFeature(self, featureTypes=Feature):
         """Get the last child of feature of the specified type. Types should all be
         valid sibling types of each other."""
         featureType0 = _getFeatureType0(featureTypes)
