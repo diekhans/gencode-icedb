@@ -18,12 +18,13 @@ The current algorithm is:
 import re
 from collections import namedtuple, defaultdict
 from pycbio.sys import fileOps
+from pycbio.hgdata.psl import Psl
 from gencode_icedb.general.transFeatures import ExonFeature, IntronFeature, ChromInsertFeature, RnaInsertFeature
 from gencode_icedb.tsl.supportDefs import EvidenceSupport, TrascriptionSupportLevel
 from gencode_icedb.tsl.evidenceDb import EvidenceSource
 from gencode_icedb.general.gencodeDb import findAnnotationBounds
 
-# FIXME: splice support count from tsl assignment
+#FIXME: check for evidence with large amount of unaligned at start or end
 
 # limits on size of as single indel in an exon.
 exonPolymorhicSizeLimit = 12
@@ -153,7 +154,6 @@ def findEvidExonRange(annotTrans, evidTrans):
 
 def _compareFeatures(annotTrans, firstEvidExon, lastEvidExon):
     worstSupport = EvidenceSupport.good
-
     iAnnot = 0
     evidFeat = firstEvidExon
     while True:
@@ -162,12 +162,14 @@ def _compareFeatures(annotTrans, firstEvidExon, lastEvidExon):
         if evidFeat is lastEvidExon:
             break
         evidFeat = evidFeat.nextFeature()
-        iAnnot += 1
+        # need to allow for multiple evidence features overlapping the same annot feature
+        if not evidFeat.chrom.overlaps(annotTrans.features[iAnnot].chrom):
+            iAnnot += 1
 
     return worstSupport
 
 
-def compareMegWithEvidence(annotTrans, evidTrans, allowExtension=False):
+def _compareMegWithEvidenceImpl(annotTrans, evidTrans, allowExtension=False):
     """Compare a multi-exon annotation with a given piece of evidence"""
     # check full evidence first; > is worse
     worstSupport = checkEvidQuality(evidTrans)
@@ -184,6 +186,15 @@ def compareMegWithEvidence(annotTrans, evidTrans, allowExtension=False):
                        worstSupport)
     return worstSupport
 
+def compareMegWithEvidence(annotTrans, evidTrans, allowExtension=False):
+    """Compare a multi-exon annotation with a given piece of evidence, If
+    allowExtension is true, evidence features at allowed beyond the start and
+    end of the annotation.  This does not check txStart/txEnd is consistent
+    with evidence, so this can use to find extensions of exons."""
+    try:
+        return _compareMegWithEvidenceImpl(annotTrans, evidTrans, allowExtension=allowExtension)
+    except Exception as ex:
+        raise Exception("Bug evaluating {} with {}".format(annotTrans.rna.name, evidTrans.rna.name)) from ex
 
 class EvidenceCache(object):
     """Cache for a range of evidence, normally for one gene"""

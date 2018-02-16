@@ -2,6 +2,10 @@ ROOT = ../../..
 include ${ROOT}/config.mk
 include ${ROOT}/tests/tsl/tslTestDefs.mk
 
+# IMPORTANT: use bin/getTestCaseInfo to obtain data for new tests
+testCases = input/v27-test-cases.tsv
+
+
 gencodeDb = output/gencode.db
 evidDb = output/evid.db
 createTestData = bin/createTestData
@@ -31,9 +35,9 @@ supportCollectMkJobsTest: ${testInputDone} mkdirs
 	$(call sqldumpdiff,gencode_transcript_support_details)
 
 
-${testInputDone}: ${createTestData} input/v27-test-cases.tsv
+${testInputDone}: ${createTestData} ${testCases}
 	@mkdir -p output
-	${createTestData} input/v27-test-cases.tsv ${hsGencodeVer} ${hsUcscGenomeDb} ${hsEnsemblCDnaDb} ${hsGrcRefAssemblyReport} ${evidDb} ${gencodeDb}
+	${createTestData} ${testCases} ${hsGencodeVer} ${hsUcscGenomeDb} ${hsEnsemblCDnaDb} ${hsGrcRefAssemblyReport} ${evidDb} ${gencodeDb}
 	touch $@
 
 

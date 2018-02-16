@@ -1,0 +1,37 @@
+#!/usr/bin/env python3
+import argparse
+import subprocess
+
+
+def parseArgs():
+    desc = """get new test cases"""
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument('gencodeIds', nargs='+',
+                        help="""GENCODE gene or transcript ids, including versions.""")
+    return parser.parse_args()
+
+
+def mkSelect(ver, gencodeIds):
+    idSelect =  ",".join(['"{}"'.format(gi) for gi in gencodeIds])
+    sql = ("SELECT gp.chrom, gp.txStart, gp.txEnd, atr.geneId, gp.name as transcriptId, atr.geneName, atr.geneType, tsl.level, if((atr.havanaTranscriptId!=\"\"),\"manual\",\"auto\") AS method, \"\" AS notes "
+           "FROM {gpTbl} AS gp "
+           "LEFT JOIN {atrTbl} AS atr ON (atr.transcriptId = gp.name) "
+           "LEFT JOIN {tslTbl} AS tsl ON (tsl.transcriptId = gp.name) "
+           "WHERE (gp.exonCount > 1) AND ((atr.geneId IN ({idSelect})) or (atr.transcriptId IN ({idSelect})))")
+    return sql.format(gpTbl="wgEncodeGencodeComp" + ver,
+                      atrTbl="wgEncodeGencodeAttrs" + ver,
+                      tslTbl="wgEncodeGencodeTranscriptionSupportLevel" + ver,
+                      idSelect=idSelect)
+
+def runQuery(db, sql, outTsv):
+    with open(outTsv, 'w') as outFh:
+        subprocess.call(['hgsql', db, '-e', sql], stdout=outFh)
+
+
+def getIds(args):
+    db = "hg38"
+    ver = "V27"
+    sql = mkSelect(ver, args.gencodeIds)
+    runQuery(db, sql, "/dev/stdout")
+
+getIds(parseArgs())

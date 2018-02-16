@@ -1,6 +1,7 @@
 """
 Read evidence alignments from a database.
 """
+import six
 from pycbio.sys.symEnum import SymEnum
 from pycbio.sys.objDict import ObjDict
 from pycbio.hgdata.hgLite import sqliteConnect, PslDbTable
@@ -46,6 +47,14 @@ class EvidenceReader(object):
     def _makeTrans(self, psl):
         attrs = ObjDict(genbankProblem=self.genbankProblems.getProblem(psl.qName))
         return self.evidFactory.fromPsl(psl, attrs)
+
+    def genByNames(self, evidSrc, names):
+        "names can be a single name or a list"
+        if isinstance(names, six.string_types):
+            names = [names]
+        for name in names:
+            for psl in self.dbTables[evidSrc].getByQName(name):
+                yield self._makeTrans(psl)
 
     def genOverlapping(self, evidSrc, chrom, start, end, rnaStrand=None, minExons=0):
         """Generator of overlapping alignments as TranscriptFeatures.
