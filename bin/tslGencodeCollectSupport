@@ -5,7 +5,7 @@ import argparse
 from contextlib import ExitStack
 from pycbio.sys import fileOps
 from gencode_icedb.general.gencodeDb import UcscGencodeReader
-from gencode_icedb.tsl.evidenceDb import EvidenceReader
+from gencode_icedb.tsl.evidenceDb import EvidenceReader, EvidenceSource
 from gencode_icedb.tsl.supportClassify import writeTsvHeaders, classifyGeneTranscripts
 
 # FIXME: rsl uses csv.writer, make all consisten
@@ -17,6 +17,9 @@ def parseArgs():
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('--detailsTsv',
                         help="""write details to this TSV file""")
+    parser.add_argument('--evidSource', dest='evidSources', action='append',
+                        type=EvidenceSource, default=[e for e in EvidenceSource],
+                        help="""only used evidence from this source, maybe repeated""")
     parser.add_argument('gencodeDb',
                         help="""GENCODE sqlite3 database from gencodeDbLoad""")
     parser.add_argument('evidenceDb',

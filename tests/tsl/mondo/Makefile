@@ -14,18 +14,17 @@ annonDb = ${annonDir}/hsAnnon.db
 
 tslDb = output/tsl.db
 
-workDir = output/workDir
 
 
 test::
-	@echo "run setupTest or finishup test"
+	@echo "run make setup or make finishup"
 
-setupTest: ${annonDb} ${evidDb}
-	${tslGencodeCollectSupportMkJobs} --genesPerJob=10 ${annonDb} ${evidDb} ${workDir}
+setup: ${annonDb} ${evidDb}
+	${tslGencodeCollectSupportMkJobs} --genesPerJob=10 ${annonDb} ${evidDb} output
 
-finishupTest:
+finishup:
 	@mkdir -p $(dir ${tslDb})
-	${tslGencodeCollectSupportFinishJobs} ${workDir} ${tslDb}
+	${tslGencodeCollectSupportFinishJobs} output ${tslDb}
 
 ##
 # Building of evidence db (~1.25 hours)

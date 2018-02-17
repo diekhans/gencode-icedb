@@ -49,7 +49,7 @@ class EvidenceSupport(SymEnum):
 
     exon_boundry_mismatch = 50  # exon boundaries differs
     feat_count_mismatch = 51    # different number of features
-    exon_ends_mismatch = 52     # ends of annotation not overlapped
+    end_mismatch = 52           # ends of annotation not overlapped
     feat_mismatch = 53          # mismatch of features
     not_useful = 90             # support deemed not useful for other reasons
     no_support = 100

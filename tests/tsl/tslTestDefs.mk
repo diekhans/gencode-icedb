@@ -1,5 +1,13 @@
 include ${ROOT}/tests/testDefs.mk
 
+hsGencodeVer = V27
+hsEnsemblVer = 91_38
+hsEnsemblCDnaDb = homo_sapiens_cdna_${hsEnsemblVer}
+hsGrcRefAssembly = GRCh38
+hsGrcRefAssemblyReport = ${ROOT}/tests/tsl/etc/GCF_000001405.36_GRCh38.p10_assembly_report.txt
+hsUcscGenomeDb = hg38
+
+
 gencodeDbLoad = ${BINDIR}/gencodeDbLoad
 tslGetUcscRnaAligns = ${BINDIR}/tslGetUcscRnaAligns
 tslGetEnsemblRnaAligns = ${BINDIR}/tslGetEnsemblRnaAligns
@@ -8,13 +16,6 @@ tslGenbankProblemCasesLoad = ${BINDIR}/tslGenbankProblemCasesLoad
 tslGencodeCollectSupport = ${BINDIR}/tslGencodeCollectSupport
 tslGencodeCollectSupportMkJobs = ${BINDIR}/tslGencodeCollectSupportMkJobs
 tslGencodeCollectSupportFinishJobs = ${BINDIR}/tslGencodeCollectSupportFinishJobs
-
-hsGencodeVer = V27
-hsEnsemblVer = 91_38
-hsEnsemblCDnaDb = homo_sapiens_cdna_${hsEnsemblVer}
-hsGrcRefAssembly = GRCh38
-hsGrcRefAssemblyReport = ${ROOT}/tests/tsl/etc/GCF_000001405.36_GRCh38.p10_assembly_report.txt
-hsUcscGenomeDb = hg38
 
 # use public database
 # FIXME disabled due to PAR tag bug in V27 (hgwdev has been updated).

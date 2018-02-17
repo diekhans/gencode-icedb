@@ -32,10 +32,11 @@ evidenceSourceTableMap = {
 
 class EvidenceReader(object):
     """Object for accessing alignment evidence data"""
-    def __init__(self, evidDbFile, genomeReader=None):
+    def __init__(self, evidDbFile, genomeReader=None, sources=EvidenceSource):
         self.conn = sqliteConnect(evidDbFile)
+        self.sources = sources
         self.dbTables = {}  # by EvidenceSource
-        for evidSrc in EvidenceSource:
+        for evidSrc in self.sources:
             self.dbTables[evidSrc] = PslDbTable(self.conn, evidenceSourceTableMap[evidSrc])
         self.genbankProblems = GenbankProblemCases(self.conn)
         self.evidFactory = EvidencePslFactory(genomeReader)

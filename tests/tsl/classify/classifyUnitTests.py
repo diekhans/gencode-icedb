@@ -90,12 +90,12 @@ class EvidCompareTest(TestCaseBase):
         annotName = "ENST00000489867.1"
         evidName = "AA227241.1"
         results = tuple(self._evalAnnotTransEvid(self._getAnnot(annotName),
-                                                  EvidenceSource.UCSC_EST,
-                                                  evidNames=evidName, allowExtension=True))
+                                                 EvidenceSource.UCSC_EST,
+                                                 evidNames=evidName, allowExtension=True))
         self.assertEqual(results,
                          (('ENST00000489867.1', 'AA227241.1', EvidenceSupport.feat_mismatch),))
 
-    def _fakePslCmpr(self, annotTrans, evidRawPsl, allowExtension):
+    def _fakePslCmprExtend(self, annotTrans, evidRawPsl, allowExtension):
         evidTrans = self._pslToTrans(Psl(evidRawPsl))
         return compareMegWithEvidence(annotTrans, evidTrans, allowExtension=allowExtension)
 
@@ -103,49 +103,49 @@ class EvidCompareTest(TestCaseBase):
         # test allowExtension with fake psl that exactly matches
         annotTrans = self._getAnnot("ENST00000477874.1")
         evidRawPsl = ["651", "0", "0", "0", "0", "0", "3", "14865", "+", "ENST00000477874.1_aln", "651", "0", "651", "chr22", "50818468", "17084953", "17100469", "4", "276,147,113,115,", "0,276,423,536,", "17084953,17097796,17098774,17100354,"]
-        evidSupport = self._fakePslCmpr(annotTrans, evidRawPsl, False)
+        evidSupport = self._fakePslCmprExtend(annotTrans, evidRawPsl, False)
         self.assertEqual(evidSupport, EvidenceSupport.good)
-        evidSupport = self._fakePslCmpr(annotTrans, evidRawPsl, True)
+        evidSupport = self._fakePslCmprExtend(annotTrans, evidRawPsl, True)
         self.assertEqual(evidSupport, EvidenceSupport.good)
 
     def testExtend5(self):
         # test allowExtension with fake psl on extended on 5 side
         annotTrans = self._getAnnot("ENST00000477874.1")
         evidRawPsl = ["751", "0", "0", "0", "0", "0", "4", "15218", "+", "ENST00000477874.1_aln", "751", "0", "751", "chr22", "50818468", "17084500", "17100469", "5", "100,276,147,113,115,", "0,100,376,523,636,", "17084500,17084953,17097796,17098774,17100354,"]
-        evidSupport = self._fakePslCmpr(annotTrans, evidRawPsl, False)
+        evidSupport = self._fakePslCmprExtend(annotTrans, evidRawPsl, False)
         self.assertEqual(evidSupport, EvidenceSupport.feat_count_mismatch)
-        evidSupport = self._fakePslCmpr(annotTrans, evidRawPsl, True)
+        evidSupport = self._fakePslCmprExtend(annotTrans, evidRawPsl, True)
         self.assertEqual(evidSupport, EvidenceSupport.good)
 
     def testExtend5Inexact(self):
-        # test allowExtension with fake psl on extended on 5 side
-        # and 5' annotated exon being shorter than evidence
+        # test allowExtension with fake psl on extended on 5 side and 5'
+        # annotated exon being shorter than evidence, which is not allowed
         annotTrans = self._getAnnot("ENST00000477874.1")
         evidRawPsl = ["704", "0", "0", "0", "0", "0", "4", "15265", "+", "ENST00000477874.1_aln", "704", "0", "704", "chr22", "50818468", "17084500", "17100469", "5", "100,229,147,113,115,", "0,100,329,476,589,", "17084500,17085000,17097796,17098774,17100354,"]
-        evidSupport = self._fakePslCmpr(annotTrans, evidRawPsl, False)
+        evidSupport = self._fakePslCmprExtend(annotTrans, evidRawPsl, False)
         self.assertEqual(evidSupport, EvidenceSupport.feat_count_mismatch)
-        evidSupport = self._fakePslCmpr(annotTrans, evidRawPsl, True)
-        self.assertEqual(evidSupport, EvidenceSupport.good)
+        evidSupport = self._fakePslCmprExtend(annotTrans, evidRawPsl, True)
+        self.assertEqual(evidSupport, EvidenceSupport.end_mismatch)
 
     def testExtend3(self):
         # test allowExtension with fake psl on extended on 3' side
         annotTrans = self._getAnnot("ENST00000477874.1")
-        evidRawPsl = ["741", "0", "0", "0", "0", "0", "4", "14896", "+", "ENST00000477874.1", "741", "0", "741", "chr22", "50818468", "17084953", "17100590", "5", "276,147,113,115,90,", "0,276,423,536,651,", "17084953,17097796,17098774,17100354,17100500,"]
-        evidSupport = self._fakePslCmpr(annotTrans, evidRawPsl, False)
+        evidRawPsl = ["741", "0", "0", "0", "0", "0", "4", "14896", "+", "ENST00000477874.1_aln", "741", "0", "741", "chr22", "50818468", "17084953", "17100590", "5", "276,147,113,115,90,", "0,276,423,536,651,", "17084953,17097796,17098774,17100354,17100500,"]
+        evidSupport = self._fakePslCmprExtend(annotTrans, evidRawPsl, False)
         self.assertEqual(evidSupport, EvidenceSupport.feat_count_mismatch)
-        evidSupport = self._fakePslCmpr(annotTrans, evidRawPsl, True)
+        evidSupport = self._fakePslCmprExtend(annotTrans, evidRawPsl, True)
         self.assertEqual(evidSupport, EvidenceSupport.good)
 
     def testExtend3Inexact(self):
         # test allowExtension with fake psl on extended on 3' side
-        # and 3' annotated exon being shorter than evidence
+        # and 3' annotated exon being shorter than evidence, which is
+        # not allowed
         annotTrans = self._getAnnot("ENST00000477874.1")
-        evidRawPsl = ["682", "0", "0", "0", "0", "0", "4", "15165", "+", "ENST00000477874.1", "682", "0", "682", "chr22", "50818468", "17084953", "17100800", "5", "276,147,113,46,100,", "0,276,423,536,582,", "17084953,17097796,17098774,17100354,17100700,"]
-        evidSupport = self._fakePslCmpr(annotTrans, evidRawPsl, False)
+        evidRawPsl = ["682", "0", "0", "0", "0", "0", "4", "15165", "+", "ENST00000477874.1_aln", "682", "0", "682", "chr22", "50818468", "17084953", "17100800", "5", "276,147,113,46,100,", "0,276,423,536,582,", "17084953,17097796,17098774,17100354,17100700,"]
+        evidSupport = self._fakePslCmprExtend(annotTrans, evidRawPsl, False)
         self.assertEqual(evidSupport, EvidenceSupport.feat_count_mismatch)
-        evidSupport = self._fakePslCmpr(annotTrans, evidRawPsl, True)
-        self.assertEqual(evidSupport, EvidenceSupport.good)
-
+        evidSupport = self._fakePslCmprExtend(annotTrans, evidRawPsl, True)
+        self.assertEqual(evidSupport, EvidenceSupport.end_mismatch)
 
     def skip_testDebug(self):
         "Debug a transcript"

@@ -18,7 +18,6 @@ The current algorithm is:
 import re
 from collections import namedtuple, defaultdict
 from pycbio.sys import fileOps
-from pycbio.hgdata.psl import Psl
 from gencode_icedb.general.transFeatures import ExonFeature, IntronFeature, ChromInsertFeature, RnaInsertFeature
 from gencode_icedb.tsl.supportDefs import EvidenceSupport, TrascriptionSupportLevel
 from gencode_icedb.tsl.evidenceDb import EvidenceSource
@@ -106,35 +105,6 @@ def checkEvidQuality(evidTrans):
     return worstSupport
 
 
-def _compareIntron(annotIntron, evidIntron):
-    if not annotIntron.chrom.eqAbsLoc(evidIntron.chrom):
-        return EvidenceSupport.exon_boundry_mismatch
-    else:
-        return EvidenceSupport.good
-
-
-def _compareFeature(annotFeat, evidFeat):
-    if type(annotFeat) != type(evidFeat):
-        return EvidenceSupport.feat_mismatch
-    # bounds are checked on introns, not exons, evidence has already been
-    # validated for indels.
-    if isinstance(annotFeat, IntronFeature):
-        return _compareIntron(annotFeat, evidFeat)
-    else:
-        return EvidenceSupport.good
-
-
-def _compareFeatureCounts(annotTrans, evidTrans, allowExtension):
-    """fast check if number of features warrant detailed checking"""
-    if allowExtension:
-        if len(evidTrans.features) < len(annotTrans.features):
-            return EvidenceSupport.feat_count_mismatch
-    else:
-        if len(evidTrans.features) != len(annotTrans.features):
-            return EvidenceSupport.feat_count_mismatch
-    return EvidenceSupport.good
-
-
 def findEvidExonRange(annotTrans, evidTrans):
     """find the first and last evidence exons that overlap the first and last exons of the
     transcript.  Return None when there isn't an overlap"""
@@ -152,12 +122,60 @@ def findEvidExonRange(annotTrans, evidTrans):
     return (firstEvidExon, lastEvidExon)
 
 
-def _compareFeatures(annotTrans, firstEvidExon, lastEvidExon):
+def _compareFeatureCounts(annotTrans, evidTrans, allowExtension):
+    """fast check if number of features warrant detailed checking"""
+    if allowExtension:
+        if len(evidTrans.features) < len(annotTrans.features):
+            return EvidenceSupport.feat_count_mismatch
+    else:
+        if len(evidTrans.features) != len(annotTrans.features):
+            return EvidenceSupport.feat_count_mismatch
+    return EvidenceSupport.good
+
+
+def sameChromBounds(feat1, feat2):
+    return feat1.chrom.eqAbsLoc(feat2.chrom)
+
+
+def _compareIntron(annotIntron, evidIntron):
+    if not sameChromBounds(annotIntron, evidIntron):
+        return EvidenceSupport.exon_boundry_mismatch
+    else:
+        return EvidenceSupport.good
+
+
+def _compareExon(annotExon, evidExon, allowExtension):
+    # Bounds are checked on introns, not exons, However, with allowExtension
+    # mode initial and terminal exons of annotation must match if evidence
+    # extends beyond annotation
+    if not allowExtension:
+        return EvidenceSupport.good
+    if ((annotExon.prevFeature() is None) and (evidExon.prevFeature() is not None) and (not sameChromBounds(annotExon, evidExon))):
+        return EvidenceSupport.end_mismatch
+    elif ((annotExon.nextFeature() is None) and (evidExon.nextFeature() is not None) and (not sameChromBounds(annotExon, evidExon))):
+        return EvidenceSupport.end_mismatch
+    else:
+        return EvidenceSupport.good
+
+
+def _compareFeature(annotFeat, evidFeat, allowExtension):
+    # evidence has already been validated for indels.
+    if type(annotFeat) != type(evidFeat):
+        return EvidenceSupport.feat_mismatch
+    if isinstance(annotFeat, IntronFeature):
+        return _compareIntron(annotFeat, evidFeat)
+    elif isinstance(annotFeat, ExonFeature):
+        return _compareExon(annotFeat, evidFeat, allowExtension)
+    else:
+        raise Exception("BUG: unexpected structural feature type: {}", type(annotFeat))
+
+
+def _compareFeatures(annotTrans, firstEvidExon, lastEvidExon, allowExtension):
     worstSupport = EvidenceSupport.good
     iAnnot = 0
     evidFeat = firstEvidExon
     while True:
-        worstSupport = max(_compareFeature(annotTrans.features[iAnnot], evidFeat),
+        worstSupport = max(_compareFeature(annotTrans.features[iAnnot], evidFeat, allowExtension),
                            worstSupport)
         if evidFeat is lastEvidExon:
             break
@@ -165,7 +183,6 @@ def _compareFeatures(annotTrans, firstEvidExon, lastEvidExon):
         # need to allow for multiple evidence features overlapping the same annot feature
         if not evidFeat.chrom.overlaps(annotTrans.features[iAnnot].chrom):
             iAnnot += 1
-
     return worstSupport
 
 
@@ -175,16 +192,20 @@ def _compareMegWithEvidenceImpl(annotTrans, evidTrans, allowExtension=False):
     worstSupport = checkEvidQuality(evidTrans)
     if worstSupport >= EvidenceSupport.poor:
         return worstSupport
+    # fast path check
     worstSupport = max(_compareFeatureCounts(annotTrans, evidTrans, allowExtension),
                        worstSupport)
     if worstSupport >= EvidenceSupport.poor:
         return worstSupport
+    # get range of exons to compare
     firstEvidExon, lastEvidExon = findEvidExonRange(annotTrans, evidTrans)
     if (firstEvidExon is None) or (lastEvidExon is None):
-        return EvidenceSupport.exon_ends_mismatch
-    worstSupport = max(_compareFeatures(annotTrans, firstEvidExon, lastEvidExon),
+        return EvidenceSupport.end_mismatch
+
+    worstSupport = max(_compareFeatures(annotTrans, firstEvidExon, lastEvidExon, allowExtension),
                        worstSupport)
     return worstSupport
+
 
 def compareMegWithEvidence(annotTrans, evidTrans, allowExtension=False):
     """Compare a multi-exon annotation with a given piece of evidence, If
@@ -196,19 +217,28 @@ def compareMegWithEvidence(annotTrans, evidTrans, allowExtension=False):
     except Exception as ex:
         raise Exception("Bug evaluating {} with {}".format(annotTrans.rna.name, evidTrans.rna.name)) from ex
 
+
 class EvidenceCache(object):
     """Cache for a range of evidence, normally for one gene"""
     def __init__(self, evidenceReader, bounds):
         self.evidenceReader = evidenceReader
         self.bounds = bounds
-        self.evidBySrc = {evidSrc: None for evidSrc in EvidenceSource}
+        self.evidBySrc = {evidSrc: None for evidSrc in evidenceReader.sources}
+
+    @property
+    def sources(self):
+        return self.evidenceReader.sources
+
+    def _load(self, evidSrc):
+        overGen = self.evidenceReader.genOverlapping(evidSrc, self.bounds.name, self.bounds.start, self.bounds.end,
+                                                     rnaStrand=self.bounds.strand, minExons=2)
+        self.evidBySrc[evidSrc] = tuple(sorted(overGen, key=lambda a: (a.rna.name, a.chrom.name, a.chrom.start)))
 
     def get(self, evidSrc):
         "get a type of evidence"
+        assert evidSrc in self.sources
         if self.evidBySrc[evidSrc] is None:
-            overGen = self.evidenceReader.genOverlapping(evidSrc, self.bounds.name, self.bounds.start, self.bounds.end,
-                                                         rnaStrand=self.bounds.strand, minExons=2)
-            self.evidBySrc[evidSrc] = tuple(sorted(overGen, key=lambda a: (a.rna.name, a.chrom.name, a.chrom.start)))
+            self._load(evidSrc)
         return self.evidBySrc[evidSrc]
 
 
@@ -291,7 +321,7 @@ def _compareWithEvidence(annotTrans, evidSrc, evidTrans, evidCollector, detailsT
 
 def _collectTransSupport(annotTrans, evidCache, detailsTsvFh):
     evidCollector = AnnotationEvidenceCollector(annotTrans)
-    for evidSrc in EvidenceSource:
+    for evidSrc in evidCache.sources:
         for evidTrans in evidCache.get(evidSrc):
             _compareWithEvidence(annotTrans, evidSrc, evidTrans, evidCollector, detailsTsvFh)
     return evidCollector
