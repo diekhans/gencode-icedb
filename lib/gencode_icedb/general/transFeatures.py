@@ -314,7 +314,9 @@ class StructureFeature(Feature):
         elif issubclass(featureType0, AnnotationFeature):
             return self.annotFeatures
         else:
-            raise TypeError("Not a valid child feature type: {}".format(featureType0))
+            raise TypeError("Type '{}' is a valid child feature type of '{}', must specify an '{}' or an '{}' type or subtype".
+                            format(featureType0.__name__, type(self).__name__,
+                                   AlignmentFeature.__name__, AnnotationFeature.__name__))
 
     def getFeaturesOfType(self, featureTypes):
         """Get child of features of the specified type.  These must all be
@@ -510,9 +512,10 @@ class TranscriptFeatures(Feature):
             return [af for sf in self.features
                     for af in sf.getFeaturesOfType(featureTypes)]
 
-    def firstFeature(self, featureTypes=Feature):
+    def firstFeature(self, featureTypes=StructureFeature):
         """Get the first child of feature of the specified type. Types should all be
-        valid sibling types of each other."""
+        valid sibling types of each other.  If a StructureFeature is not requests,
+        checks the children of the structure features.. """
         featureType0 = _getFeatureType0(featureTypes)
         if issubclass(featureType0, StructureFeature):
             for sf in self.features:

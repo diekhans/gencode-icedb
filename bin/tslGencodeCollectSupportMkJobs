@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import icedbProgSetup  # noqa: F401
+import sys
 import os
 import argparse
 from pycbio.sys import fileOps
@@ -11,8 +12,10 @@ from gencode_icedb.general import gencodeDb
 def parseArgs():
     desc = """Generate parasol jobs to collect support for all GENCODE."""
     parser = argparse.ArgumentParser(description=desc)
-    parser.add_argument("--maxgenes", type=int, default=None,
+    parser.add_argument("--maxGenes", type=int, default=None,
                         help="""maximum number of genes to use, for testing""")
+    parser.add_argument("--gencodeIdFile", default=None,
+                        help="""file containing subset of ids""")
     parser.add_argument("--genesPerJob", type=int, default=1,
                         help="""number of genes in a job""")
     parser.add_argument('gencodeDb',
@@ -52,9 +55,13 @@ def tslGencodeCollectSupportMkJobs(opts):
     "main function"
     conn = sqliteConnect(opts.gencodeDb, readonly=True)
     attrsDbTable = GencodeAttrsDbTable(conn, gencodeDb.GENCODE_ATTRS_TABLE)
-    gencodeIds = sorted(attrsDbTable.getGeneIds())
-    if opts.maxgenes is not None:
-        gencodeIds = gencodeIds[0:opts.maxgenes]
+    if opts.gencodeIdFile is not None:
+        print("WARNING: subset of gencode annotations being processed", file=sys.stderr)
+        gencodeIds = sorted(fileOps.readNonCommentLines(opts.gencodeIdFile))
+    else:
+        gencodeIds = sorted(attrsDbTable.getGeneIds())
+    if opts.maxGenes is not None:
+        gencodeIds = gencodeIds[0:opts.maxGenes]
     jobGen = JobGenerator(opts.gencodeDb, opts.evidenceDb, opts.workDir)
 
     fileOps.ensureDir(opts.workDir)

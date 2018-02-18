@@ -105,21 +105,35 @@ def checkEvidQuality(evidTrans):
     return worstSupport
 
 
-def findEvidExonRange(annotTrans, evidTrans):
-    """find the first and last evidence exons that overlap the first and last exons of the
-    transcript.  Return None when there isn't an overlap"""
-    # walk from start to find start and end to find end, as multiple might overlap
+def findEvidExonRangeStart(annotTrans, evidTrans):
     firstAnnotExon = annotTrans.features[0]
     firstEvidExon = evidTrans.features[0]
-    while (firstEvidExon is not None) and (not firstEvidExon.chrom.overlaps(firstAnnotExon.chrom)):
+    while (firstEvidExon is not None) and (firstEvidExon.chrom.end < firstAnnotExon.chrom.start):
         firstEvidExon = firstEvidExon.nextFeature(ExonFeature)
+    if (firstEvidExon is None) or (firstEvidExon.chrom.start > firstAnnotExon.chrom.end):
+        return None  # not found or after firstAnnotExon
+    return firstEvidExon  # overlapping first
 
+
+def findEvidExonRangeEnd(annotTrans, evidTrans):
     lastAnnotExon = annotTrans.features[-1]
     lastEvidExon = evidTrans.features[-1]
-    while (lastEvidExon is not None) and (not lastEvidExon.chrom.overlaps(lastAnnotExon.chrom)):
+    while (lastEvidExon is not None) and (lastEvidExon.chrom.start > lastAnnotExon.chrom.end):
         lastEvidExon = lastEvidExon.prevFeature(ExonFeature)
+    if (lastEvidExon is None) or (lastEvidExon.chrom.end < lastAnnotExon.chrom.start):
+        return None  # not found or before lastAnnotExon
+    return lastEvidExon  # overlapping last
 
-    return (firstEvidExon, lastEvidExon)
+
+def findEvidExonRange(annotTrans, evidTrans):
+    """Find the first and last evidence exons that overlap the first and last
+    exons of the transcript.  Return None,None when there isn't an overlap.
+    This range is what is compared."""
+    # Walk from start to find start and end to find end, as multiple might overlap,
+    # however don't go past bounds of the annotation, in case evidence and annotation
+    # are interleaved.  This would be simper without the extend mode.
+    return (findEvidExonRangeStart(annotTrans, evidTrans),
+            findEvidExonRangeEnd(annotTrans, evidTrans))
 
 
 def _compareFeatureCounts(annotTrans, evidTrans, allowExtension):
@@ -144,18 +158,47 @@ def _compareIntron(annotIntron, evidIntron):
         return EvidenceSupport.good
 
 
-def _compareExon(annotExon, evidExon, allowExtension):
-    # Bounds are checked on introns, not exons, However, with allowExtension
-    # mode initial and terminal exons of annotation must match if evidence
-    # extends beyond annotation
-    if not allowExtension:
-        return EvidenceSupport.good
-    if ((annotExon.prevFeature() is None) and (evidExon.prevFeature() is not None) and (not sameChromBounds(annotExon, evidExon))):
-        return EvidenceSupport.end_mismatch
-    elif ((annotExon.nextFeature() is None) and (evidExon.nextFeature() is not None) and (not sameChromBounds(annotExon, evidExon))):
-        return EvidenceSupport.end_mismatch
+def _compareExonStart(annotExon, evidExon, allowExtension):
+    if evidExon.chrom.start != annotExon.chrom.start:
+        # start does not match, is this an error?
+        if annotExon.prevFeature() is not None:
+            return EvidenceSupport.feat_mismatch  # not start of annotation
+        elif evidExon.prevFeature() is not None:
+            return EvidenceSupport.feat_mismatch  # evidence extends beyond
+        else:
+            return EvidenceSupport.good
+    elif (annotExon.prevFeature() is None) and (evidExon.prevFeature() is not None) and (not allowExtension):
+        # start matches, but there is unallowed preceding evidence
+        return EvidenceSupport.feat_mismatch
     else:
         return EvidenceSupport.good
+
+
+def _compareExonEnd(annotExon, evidExon, allowExtension):
+    if evidExon.chrom.end != annotExon.chrom.end:
+        # end does not match, is this an error?
+        if annotExon.nextFeature() is not None:
+            return EvidenceSupport.feat_mismatch  # not end of annotation
+        elif evidExon.nextFeature() is not None:
+            return EvidenceSupport.feat_mismatch  # evidence extends beyond
+        else:
+            return EvidenceSupport.good
+    elif (annotExon.nextFeature() is None) and (evidExon.nextFeature() is not None) and (not allowExtension):
+        # start matches, but there is unallowed preceding evidence
+        return EvidenceSupport.feat_mismatch
+    else:
+        return EvidenceSupport.good
+
+
+def _compareExon(annotExon, evidExon, allowExtension):
+    # Bounds must match exactly except for outside ends of initial or terminal
+    # annotation exon.  In extension mode, if there are evidence features
+    # beyond the ends, then both those must match.  In non-extension mode,
+    # there will not be features outside of the annotation, so the check is the same
+    if not evidExon.chrom.overlaps(annotExon.chrom):
+        return EvidenceSupport.feat_mismatch  # don't even overlap
+    return max(_compareExonStart(annotExon, evidExon, allowExtension),
+               _compareExonEnd(annotExon, evidExon, allowExtension))
 
 
 def _compareFeature(annotFeat, evidFeat, allowExtension):
@@ -172,17 +215,18 @@ def _compareFeature(annotFeat, evidFeat, allowExtension):
 
 def _compareFeatures(annotTrans, firstEvidExon, lastEvidExon, allowExtension):
     worstSupport = EvidenceSupport.good
-    iAnnot = 0
+    annotFeat = annotTrans.firstFeature()
     evidFeat = firstEvidExon
-    while True:
-        worstSupport = max(_compareFeature(annotTrans.features[iAnnot], evidFeat, allowExtension),
+    while worstSupport < EvidenceSupport.poor:
+        worstSupport = max(_compareFeature(annotFeat, evidFeat, allowExtension),
                            worstSupport)
         if evidFeat is lastEvidExon:
             break
         evidFeat = evidFeat.nextFeature()
-        # need to allow for multiple evidence features overlapping the same annot feature
-        if not evidFeat.chrom.overlaps(annotTrans.features[iAnnot].chrom):
-            iAnnot += 1
+        annotFeat = annotFeat.nextFeature()
+        if annotFeat is None:
+            worstSupport = max(EvidenceSupport.feat_mismatch, worstSupport)
+            break  # mismatch if features are not out of sync
     return worstSupport
 
 
@@ -200,7 +244,7 @@ def _compareMegWithEvidenceImpl(annotTrans, evidTrans, allowExtension=False):
     # get range of exons to compare
     firstEvidExon, lastEvidExon = findEvidExonRange(annotTrans, evidTrans)
     if (firstEvidExon is None) or (lastEvidExon is None):
-        return EvidenceSupport.end_mismatch
+        return EvidenceSupport.feat_mismatch
 
     worstSupport = max(_compareFeatures(annotTrans, firstEvidExon, lastEvidExon, allowExtension),
                        worstSupport)

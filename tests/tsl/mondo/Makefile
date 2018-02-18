@@ -14,13 +14,14 @@ annonDb = ${annonDir}/hsAnnon.db
 
 tslDb = output/tsl.db
 
+genesPerJob = 10
 
 
 test::
 	@echo "run make setup or make finishup"
 
 setup: ${annonDb} ${evidDb}
-	${tslGencodeCollectSupportMkJobs} --genesPerJob=10 ${annonDb} ${evidDb} output
+	${tslGencodeCollectSupportMkJobs} --genesPerJob=${genePerJob} ${annonDb} ${evidDb} output
 
 finishup:
 	@mkdir -p $(dir ${tslDb})
