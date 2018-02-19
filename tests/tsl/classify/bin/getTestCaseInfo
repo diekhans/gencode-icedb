@@ -12,7 +12,7 @@ def parseArgs():
 
 
 def mkSelect(ver, gencodeIds):
-    idSelect =  ",".join(['"{}"'.format(gi) for gi in gencodeIds])
+    idSelect = ",".join(['"{}"'.format(gi) for gi in gencodeIds])
     sql = ("SELECT gp.chrom, gp.txStart, gp.txEnd, atr.geneId, gp.name as transcriptId, atr.geneName, atr.geneType, tsl.level, if((atr.havanaTranscriptId!=\"\"),\"manual\",\"auto\") AS method, \"\" AS notes "
            "FROM {gpTbl} AS gp "
            "LEFT JOIN {atrTbl} AS atr ON (atr.transcriptId = gp.name) "
@@ -22,6 +22,7 @@ def mkSelect(ver, gencodeIds):
                       atrTbl="wgEncodeGencodeAttrs" + ver,
                       tslTbl="wgEncodeGencodeTranscriptionSupportLevel" + ver,
                       idSelect=idSelect)
+
 
 def runQuery(db, sql, outTsv):
     with open(outTsv, 'w') as outFh:
@@ -33,5 +34,6 @@ def getIds(args):
     ver = "V27"
     sql = mkSelect(ver, args.gencodeIds)
     runQuery(db, sql, "/dev/stdout")
+
 
 getIds(parseArgs())

@@ -1,4 +1,4 @@
-id	src_symid	run_acc	org_code	tumor	tissue
-1	SRA	SRR4055854	hs	yes	Gastric
-2	SRA	SRR3555865	hs	no	Gastric
-3	SRA	SRR1700176	hs		
+src_symid	run_acc	org_code	tumor	tissue
+SRA	SRR4055854	hs	yes	Gastric
+SRA	SRR3555865	hs	no	Gastric
+SRA	SRR1700176	hs		

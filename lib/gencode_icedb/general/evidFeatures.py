@@ -23,9 +23,9 @@ class EvidencePslFactory(object):
         features = []
         while iBlkStart < len(psl.blocks):
             iBlkEnd = self._findExonEnd(psl, iBlkStart)
-            features.append(self._makeExon(psl, iBlkStart, iBlkEnd, trans, len(features)))
+            self._makeExon(psl, iBlkStart, iBlkEnd, trans, features)
             if iBlkEnd < len(psl.blocks):
-                features.append(self._makeIntron(psl, iBlkEnd, trans, len(features)))
+                self._makeIntron(psl, iBlkEnd, trans, features)
             iBlkStart = iBlkEnd
         return features
 
@@ -39,6 +39,26 @@ class EvidencePslFactory(object):
         while (iBlkEnd < len(psl.blocks)) and (self._tGapSize(psl, iBlkEnd) < minIntronSize):
             iBlkEnd += 1
         return iBlkEnd
+
+    def _addFirstUnaligned(self, psl, exon, alignFeatures):
+        return  # FIXME: ignored, see issues.org
+        if exon.rna.strand == '+':
+            qStart, qEnd = 0, psl.qStart
+        else:
+            qStart, qEnd = 0, psl.qSize - psl.qEnd
+        if qStart < qEnd:
+            alignFeatures.append(RnaInsertFeature(exon, len(alignFeatures),
+                                                  exon.rna.subrange(qStart, qEnd)))
+
+    def _addLastUnaligned(self, psl, exon, alignFeatures):
+        return  # FIXME: ignored, see issues.org
+        if exon.rna.strand == '+':
+            qStart, qEnd = psl.qEnd, psl.qSize
+        else:
+            qStart, qEnd = 0, psl.qSize - psl.qStart
+        if qStart < qEnd:
+            alignFeatures.append(RnaInsertFeature(exon, len(alignFeatures),
+                                                  exon.rna.subrange(qStart, qEnd)))
 
     def _addAlignedFeature(self, psl, iBlk, exon, alignFeatures):
         blk = psl.blocks[iBlk]
@@ -58,18 +78,22 @@ class EvidencePslFactory(object):
 
     def _addAlignFeatures(self, psl, iBlkStart, iBlkEnd, exon):
         alignFeatures = []
+        if iBlkStart == 0:
+            self._addFirstUnaligned(psl, exon, alignFeatures)
         for iBlk in range(iBlkStart, iBlkEnd):
             if iBlk > iBlkStart:
                 self._addUnalignedFeatures(psl, iBlk, exon, alignFeatures)
             self._addAlignedFeature(psl, iBlk, exon, alignFeatures)  # after since unaligned is before block
+        if iBlkEnd == psl.blockCount - 1:
+            self._addLastUnaligned(psl, exon, alignFeatures)
         exon.alignFeatures = tuple(alignFeatures)
 
-    def _makeExon(self, psl, iBlkStart, iBlkEnd, trans, iFeat):
-        exon = ExonFeature(trans, iFeat,
+    def _makeExon(self, psl, iBlkStart, iBlkEnd, trans, features):
+        exon = ExonFeature(trans, len(features),
                            trans.chrom.subrange(psl.blocks[iBlkStart].tStart, psl.blocks[iBlkEnd - 1].tEnd),
                            trans.rna.subrange(psl.blocks[iBlkStart].qStart, psl.blocks[iBlkEnd - 1].qEnd))
+        features.append(exon)
         self._addAlignFeatures(psl, iBlkStart, iBlkEnd, exon)
-        return exon
 
     def _getSpliceSites(self, psl, iBlkNext):
         if self.genomeReader is None:
@@ -78,16 +102,16 @@ class EvidencePslFactory(object):
             return spliceJuncsGetSeqs(self.genomeReader, psl.tName, psl.blocks[iBlkNext - 1].tEnd,
                                       psl.blocks[iBlkNext].tStart, psl.getQStrand())
 
-    def _makeIntron(self, psl, iBlkNext, trans, iFeat):
+    def _makeIntron(self, psl, iBlkNext, trans, features):
         donorSeq, acceptorSeq = self._getSpliceSites(psl, iBlkNext)
-        alignFeatures = []
-        intron = IntronFeature(trans, iFeat,
+        intron = IntronFeature(trans, len(features),
                                trans.chrom.subrange(psl.blocks[iBlkNext - 1].tEnd, psl.blocks[iBlkNext].tStart),
                                trans.rna.subrange(psl.blocks[iBlkNext - 1].qEnd, psl.blocks[iBlkNext].qStart),
                                donorSeq, acceptorSeq)
+        features.append(intron)
+        alignFeatures = []
         self._addUnalignedFeatures(psl, iBlkNext, intron, alignFeatures)
         intron.alignFeatures = tuple(alignFeatures)
-        return intron
 
     def fromPsl(self, psl, attrs=None):
         "convert a psl to an TranscriptFeatures object"

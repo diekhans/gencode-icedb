@@ -1,0 +1,94 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../../bin"))
+import icedbProgSetup  # noqa: F401
+import argparse
+from collections import namedtuple
+from pycbio.sys import fileOps
+from pycbio.db.sqliteOps import sqliteConnect, SqliteCursor
+from gencode_icedb.tsl.supportDefs import TrascriptionSupportLevel
+
+
+def parseArgs():
+    desc = """compare TSL with previous"""
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument('gencodeDb',
+                        help="""GENCODE sqlite3 database from gencodeDbLoad""")
+    parser.add_argument('tslDb',
+                        help="""TSL results sqlite3 database""")
+    parser.add_argument('resultsTsv',
+                        help="""TSV with results""")
+    return parser.parse_args()
+
+
+class TslSupport(namedtuple("TslSupport",
+                            ("transcriptId", "level"))):
+    __slots__ = ()
+
+    def __new__(cls, transcriptId, level):
+        return super(TslSupport, cls).__new__(cls, transcriptId, TrascriptionSupportLevel(level))
+
+def loadTsls(conn, select):
+    #  current tsl table has entries like ENST00000432523.6_PAR_Y, skip
+    with SqliteCursor(conn, rowFactory=lambda c, r: TslSupport(*r)) as cur:
+        cur.execute(select)
+        return {sup.transcriptId: sup for sup in cur
+                if not sup.transcriptId.endswith('_PAR_Y')}
+
+def loadCurrent(conn):
+    return loadTsls(conn, "SELECT transcriptId, level FROM ann.gencode_transcription_support_level")
+
+
+def loadNew(conn):
+    return loadTsls(conn,"SELECT transcriptId, level FROM gencode_transcript_support")
+
+
+def calcChange(currentSupp, newSupp):
+    if currentSupp is None:
+        return "add"
+    elif newSupp is None:
+        return "drop"
+    elif currentSupp == newSupp:
+        return "same"
+    elif (currentSupp is TrascriptionSupportLevel.tslNA) and (newSupp is not TrascriptionSupportLevel.tslNA):
+        return "naToSup"
+    elif (currentSupp is not TrascriptionSupportLevel.tslNA) and (newSupp is TrascriptionSupportLevel.tslNA):
+        return "supToNa"
+    elif currentSupp < newSupp:
+        return "worse"
+    elif currentSupp > newSupp:
+        return "better"
+    else:
+        assert False, "BUG: not handled: {} cmp {}".format(currentSupp, newSupp)
+
+
+def suppStr(s):
+    return '' if s is None else str(s.level)
+
+
+def compareTransResults(currentSupp, newSupp, transcriptId, resultsTsvFh):
+    fileOps.prRowv(resultsTsvFh, transcriptId, suppStr(currentSupp), suppStr(newSupp), calcChange(currentSupp, newSupp))
+
+
+def compareResults(currentSupps, newSupps, resultsTsvFh):
+    fileOps.prRowv(resultsTsvFh, "transcriptId", "current", "new", "change")
+    transcriptIds = set(currentSupps.keys()) | set(newSupps.keys())
+    for transcriptId in sorted(transcriptIds):
+        compareTransResults(currentSupps.get(transcriptId), newSupps.get(transcriptId), transcriptId, resultsTsvFh)
+
+
+def tslCmp(args):
+    conn = sqliteConnect(args.tslDb)
+    cur = conn.cursor()
+    cur.execute("ATTACH DATABASE '{}' AS ann;".format(args.gencodeDb))
+    cur.close()
+    currentSupps = loadCurrent(conn)
+    newSupps = loadNew(conn)
+    conn.close()
+    with open(args.resultsTsv, 'w') as resultsTsvFh:
+        compareResults(currentSupps, newSupps, resultsTsvFh)
+
+
+tslCmp(parseArgs())

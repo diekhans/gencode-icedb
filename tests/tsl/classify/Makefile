@@ -24,14 +24,14 @@ supportCollectGenesTest: ${testInputDone} mkdirs
 	${diff} expected/$@.details.tsv output/$@.details.tsv
 
 supportCollectMkJobsTest: ${testInputDone} mkdirs
-	rm -rf output/$@.work
+	rm -rf output/$@.work output/$@.db
 	${tslGencodeCollectSupportMkJobs} ${gencodeDb} ${evidDb} output/$@.work
 	sed -Ee 's#^.*(/bin/tslGencodeCollectSupport)#??\1#' output/$@.work/batch.jobs > output/$@.batch.jobs.cleaned
 	${diff} expected/$@.batch.jobs.cleaned output/$@.batch.jobs.cleaned
 	${jobsToCmds} output/$@.work/batch.jobs | bash -e  
 	ls -1 output/$@.work/results/ > output/$@.results.lst
 	${diff} expected/$@.results.lst output/$@.results.lst
-	${tslGencodeCollectSupportFinishJobs} output/$@.work output/$@.db
+	${tslGencodeCollectSupportFinishJobs} --saveDetails output/$@.work output/$@.db
 	$(call sqldumpdiff,gencode_transcript_support)
 	$(call sqldumpdiff,gencode_transcript_support_details)
 

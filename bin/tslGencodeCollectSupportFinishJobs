@@ -14,6 +14,8 @@ bulk_size = 75   # size of each bulk insert
 def parseArgs():
     desc = """Combine tslGencodeCollectSupport job results."""
     parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument('--saveDetails', action='store_true', default=False,
+                        help="""Save the details in a table.  This is slow faster.""")
     parser.add_argument('workDir',
                         help="""directory contains results directory""")
     parser.add_argument('resultsDb',
@@ -33,11 +35,18 @@ def resultsDbLoad(conn, recs):
             GencodeTranscriptSupport.insert_many(recs[idx:idx + bulk_size]).execute()
 
 
+def loadRowAsDict(row):
+    rec = tsvRowToDict(row)
+    rec["intLevel"] = row.level.value
+    return rec
+
+
 def loadResultsTsv(resultsTsv):
-    return [tsvRowToDict(row) for row in TsvReader(resultsTsv, typeMap=resultsTsvTypeMap)]
+    return [loadRowAsDict(row) for row in TsvReader(resultsTsv, typeMap=resultsTsvTypeMap)]
 
 
-def collectResults(conn, expectedTsvs):
+def dbLoadResults(conn, expectedTsvs):
+    GencodeTranscriptSupport.create_table()
     recs = []
     for resultsTsv in expectedTsvs:
         recs.extend(loadResultsTsv(resultsTsv))
@@ -62,11 +71,13 @@ def loadResultDetailsTsv(resultDetailsTsv):
 
 def resultsTsvToDetailsPath(resultsTsv):
     " *.tsl.tsv -> *.details.tsv"
-    p1 = os.path.splitext(resultsTsv)[0]
-    return "{}.details.tsv".format(p1[0])
+    # FIXME change to save both paths in expected as with utrAddCollect
+    p1 = os.path.splitext(os.path.splitext(resultsTsv)[0])[0]
+    return "{}.details.tsv".format(p1)
 
 
-def collectResultDetails(conn, expectedTsvs):
+def dbLoadResultDetails(conn, expectedTsvs):
+    GencodeTranscriptSupportDetails.create_table()
     recs = []
     for resultsTsv in expectedTsvs:
         recs.extend(loadResultDetailsTsv(resultsTsvToDetailsPath(resultsTsv)))
@@ -78,11 +89,11 @@ def tslGencodeCollectSupportFinishJobs(opts):
     fileOps.ensureFileDir(opts.resultsDb)
     conn = tslConnect(opts.resultsDb, create=True, readonly=False)
     GencodeTranscriptSupport.drop_table(fail_silently=True)
-    GencodeTranscriptSupport.create_table()
     GencodeTranscriptSupportDetails.drop_table(fail_silently=True)
-    GencodeTranscriptSupportDetails.create_table()
     expectedTsvs = fileOps.readFileLines(os.path.join(opts.workDir, "expected.lst"))
-    collectResults(conn, expectedTsvs)
+    dbLoadResults(conn, expectedTsvs)
+    if opts.saveDetails:
+        dbLoadResultDetails(conn, expectedTsvs)
     tslClose(conn)
 
 

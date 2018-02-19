@@ -1,2 +1,12 @@
 * tslGbffGetProblemCases should be run on cluster, drop multiprocessor mode.
 * make clear genbank problem vs suspect (problem makes a gb suspect)
+* should TSL not use RNAs with large initial/terminal unaligned sequence
+  - coded added to evidFeatures.py, but currently ignored until TSL is validated
+  - not clear if initial/terminal unaligned should be part of exon, as RnaInsertFeature,
+    as now bounds preceeds rna coords in exon. Maybe unaligned should always be part of
+    exons, not introns, maybe need a Gap StructureFeature.
+* collect polyA predictions for RNA & eST
+* add categories in previous TSL: code: mgcOrfeome, noStopClone
+* what to do about the stop lists
+* rename evidFeatures in objects to alignFeatures (although in analysis, it is still evidence)
+* fine tune indel size based on where it occurs (UTR vs CDS), or weight now evidence

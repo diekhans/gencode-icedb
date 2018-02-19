@@ -23,10 +23,10 @@ from gencode_icedb.tsl.supportDefs import EvidenceSupport, TrascriptionSupportLe
 from gencode_icedb.tsl.evidenceDb import EvidenceSource
 from gencode_icedb.general.gencodeDb import findAnnotationBounds
 
-#FIXME: check for evidence with large amount of unaligned at start or end
 
 # limits on size of as single indel in an exon.
 exonPolymorhicSizeLimit = 12
+
 # fraction of allowed total indel size relative exon length
 exonPolymorhicFactionLimit = 0.05
 

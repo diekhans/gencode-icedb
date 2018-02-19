@@ -2,7 +2,7 @@
 PeeWee data models for RNA-Seq metadata and splice junctions.
 """
 from __future__ import print_function
-from peewee import Proxy, Model, Field, PrimaryKeyField, CharField
+from peewee import Proxy, Model, Field, PrimaryKeyField, CharField, IntegerField
 from gencode_icedb.general.peeweeOps import peeweeConnect, peeweeClose, peeweeClassToTableName, PeeweeModelMixins
 from gencode_icedb.tsl.evidenceDb import EvidenceSource
 from gencode_icedb.tsl.supportDefs import TrascriptionSupportLevel, EvidenceSupport, GenbankProblemReason
@@ -87,6 +87,8 @@ class GencodeTranscriptSupport(BaseModel):
                              help_text="""GENCODE trancript id""")
     level = TrascriptionSupportLevelField(index=True,
                                           help_text="""GENCODE TSL""")
+    intLevel = IntegerField(index=True,
+                            help_text="""GENCODE TSL as an integer""")
 
 
 class GencodeTranscriptSupportDetails(BaseModel):

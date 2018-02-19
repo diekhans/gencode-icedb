@@ -10,9 +10,10 @@ progs = icedbProgSetup.py \
 	rslMkStarSjOutSplits \
 	rslGencodeCollectSupport rslGencodeCollectSupportMkJobs rslGencodeCollectSupportFinishJobs \
 	rslGencodeCollectNovel rslGencodeCollectNovelMkJobs rslGencodeCollectNovelFinishJobs
-
 testprogs = \
-	tests/tsl/classify/bin/createTestData
+	tests/tsl/classify/bin/createTestData \
+	tests/tsl/classify/bin/getTestCaseInfo \
+	tests/tsl/mondo/bin/tslCmp
 
 all::
 	(cd src && ${MAKE})
