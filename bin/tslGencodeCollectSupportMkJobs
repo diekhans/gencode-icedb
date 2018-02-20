@@ -12,6 +12,8 @@ from gencode_icedb.general import gencodeDb
 def parseArgs():
     desc = """Generate parasol jobs to collect support for all GENCODE."""
     parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument('--allDetails', action="store_true", default=False,
+                        help="""write details for all evaluations the detailsTsv file, not just supporting ones""")
     parser.add_argument("--maxGenes", type=int, default=None,
                         help="""maximum number of genes to use, for testing""")
     parser.add_argument("--gencodeIdFile", default=None,
@@ -28,9 +30,11 @@ def parseArgs():
 
 
 class JobGenerator(object):
-    def __init__(self, gencodeDb, evidenceDb, workDir):
+    def __init__(self, gencodeDb, evidenceDb, genesPerJob, allDetails, workDir):
         self.gencodeDb = gencodeDb
         self.evidenceDb = evidenceDb
+        self.genesPerJob = genesPerJob
+        self.allDetails = allDetails
         self.workDir = workDir
         self.resultDir = os.path.join(workDir, "results")
         self.suppProg = os.path.join(icedbProgSetup.binDir, "tslGencodeCollectSupportJob")
@@ -39,16 +43,19 @@ class JobGenerator(object):
         cmd = [self.suppProg]
         resultTsv = os.path.join(self.resultDir, "{}.tsl.tsv".format(gencodeIds[0]))
         detailsTsv = os.path.join(self.resultDir, "{}.details.tsv".format(gencodeIds[0]))
-        cmd.extend([self.gencodeDb, self.evidenceDb, "--detailsTsv={}".format(detailsTsv), "{{check out exists {}}}".format(resultTsv)])
+        cmd.extend([self.gencodeDb, self.evidenceDb, "--detailsTsv={}".format(detailsTsv)])
+        if self.allDetails:
+            cmd.append("--allDetails")
+        cmd.append("{{check out exists {}}}".format(resultTsv))
         cmd.extend(gencodeIds)
         print(*cmd, file=batchFh)
         print(resultTsv, file=expectedFh)
 
-    def generateJobs(self, gencodeIds, genesPerJob, batchFh, expectedFh):
+    def generateJobs(self, gencodeIds, batchFh, expectedFh):
         iNext = 0
         while iNext < len(gencodeIds):
-            self._generateJob(gencodeIds[iNext: iNext + genesPerJob], batchFh, expectedFh)
-            iNext += genesPerJob
+            self._generateJob(gencodeIds[iNext: iNext + self.genesPerJob], batchFh, expectedFh)
+            iNext += self.genesPerJob
 
 
 def tslGencodeCollectSupportMkJobs(opts):
@@ -62,13 +69,13 @@ def tslGencodeCollectSupportMkJobs(opts):
         gencodeIds = sorted(attrsDbTable.getGeneIds())
     if opts.maxGenes is not None:
         gencodeIds = gencodeIds[0:opts.maxGenes]
-    jobGen = JobGenerator(opts.gencodeDb, opts.evidenceDb, opts.workDir)
+    jobGen = JobGenerator(opts.gencodeDb, opts.evidenceDb, opts.genesPerJob, opts.allDetails, opts.workDir)
 
     fileOps.ensureDir(opts.workDir)
     batchFile = os.path.join(opts.workDir, "batch.jobs")
     expectedLst = os.path.join(opts.workDir, "expected.lst")
     with open(batchFile, "w") as batchFh, open(expectedLst, "w") as expectedFh:
-        jobGen.generateJobs(gencodeIds, opts.genesPerJob, batchFh, expectedFh)
+        jobGen.generateJobs(gencodeIds, batchFh, expectedFh)
     conn.close()
 
 

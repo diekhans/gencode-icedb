@@ -21,7 +21,7 @@ static void usage(char *msg) {
         "  -verbose=n\n"
         "  -table=tbl - load this table, defaults to ucsc_rna_aln or ucsc_est_aln.\n"
         "  -chromSpec=spec - restrict to this chrom or chrom range, for testing.\n"
-        "   Maybe repeated. Duplicates caused alignments being in multiple ranges\n"
+        "   Maybe repeated. Duplicates caused by alignments being in multiple ranges\n"
         "   are discarded.\n"
         ;
     errAbort("%s:\n%s", msg, usageMsg);
@@ -32,9 +32,10 @@ static struct optionSpec optionSpecs[] = {
     {NULL, 0}
 };
 
+static int noOrientInfoCnt = 0;
+
 static char *UCSC_RNA_ALN_TBL = "ucsc_rna_aln";
 static char *UCSC_EST_ALN_TBL = "ucsc_est_aln";
-
 
 static char *pslCreateSqliteTbl =
     "CREATE TABLE {table} ("
@@ -77,10 +78,10 @@ struct ChromSpec {
 
 /* a verbose message about a psl */
 static void pslVerb(int level, char* msg, struct psl* psl) {
-    verbose(level, "%s: %s:%d-%d <=> %s:%d-%d (%s)\n", msg,
+    verbose(level, "%s: %s:%d-%d <=> %s:%d-%d (%s) blks: %d\n", msg,
             psl->qName, psl->qStart, psl->qEnd,
             psl->tName, psl->tStart, psl->tEnd,
-            psl->strand);
+            psl->strand, psl->blockCount);
 }
 
 /* parse chrome spec */
@@ -203,8 +204,13 @@ static struct psl* loadPsls(struct sqlConnection *hgConn, char *table,
 /* get hash key for estOrientInfo records. WARNING static return */
 static char *getOrientInfoKey(char *name, char *chrom,
                               unsigned chromStart, unsigned chromEnd) {
-    static char key[1024];
-    safef(key, sizeof(key), "%s@%s:%d-%d", name, chrom, chromStart, chromEnd);
+    static char nameNoVer[64], key[1024];
+    safecpy(nameNoVer, sizeof(nameNoVer), name);
+    char *dot = strchr(nameNoVer, '.');
+    if (dot != NULL) {
+        *dot = '\0';
+    }
+    safef(key, sizeof(key), "%s@%s:%d-%d", nameNoVer, chrom, chromStart, chromEnd);
     return key;
 }
 
@@ -219,6 +225,7 @@ static void loadEstOrientInfosRange(struct sqlConnection *hgConn, char *table,
     while ((row = sqlNextRow(sr)) != NULL) {
         struct estOrientInfo *eoi = estOrientInfoLoadLm(row+1, orientInfoMap->lm);
         char *key = getOrientInfoKey(eoi->name, eoi->chrom, eoi->chromStart, eoi->chromEnd);
+        verbose(4, "load orientInfo: %s\n", key);
         hashAdd(orientInfoMap, key, eoi);
     }
     sqlFreeResult(&sr);
@@ -228,7 +235,7 @@ static void loadEstOrientInfosRange(struct sqlConnection *hgConn, char *table,
 /* load EST orient info, hashed by name, chrom, chromStart, chromEnd.
  * record are in hash local memory. */
 static struct hash* loadEstOrientInfos(struct sqlConnection *hgConn, char *table,
-                                struct ChromSpec *chromSpecs) {
+                                       struct ChromSpec *chromSpecs) {
     struct hash* orientInfoMap = hashNew(18);
     for (struct ChromSpec *chromSpec = chromSpecs; chromSpec != NULL; chromSpec = chromSpec->next) {
         loadEstOrientInfosRange(hgConn, table, chromSpec, orientInfoMap);
@@ -240,6 +247,12 @@ static struct hash* loadEstOrientInfos(struct sqlConnection *hgConn, char *table
 static boolean isPslReversed(struct hash* orientInfoMap, struct psl *psl) {
     char *key = getOrientInfoKey(psl->qName, psl->tName, psl->tStart, psl->tEnd);
     struct estOrientInfo *orientInfo = hashFindVal(orientInfoMap, key);
+    if (orientInfo != NULL) {
+        verbose(3, "isPslReversed: %s %d\n", psl->qName, orientInfo->intronOrientation);
+    } else {
+        noOrientInfoCnt++;
+        verbose(3, "isPslReversed: %s no orientInfo (%s)\n", psl->qName, key);
+    }
     return (orientInfo != NULL) && (orientInfo->intronOrientation < 0);
 }
 
@@ -378,5 +391,8 @@ int main(int argc, char** argv) {
     char *sqliteTable = optionVal("table",
                                   (sameString(argv[2], "rna") ? UCSC_RNA_ALN_TBL : UCSC_EST_ALN_TBL));
     tslGetUcscRnaAligns(argv[1], argv[2], argv[3], sqliteTable, chromSpecs);
+    if (noOrientInfoCnt > 0) {
+        fprintf(stderr, "WARNING: %d orientInfo records not found", noOrientInfoCnt);
+    }
     return 0;
 }

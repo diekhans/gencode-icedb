@@ -1,0 +1,20 @@
+#!/bin/bash
+set -beEu -o pipefail
+
+if [ $# != 2 ] ; then
+    echo "Wrong # args resultsDir resultsTsv" >&2
+    exit 1
+fi
+resultsDir=$1
+resultsTsv=$2
+
+# get header
+r0=$(find $resultsDir -name '*.details.tsv' | head -1) || true  # avoids sigpipe error
+if [ -z "$r0" ] ; then
+    echo "Directory no *.details.tsv files: $resultsDir" >&2
+    exit 1
+fi
+head -1 $r0 > $resultsTsv
+
+# combine data
+find $resultsDir -name '*.details.tsv' | xargs tail -q -n +2 >> $resultsTsv

@@ -16,7 +16,9 @@ def parseArgs():
     cluster job."""
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('--detailsTsv',
-                        help="""write details to this TSV file""")
+                        help="""write details for supporting evaluations to this TSV file""")
+    parser.add_argument('--allDetails', action="store_true", default=False,
+                        help="""write details for all evaluations the detailsTsv file, not just supporting ones""")
     parser.add_argument('--evidSource', dest='evidSources', action='append',
                         type=EvidenceSource, default=[e for e in EvidenceSource],
                         help="""only used evidence from this source, maybe repeated""")

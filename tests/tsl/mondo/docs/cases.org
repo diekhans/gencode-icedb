@@ -1,0 +1,70 @@
+* run #1 2018-02-18:
+  exonPolymorphicSizeLimit = 12
+  exonPolymorphicFactionLimit = 0.05
+** counts
+   171792 same
+    20073 worse
+    23026 better
+     2154 drop
+     1645 naToSup
+       14 supToNa
+** examples:
+*** ENST00000206765.10	tsl1	tsl5	worse
+    < E04383.1	mRNA	good	
+    < BC034699.1	mRNA	good	mgcOrfeome
+    < ...
+    > UCSC_RNA	BC034699.1	large_indel_size [21-bases unaligned in UTR|]
+*** ENST00000215473.7	tsl1	tsl5	worse
+    < AB026187.1	mRNA	good	
+    > ENSEMBL_RNA	AB026187.1	large_indel_size [no UCSC]
+*** ENST00000225235.4	tsl1	tsl5	worse
+    < AB011180.1	mRNA	good	
+    > UCSC_RNA	AB383920.1	large_indel_size  [18-bases unaligned in CDS]
+*** ENST00000013034.3	tsl3	tsl5	worse
+    > UCSC_RNA	AK000791.1	internal_unaligned	nedo  [448 unaligned region in GRC error region]
+*** ENST00000191063.8	tsl3	tsl5	worse
+    < ENST00000191063.8	AL558145.3	EST	est1	
+    > UCSC_RNA	HQ447657.1	large_indel_content	[bogus align, no support, 50 bases at 5' end,  ORFEOME not marked]
+    > UCSC_RNA	KJ891233.1	large_indel_content	[bogus align, no support, 64 bases at 5' end,  ORFEOME not marked]
+*** ENST00000219168.8	tsl2	tsl3	worse
+    < BM562565.1	EST	est1	
+    < AL532297.3	EST	est1	
+    > UCSC_EST	AW972189.1	large_indel_content	
+    > UCSC_EST	BG218848.1	large_indel_size	athRage
+
+** notes
+   - many difference because current doesn't consider unaligned sequence in exon
+* run #2 2018-02-19:
+  exonPolymorphicSizeLimit = 36
+  exonPolymorphicFactionLimit = 0.1
+** counts
+   175247 same
+    23380 better
+    16264 worse
+     2154 drop
+     1645 naToSup
+       14 supToNa
+** notes
+
+* run #3 2018-02-19b:
+  exonPolymorphicSizeLimit = 5000
+  exonPolymorphicFactionLimit = 1.0
+
+** counts
+   178103 same
+    23589 better
+    13199 worse
+     2154 drop
+     1645 naToSup
+       14 supToNa
+** examples:
+*** ENST00000573491.5	tsl3	tslNA	supToNa  - OR3A2 olfactory receptor
+    V26 ZIM2-AS1/antisense
+    V27 OR5AH1P/transcribed_unprocessed_pseudogene
+*** ENST00000497872.4	tsl1	tslNA	supToNa  - IG_C_gene
+    V26 AL928768.3/lincRNA
+    V27 IGHA2/IG_C_gene
+    
+** notes
+   - supToNa cases that were not filtered in V26 before due to changing metadata
+   - drop are on patches

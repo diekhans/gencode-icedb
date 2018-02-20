@@ -25,7 +25,7 @@ supportCollectGenesTest: ${testInputDone} mkdirs
 
 supportCollectMkJobsTest: ${testInputDone} mkdirs
 	rm -rf output/$@.work output/$@.db
-	${tslGencodeCollectSupportMkJobs} ${gencodeDb} ${evidDb} output/$@.work
+	${tslGencodeCollectSupportMkJobs} --allDetails ${gencodeDb} ${evidDb} output/$@.work
 	sed -Ee 's#^.*(/bin/tslGencodeCollectSupport)#??\1#' output/$@.work/batch.jobs > output/$@.batch.jobs.cleaned
 	${diff} expected/$@.batch.jobs.cleaned output/$@.batch.jobs.cleaned
 	${jobsToCmds} output/$@.work/batch.jobs | bash -e  

@@ -14,30 +14,42 @@ annonDb = ${annonDir}/hsAnnon.db
 
 tslDb = output/tsl.db
 cmpTsv = output/cmp.tsv
+detailsTsv = output/details.tsv
 
 genesPerJob = 10
+allDetails = --allDetails
+# saveDetails = --saveDetails
 
 tslCmp = bin/tslCmp
-
+combineDetailsTsv = bin/combineDetailsTsv
 
 test::
 	@echo "run make setup or make finishup"
 
 setup: ${annonDb} ${evidDb}
-	${tslGencodeCollectSupportMkJobs} --genesPerJob=${genesPerJob} ${annonDb} ${evidDb} output
+	${tslGencodeCollectSupportMkJobs} --genesPerJob=${genesPerJob} ${allDetails} ${annonDb} ${evidDb} output
 
-finishup:
-	@mkdir -p $(dir ${tslDb})
-	${tslGencodeCollectSupportFinishJobs} output ${tslDb}
+finishup: ${cmpTsv} ${tslDb} ${detailsTsv}
+
+tsldb: ${tslDb}
+${tslDb}:
+	@mkdir -p $(dir $@)
+	${tslGencodeCollectSupportFinishJobs} ${saveDetails} output ${tslDb}.tmp
+	mv -f ${tslDb}.tmp ${tslDb}
+
 
 compare: ${cmpTsv}
-
 ${cmpTsv}: ${tslDb} ${tslCmp}
 	@mkdir -p $(dir $@)
 	${tslCmp} ${annonDb} ${tslDb} $@.tmp
+	cut -f 4 $@.tmp |sort | uniq -c > $@.cnts
 	mv -f  $@.tmp $@
 
-
+details: ${detailsTsv}
+${detailsTsv}:
+	@mkdir -p $(dir $@)
+	${combineDetailsTsv} output/results $@.tmp
+	mv -f  $@.tmp $@
 
 ##
 # Building of evidence db (~1.25 hours)

@@ -25,10 +25,13 @@ from gencode_icedb.general.gencodeDb import findAnnotationBounds
 
 
 # limits on size of as single indel in an exon.
-exonPolymorhicSizeLimit = 12
+#exonPolymorphicSizeLimit = 36
 
 # fraction of allowed total indel size relative exon length
-exonPolymorhicFactionLimit = 0.05
+#exonPolymorphicFactionLimit = 0.1
+
+exonPolymorphicSizeLimit = 5000
+exonPolymorphicFactionLimit = 1.0
 
 
 # FIXME these are from the ccds2/modules/gencode/src/lib/gencode/data/gencodeGenes.py, migrate to new module
@@ -74,10 +77,10 @@ def _checkExonIndels(evidExon):
     totalIndelSize = 0
     for aln in evidExon.alignFeatures:
         indelSize = getIndelSize(aln)
-        if indelSize > exonPolymorhicSizeLimit:
+        if indelSize > exonPolymorphicSizeLimit:
             return EvidenceSupport.large_indel_size
         totalIndelSize += indelSize
-    if totalIndelSize > exonPolymorhicFactionLimit * len(evidExon.chrom):
+    if totalIndelSize > exonPolymorphicFactionLimit * len(evidExon.chrom):
         return EvidenceSupport.large_indel_content
     else:
         return EvidenceSupport.polymorphic

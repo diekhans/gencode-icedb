@@ -8,14 +8,26 @@ from gencode_icedb.tsl.supportDefs import TrascriptionSupportLevel, EvidenceSupp
 from gencode_icedb.tsl.tslModels import tslConnect, tslClose, GencodeTranscriptSupport, GencodeTranscriptSupportDetails
 from gencode_icedb.tsl.evidenceDb import EvidenceSource
 
-bulk_size = 75   # size of each bulk insert
+bulk_size = 100   # size of each bulk insert
+
+# FIXME: move fast bulk load stuff to sqliteOps. in pycbio, generally, this will
+# still way too much to save with all details
+
+setPragmaSql = (
+    "PRAGMA cache_size = 1000000;"
+    "PRAGMA synchronous = OFF;"
+    "PRAGMA journal_mode = OFF;"
+    "PRAGMA locking_mode = EXCLUSIVE;"
+    "PRAGMA count_changes = OFF;"
+    "PRAGMA temp_store = MEMORY;"
+    "PRAGMA auto_vacuum = NONE;")
 
 
 def parseArgs():
     desc = """Combine tslGencodeCollectSupport job results."""
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('--saveDetails', action='store_true', default=False,
-                        help="""Save the details in a table.  This is slow faster.""")
+                        help="""Save the details in a table.  This is very slow if full details have been saved.""")
     parser.add_argument('workDir',
                         help="""directory contains results directory""")
     parser.add_argument('resultsDb',
@@ -24,33 +36,69 @@ def parseArgs():
     return parser.parse_args()
 
 
+def getCreateIndexes(cursor, tbl):
+    sql = "select sql from sqlite_master WHERE tbl_name = '{tbl}';".format(tbl=tbl)
+    cursor.execute(sql)
+    return [r[0] for r in cursor if r[0].startswith("CREATE INDEX")]
+
+
+def createsToDrops(creates):
+    return ["DROP INDEX {};".format(c.split(' ')[2]) for c in creates]
+
+
+def dropIndexes(cursor, creates):
+    "drop indexes to speed up batch load"
+    drops = createsToDrops(creates)
+    cursor.execute(" ".join(drops))
+
+
+def preBulkInsert(conn, tbl):
+    cursor = conn.cursor()
+    creates = getCreateIndexes(cursor, tbl)
+    dropIndexes(cursor, creates)
+    cursor.execute(setPragmaSql)
+    for row in cursor:
+        pass  # discard results
+    cursor.close()
+    return creates
+
+
+def postBulkInsert(conn, creates):
+    cursor = conn.cursor()
+    for create in creates:
+        cursor.execute(create)
+    cursor.close()
+
+
 resultsTsvTypeMap = {
     "level": TrascriptionSupportLevel
 }
 
 
-def resultsDbLoad(conn, recs):
+def bulkInsert(conn, tblcls, recs):
+    creates = preBulkInsert(conn, tblcls.get_table_name())
     with conn.atomic():
         for idx in range(0, len(recs), bulk_size):
-            GencodeTranscriptSupport.insert_many(recs[idx:idx + bulk_size]).execute()
+            tblcls.insert_many(recs[idx:idx + bulk_size]).execute()
+    postBulkInsert(conn, creates)
 
 
-def loadRowAsDict(row):
+def convertRowToDict(row):
     rec = tsvRowToDict(row)
     rec["intLevel"] = row.level.value
     return rec
 
 
-def loadResultsTsv(resultsTsv):
-    return [loadRowAsDict(row) for row in TsvReader(resultsTsv, typeMap=resultsTsvTypeMap)]
+def readResultsTsv(resultsTsv):
+    return [convertRowToDict(row) for row in TsvReader(resultsTsv, typeMap=resultsTsvTypeMap)]
 
 
-def dbLoadResults(conn, expectedTsvs):
+def dbInsertResults(conn, expectedTsvs):
     GencodeTranscriptSupport.create_table()
     recs = []
     for resultsTsv in expectedTsvs:
-        recs.extend(loadResultsTsv(resultsTsv))
-    resultsDbLoad(conn, recs)
+        recs.extend(readResultsTsv(resultsTsv))
+    bulkInsert(conn, GencodeTranscriptSupport, recs)
 
 
 resultDetailsTsvTypeMap = {
@@ -59,13 +107,7 @@ resultDetailsTsvTypeMap = {
 }
 
 
-def resultDetailsDbLoad(conn, recs):
-    with conn.atomic():
-        for idx in range(0, len(recs), bulk_size):
-            GencodeTranscriptSupportDetails.insert_many(recs[idx:idx + bulk_size]).execute()
-
-
-def loadResultDetailsTsv(resultDetailsTsv):
+def readDetailsTsv(resultDetailsTsv):
     return [tsvRowToDict(row) for row in TsvReader(resultDetailsTsv, typeMap=resultDetailsTsvTypeMap)]
 
 
@@ -76,12 +118,12 @@ def resultsTsvToDetailsPath(resultsTsv):
     return "{}.details.tsv".format(p1)
 
 
-def dbLoadResultDetails(conn, expectedTsvs):
+def dbInsertDetails(conn, expectedTsvs):
     GencodeTranscriptSupportDetails.create_table()
     recs = []
     for resultsTsv in expectedTsvs:
-        recs.extend(loadResultDetailsTsv(resultsTsvToDetailsPath(resultsTsv)))
-    resultDetailsDbLoad(conn, recs)
+        recs.extend(readDetailsTsv(resultsTsvToDetailsPath(resultsTsv)))
+    bulkInsert(conn, GencodeTranscriptSupportDetails, recs)
 
 
 def tslGencodeCollectSupportFinishJobs(opts):
@@ -91,9 +133,9 @@ def tslGencodeCollectSupportFinishJobs(opts):
     GencodeTranscriptSupport.drop_table(fail_silently=True)
     GencodeTranscriptSupportDetails.drop_table(fail_silently=True)
     expectedTsvs = fileOps.readFileLines(os.path.join(opts.workDir, "expected.lst"))
-    dbLoadResults(conn, expectedTsvs)
+    dbInsertResults(conn, expectedTsvs)
     if opts.saveDetails:
-        dbLoadResultDetails(conn, expectedTsvs)
+        dbInsertDetails(conn, expectedTsvs)
     tslClose(conn)
 
 

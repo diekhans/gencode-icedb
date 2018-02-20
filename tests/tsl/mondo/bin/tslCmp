@@ -30,6 +30,7 @@ class TslSupport(namedtuple("TslSupport",
     def __new__(cls, transcriptId, level):
         return super(TslSupport, cls).__new__(cls, transcriptId, TrascriptionSupportLevel(level))
 
+
 def loadTsls(conn, select):
     #  current tsl table has entries like ENST00000432523.6_PAR_Y, skip
     with SqliteCursor(conn, rowFactory=lambda c, r: TslSupport(*r)) as cur:
@@ -37,12 +38,13 @@ def loadTsls(conn, select):
         return {sup.transcriptId: sup for sup in cur
                 if not sup.transcriptId.endswith('_PAR_Y')}
 
+
 def loadCurrent(conn):
     return loadTsls(conn, "SELECT transcriptId, level FROM ann.gencode_transcription_support_level")
 
 
 def loadNew(conn):
-    return loadTsls(conn,"SELECT transcriptId, level FROM gencode_transcript_support")
+    return loadTsls(conn, "SELECT transcriptId, level FROM gencode_transcript_support")
 
 
 def calcChange(currentSupp, newSupp):
@@ -50,15 +52,15 @@ def calcChange(currentSupp, newSupp):
         return "add"
     elif newSupp is None:
         return "drop"
-    elif currentSupp == newSupp:
+    elif currentSupp.level == newSupp.level:
         return "same"
-    elif (currentSupp is TrascriptionSupportLevel.tslNA) and (newSupp is not TrascriptionSupportLevel.tslNA):
+    elif (currentSupp.level == TrascriptionSupportLevel.tslNA) and (newSupp.level != TrascriptionSupportLevel.tslNA):
         return "naToSup"
-    elif (currentSupp is not TrascriptionSupportLevel.tslNA) and (newSupp is TrascriptionSupportLevel.tslNA):
+    elif (currentSupp.level != TrascriptionSupportLevel.tslNA) and (newSupp.level == TrascriptionSupportLevel.tslNA):
         return "supToNa"
-    elif currentSupp < newSupp:
+    elif currentSupp.level < newSupp.level:
         return "worse"
-    elif currentSupp > newSupp:
+    elif currentSupp.level > newSupp.level:
         return "better"
     else:
         assert False, "BUG: not handled: {} cmp {}".format(currentSupp, newSupp)

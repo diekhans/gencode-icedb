@@ -100,7 +100,7 @@ class GencodeTranscriptSupportDetails(BaseModel):
                                   help_text="""Evidence source""")
     evidId = CharField(index=True,
                        help_text="""Evidence identifier""")
-    evidSupport = EvidenceSupportField(index=True,
+    evidSupport = EvidenceSupportField(index=False,
                                        help_text="""Support provided by this piece of evidence""")
     suspect = GenbankProblemReasonField(index=False, null=True,
                                         help_text="""If not NULL evidence is suspect with this reason""")
