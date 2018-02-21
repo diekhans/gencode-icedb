@@ -48,7 +48,7 @@ class EvidencePslFactory(object):
             qStart, qEnd = 0, psl.qSize - psl.qEnd
         if qStart < qEnd:
             alignFeatures.append(RnaInsertFeature(exon, len(alignFeatures),
-                                                  exon.rna.subrange(qStart, qEnd)))
+                                                  exon.rna.subrange(qStart, qEnd, psl.qStrand)))
 
     def _addLastUnaligned(self, psl, exon, alignFeatures):
         return  # FIXME: ignored, see issues.org
@@ -58,23 +58,23 @@ class EvidencePslFactory(object):
             qStart, qEnd = 0, psl.qSize - psl.qStart
         if qStart < qEnd:
             alignFeatures.append(RnaInsertFeature(exon, len(alignFeatures),
-                                                  exon.rna.subrange(qStart, qEnd)))
+                                                  exon.rna.subrange(qStart, qEnd, psl.qStrand)))
 
     def _addAlignedFeature(self, psl, iBlk, exon, alignFeatures):
         blk = psl.blocks[iBlk]
         alignFeatures.append(AlignedFeature(exon, len(alignFeatures),
-                                            exon.chrom.subrange(blk.tStart, blk.tEnd),
-                                            exon.rna.subrange(blk.qStart, blk.qEnd)))
+                                            exon.chrom.subrange(blk.tStart, blk.tEnd, psl.tStrand),
+                                            exon.rna.subrange(blk.qStart, blk.qEnd, psl.qStrand)))
 
     def _addUnalignedFeatures(self, psl, iBlk, feat, alignFeatures):
         prevBlk = psl.blocks[iBlk - 1]
         blk = psl.blocks[iBlk]
         if blk.qStart > prevBlk.qEnd:
             alignFeatures.append(RnaInsertFeature(feat, len(alignFeatures),
-                                                  feat.rna.subrange(prevBlk.qEnd, blk.qStart)))
+                                                  feat.rna.subrange(prevBlk.qEnd, blk.qStart, psl.qStrand)))
         if blk.tStart > prevBlk.tEnd:
             alignFeatures.append(ChromInsertFeature(feat, len(alignFeatures),
-                                                    feat.chrom.subrange(prevBlk.tEnd, blk.tStart)))
+                                                    feat.chrom.subrange(prevBlk.tEnd, blk.tStart, psl.tStrand)))
 
     def _addAlignFeatures(self, psl, iBlkStart, iBlkEnd, exon):
         alignFeatures = []
@@ -90,37 +90,50 @@ class EvidencePslFactory(object):
 
     def _makeExon(self, psl, iBlkStart, iBlkEnd, trans, features):
         exon = ExonFeature(trans, len(features),
-                           trans.chrom.subrange(psl.blocks[iBlkStart].tStart, psl.blocks[iBlkEnd - 1].tEnd),
-                           trans.rna.subrange(psl.blocks[iBlkStart].qStart, psl.blocks[iBlkEnd - 1].qEnd))
+                           trans.chrom.subrange(psl.blocks[iBlkStart].tStart, psl.blocks[iBlkEnd - 1].tEnd, psl.tStrand),
+                           trans.rna.subrange(psl.blocks[iBlkStart].qStart, psl.blocks[iBlkEnd - 1].qEnd, psl.qStrand))
         features.append(exon)
         self._addAlignFeatures(psl, iBlkStart, iBlkEnd, exon)
 
-    def _getSpliceSites(self, psl, iBlkNext):
+    def _getSpliceSites(self, psl, iBlkNext, trans):
         if self.genomeReader is None:
             return (None, None)
         else:
-            return spliceJuncsGetSeqs(self.genomeReader, psl.tName, psl.blocks[iBlkNext - 1].tEnd,
-                                      psl.blocks[iBlkNext].tStart, psl.getQStrand())
+            # this handles 3' ESTs
+            coords = Coords(psl.tName, psl.blocks[iBlkNext - 1].tEnd, psl.blocks[iBlkNext].tStart, psl.tStrand, psl.tSize)
+            if coords.strand == '-':
+                coords = coords.reverse()
+            return spliceJuncsGetSeqs(self.genomeReader, coords.name, coords.start, coords.end, trans.transcriptionStrand)
 
     def _makeIntron(self, psl, iBlkNext, trans, features):
-        donorSeq, acceptorSeq = self._getSpliceSites(psl, iBlkNext)
+        donorSeq, acceptorSeq = self._getSpliceSites(psl, iBlkNext, trans)
         intron = IntronFeature(trans, len(features),
-                               trans.chrom.subrange(psl.blocks[iBlkNext - 1].tEnd, psl.blocks[iBlkNext].tStart),
-                               trans.rna.subrange(psl.blocks[iBlkNext - 1].qEnd, psl.blocks[iBlkNext].qStart),
+                               trans.chrom.subrange(psl.blocks[iBlkNext - 1].tEnd, psl.blocks[iBlkNext].tStart, psl.tStrand),
+                               trans.rna.subrange(psl.blocks[iBlkNext - 1].qEnd, psl.blocks[iBlkNext].qStart, psl.qStrand),
                                donorSeq, acceptorSeq)
         features.append(intron)
         alignFeatures = []
         self._addUnalignedFeatures(psl, iBlkNext, intron, alignFeatures)
         intron.alignFeatures = tuple(alignFeatures)
 
-    def fromPsl(self, psl, attrs=None):
-        "convert a psl to an TranscriptFeatures object"
+    def fromPsl(self, psl, attrs=None, orientChrom=True):
+        """Convert a psl to a TranscriptFeatures object.  If orientChrom is
+        True, then always ensure chrom strand is positive.
+        """
+        # After tslGetUcscRnaAligns adjustments, 3' EST are `+-'
+        # for positive stand genes and `--' for negative strand genes.
+        # Thus transcriptionStrand is always the qStrand regardless of tStrand.
+        transcriptionStrand = psl.qStrand
+
+        if orientChrom and psl.tStrand == '-':
+            psl = psl.reverseComplement()
         chrom = Coords(psl.tName, psl.tStart, psl.tEnd, '+', psl.tSize)
-        if psl.getTStrand() == '-':
+        if psl.tStrand == '-':
             chrom = chrom.reverse()
         rna = Coords(psl.qName, psl.qStart, psl.qEnd, '+', psl.qSize)
-        if psl.getQStrand() == '-':
+        if psl.qStrand == '-':
             rna = rna.reverse()
-        trans = TranscriptFeatures(chrom, rna, attrs=attrs)
+
+        trans = TranscriptFeatures(chrom, rna, transcriptionStrand=transcriptionStrand, attrs=attrs)
         trans.features = tuple(self._buildFeatures(psl, trans))
         return trans

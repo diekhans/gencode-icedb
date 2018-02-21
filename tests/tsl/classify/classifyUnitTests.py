@@ -158,6 +158,12 @@ class EvidCompareTest(TestCaseBase):
         evidSupport = self._rawPslCmpr(annotTrans, evidRawPsl, True)
         self.assertEqual(evidSupport, EvidenceSupport.feat_mismatch)
 
+    def testEst3Minus(self):
+        annotTrans = self._getAnnot("ENST00000191063.8")
+        evidRawPsl = ["857", "11", "0", "8", "3", "17", "8", "10236", "--", "AL558145.3", "1038", "51", "944", "chr10", "133797422", "5878172", "5889284", "11", "5,12,31,114,80,221,43,109,162,87,12,", "94,101,113,145,259,339,560,603,712,874,975,", "127908138,127908143,127908156,127908187,127908302,127909355,127911657,127913345,127914255,127919135,127919238,"]
+        evidSupport = self._rawPslCmpr(annotTrans, evidRawPsl, False)
+        self.assertEqual(evidSupport, EvidenceSupport.polymorphic)
+
 
 def suite():
     ts = unittest.TestSuite()

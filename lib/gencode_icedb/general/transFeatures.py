@@ -10,6 +10,7 @@ from pycbio.hgdata.bed import Bed
 from pycbio.sys.objDict import ObjDict
 from gencode_icedb.general.spliceJuncs import SpliceJuncs, spliceJuncsClassify
 
+# FIXME: this could easily be extended to handle non-transcript features, so change name.
 
 def _reverseComplementChildren(rcParent, features):
     "reverse complement a list of child Features, return None if features is None"
@@ -86,9 +87,7 @@ class Feature(object):
         """print the tree for debugging purposes., optionally prefixing first line with
         msg and indenting beneath it"""
         if msg is not None:
-            pmsg = msg + ": "
-            fh.write(pmsg)
-            indent += len(pmsg)
+            fh.write(msg+"\n")
         # use override-able implementation
         self._dumpImpl(fh, indent)
 
@@ -437,24 +436,27 @@ class IntronFeature(StructureFeature):
 
 class TranscriptFeatures(Feature):
     """
-    Set of features for a transcript derived from an alignment or annotation,
-    features are kept in chromosome order (positive strand).
+    Set of features for a transcript derived from an alignment or annotation.
+    The transcriptionStrand column is the direction of transcription.  For alignments,
+    this may differ from the rna strand for 3' ESTs.
     """
     name = "trans"
-    __slots__ = ("chrom", "rna", "cdsChrom", "features")
+    __slots__ = ("chrom", "rna", "transcriptionStrand", "cdsChrom", "features")
 
-    def __init__(self, chrom, rna, cdsChrom=None, attrs=None):
+    def __init__(self, chrom, rna, transcriptionStrand, cdsChrom=None, attrs=None):
         super(TranscriptFeatures, self).__init__(None, None, chrom, rna, attrs)
         if (chrom.size is not None) and (cdsChrom is not None) and (cdsChrom.size is None):
             raise TypeError("if chrom has size, cdsChrom must have size if specified")
         self.chrom = chrom
         self.rna = rna
+        self.transcriptionStrand = transcriptionStrand
         self.cdsChrom = cdsChrom
         self.features = None
 
     def __str__(self):
-        return "t={}/{}, rna={}/{} {}".format(str(self.chrom), self.chrom.strand,
-                                              str(self.rna), self.rna.strand, self.rna.size)
+        return "t={}/{}, rna={}/{} {} <{}>".format(str(self.chrom), self.chrom.strand,
+                                                   str(self.rna), self.rna.strand, self.rna.size,
+                                                   self.transcriptionStrand)
 
     def toStrTree(self):
         """recursively convert to a recursive tuple of strings representing
@@ -495,10 +497,12 @@ class TranscriptFeatures(Feature):
         "return a new TranscriptFeatures object that is reverse complemented"
         if self.chrom.size is None:
             raise TypeError("can't reverse-complement transcript without chrom.size: {}".format(self))
+        if self.rna.size is None:
+            raise TypeError("can't reverse-complement transcript without rna.size: {}".format(self))
         rcCdsChromLoc = self.cdsChrom.reverse() if self.cdsChrom is not None else None
 
         rcTrans = TranscriptFeatures(self.chrom.reverse(), self.rna.reverse(),
-                                     rcCdsChromLoc, deepcopy(self.attrs))
+                                     self.transcriptionStrand, rcCdsChromLoc, deepcopy(self.attrs))
         rcTrans.features = _reverseComplementChildren(rcTrans, self.features)
         return rcTrans
 

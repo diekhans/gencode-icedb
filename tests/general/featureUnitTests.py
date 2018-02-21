@@ -16,6 +16,7 @@ from gencode_icedb.general.evidFeatures import EvidencePslFactory
 from gencode_icedb.general.annotFeatures import AnnotationGenePredFactory
 from pycbio.hgdata.hgLite import sqliteConnect
 from pycbio.hgdata.hgLite import PslDbTable, GenePredDbTable
+from pycbio.hgdata.psl import Psl
 from pycbio.hgdata.genePred import GenePredReader
 from pycbio.sys.pprint2 import nswpprint
 
@@ -37,6 +38,7 @@ class GenomeSeqSrc(object):
 
     srcs = {
         "hg19": "/hive/data/genomes/hg19/hg19.2bit",
+        "hg38": "/hive/data/genomes/hg38/hg38.2bit",
         "mm10": "/hive/data/genomes/mm10/mm10.2bit",
     }
     readers = {}
@@ -149,7 +151,7 @@ class EvidenceTests(FeatureTestBase):
     def testAF010310(self):
         trans = self.__pslToEvidTranscript(self.__getSet1Psl("AF010310.1"))
         self._assertFeatures(trans,
-                             ('t=chr22:18900294-18905926/+, rna=AF010310.1:13-901/- 901',
+                             ('t=chr22:18900294-18905926/+, rna=AF010310.1:13-901/- 901 <->',
                               (('exon 18900294-18900875 rna=13-618',
                                 (('aln 18900294-18900452 rna=13-171',),
                                  ('rins None-None rna=171-174',),
@@ -213,7 +215,7 @@ class EvidenceTests(FeatureTestBase):
     def testX96484(self):
         trans = self.__pslToEvidTranscript(self.__getSet1Psl("X96484.1"))
         self._assertFeatures(trans,
-                             ('t=chr22:18893922-18899592/+, rna=X96484.1:48-1067/+ 1080',
+                             ('t=chr22:18893922-18899592/+, rna=X96484.1:48-1067/+ 1080 <+>',
                               (('exon 18893922-18893997 rna=48-123',
                                 (('aln 18893922-18893997 rna=48-123',),)),
                                ('intron 18893997-18894077 rna=123-123 sjBases=GT...AG (GT_AG)',
@@ -239,7 +241,7 @@ class EvidenceTests(FeatureTestBase):
     def testX96484NoSJ(self):
         trans = EvidencePslFactory(None).fromPsl(self.__getSet1Psl("X96484.1"))
         self._assertFeatures(trans,
-                             ('t=chr22:18893922-18899592/+, rna=X96484.1:48-1067/+ 1080',
+                             ('t=chr22:18893922-18899592/+, rna=X96484.1:48-1067/+ 1080 <+>',
                               (('exon 18893922-18893997 rna=48-123',
                                 (('aln 18893922-18893997 rna=48-123',),)),
                                ('intron 18893997-18894077 rna=123-123',
@@ -267,7 +269,7 @@ class EvidenceTests(FeatureTestBase):
         psl = PslDbSrc.obtainPsl("hg38-mm10.transMap", "ENST00000641446")
         trans = EvidencePslFactory(GenomeSeqSrc.obtain("mm10")).fromPsl(psl)
         self._assertFeatures(trans,
-                             ('t=chr4:148039043-148056154/+, rna=ENST00000641446:0-2820/+ 2820',
+                             ('t=chr4:148039043-148056154/+, rna=ENST00000641446:0-2820/+ 2820 <+>',
                               (('exon 148039043-148039141 rna=0-106',
                                 (('aln 148039043-148039050 rna=0-7',),
                                  ('cins 148039050-148039051 rna=None-None',),
@@ -373,7 +375,7 @@ class EvidenceTests(FeatureTestBase):
         trans = EvidencePslFactory(GenomeSeqSrc.obtain("mm10")).fromPsl(psl)
         transRc = trans.reverseComplement()
         self._assertFeatures(transRc,
-                             ('t=chr4:8451962-8469073/-, rna=ENST00000641446:0-2820/- 2820',
+                             ('t=chr4:8451962-8469073/-, rna=ENST00000641446:0-2820/- 2820 <+>',
                               (('exon 8451962-8451966 rna=0-4', (('aln 8451962-8451966 rna=0-4',),)),
                                ('intron 8451966-8452006 rna=4-70 sjBases=ca...tg (unknown)',
                                 (('cins 8451966-8452006 rna=None-None',), ('rins None-None rna=4-70',))),
@@ -577,6 +579,84 @@ class EvidenceTests(FeatureTestBase):
             rinsCnt += 1
         self.assertEqual(rinsCnt, 18)
 
+    def testEst3PslMinus(self):
+        # test handing 3' EST for negative strand gene
+        estPsl = ["620", "11", "0", "8", "0", "0", "3", "6544", "--", "BX371226.2", "645", "6", "645", "chr22", "50818468", "41938778", "41945961", "4", "49,80,92,418,", "0,49,129,221,", "8872507,8873164,8874767,8879272,"]
+        trans = EvidencePslFactory(GenomeSeqSrc.obtain("hg38")).fromPsl(Psl(estPsl), orientChrom=False)
+        self._assertFeatures(trans,
+                             ('t=chr22:8872507-8879690/-, rna=BX371226.2:0-639/- 645 <->',
+                              (('exon 8872507-8872556 rna=0-49', (('aln 8872507-8872556 rna=0-49',),)),
+                               ('intron 8872556-8873164 rna=49-49 sjBases=GT...AG (GT_AG)',
+                                (('cins 8872556-8873164 rna=None-None',),)),
+                               ('exon 8873164-8873244 rna=49-129', (('aln 8873164-8873244 rna=49-129',),)),
+                               ('intron 8873244-8874767 rna=129-129 sjBases=GT...AG (GT_AG)',
+                                (('cins 8873244-8874767 rna=None-None',),)),
+                               ('exon 8874767-8874859 rna=129-221',
+                                (('aln 8874767-8874859 rna=129-221',),)),
+                               ('intron 8874859-8879272 rna=221-221 sjBases=GT...AG (GT_AG)',
+                                (('cins 8874859-8879272 rna=None-None',),)),
+                               ('exon 8879272-8879690 rna=221-639',
+                                (('aln 8879272-8879690 rna=221-639',),)))))
+        self.assertEqual('-', trans.transcriptionStrand)
+        # check the same PSL can be oriented chrom +
+        trans = EvidencePslFactory(GenomeSeqSrc.obtain("hg38")).fromPsl(Psl(estPsl), orientChrom=True)
+        self._assertFeatures(trans,
+                             ('t=chr22:41938778-41945961/+, rna=BX371226.2:6-645/+ 645 <->',
+                              (('exon 41938778-41939196 rna=6-424',
+                                (('aln 41938778-41939196 rna=6-424',),)),
+                               ('intron 41939196-41943609 rna=424-424 sjBases=GT...AG (GT_AG)',
+                                (('cins 41939196-41943609 rna=None-None',),)),
+                               ('exon 41943609-41943701 rna=424-516',
+                                (('aln 41943609-41943701 rna=424-516',),)),
+                               ('intron 41943701-41945224 rna=516-516 sjBases=GT...AG (GT_AG)',
+                                (('cins 41943701-41945224 rna=None-None',),)),
+                               ('exon 41945224-41945304 rna=516-596',
+                                (('aln 41945224-41945304 rna=516-596',),)),
+                               ('intron 41945304-41945912 rna=596-596 sjBases=GT...AG (GT_AG)',
+                                (('cins 41945304-41945912 rna=None-None',),)),
+                               ('exon 41945912-41945961 rna=596-645',
+                                (('aln 41945912-41945961 rna=596-645',),)))))
+        self.assertEqual('-', trans.transcriptionStrand)
+
+    def testEst3PslPlus(self):
+        # test handing 3' EST for positive strand gene
+        estPsl = ["646", "3", "0", "1", "0", "0", "3", "9480", "+-", "BM969800.1", "675", "15", "665", "chr22", "50818468", "45422286", "45432416", "4", "133,167,228,122,", "15,148,315,543,", "5386052,5387402,5392293,5396060,"]
+        trans = EvidencePslFactory(GenomeSeqSrc.obtain("hg38")).fromPsl(Psl(estPsl), orientChrom=False)
+        self._assertFeatures(trans,
+                             ('t=chr22:5386052-5396182/-, rna=BM969800.1:15-665/+ 675 <+>',
+                              (('exon 5386052-5386185 rna=15-148', (('aln 5386052-5386185 rna=15-148',),)),
+                               ('intron 5386185-5387402 rna=148-148 sjBases=GT...AG (GT_AG)',
+                                (('cins 5386185-5387402 rna=None-None',),)),
+                               ('exon 5387402-5387569 rna=148-315',
+                                (('aln 5387402-5387569 rna=148-315',),)),
+                               ('intron 5387569-5392293 rna=315-315 sjBases=GT...AG (GT_AG)',
+                                (('cins 5387569-5392293 rna=None-None',),)),
+                               ('exon 5392293-5392521 rna=315-543',
+                                (('aln 5392293-5392521 rna=315-543',),)),
+                               ('intron 5392521-5396060 rna=543-543 sjBases=GT...AG (GT_AG)',
+                                (('cins 5392521-5396060 rna=None-None',),)),
+                               ('exon 5396060-5396182 rna=543-665',
+                                (('aln 5396060-5396182 rna=543-665',),)))))
+        self.assertEqual('+', trans.transcriptionStrand)
+        # check the same PSL can be oriented chrom +
+        trans = EvidencePslFactory(GenomeSeqSrc.obtain("hg38")).fromPsl(Psl(estPsl), orientChrom=True)
+        self._assertFeatures(trans,
+                             ('t=chr22:45422286-45432416/+, rna=BM969800.1:10-660/- 675 <+>',
+                              (('exon 45422286-45422408 rna=10-132',
+                                (('aln 45422286-45422408 rna=10-132',),)),
+                               ('intron 45422408-45425947 rna=132-132 sjBases=GT...AG (GT_AG)',
+                                (('cins 45422408-45425947 rna=None-None',),)),
+                               ('exon 45425947-45426175 rna=132-360',
+                                (('aln 45425947-45426175 rna=132-360',),)),
+                               ('intron 45426175-45430899 rna=360-360 sjBases=GT...AG (GT_AG)',
+                                (('cins 45426175-45430899 rna=None-None',),)),
+                               ('exon 45430899-45431066 rna=360-527',
+                                (('aln 45430899-45431066 rna=360-527',),)),
+                               ('intron 45431066-45432283 rna=527-527 sjBases=GT...AG (GT_AG)',
+                                (('cins 45431066-45432283 rna=None-None',),)),
+                               ('exon 45432283-45432416 rna=527-660',
+                                (('aln 45432283-45432416 rna=527-660',),)))))
+        self.assertEqual('+', trans.transcriptionStrand)
 
 class AnnotationTests(FeatureTestBase):
     def __getSet1Gp(self, acc):
@@ -590,7 +670,7 @@ class AnnotationTests(FeatureTestBase):
         # + strand
         trans = self.__gpToAnnotTranscript(self.__getSet1Gp("ENST00000215794.7"))
         self._assertFeatures(trans,
-                             ('t=chr22:18632665-18660164/+, rna=ENST00000215794.7:0-2129/+ 2129',
+                             ('t=chr22:18632665-18660164/+, rna=ENST00000215794.7:0-2129/+ 2129 <+>',
                               (('exon 18632665-18632989 rna=0-324',
                                 (("5'UTR 18632665-18632989 rna=0-324",),)),
                                ('intron 18632989-18640324 rna=324-324 sjBases=GC...AG (GC_AG)',),
@@ -633,7 +713,7 @@ class AnnotationTests(FeatureTestBase):
         # - strand
         trans = self.__gpToAnnotTranscript(self.__getSet1Gp("ENST00000334029.2"))
         self._assertFeatures(trans,
-                             ('t=chr22:18900294-18923964/+, rna=ENST00000334029.2:0-1985/- 1985',
+                             ('t=chr22:18900294-18923964/+, rna=ENST00000334029.2:0-1985/- 1985 <->',
                               (('exon 18900294-18900875 rna=0-581',
                                 (("3'UTR 18900294-18900687 rna=0-393",),
                                  ('CDS 18900687-18900875 rna=393-581 2',))),
@@ -682,7 +762,7 @@ class AnnotationTests(FeatureTestBase):
         factory = AnnotationGenePredFactory(None)
         trans = factory.fromGenePred(self.__getSet1Gp("ENST00000334029.2"))
         self._assertFeatures(trans,
-                             ('t=chr22:18900294-18923964/+, rna=ENST00000334029.2:0-1985/- 1985',
+                             ('t=chr22:18900294-18923964/+, rna=ENST00000334029.2:0-1985/- 1985 <->',
                               (('exon 18900294-18900875 rna=0-581',
                                 (("3'UTR 18900294-18900687 rna=0-393",),
                                  ('CDS 18900687-18900875 rna=393-581 2',))),
@@ -733,7 +813,7 @@ class AnnotationTests(FeatureTestBase):
         rcTrans = trans.reverseComplement()
         self.assertEqual(len(rcTrans.features), len(trans.features))
         self._assertFeatures(rcTrans,
-                             ('t=chr22:32380602-32404272/-, rna=ENST00000334029.2:0-1985/+ 1985',
+                             ('t=chr22:32380602-32404272/-, rna=ENST00000334029.2:0-1985/+ 1985 <->',
                               (('exon 32380602-32380664 rna=0-62',
                                 (("5'UTR 32380602-32380664 rna=0-62",),)),
                                ('intron 32380664-32385855 rna=62-62 sjBases=GT...AG (GT_AG)',),
@@ -785,7 +865,7 @@ class AnnotationTests(FeatureTestBase):
         rcTrans = trans.reverseComplement()
         self.assertEqual(len(rcTrans.features), len(trans.features))
         self._assertFeatures(rcTrans,
-                             ('t=chr22:32380602-32404272/-, rna=ENST00000334029.2:0-1985/+ 1985',
+                             ('t=chr22:32380602-32404272/-, rna=ENST00000334029.2:0-1985/+ 1985 <->',
                               (('exon 32380602-32380664 rna=0-62',
                                 (("5'UTR 32380602-32380664 rna=0-62",),)),
                                ('intron 32380664-32385855 rna=62-62',),
@@ -897,7 +977,7 @@ class AnnotationTests(FeatureTestBase):
         rcTrans = trans.reverseComplement()
         self.assertEqual(len(rcTrans.features), len(trans.features))
         self._assertFeatures(rcTrans,
-                             (('t=chr22:32615884-32643762/-, rna=ENST00000434390.1:0-1859/+ 1859',
+                             (('t=chr22:32615884-32643762/-, rna=ENST00000434390.1:0-1859/+ 1859 <->',
                                (('exon 32615884-32616025 rna=0-141',
                                  (('NC 32615884-32616025 rna=0-141',),)),
                                 ('intron 32616025-32622058 rna=141-141 sjBases=GT...AG (GT_AG)',),

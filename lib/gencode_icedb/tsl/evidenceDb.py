@@ -31,10 +31,14 @@ evidenceSourceTableMap = {
 
 
 class EvidenceReader(object):
-    """Object for accessing alignment evidence data"""
-    def __init__(self, evidDbFile, genomeReader=None, sources=EvidenceSource):
+    """Object for accessing alignment evidence data.
+    The source and nameSubset can be used to restrict the evidence returned for
+    debugging purposes.
+    """
+    def __init__(self, evidDbFile, genomeReader=None, sources=EvidenceSource, nameSubset=None):
         self.conn = sqliteConnect(evidDbFile)
         self.sources = sources
+        self.nameSubset = frozenset(nameSubset) if nameSubset is not None else None
         self.dbTables = {}  # by EvidenceSource
         for evidSrc in self.sources:
             self.dbTables[evidSrc] = PslDbTable(self.conn, evidenceSourceTableMap[evidSrc])
@@ -47,7 +51,10 @@ class EvidenceReader(object):
 
     def _makeTrans(self, psl):
         attrs = ObjDict(genbankProblem=self.genbankProblems.getProblem(psl.qName))
-        return self.evidFactory.fromPsl(psl, attrs)
+        return self.evidFactory.fromPsl(psl, attrs=attrs, orientChrom=True)
+
+    def _usePsl(self, psl):
+        return (self.nameSubset is None) or (psl.qName in self.nameSubset)
 
     def genByNames(self, evidSrc, names):
         "names can be a single name or a list"
@@ -55,16 +62,19 @@ class EvidenceReader(object):
             names = [names]
         for name in names:
             for psl in self.dbTables[evidSrc].getByQName(name):
-                yield self._makeTrans(psl)
+                if self._usePsl(psl):
+                    yield self._makeTrans(psl)
 
     def genOverlapping(self, evidSrc, chrom, start, end, rnaStrand=None, minExons=0):
         """Generator of overlapping alignments as TranscriptFeatures.
         """
         dbTable = self.dbTables[evidSrc]
+        # strand -- is used when PSLs of 3' ESTs have been reversed.
         strand = (None if rnaStrand is None
-                  else ('+', '++') if rnaStrand == '+' else ('-', '+-'))
+                  else ('+', '++') if rnaStrand == '+' else ('-', '+-', '--'))
         extraWhere = "blockCount >= {}".format(minExons) if minExons > 0 else None
         for psl in dbTable.getTRangeOverlap(chrom, start, end, strand=strand, extraWhere=extraWhere):
-            trans = self._makeTrans(psl)
-            if len(trans.getFeaturesOfType(ExonFeature)) >= minExons:
-                yield trans
+            if self._usePsl(psl):
+                trans = self._makeTrans(psl)
+                if len(trans.getFeaturesOfType(ExonFeature)) >= minExons:
+                    yield trans

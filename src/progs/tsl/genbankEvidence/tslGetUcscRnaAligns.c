@@ -204,7 +204,8 @@ static struct psl* loadPsls(struct sqlConnection *hgConn, char *table,
 /* get hash key for estOrientInfo records. WARNING static return */
 static char *getOrientInfoKey(char *name, char *chrom,
                               unsigned chromStart, unsigned chromEnd) {
-    static char nameNoVer[64], key[1024];
+    static char key[1024];
+    char nameNoVer[64];
     safecpy(nameNoVer, sizeof(nameNoVer), name);
     char *dot = strchr(nameNoVer, '.');
     if (dot != NULL) {
@@ -237,8 +238,12 @@ static void loadEstOrientInfosRange(struct sqlConnection *hgConn, char *table,
 static struct hash* loadEstOrientInfos(struct sqlConnection *hgConn, char *table,
                                        struct ChromSpec *chromSpecs) {
     struct hash* orientInfoMap = hashNew(18);
-    for (struct ChromSpec *chromSpec = chromSpecs; chromSpec != NULL; chromSpec = chromSpec->next) {
-        loadEstOrientInfosRange(hgConn, table, chromSpec, orientInfoMap);
+    if (chromSpecs != NULL) {
+        for (struct ChromSpec *chromSpec = chromSpecs; chromSpec != NULL; chromSpec = chromSpec->next) {
+            loadEstOrientInfosRange(hgConn, table, chromSpec, orientInfoMap);
+        }
+    } else {
+        loadEstOrientInfosRange(hgConn, table, NULL, orientInfoMap);
     }
     return orientInfoMap;
 }

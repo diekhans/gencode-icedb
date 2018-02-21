@@ -15,6 +15,8 @@ The current algorithm is:
      - tsl4 - the best supporting EST is flagged as suspect
      - tsl5 - no single transcript supports the model structure
 """
+import six
+import sys
 import re
 from collections import namedtuple, defaultdict
 from pycbio.sys import fileOps
@@ -23,13 +25,16 @@ from gencode_icedb.tsl.supportDefs import EvidenceSupport, TrascriptionSupportLe
 from gencode_icedb.tsl.evidenceDb import EvidenceSource
 from gencode_icedb.general.gencodeDb import findAnnotationBounds
 
+debug = False
+# debug = True
 
 # limits on size of as single indel in an exon.
-#exonPolymorphicSizeLimit = 36
+# exonPolymorphicSizeLimit = 36
 
 # fraction of allowed total indel size relative exon length
-#exonPolymorphicFactionLimit = 0.1
+# exonPolymorphicFactionLimit = 0.1
 
+# FIXME: very lose for comparability with old TSL code
 exonPolymorphicSizeLimit = 5000
 exonPolymorphicFactionLimit = 1.0
 
@@ -260,9 +265,12 @@ def compareMegWithEvidence(annotTrans, evidTrans, allowExtension=False):
     end of the annotation.  This does not check txStart/txEnd is consistent
     with evidence, so this can use to find extensions of exons."""
     try:
+        if debug:
+            annotTrans.dump(msg="annotation")
+            evidTrans.dump(msg="evidence")
         return _compareMegWithEvidenceImpl(annotTrans, evidTrans, allowExtension=allowExtension)
     except Exception as ex:
-        raise Exception("Bug evaluating {} with {}".format(annotTrans.rna.name, evidTrans.rna.name)) from ex
+        six.raise_from(Exception("Bug evaluating {} with {}".format(annotTrans.rna.name, evidTrans.rna.name)), ex)
 
 
 class EvidenceCache(object):

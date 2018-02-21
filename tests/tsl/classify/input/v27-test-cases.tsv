@@ -20,3 +20,4 @@ chrY	630806	659411	ENSG00000185960.13	ENST00000381575.6	SHOX	protein_coding	1	ma
 chr1	8874855	8879249	ENSG00000074800.13	ENST00000489867.1	ENO1	protein_coding	1	manual	EST AA227241.1 has two 5' exons overlapping 5' exon
 chr1	11013715	11024183	ENSG00000120948.16	ENST00000315091.7	TARDBP	protein_coding	5	manual	final two annotation exons mostly covered by an a single exon of BC071657.1 broke extend mode
 chr14	24249113	24263210	ENSG00000092295.11	ENST00000206765.10	TGM1	protein_coding	1	manual	has evidence with 21 bases unaligned in UTR
+chr10	5878121	5889906	ENSG00000134461.15	ENST00000191063.8	ANKRD16	protein_coding	3	manual	supported by EST AL558145.3, however this was not correctly reverse-complemented

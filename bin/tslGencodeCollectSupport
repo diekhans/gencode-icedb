@@ -20,7 +20,9 @@ def parseArgs():
     parser.add_argument('--allDetails', action="store_true", default=False,
                         help="""write details for all evaluations the detailsTsv file, not just supporting ones""")
     parser.add_argument('--evidSource', dest='evidSources', action='append',
-                        type=EvidenceSource, default=[e for e in EvidenceSource],
+                        type=EvidenceSource,
+                        help="""only used evidence from this source, maybe repeated""")
+    parser.add_argument('--evidId', dest='evidIds', action='append', default=None,
                         help="""only used evidence from this source, maybe repeated""")
     parser.add_argument('gencodeDb',
                         help="""GENCODE sqlite3 database from gencodeDbLoad""")
@@ -30,7 +32,10 @@ def parseArgs():
                         help="""output of TSL categories""")
     parser.add_argument('gencodeIds', nargs='+',
                         help="""GENCODE gene ids, including versions.""")
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.evidSources is None:
+        args.evidSources = [e for e in EvidenceSource]
+    return args
 
 
 def classifyGenes(evidenceReader, genesTranses, tslTsvFh, detailsTsvFh):
@@ -41,7 +46,7 @@ def classifyGenes(evidenceReader, genesTranses, tslTsvFh, detailsTsvFh):
 
 def tslGencodeCollectSupport(args):
     gencodeReader = UcscGencodeReader(args.gencodeDb)
-    evidenceReader = EvidenceReader(args.evidenceDb)
+    evidenceReader = EvidenceReader(args.evidenceDb, sources=args.evidSources, nameSubset=args.evidIds)
     genesTranses = gencodeReader.getByGencodeIdsGrouped(args.gencodeIds)
     fileOps.ensureFileDir(args.tslTsv)
     if args.detailsTsv is not None:

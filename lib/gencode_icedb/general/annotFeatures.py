@@ -148,6 +148,6 @@ class AnnotationGenePredFactory(object):
 
         chrom = Coords(gp.chrom, gp.txStart, gp.txEnd, '+', chromSize)
         rna = Coords(gp.name, 0, rnaSize, gp.strand, rnaSize)
-        trans = TranscriptFeatures(chrom, rna, cdsChrom, attrs)
+        trans = TranscriptFeatures(chrom, rna, transcriptionStrand=gp.strand, cdsChrom=cdsChrom, attrs=attrs)
         trans.features = tuple(self._buildFeatures(gp, trans))
         return trans
