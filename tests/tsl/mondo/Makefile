@@ -6,11 +6,9 @@ ROOT = ../../..
 include ${ROOT}/config.mk
 include ${ROOT}/tests/tsl/tslTestDefs.mk
 
-evidDir = evid.d
-evidDb = ${evidDir}/hsEvid.db
-
-annonDir = annon.d
-annonDb = ${annonDir}/hsAnnon.db
+dbDir = db.d
+evidDb = ${dbDir}/hsEvid.db
+annonDb = ${dbDir}/hsAnnon.db
 
 tslDb = output/tsl.db
 cmpTsv = output/cmp.tsv
