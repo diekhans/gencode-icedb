@@ -12,6 +12,7 @@ from gencode_icedb.general.spliceJuncs import SpliceJuncs, spliceJuncsClassify
 
 # FIXME: this could easily be extended to handle non-transcript features, so change name.
 
+
 def _reverseComplementChildren(rcParent, features):
     "reverse complement a list of child Features, return None if features is None"
     if features is None:
@@ -87,7 +88,7 @@ class Feature(object):
         """print the tree for debugging purposes., optionally prefixing first line with
         msg and indenting beneath it"""
         if msg is not None:
-            fh.write(msg+"\n")
+            fh.write(msg + "\n")
         # use override-able implementation
         self._dumpImpl(fh, indent)
 

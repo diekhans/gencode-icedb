@@ -46,17 +46,17 @@
        14 supToNa
 ** notes
 
-* run #3 2018-02-19b:
+* run #3 2018-02-20:
   exonPolymorphicSizeLimit = 5000
   exonPolymorphicFactionLimit = 1.0
-
+  fixed 3' EST
 ** counts
-   178103 same
-    23589 better
-    13199 worse
-     2154 drop
-     1645 naToSup
-       14 supToNa
+ 183436 same
+  23887 better
+   7568 worse
+   2154 drop
+   1645 naToSup
+     14 supToNa
 ** examples:
 *** ENST00000573491.5	tsl3	tslNA	supToNa  - OR3A2 olfactory receptor
     V26 ZIM2-AS1/antisense
@@ -65,73 +65,7 @@
     V26 AL928768.3/lincRNA
     V27 IGHA2/IG_C_gene
     
-*** ENST00000191063.8	tsl3	tsl5	worse
-    < ENST00000191063.8	AL558145.3	EST	est1	
-    > missing
-    - in all_est, ucsc_est_aln
-     	 +	AL558145.3	1038	51	944	chr10	133797422	5878172	5889284	11
-      ** negative strand gene, EST shows `-' browser, but PSL not adjusted
-
-    chr10:5878172-5889284
-    ../../../bin/tslGetUcscRnaAligns -verbose=3 -chromSpec=chr10:5878172-5889284 hg38 est foo.db >&log
-    load orientInfo: AL558145@chr10:5878172-5889284
-    load: AL558145.3:51-944 <=> chr10:5878172-5889284 (+) blks: 11
-    isPslReversed: AL558145.3 no orientInfo (AL558145.3@chr10:5878172-5889284)
-    store: AL558145.3:51-944 <=> chr10:5878172-5889284 (+) blks: 11
-
-*** ENST00000225573.5	tsl1	tsl2	worse
-    < ENST00000225573.4	AK223242.1	mRNA	good	
-    < ENST00000225573.4	BC006525.2	mRNA	good	mgcOrfeome
-    < ENST00000225573.4	KR709979.1	mRNA	good	
-    > UCSC_RNA	AK223242.1	feat_count_mismatch	
-    > UCSC_RNA	BC006525.2	feat_count_mismatch	
-    > UCSC_RNA	KR709979.1	feat_count_mismatch	
-    ** annotation changed
-*** ENST00000252785.3	tsl2	tsl3	worse
-    < BX391428.2	EST	est1	
-    < BX400169.2	EST	est1	
-    < BX391429.2	EST	est1	
-    < BX389150.2	EST	est1	
-    ** most likely EST strand bug
-
-*** ENST00000284637.13	tsl1	tsl5	worse
-    < BC053671.1	mRNA	good	mgcOrfeome
-    < BC006525.2	mRNA	good	mgcOrfeome
-    < KR712208.1	mRNA	good	
-    > UCSC_RNA	BC053671.1	internal_unaligned	
-    > UCSC_RNA	BC006525.2	feat_count_mismatch	
-    > UCSC_RNA	KR712208.1	feat_count_mismatch	
-
-*** ENST00000288197.9	tsl1	tsl5	worse
-    < AF516696.1	mRNA	good	
-    > UCSC_RNA	AF516696.1	feat_mismatch	
-    bounry differences:
-      < intron 55073557-55073776
-      > intron 55073559-55073778
-
-*** ENST00000361569.8	tsl1	tsl5	worse
-    < JE980352.1	mRNA	good	
-    < JA482060.1	mRNA	good	
-    < U07620.1	mRNA	good	
-    > UCSC_RNA	JE980352.1	feat_mismatch	
-    > UCSC_RNA	JA482060.1	feat_mismatch	
-    > UCSC_RNA	U07620.1	feat_mismatch	
-    bounry differences:
-    <   intron 86029287-86031367
-    >   intron 86029274-86031367
-
 ** notes
    - supToNa cases that were not filtered in V26 before due to changing metadata
    - drop are on patches
 
-
-* run #4 2018-02-19c:
-  exonPolymorphicSizeLimit = 5000
-  exonPolymorphicFactionLimit = 1.0
-** counts
-   178101 same
-    23591 better
-    13199 worse
-     2154 drop
-     1645 naToSup
-       14 supToNa

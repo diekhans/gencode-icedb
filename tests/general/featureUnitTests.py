@@ -658,6 +658,7 @@ class EvidenceTests(FeatureTestBase):
                                 (('aln 45432283-45432416 rna=527-660',),)))))
         self.assertEqual('+', trans.transcriptionStrand)
 
+
 class AnnotationTests(FeatureTestBase):
     def __getSet1Gp(self, acc):
         return GenePredDbSrc.obtainGenePred("set1", acc)

@@ -16,7 +16,6 @@ The current algorithm is:
      - tsl5 - no single transcript supports the model structure
 """
 import six
-import sys
 import re
 from collections import namedtuple, defaultdict
 from pycbio.sys import fileOps
@@ -286,7 +285,7 @@ class EvidenceCache(object):
 
     def _load(self, evidSrc):
         overGen = self.evidenceReader.genOverlapping(evidSrc, self.bounds.name, self.bounds.start, self.bounds.end,
-                                                     rnaStrand=self.bounds.strand, minExons=2)
+                                                     transcriptionStrand=self.bounds.strand, minExons=2)
         self.evidBySrc[evidSrc] = tuple(sorted(overGen, key=lambda a: (a.rna.name, a.chrom.name, a.chrom.start)))
 
     def get(self, evidSrc):

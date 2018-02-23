@@ -65,13 +65,13 @@ class EvidenceReader(object):
                 if self._usePsl(psl):
                     yield self._makeTrans(psl)
 
-    def genOverlapping(self, evidSrc, chrom, start, end, rnaStrand=None, minExons=0):
+    def genOverlapping(self, evidSrc, chrom, start, end, transcriptionStrand=None, minExons=0):
         """Generator of overlapping alignments as TranscriptFeatures.
         """
         dbTable = self.dbTables[evidSrc]
         # strand -- is used when PSLs of 3' ESTs have been reversed.
-        strand = (None if rnaStrand is None
-                  else ('+', '++') if rnaStrand == '+' else ('-', '+-', '--'))
+        strand = (None if transcriptionStrand is None
+                  else ('+', '++') if transcriptionStrand == '+' else ('-', '+-', '--'))
         extraWhere = "blockCount >= {}".format(minExons) if minExons > 0 else None
         for psl in dbTable.getTRangeOverlap(chrom, start, end, strand=strand, extraWhere=extraWhere):
             if self._usePsl(psl):

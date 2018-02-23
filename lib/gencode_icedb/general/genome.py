@@ -82,6 +82,8 @@ class GenomeReaderFactory(object):
     def factoryFromCmdOptions(opts):
         """create a factory given options parse from command line"""
         # this will check sanity of options
+        if opts.genomeSeqs is None:
+            raise Exception("must specify --genomeSeqs")
         return GenomeReaderFactory(opts.genomeSeqs)
 
     @staticmethod
