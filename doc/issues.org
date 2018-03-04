@@ -24,3 +24,4 @@
   - would have to compute on the fly for Ensembl
 * TransFeatures could be immutable namedtuple if parent was found through a weak reference lookup table.
 * Make TSL thresholds configurable
+* is genePredIntrons needed any more?

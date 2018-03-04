@@ -3,7 +3,7 @@ from pycbio.hgdata.coords import Coords
 from pycbio.hgdata.frame import Frame
 from gencode_icedb.general.spliceJuncs import spliceJuncsGetSeqs
 from gencode_icedb.tsl import minIntronSize
-from gencode_icedb.general.transFeatures import ExonFeature, IntronFeature, TranscriptFeatures, Utr5RegionFeature, CdsRegionFeature, Utr3RegionFeature, NonCodingRegionFeature
+from gencode_icedb.general.transFeatures import ExonFeature, IntronFeature, TranscriptFeatures, Utr5RegionFeature, CdsRegionFeature, Utr3RegionFeature, GapAnnotFeature, NonCodingRegionFeature
 
 # FIXME: consistent variable naming: annot, annotTrans transAnnot ..
 
@@ -45,7 +45,8 @@ class AnnotationGenePredFactory(object):
         return gp.exons[iBlk].start - gp.exons[iBlk - 1].end
 
     def _findExonEnd(self, gp, iBlkStart):
-        "finds half-open end of blocks covering current exon and total base, less closed gaps"
+        """finds half-open end of blocks covering current exon and total base,
+        less closed gaps"""
         iBlkEnd = iBlkStart + 1
         qCount = gp.exons[iBlkStart].size()
         while (iBlkEnd < len(gp.exons)) and (self._tGapSize(gp, iBlkEnd) < minIntronSize):
@@ -53,14 +54,20 @@ class AnnotationGenePredFactory(object):
             iBlkEnd += 1
         return iBlkEnd, qCount
 
-    def _getUtr5Annot(self, annot, rnaNext, exon, annotFeatures):
+    def _addGapAnnot(self, chromStart, chromEnd, exon, annotFeatures):
+        gap = GapAnnotFeature(exon, len(annotFeatures),
+                              exon.chrom.subrange(chromStart, chromEnd))
+        annotFeatures.append(gap)
+        return gap.chrom.end
+
+    def _addUtr5Annot(self, annot, rnaNext, exon, annotFeatures):
         utr5 = Utr5RegionFeature(exon, len(annotFeatures),
                                  exon.chrom.subrange(annot.start, annot.end),
                                  exon.rna.subrange(rnaNext, rnaNext + annot.size()))
         annotFeatures.append(utr5)
         return utr5.rna.end
 
-    def _getCdsAnnot(self, annot, rnaNext, exon, frame, annotFeatures):
+    def _addCdsAnnot(self, annot, rnaNext, exon, frame, annotFeatures):
         cds = CdsRegionFeature(exon, len(annotFeatures),
                                exon.chrom.subrange(annot.start, annot.end),
                                exon.rna.subrange(rnaNext, rnaNext + annot.size()),
@@ -68,50 +75,65 @@ class AnnotationGenePredFactory(object):
         annotFeatures.append(cds)
         return cds.rna.end
 
-    def _getUtr3Annot(self, annot, rnaNext, exon, annotFeatures):
+    def _addUtr3Annot(self, annot, rnaNext, exon, annotFeatures):
         utr3 = Utr3RegionFeature(exon, len(annotFeatures),
                                  exon.chrom.subrange(annot.start, annot.end),
                                  exon.rna.subrange(rnaNext, rnaNext + annot.size()))
         annotFeatures.append(utr3)
         return utr3.rna.end
 
-    def _getCodingFeatures(self, blk, rnaNext, exon, annotFeatures):
+    def _addBlkCodingFeaturesPlus(self, blk, rnaNext, exon, annot, annotFeatures):
+        if annot.utr5 is not None:
+            rnaNext = self._addUtr5Annot(annot.utr5, rnaNext, exon, annotFeatures)
+        if annot.cds is not None:
+            rnaNext = self._addCdsAnnot(annot.cds, rnaNext, exon, Frame(blk.frame), annotFeatures)
+        if annot.utr3 is not None:
+            rnaNext = self._addUtr3Annot(annot.utr3, rnaNext, exon, annotFeatures)
+        return rnaNext
+
+    def _addBlkCodingFeaturesMinus(self, blk, rnaNext, exon, annot, annotFeatures):
+        if annot.utr3 is not None:
+            rnaNext = self._addUtr3Annot(annot.utr3, rnaNext, exon, annotFeatures)
+        if annot.cds is not None:
+            rnaNext = self._addCdsAnnot(annot.cds, rnaNext, exon, Frame(blk.frame) - blk.size(), annotFeatures)
+        if annot.utr5 is not None:
+            rnaNext = self._addUtr5Annot(annot.utr5, rnaNext, exon, annotFeatures)
+        return rnaNext
+
+    def _addBlkCodingFeatures(self, blk, rnaNext, exon, annotFeatures):
         annot = blk.featureSplit()
         if blk.gene.strand == '+':
-            if annot.utr5 is not None:
-                rnaNext = self._getUtr5Annot(annot.utr5, rnaNext, exon, annotFeatures)
-            if annot.cds is not None:
-                rnaNext = self._getCdsAnnot(annot.cds, rnaNext, exon, Frame(blk.frame), annotFeatures)
-            if annot.utr3 is not None:
-                rnaNext = self._getUtr3Annot(annot.utr3, rnaNext, exon, annotFeatures)
+            return self._addBlkCodingFeaturesPlus(blk, rnaNext, exon, annot, annotFeatures)
         else:
-            if annot.utr3 is not None:
-                rnaNext = self._getUtr3Annot(annot.utr3, rnaNext, exon, annotFeatures)
-            if annot.cds is not None:
-                rnaNext = self._getCdsAnnot(annot.cds, rnaNext, exon, Frame(blk.frame) - blk.size(), annotFeatures)
-            if annot.utr5 is not None:
-                rnaNext = self._getUtr5Annot(annot.utr5, rnaNext, exon, annotFeatures)
-        return rnaNext
+            return self._addBlkCodingFeaturesMinus(blk, rnaNext, exon, annot, annotFeatures)
 
     def _addCodingFeatures(self, gp, iBlkStart, iBlkEnd, rnaStart, rnaEnd, exon):
         annotFeatures = []
         rnaNext = rnaStart
+        chromNext = gp.exons[iBlkStart].start
         for iBlk in range(iBlkStart, iBlkEnd):
-            rnaNext = self._getCodingFeatures(gp.exons[iBlk], rnaNext, exon, annotFeatures)
+            if chromNext != gp.exons[iBlk].start:
+                self._addGapAnnot(chromNext, gp.exons[iBlk].start, exon, annotFeatures)
+            rnaNext = self._addBlkCodingFeatures(gp.exons[iBlk], rnaNext, exon, annotFeatures)
+            chromNext = annotFeatures[-1].chrom.end
         assert rnaNext == rnaEnd
         exon.annotFeatures = tuple(annotFeatures)
 
+    def _addNonCodingFeature(self, blk, rnaNext, exon, annotFeatures):
+        feat = NonCodingRegionFeature(exon, len(annotFeatures),
+                                      exon.chrom.subrange(blk.start, blk.end),
+                                      exon.rna.subrange(rnaNext, rnaNext + blk.size()))
+        annotFeatures.append(feat)
+        return feat.rna.end
+
     def _addNonCodingFeatures(self, gp, iBlkStart, iBlkEnd, rnaStart, rnaEnd, exon):
-        nonCodingFeatures = []
+        annotFeatures = []
         rnaNext = rnaStart
         for iBlk in range(iBlkStart, iBlkEnd):
-            gpExon = gp.exons[iBlk]
-            nonCodingFeatures.append(NonCodingRegionFeature(exon, len(nonCodingFeatures),
-                                                            exon.chrom.subrange(gpExon.start, gpExon.end),
-                                                            exon.rna.subrange(rnaNext, rnaNext + gpExon.size())))
-            rnaNext += gpExon.size()
-        assert rnaNext == rnaEnd, "rnaNext={}, rnaEnd={}".format(rnaNext, rnaEnd)
-        exon.annotFeatures = tuple(nonCodingFeatures)
+            blk = gp.exons[iBlk]
+            rnaNext = self._addNonCodingFeature(blk, rnaNext, exon, annotFeatures)
+        assert rnaNext == rnaEnd, "rnaNext={} != rnaEnd={}".format(rnaNext, rnaEnd)
+        exon.annotFeatures = tuple(annotFeatures)
 
     def _makeExon(self, gp, iBlkStart, iBlkEnd, rnaStart, rnaEnd, trans, iFeat):
         exon = ExonFeature(trans, iFeat,

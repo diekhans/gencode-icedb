@@ -11,6 +11,7 @@ from pycbio.sys.objDict import ObjDict
 from gencode_icedb.general.spliceJuncs import SpliceJuncs, spliceJuncsClassify
 
 # FIXME: this could easily be extended to handle non-transcript features, so change name.
+# FIXME: should rna be None, rather than start/end=None,None
 
 
 def _reverseComplementChildren(rcParent, features):
@@ -244,6 +245,14 @@ class AnnotationFeature(Feature):
                     return None
                 elif len(pprev.annotFeatures) > 0:
                     return pprev.annotFeatures[-1]
+
+
+class GapAnnotFeature(AnnotationFeature):
+    "A gap in the annotation for unspecified reasons"
+    name = "gap"
+    __slots__ = ()
+    def __init__(self, parent, iParent, chrom, attrs=None):
+        super(GapAnnotFeature, self).__init__(parent, iParent, chrom, None, attrs)
 
 
 class Utr5RegionFeature(AnnotationFeature):
