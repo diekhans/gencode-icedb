@@ -251,6 +251,7 @@ class GapAnnotFeature(AnnotationFeature):
     "A gap in the annotation for unspecified reasons"
     name = "gap"
     __slots__ = ()
+
     def __init__(self, parent, iParent, chrom, attrs=None):
         super(GapAnnotFeature, self).__init__(parent, iParent, chrom, None, attrs)
 

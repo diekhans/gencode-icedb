@@ -12,6 +12,7 @@ from gencode_icedb.general.annotFeatures import AnnotationGenePredFactory
 
 # FIXME: use Coords here
 # FIXME: rename module to gencodeReader.py
+# FIXME: transcriptType filter should be done in sql
 
 # tables in sqlite databases
 GENCODE_ANN_TABLE = "gencode_ann"
@@ -27,10 +28,12 @@ def _isChrYPar(annotTrans):
 
 class UcscGencodeReader(object):
     """Object for accessing a GENCODE sqlite database with UCSC tables """
-    def __init__(self, gencodeDbFile, genomeReader=None, filterChrYPar=True):
+    def __init__(self, gencodeDbFile, genomeReader=None, filterChrYPar=True,
+                 transcriptTypes=None):
         self.conn = None
         self.conn = sqliteConnect(gencodeDbFile)
         self.filterChrYPar = filterChrYPar
+        self.transcriptTypes = frozenset(transcriptTypes) if transcriptTypes is not None else None
         self.genePredDbTable = GenePredDbTable(self.conn, GENCODE_ANN_TABLE)
         self.attrDbTable = GencodeAttrsDbTable(self.conn, GENCODE_ATTRS_TABLE)
         self.tagDbTable = GencodeTagDbTable(self.conn, GENCODE_TAG_TABLE)
@@ -50,6 +53,8 @@ class UcscGencodeReader(object):
         "will return None if chrY PAR trans and these are being filtered"
         transAnnot = self.annotFactory.fromGenePred(gp, self._getAttrs(gp))
         if self.filterChrYPar and _isChrYPar(transAnnot):
+            return None
+        elif (self.transcriptTypes is not None) and (transAnnot.attrs.transcriptType not in self.transcriptTypes):
             return None
         else:
             return transAnnot
@@ -137,7 +142,7 @@ class UcscGencodeReader(object):
         return transAnnots
 
     def getAll(self):
-        """generator get overlapping annotations as TranscriptFeatures"""
+        """Get all annotations as TranscriptFeatures"""
         transAnnots = []
         for gp in self.genePredDbTable.getAll():
             transAnnot = self._makeTransAnnot(gp)
