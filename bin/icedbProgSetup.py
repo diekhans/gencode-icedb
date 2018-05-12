@@ -20,7 +20,6 @@ def _addExtern(module, relDir):
 
 
 _addExtern("pycbio", "lib")
-_addExtern("pipettor", "build/lib")
 _addExtern("ccds2", "output/lib/py")
 sys.path.insert(0, os.path.join(rootDir, "lib"))
 
