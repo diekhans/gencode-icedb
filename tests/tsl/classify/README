@@ -1,4 +1,4 @@
 
 - input/v27-test-cases.tsv:
   - a manually select subset entries found with:
-      hgsql hg38 <etc/getGeneTsl.sql >v27tsl.tsv
+      bin/getTestCaseInfo id ... >tmp.tsv

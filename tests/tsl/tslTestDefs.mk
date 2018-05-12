@@ -7,6 +7,13 @@ hsGrcRefAssembly = GRCh38
 hsGrcRefAssemblyReport = ${ROOT}/tests/tsl/etc/GCF_000001405.36_GRCh38.p10_assembly_report.txt
 hsUcscGenomeDb = hg38
 
+mmGencodeVer = VM16
+mmEnsemblVer = 91_38
+mmEnsemblCDnaDb = mus_musculus_cdna_${hsEnsemblVer}
+mmGrcRefAssembly = GRCh38
+mmGrcRefAssemblyReport = ${ROOT}/tests/tsl/etc/GCF_000001405.36_GRCh38.p10_assembly_report.txt
+mmUcscGenomeDb = mm10
+
 
 gencodeDbLoad = ${BINDIR}/gencodeDbLoad
 tslGetUcscRnaAligns = ${BINDIR}/tslGetUcscRnaAligns

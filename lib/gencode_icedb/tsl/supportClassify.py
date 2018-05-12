@@ -27,15 +27,17 @@ from gencode_icedb.general.gencodeDb import findAnnotationBounds
 debug = False
 # debug = True
 
+## FIXME: need to be able to parameterize
+
 # limits on size of as single indel in an exon.
-# exonPolymorphicSizeLimit = 36
+exonPolymorphicSizeLimit = 12
 
 # fraction of allowed total indel size relative exon length
-# exonPolymorphicFactionLimit = 0.1
+exonPolymorphicFactionLimit = 0.1
 
 # FIXME: very lose for comparability with old TSL code
-exonPolymorphicSizeLimit = 5000
-exonPolymorphicFactionLimit = 1.0
+#exonPolymorphicSizeLimit = 5000
+#exonPolymorphicFactionLimit = 1.0
 
 
 # FIXME these are from the ccds2/modules/gencode/src/lib/gencode/data/gencodeGenes.py, migrate to new module
