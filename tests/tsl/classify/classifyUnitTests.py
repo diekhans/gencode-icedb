@@ -12,7 +12,7 @@ from gencode_icedb.general.genome import GenomeReaderFactory
 from gencode_icedb.general.gencodeDb import UcscGencodeReader
 from gencode_icedb.tsl.evidenceDb import EvidenceSource, EvidenceReader
 from gencode_icedb.tsl.supportDefs import EvidenceSupport
-from gencode_icedb.tsl.supportClassify import compareMegWithEvidence, writeTsvHeaders, classifyGeneTranscripts
+from gencode_icedb.tsl.supportClassify import tightExonPolymorphicSizeLimit, tightExonPolymorphicFactionLimit, EvidenceQualityEval, MegSupportEvaluator, FullLengthSupportEvaluator
 
 
 class EvidCompareTest(TestCaseBase):
@@ -26,12 +26,19 @@ class EvidCompareTest(TestCaseBase):
         cls.genomeReader = GenomeReaderFactory.factoryFromUcscDb(cls.UCSC_DB).obtain()
         cls.gencodeReader = UcscGencodeReader(cls.GENCODE_DB, cls.genomeReader)
         cls.evidenceReader = EvidenceReader(cls.EVIDENCE_DB, cls.genomeReader)
+        cls.qualEval = EvidenceQualityEval(tightExonPolymorphicSizeLimit, tightExonPolymorphicFactionLimit)
+        cls.stdEvaluator = MegSupportEvaluator(cls.qualEval, allowExtension=False)
+        cls.extensionEvaluator = MegSupportEvaluator(cls.qualEval, allowExtension=True)
 
     @classmethod
     def tearDownClass(cls):
         cls.genomeReader.close()
         cls.gencodeReader.close()
         cls.evidenceReader.close()
+
+    @classmethod
+    def _getEvaluator(cls, allowExtension):
+        return cls.extensionEvaluator if allowExtension else cls.stdEvaluator
 
     def _getAnnot(self, transId):
         return self.gencodeReader.getByTranscriptIds(transId)[0]
@@ -41,21 +48,23 @@ class EvidCompareTest(TestCaseBase):
 
     def _evalAnnotTransEvid(self, annotTrans, evidSrc, evidNames=None, allowExtension=False):
         "low-level testing of specific cases"
+        evaluator = self._getEvaluator(allowExtension)
         if evidNames is None:
             evidTranses = self.evidenceReader.genOverlapping(evidSrc, annotTrans.chrom.name, annotTrans.chrom.start, annotTrans.chrom.end, annotTrans.rna.strand)
         else:
             evidTranses = self.evidenceReader.genByNames(evidSrc, evidNames)
         for evidTrans in evidTranses:
             yield (annotTrans.rna.name, evidTrans.rna.name,
-                   compareMegWithEvidence(annotTrans, evidTrans, allowExtension=allowExtension))
+                   evaluator.compare(annotTrans, evidTrans))
 
     def _classifyTest(self, annotTranses, noDiff=False):
         "TSL testing with TSV"
         outTslTsv = self.getOutputFile(".tsl.tsv")
         outDetailsTsv = self.getOutputFile(".details.tsv")
+        evaluator = FullLengthSupportEvaluator(self.evidenceReader, self.qualEval)
         with open(outTslTsv, 'w') as tslTsvFh, open(outDetailsTsv, 'w') as detailsTsvFh:
-            writeTsvHeaders(tslTsvFh, detailsTsvFh)
-            classifyGeneTranscripts(self.evidenceReader, annotTranses, tslTsvFh, detailsTsvFh)
+            evaluator.writeTsvHeaders(tslTsvFh, detailsTsvFh)
+            evaluator.classifyGeneTranscripts(annotTranses, tslTsvFh, detailsTsvFh)
         if not noDiff:
             self.diffFiles(self.getExpectedFile(".tsl.tsv"), outTslTsv)
             self.diffFiles(self.getExpectedFile(".details.tsv"), outDetailsTsv)
@@ -97,7 +106,8 @@ class EvidCompareTest(TestCaseBase):
 
     def _rawPslCmpr(self, annotTrans, evidRawPsl, allowExtension):
         evidTrans = self._pslToTrans(Psl(evidRawPsl))
-        return compareMegWithEvidence(annotTrans, evidTrans, allowExtension=allowExtension)
+        evaluator = self._getEvaluator(allowExtension)
+        return evaluator.compare(annotTrans, evidTrans)
 
     def testExact(self):
         # test allowExtension with fake psl that exactly matches

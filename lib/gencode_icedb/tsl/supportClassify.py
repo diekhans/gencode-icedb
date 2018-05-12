@@ -24,20 +24,20 @@ from gencode_icedb.tsl.supportDefs import EvidenceSupport, TrascriptionSupportLe
 from gencode_icedb.tsl.evidenceDb import EvidenceSource
 from gencode_icedb.general.gencodeDb import findAnnotationBounds
 
+# FIXME: need to decide on best limits for various cases.
+
 debug = False
 # debug = True
 
-## FIXME: need to be able to parameterize
-
 # limits on size of as single indel in an exon.
-exonPolymorphicSizeLimit = 12
+tightExonPolymorphicSizeLimit = 12
 
 # fraction of allowed total indel size relative exon length
-exonPolymorphicFactionLimit = 0.1
+tightExonPolymorphicFactionLimit = 0.1
 
-# FIXME: very lose for comparability with old TSL code
-#exonPolymorphicSizeLimit = 5000
-#exonPolymorphicFactionLimit = 1.0
+# loose for comparability with old TSL code, which most ignored indels
+looseExonPolymorphicSizeLimit = 5000
+looseExonPolymorphicFactionLimit = 1.0
 
 
 # FIXME these are from the ccds2/modules/gencode/src/lib/gencode/data/gencodeGenes.py, migrate to new module
@@ -67,211 +67,217 @@ def _geneIsTslIgnored(annotTrans):
     return False
 
 
-def _checkExonIndels(evidExon):
-    "check for allowed indel polymorphism"
-
-    def getIndelSize(aln):
-        if isinstance(aln, ChromInsertFeature):
-            return len(aln.chrom)
-        elif isinstance(aln, RnaInsertFeature):
-            return len(aln.rna)
-        else:
-            return 0  # not an indel
-
-    if len(evidExon.alignFeatures) == 1:
-        return EvidenceSupport.good
-    totalIndelSize = 0
-    for aln in evidExon.alignFeatures:
-        indelSize = getIndelSize(aln)
-        if indelSize > exonPolymorphicSizeLimit:
-            return EvidenceSupport.large_indel_size
-        totalIndelSize += indelSize
-    if totalIndelSize > exonPolymorphicFactionLimit * len(evidExon.chrom):
-        return EvidenceSupport.large_indel_content
-    else:
-        return EvidenceSupport.polymorphic
-
-
-def _checkIntronIndels(evidIntron):
-    if len(evidIntron.alignFeatures) > 1:
-        return EvidenceSupport.internal_unaligned
-    else:
-        return EvidenceSupport.good
-
-
-def _checkEvidFeatQuality(evidFeat):
-    if isinstance(evidFeat, ExonFeature):
-        return _checkExonIndels(evidFeat)
-    else:
-        return _checkIntronIndels(evidFeat)
-
-
-def checkEvidQuality(evidTrans):
-    "initial validation of the quality of evidence"
-    worstSupport = EvidenceSupport.good
-    for evidFeat in evidTrans.features:
-        worstSupport = max(_checkEvidFeatQuality(evidFeat), worstSupport)
-    return worstSupport
-
-
-def findEvidExonRangeStart(annotTrans, evidTrans):
-    firstAnnotExon = annotTrans.features[0]
-    firstEvidExon = evidTrans.features[0]
-    while (firstEvidExon is not None) and (firstEvidExon.chrom.end < firstAnnotExon.chrom.start):
-        firstEvidExon = firstEvidExon.nextFeature(ExonFeature)
-    if (firstEvidExon is None) or (firstEvidExon.chrom.start > firstAnnotExon.chrom.end):
-        return None  # not found or after firstAnnotExon
-    return firstEvidExon  # overlapping first
-
-
-def findEvidExonRangeEnd(annotTrans, evidTrans):
-    lastAnnotExon = annotTrans.features[-1]
-    lastEvidExon = evidTrans.features[-1]
-    while (lastEvidExon is not None) and (lastEvidExon.chrom.start > lastAnnotExon.chrom.end):
-        lastEvidExon = lastEvidExon.prevFeature(ExonFeature)
-    if (lastEvidExon is None) or (lastEvidExon.chrom.end < lastAnnotExon.chrom.start):
-        return None  # not found or before lastAnnotExon
-    return lastEvidExon  # overlapping last
-
-
-def findEvidExonRange(annotTrans, evidTrans):
-    """Find the first and last evidence exons that overlap the first and last
-    exons of the transcript.  Return None,None when there isn't an overlap.
-    This range is what is compared."""
-    # Walk from start to find start and end to find end, as multiple might overlap,
-    # however don't go past bounds of the annotation, in case evidence and annotation
-    # are interleaved.  This would be simper without the extend mode.
-    return (findEvidExonRangeStart(annotTrans, evidTrans),
-            findEvidExonRangeEnd(annotTrans, evidTrans))
-
-
-def _compareFeatureCounts(annotTrans, evidTrans, allowExtension):
-    """fast check if number of features warrant detailed checking"""
-    if allowExtension:
-        if len(evidTrans.features) < len(annotTrans.features):
-            return EvidenceSupport.feat_count_mismatch
-    else:
-        if len(evidTrans.features) != len(annotTrans.features):
-            return EvidenceSupport.feat_count_mismatch
-    return EvidenceSupport.good
-
-
 def sameChromBounds(feat1, feat2):
+    """is the location on the chromosome identical, regardless of strand"""
     return feat1.chrom.eqAbsLoc(feat2.chrom)
 
 
-def _compareIntron(annotIntron, evidIntron):
-    if not sameChromBounds(annotIntron, evidIntron):
-        return EvidenceSupport.exon_boundry_mismatch
-    else:
-        return EvidenceSupport.good
+class EvidenceQualityEval(object):
+    """Evaluates quality of evidence aliment.
 
+    Parameterized by attributes determining fuzziness of match.
+    - exonPolymorphicSizeLimit - maximum size of a single indel in an exon.
+    - exonPolymorphicFactionLimit - maximum fraction of allowed total indel
+      size relative exon length.
+    """
+    def __init__(self, exonPolymorphicSizeLimit, exonPolymorphicFactionLimit):
+        self.exonPolymorphicSizeLimit = exonPolymorphicSizeLimit
+        self.exonPolymorphicFactionLimit = exonPolymorphicFactionLimit
 
-def _compareExonStart(annotExon, evidExon, allowExtension):
-    if evidExon.chrom.start != annotExon.chrom.start:
-        # start does not match, is this an error?
-        if annotExon.prevFeature() is not None:
-            return EvidenceSupport.feat_mismatch  # not start of annotation
-        elif evidExon.prevFeature() is not None:
-            return EvidenceSupport.feat_mismatch  # evidence extends beyond
+    def _checkExonIndels(self, evidExon):
+        "check for allowed indel polymorphism"
+
+        def getIndelSize(aln):
+            if isinstance(aln, ChromInsertFeature):
+                return len(aln.chrom)
+            elif isinstance(aln, RnaInsertFeature):
+                return len(aln.rna)
+            else:
+                return 0  # not an indel
+
+        if len(evidExon.alignFeatures) == 1:
+            return EvidenceSupport.good
+
+        totalIndelSize = 0
+        for aln in evidExon.alignFeatures:
+            indelSize = getIndelSize(aln)
+            if indelSize > self.exonPolymorphicSizeLimit:
+                return EvidenceSupport.large_indel_size
+            totalIndelSize += indelSize
+        if totalIndelSize > self.exonPolymorphicFactionLimit * len(evidExon.chrom):
+            return EvidenceSupport.large_indel_content
+        else:
+            return EvidenceSupport.polymorphic
+
+    def _checkIntronIndels(self, evidIntron):
+        if len(evidIntron.alignFeatures) > 1:
+            return EvidenceSupport.internal_unaligned
         else:
             return EvidenceSupport.good
-    elif (annotExon.prevFeature() is None) and (evidExon.prevFeature() is not None) and (not allowExtension):
-        # start matches, but there is unallowed preceding evidence
-        return EvidenceSupport.feat_mismatch
-    else:
+
+    def _checkEvidFeatQuality(self, evidFeat):
+        if isinstance(evidFeat, ExonFeature):
+            return self._checkExonIndels(evidFeat)
+        else:
+            return self._checkIntronIndels(evidFeat)
+
+    def check(self, evidTrans):
+        """Initial validation of the quality of evidence, returning the best support it
+        could provide."""
+        worstSupport = EvidenceSupport.good
+        for evidFeat in evidTrans.features:
+            worstSupport = max(self._checkEvidFeatQuality(evidFeat), worstSupport)
+        return worstSupport
+
+
+class MegSupportEvaluator(object):
+    """Evaluate a multi-exon annotation against an evidence alignment.  If
+    allowExtension is specified, allow evidence to extend beyond annotation.
+    qualEval is an instance of EvidenceQualityEval that defined the mention
+    of the evaluation.
+    """
+    def __init__(self, qualEval, allowExtension=False):
+        self.qualEval = qualEval
+        self.allowExtension = allowExtension
+
+    def _findEvidExonRangeStart(self, annotTrans, evidTrans):
+        firstAnnotExon = annotTrans.features[0]
+        firstEvidExon = evidTrans.features[0]
+        while (firstEvidExon is not None) and (firstEvidExon.chrom.end < firstAnnotExon.chrom.start):
+            firstEvidExon = firstEvidExon.nextFeature(ExonFeature)
+        if (firstEvidExon is None) or (firstEvidExon.chrom.start > firstAnnotExon.chrom.end):
+            return None  # not found or after firstAnnotExon
+        return firstEvidExon  # overlapping first
+
+    def _findEvidExonRangeEnd(self, annotTrans, evidTrans):
+        lastAnnotExon = annotTrans.features[-1]
+        lastEvidExon = evidTrans.features[-1]
+        while (lastEvidExon is not None) and (lastEvidExon.chrom.start > lastAnnotExon.chrom.end):
+            lastEvidExon = lastEvidExon.prevFeature(ExonFeature)
+        if (lastEvidExon is None) or (lastEvidExon.chrom.end < lastAnnotExon.chrom.start):
+            return None  # not found or before lastAnnotExon
+        return lastEvidExon  # overlapping last
+
+    def _findEvidExonRange(self, annotTrans, evidTrans):
+        """Find the first and last evidence exons that overlap the first and last
+        exons of the transcript.  Return None,None when there isn't an overlap.
+        This range is what is compared."""
+        # Walk from start to find start and end to find end, as multiple might overlap,
+        # however don't go past bounds of the annotation, in case evidence and annotation
+        # are interleaved.  This would be simper without the extend mode.
+        return (self._findEvidExonRangeStart(annotTrans, evidTrans),
+                self._findEvidExonRangeEnd(annotTrans, evidTrans))
+
+    def _compareFeatureCounts(self, annotTrans, evidTrans):
+        """fast check if number of features warrant detailed checking"""
+        if self.allowExtension:
+            if len(evidTrans.features) < len(annotTrans.features):
+                return EvidenceSupport.feat_count_mismatch
+        else:
+            if len(evidTrans.features) != len(annotTrans.features):
+                return EvidenceSupport.feat_count_mismatch
         return EvidenceSupport.good
 
-
-def _compareExonEnd(annotExon, evidExon, allowExtension):
-    if evidExon.chrom.end != annotExon.chrom.end:
-        # end does not match, is this an error?
-        if annotExon.nextFeature() is not None:
-            return EvidenceSupport.feat_mismatch  # not end of annotation
-        elif evidExon.nextFeature() is not None:
-            return EvidenceSupport.feat_mismatch  # evidence extends beyond
+    def _compareIntron(self, annotIntron, evidIntron):
+        if not sameChromBounds(annotIntron, evidIntron):
+            return EvidenceSupport.exon_boundry_mismatch
         else:
             return EvidenceSupport.good
-    elif (annotExon.nextFeature() is None) and (evidExon.nextFeature() is not None) and (not allowExtension):
-        # start matches, but there is unallowed preceding evidence
-        return EvidenceSupport.feat_mismatch
-    else:
-        return EvidenceSupport.good
 
+    def _compareExonStart(self, annotExon, evidExon):
+        if evidExon.chrom.start != annotExon.chrom.start:
+            # start does not match, is this an error?
+            if annotExon.prevFeature() is not None:
+                return EvidenceSupport.feat_mismatch  # not start of annotation
+            elif evidExon.prevFeature() is not None:
+                return EvidenceSupport.feat_mismatch  # evidence extends beyond
+            else:
+                return EvidenceSupport.good
+        elif (annotExon.prevFeature() is None) and (evidExon.prevFeature() is not None) and (not self.allowExtension):
+            # start matches, but there is unallowed preceding evidence
+            return EvidenceSupport.feat_mismatch
+        else:
+            return EvidenceSupport.good
 
-def _compareExon(annotExon, evidExon, allowExtension):
-    # Bounds must match exactly except for outside ends of initial or terminal
-    # annotation exon.  In extension mode, if there are evidence features
-    # beyond the ends, then both those must match.  In non-extension mode,
-    # there will not be features outside of the annotation, so the check is the same
-    if not evidExon.chrom.overlaps(annotExon.chrom):
-        return EvidenceSupport.feat_mismatch  # don't even overlap
-    return max(_compareExonStart(annotExon, evidExon, allowExtension),
-               _compareExonEnd(annotExon, evidExon, allowExtension))
+    def _compareExonEnd(self, annotExon, evidExon):
+        if evidExon.chrom.end != annotExon.chrom.end:
+            # end does not match, is this an error?
+            if annotExon.nextFeature() is not None:
+                return EvidenceSupport.feat_mismatch  # not end of annotation
+            elif evidExon.nextFeature() is not None:
+                return EvidenceSupport.feat_mismatch  # evidence extends beyond
+            else:
+                return EvidenceSupport.good
+        elif (annotExon.nextFeature() is None) and (evidExon.nextFeature() is not None) and (not self.allowExtension):
+            # start matches, but there is unallowed preceding evidence
+            return EvidenceSupport.feat_mismatch
+        else:
+            return EvidenceSupport.good
 
+    def _compareExon(self, annotExon, evidExon):
+        # Bounds must match exactly except for outside ends of initial or terminal
+        # annotation exon.  In extension mode, if there are evidence features
+        # beyond the ends, then both those must match.  In non-extension mode,
+        # there will not be features outside of the annotation, so the check is the same
+        if not evidExon.chrom.overlaps(annotExon.chrom):
+            return EvidenceSupport.feat_mismatch  # don't even overlap
+        return max(self._compareExonStart(annotExon, evidExon),
+                   self._compareExonEnd(annotExon, evidExon))
 
-def _compareFeature(annotFeat, evidFeat, allowExtension):
-    # evidence has already been validated for indels.
-    if type(annotFeat) != type(evidFeat):
-        return EvidenceSupport.feat_mismatch
-    if isinstance(annotFeat, IntronFeature):
-        return _compareIntron(annotFeat, evidFeat)
-    elif isinstance(annotFeat, ExonFeature):
-        return _compareExon(annotFeat, evidFeat, allowExtension)
-    else:
-        raise Exception("BUG: unexpected structural feature type: {}", type(annotFeat))
+    def _compareFeature(self, annotFeat, evidFeat):
+        # evidence has already been validated for indels.
+        if type(annotFeat) != type(evidFeat):
+            return EvidenceSupport.feat_mismatch
+        if isinstance(annotFeat, IntronFeature):
+            return self._compareIntron(annotFeat, evidFeat)
+        elif isinstance(annotFeat, ExonFeature):
+            return self._compareExon(annotFeat, evidFeat)
+        else:
+            raise Exception("BUG: unexpected structural feature type: {}", type(annotFeat))
 
-
-def _compareFeatures(annotTrans, firstEvidExon, lastEvidExon, allowExtension):
-    worstSupport = EvidenceSupport.good
-    annotFeat = annotTrans.firstFeature()
-    evidFeat = firstEvidExon
-    while worstSupport < EvidenceSupport.poor:
-        worstSupport = max(_compareFeature(annotFeat, evidFeat, allowExtension),
-                           worstSupport)
-        if evidFeat is lastEvidExon:
-            break
-        evidFeat = evidFeat.nextFeature()
-        annotFeat = annotFeat.nextFeature()
-        if annotFeat is None:
-            worstSupport = max(EvidenceSupport.feat_mismatch, worstSupport)
-            break  # mismatch if features are not out of sync
-    return worstSupport
-
-
-def _compareMegWithEvidenceImpl(annotTrans, evidTrans, allowExtension=False):
-    """Compare a multi-exon annotation with a given piece of evidence"""
-    # check full evidence first; > is worse
-    worstSupport = checkEvidQuality(evidTrans)
-    if worstSupport >= EvidenceSupport.poor:
+    def _compareFeatures(self, annotTrans, firstEvidExon, lastEvidExon):
+        worstSupport = EvidenceSupport.good
+        annotFeat = annotTrans.firstFeature()
+        evidFeat = firstEvidExon
+        while worstSupport < EvidenceSupport.poor:
+            worstSupport = max(self._compareFeature(annotFeat, evidFeat), worstSupport)
+            if evidFeat is lastEvidExon:
+                break
+            evidFeat = evidFeat.nextFeature()
+            annotFeat = annotFeat.nextFeature()
+            if annotFeat is None:
+                worstSupport = max(EvidenceSupport.feat_mismatch, worstSupport)
+                break  # mismatch if features are not out of sync
         return worstSupport
-    # fast path check
-    worstSupport = max(_compareFeatureCounts(annotTrans, evidTrans, allowExtension),
-                       worstSupport)
-    if worstSupport >= EvidenceSupport.poor:
+
+    def _compareMegWithEvidenceImpl(self, annotTrans, evidTrans):
+        """Compare a multi-exon annotation with a given piece of evidence"""
+        # check full evidence first; > is worse
+        worstSupport = self.qualEval.check(evidTrans)
+        if worstSupport >= EvidenceSupport.poor:
+            return worstSupport  # worse than allowed, give up now
+
+        # fast path check
+        worstSupport = max(self._compareFeatureCounts(annotTrans, evidTrans), worstSupport)
+        if worstSupport >= EvidenceSupport.poor:
+            return worstSupport
+        # get range of exons to compare
+        firstEvidExon, lastEvidExon = self._findEvidExonRange(annotTrans, evidTrans)
+        if (firstEvidExon is None) or (lastEvidExon is None):
+            return EvidenceSupport.feat_mismatch
+
+        worstSupport = max(self._compareFeatures(annotTrans, firstEvidExon, lastEvidExon), worstSupport)
         return worstSupport
-    # get range of exons to compare
-    firstEvidExon, lastEvidExon = findEvidExonRange(annotTrans, evidTrans)
-    if (firstEvidExon is None) or (lastEvidExon is None):
-        return EvidenceSupport.feat_mismatch
 
-    worstSupport = max(_compareFeatures(annotTrans, firstEvidExon, lastEvidExon, allowExtension),
-                       worstSupport)
-    return worstSupport
-
-
-def compareMegWithEvidence(annotTrans, evidTrans, allowExtension=False):
-    """Compare a multi-exon annotation with a given piece of evidence, If
-    allowExtension is true, evidence features at allowed beyond the start and
-    end of the annotation.  This does not check txStart/txEnd is consistent
-    with evidence, so this can use to find extensions of exons."""
-    try:
-        if debug:
-            annotTrans.dump(msg="annotation")
-            evidTrans.dump(msg="evidence")
-        return _compareMegWithEvidenceImpl(annotTrans, evidTrans, allowExtension=allowExtension)
-    except Exception as ex:
-        six.raise_from(Exception("Bug evaluating {} with {}".format(annotTrans.rna.name, evidTrans.rna.name)), ex)
+    def compare(self, annotTrans, evidTrans):
+        """Compare a multi-exon annotation with a given piece of evidence,"""
+        try:
+            if debug:
+                annotTrans.dump(msg="annotation")
+                evidTrans.dump(msg="evidence")
+            return self._compareMegWithEvidenceImpl(annotTrans, evidTrans)
+        except Exception as ex:
+            six.raise_from(Exception("Bug evaluating {} with {}".format(annotTrans.rna.name, evidTrans.rna.name)), ex)
 
 
 class EvidenceCache(object):
@@ -298,7 +304,7 @@ class EvidenceCache(object):
         return self.evidBySrc[evidSrc]
 
 
-class AnnotationEvidenceEval(namedtuple("AnnotationEvidence",
+class AnnotationEvidenceEval(namedtuple("AnnotationEvidenceEval",
                                         ("annotId", "evidSrc", "evidId", "support", "suspect"))):
     """Evaluation of an annotation against an evidence alignment."""
     slots = ()
@@ -315,86 +321,89 @@ class AnnotationEvidenceCollector(defaultdict):
         self[evidSrc].append(evidEval)
 
 
-def _countFullSupport(evidEvals):
-    """count support from normal and suspect evidence"""
-    supporting = [ev for ev in evidEvals if ev.support < EvidenceSupport.poor]
-    return (len([ev for ev in supporting if ev.suspect is None]),
-            len([ev for ev in supporting if ev.suspect is not None]))
+class FullLengthSupportEvaluator(object):
+    """
+    Full-length support evaluation.
+    qualEval is an instance of EvidenceQualityEval that defined the method
+    of the evaluation.
+    allowExtension indicates if new exons should be allowed
+    """
+    def __init__(self, evidenceReader, qualEval, allowExtension=False):
+        self.evidenceReader = evidenceReader
+        self.evaluator = MegSupportEvaluator(qualEval, allowExtension)
 
+    def _countFullSupport(self, evidEvals):
+        """count support from normal and suspect evidence"""
+        supporting = [ev for ev in evidEvals if ev.support < EvidenceSupport.poor]
+        return (len([ev for ev in supporting if ev.suspect is None]),
+                len([ev for ev in supporting if ev.suspect is not None]))
 
-def _calculateRnaTsl(evidCollector):
-    """support from RNAs in a given set"""
-    goodCnt, suspectCnt = _countFullSupport(evidCollector)
-    if goodCnt >= 1:
-        return TrascriptionSupportLevel.tsl1
-    elif suspectCnt >= 1:
-        return TrascriptionSupportLevel.tsl2
-    else:
-        return TrascriptionSupportLevel.tsl5
+    def _calculateRnaTsl(self, evidCollector):
+        """support from RNAs in a given set"""
+        goodCnt, suspectCnt = self._countFullSupport(evidCollector)
+        if goodCnt >= 1:
+            return TrascriptionSupportLevel.tsl1
+        elif suspectCnt >= 1:
+            return TrascriptionSupportLevel.tsl2
+        else:
+            return TrascriptionSupportLevel.tsl5
 
+    def _calculateEstTsl(self, evidCollector):
+        """support from ESTs in a given set"""
+        goodCnt, suspectCnt = self._countFullSupport(evidCollector)
+        if goodCnt >= 2:
+            return TrascriptionSupportLevel.tsl2
+        elif goodCnt == 1:
+            return TrascriptionSupportLevel.tsl3
+        elif suspectCnt >= 1:
+            return TrascriptionSupportLevel.tsl4
+        else:
+            return TrascriptionSupportLevel.tsl5
 
-def _calculateEstTsl(evidCollector):
-    """support from ESTs in a given set"""
-    goodCnt, suspectCnt = _countFullSupport(evidCollector)
-    if goodCnt >= 2:
-        return TrascriptionSupportLevel.tsl2
-    elif goodCnt == 1:
-        return TrascriptionSupportLevel.tsl3
-    elif suspectCnt >= 1:
-        return TrascriptionSupportLevel.tsl4
-    else:
-        return TrascriptionSupportLevel.tsl5
+    def _calculateTsl(self, evidCollector):
+        """compute TSL from evidence in evidCollector"""
+        ucscRnaTsl = self._calculateRnaTsl(evidCollector[EvidenceSource.UCSC_RNA])
+        ensemblRnaTsl = self._calculateRnaTsl(evidCollector[EvidenceSource.ENSEMBL_RNA])
+        estRnaTsl = self._calculateEstTsl(evidCollector[EvidenceSource.UCSC_EST])
+        return min(ucscRnaTsl, ensemblRnaTsl, estRnaTsl)
 
+    def _writeDetails(self, detailsTsvFh, annotTrans, evidSrc, evidTrans, evidSupport, suspect):
+        fileOps.prRowv(detailsTsvFh, annotTrans.rna.name, evidSrc, evidTrans.rna.name, evidSupport,
+                       "" if suspect is None else suspect)
 
-def _calculateTsl(evidCollector):
-    """compute TSL from evidence in evidCollector"""
-    ucscRnaTsl = _calculateRnaTsl(evidCollector[EvidenceSource.UCSC_RNA])
-    ensemblRnaTsl = _calculateRnaTsl(evidCollector[EvidenceSource.ENSEMBL_RNA])
-    estRnaTsl = _calculateEstTsl(evidCollector[EvidenceSource.UCSC_EST])
-    return min(ucscRnaTsl, ensemblRnaTsl, estRnaTsl)
+    def _compareWithEvidence(self, annotTrans, evidSrc, evidTrans, evidCollector, detailsTsvFh):
+        evidSupport = self.evaluator.compare(annotTrans, evidTrans)
+        suspect = evidTrans.attrs.genbankProblem
+        if detailsTsvFh is not None:
+            self._writeDetails(detailsTsvFh, annotTrans, evidSrc, evidTrans, evidSupport, suspect)
+        if evidSupport < EvidenceSupport.poor:
+            evidCollector.add(evidSrc,
+                              AnnotationEvidenceEval(annotTrans, evidSrc, evidTrans.rna.name, evidSupport, suspect))
 
+    def _collectTransSupport(self, annotTrans, evidCache, detailsTsvFh):
+        evidCollector = AnnotationEvidenceCollector(annotTrans)
+        for evidSrc in evidCache.sources:
+            for evidTrans in evidCache.get(evidSrc):
+                self._compareWithEvidence(annotTrans, evidSrc, evidTrans, evidCollector, detailsTsvFh)
+        return evidCollector
 
-def writeTsvHeaders(tslTsvFh, detailsTsvFh=None):
-    fileOps.prRowv(tslTsvFh, "transcriptId", "level")
-    if detailsTsvFh is not None:
-        fileOps.prRowv(detailsTsvFh, "transcriptId", "evidSrc", "evidId", "evidSupport", "suspect")
+    def _classifyTrans(self, annotTrans, evidCache, tslTsvFh, detailsTsvFh):
+        if _transIsSingleExon(annotTrans) or _geneIsTslIgnored(annotTrans):
+            tsl = TrascriptionSupportLevel.tslNA
+        else:
+            evidCollector = self._collectTransSupport(annotTrans, evidCache, detailsTsvFh)
+            tsl = self._calculateTsl(evidCollector)
+        fileOps.prRowv(tslTsvFh, annotTrans.rna.name, tsl)
 
+    @staticmethod
+    def writeTsvHeaders(tslTsvFh, detailsTsvFh=None):
+        fileOps.prRowv(tslTsvFh, "transcriptId", "level")
+        if detailsTsvFh is not None:
+            fileOps.prRowv(detailsTsvFh, "transcriptId", "evidSrc", "evidId", "evidSupport", "suspect")
 
-def _writeDetails(detailsTsvFh, annotTrans, evidSrc, evidTrans, evidSupport, suspect):
-    fileOps.prRowv(detailsTsvFh, annotTrans.rna.name, evidSrc, evidTrans.rna.name, evidSupport,
-                   "" if suspect is None else suspect)
-
-
-def _compareWithEvidence(annotTrans, evidSrc, evidTrans, evidCollector, detailsTsvFh):
-    evidSupport = compareMegWithEvidence(annotTrans, evidTrans)
-    suspect = evidTrans.attrs.genbankProblem
-    if detailsTsvFh is not None:
-        _writeDetails(detailsTsvFh, annotTrans, evidSrc, evidTrans, evidSupport, suspect)
-    if evidSupport < EvidenceSupport.poor:
-        evidCollector.add(evidSrc,
-                          AnnotationEvidenceEval(annotTrans, evidSrc, evidTrans.rna.name, evidSupport, suspect))
-
-
-def _collectTransSupport(annotTrans, evidCache, detailsTsvFh):
-    evidCollector = AnnotationEvidenceCollector(annotTrans)
-    for evidSrc in evidCache.sources:
-        for evidTrans in evidCache.get(evidSrc):
-            _compareWithEvidence(annotTrans, evidSrc, evidTrans, evidCollector, detailsTsvFh)
-    return evidCollector
-
-
-def _classifyTrans(annotTrans, evidCache, tslTsvFh, detailsTsvFh):
-    if _transIsSingleExon(annotTrans) or _geneIsTslIgnored(annotTrans):
-        tsl = TrascriptionSupportLevel.tslNA
-    else:
-        evidCollector = _collectTransSupport(annotTrans, evidCache, detailsTsvFh)
-        tsl = _calculateTsl(evidCollector)
-    fileOps.prRowv(tslTsvFh, annotTrans.rna.name, tsl)
-
-
-def classifyGeneTranscripts(evidenceReader, geneAnnotTranses, tslTsvFh, detailsTsvFh=None):
-    """Classify a list of transcripts, which must be all on the same chromosome
-    and should be from the same gene."""
-    evidCache = EvidenceCache(evidenceReader, findAnnotationBounds(geneAnnotTranses))
-    for annotTrans in geneAnnotTranses:
-        _classifyTrans(annotTrans, evidCache, tslTsvFh, detailsTsvFh)
+    def classifyGeneTranscripts(self, geneAnnotTranses, tslTsvFh, detailsTsvFh=None):
+        """Classify a list of transcripts, which must be all on the same chromosome.
+        They should be from the same gene locus or overlapping loci for caching efficiency."""
+        evidCache = EvidenceCache(self.evidenceReader, findAnnotationBounds(geneAnnotTranses))
+        for annotTrans in geneAnnotTranses:
+            self._classifyTrans(annotTrans, evidCache, tslTsvFh, detailsTsvFh)

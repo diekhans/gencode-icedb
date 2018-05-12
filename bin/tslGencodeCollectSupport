@@ -6,7 +6,7 @@ from contextlib import ExitStack
 from pycbio.sys import fileOps
 from gencode_icedb.general.gencodeDb import UcscGencodeReader
 from gencode_icedb.tsl.evidenceDb import EvidenceReader, EvidenceSource
-from gencode_icedb.tsl.supportClassify import writeTsvHeaders, classifyGeneTranscripts
+from gencode_icedb.tsl.supportClassify import tightExonPolymorphicSizeLimit, tightExonPolymorphicFactionLimit, EvidenceQualityEval, FullLengthSupportEvaluator
 
 # FIXME: rsl uses csv.writer, make all consisten
 
@@ -39,9 +39,11 @@ def parseArgs():
 
 
 def classifyGenes(evidenceReader, genesTranses, tslTsvFh, detailsTsvFh):
-    writeTsvHeaders(tslTsvFh, detailsTsvFh)
+    qualEval = EvidenceQualityEval(tightExonPolymorphicSizeLimit, tightExonPolymorphicFactionLimit)
+    evaluator = FullLengthSupportEvaluator(evidenceReader, qualEval)
+    evaluator.writeTsvHeaders(tslTsvFh, detailsTsvFh)
     for geneTrans in genesTranses:
-        classifyGeneTranscripts(evidenceReader, geneTrans, tslTsvFh, detailsTsvFh)
+        evaluator.classifyGeneTranscripts(geneTrans, tslTsvFh, detailsTsvFh)
 
 
 def tslGencodeCollectSupport(args):
