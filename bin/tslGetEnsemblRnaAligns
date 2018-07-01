@@ -7,7 +7,7 @@ import sys
 import argparse
 from pycbio.hgdata import hgDb
 from pycbio.hgdata.psl import Psl, PslBlock, reverseCoords
-from pycbio.hgdata.cigar import ExonerateCigar, OP_ALIGNED, OP_TINSERT, OP_TDELETE
+from pycbio.hgdata.cigar import ExonerateCigar
 from pycbio.hgdata.hgLite import sqliteConnect
 from pycbio.hgdata.hgLite import PslDbTable
 from pycbio.hgdata.coords import Coords
@@ -201,11 +201,11 @@ def pslFromCigar(qName, qSize, qStart, qEnd, qStrand, tName, tSize, tStart, tEnd
         tNext, tBlkEnd = reverseCoords(tNext, tBlkEnd, tSize)
 
     for op in cigar:
-        if op.code == OP_ALIGNED:
+        if op.aligned:
             qNext, tNext = processCigarMatch(psl, op.count, qNext, tNext)
-        elif op.code == OP_TINSERT:
+        elif op.tinsert:
             tNext = processCigarInsert(psl, op.count, tNext)
-        elif op.code == OP_TDELETE:
+        elif op.tdelete:
             qNext = processCigarDelete(psl, op.count, qNext)
         else:
             raise Exception("invalid CIGAR op {} in {}".format(op, cigar))

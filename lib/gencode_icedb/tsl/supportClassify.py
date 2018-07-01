@@ -380,7 +380,9 @@ class FullLengthSupportEvaluator(object):
             evidCollector.add(evidSrc,
                               AnnotationEvidenceEval(annotTrans, evidSrc, evidTrans.rna.name, evidSupport, suspect))
 
-    def _collectTransSupport(self, annotTrans, evidCache, detailsTsvFh):
+    def collectTransSupport(self, annotTrans, evidCache, detailsTsvFh=None):
+        """lower-level function to collect evidence for one transcript,
+        returning an AnnotationEvidenceCollector object"""
         evidCollector = AnnotationEvidenceCollector(annotTrans)
         for evidSrc in evidCache.sources:
             for evidTrans in evidCache.get(evidSrc):
@@ -391,7 +393,7 @@ class FullLengthSupportEvaluator(object):
         if _transIsSingleExon(annotTrans) or _geneIsTslIgnored(annotTrans):
             tsl = TrascriptionSupportLevel.tslNA
         else:
-            evidCollector = self._collectTransSupport(annotTrans, evidCache, detailsTsvFh)
+            evidCollector = self.collectTransSupport(annotTrans, evidCache, detailsTsvFh)
             tsl = self._calculateTsl(evidCollector)
         fileOps.prRowv(tslTsvFh, annotTrans.rna.name, tsl)
 
