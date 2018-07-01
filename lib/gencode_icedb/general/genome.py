@@ -56,11 +56,9 @@ class GenomeReader(object):
 class GenomeReaderFactory(object):
     """Obtain the appropriate genome reader."""
     def __init__(self, twoBitFile):
-        self.twoBitFile = None
-        if (twoBitFile is not None) and os.path.exists(twoBitFile):
-            self.twoBitFile = twoBitFile
-        if self.twoBitFile is None:
-            raise Exception("no twoBitFile available")
+        self.twoBitFile = twoBitFile
+        if not os.path.exists(self.twoBitFile):
+            raise Exception("twoBitFile not found: ".format(self.twoBitFile))
 
     def obtain(self):
         return GenomeReader(TwoBitFile(self.twoBitFile))
