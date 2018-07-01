@@ -9,7 +9,7 @@ featureMondoTester = ./bin/featureMondoTester
 .SECONDARY:
 
 hsUcscGenomeDb = hg38
-hsGencodeVer = V27
+hsGencodeVer = V28
 hsGencodeCompTbl = wgEncodeGencodeComp${hsGencodeVer}
 
 test:   featureUnitTests \
@@ -29,7 +29,7 @@ featureUnitTests:
 ##
 gencodeDbLoadTest: mkdirs
 	rm -f output/$@.db
-	${gencodeDbLoad} --attrs=input/set1.gencodeAttrsV19.tsv --transcriptSource=input/set1.gencodeTransSourceV19.tsv --transcriptionSupportLevel=input/set1.gencodeTransSupportLevelV19.tsv  --tags=input/set1.gencodeTagV19.tsv --genes=input/set1.gencodeCompV19.gp output/$@.db
+	${gencodeDbLoad} --attrs=input/set1.gencodeAttrsV28.tsv --transcriptSource=input/set1.gencodeTranscriptSourceV28.tsv --transcriptionSupportLevel=input/set1.gencodeTranscriptionSupportLevelV28.tsv  --tags=input/set1.gencodeTagV28.tsv --genes=input/set1.gencodeCompV28.gp output/$@.db
 	sqlite3 -header -batch output/$@.db 'SELECT * FROM gencode_ann' >output/$@.gencode_ann.gp
 	sqlite3 -header -batch output/$@.db 'SELECT * FROM gencode_attrs' >output/$@.gencode_attrs.tsv
 	sqlite3 -header -batch output/$@.db 'SELECT * FROM gencode_transcript_source' >output/$@.gencode_trans_src.tsv
