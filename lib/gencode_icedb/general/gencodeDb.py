@@ -160,7 +160,7 @@ def findAnnotationBounds(geneTranses):
     strand = geneTranses[0].rna.strand
     for geneTrans in geneTranses:
         if geneTrans.chrom.name != name:
-            raise Exception("Bug: mix of chromosomes provided: {} and {}".format(geneTrans.rna.name, annotId))
+            raise Exception("Bug: mix of chromosomes provided: {} ({}) and {} ({})".format(geneTrans.rna.name, geneTrans.chrom.name, annotId, name))
         if geneTrans.chrom.strand != '+':
             raise Exception("Bug: assumes positive chromosome strand: {} and {}".format(geneTrans.rna.name, annotId))
         if geneTrans.rna.strand != strand:
