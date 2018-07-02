@@ -13,7 +13,7 @@ from gencode_icedb.general.transFeatures import ExonFeature
 from gencode_icedb.general.transFeatures import AnnotationFeature, CdsRegionFeature, Utr3RegionFeature
 from gencode_icedb.general.transFeatures import RnaInsertFeature, ChromInsertFeature
 from gencode_icedb.general.evidFeatures import EvidencePslFactory
-from gencode_icedb.general.annotFeatures import AnnotationGenePredFactory
+from gencode_icedb.general.genePredAnnotFeatures import AnnotationGenePredFactory
 from pycbio.hgdata.hgLite import sqliteConnect
 from pycbio.hgdata.hgLite import PslDbTable, GenePredDbTable
 from pycbio.hgdata.psl import Psl

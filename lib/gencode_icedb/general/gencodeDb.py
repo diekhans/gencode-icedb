@@ -8,7 +8,7 @@ from pycbio.hgdata.coords import Coords
 from pycbio.hgdata.hgLite import sqliteConnect, SqliteCursor, GenePredDbTable, GencodeAttrsDbTable, GencodeTagDbTable
 from pycbio.hgdata.genePred import GenePred
 from pycbio.hgdata.rangeFinder import Binner
-from gencode_icedb.general.annotFeatures import AnnotationGenePredFactory
+from gencode_icedb.general.genePredAnnotFeatures import AnnotationGenePredFactory
 
 # FIXME: use Coords here
 # FIXME: rename module to gencodeReader.py

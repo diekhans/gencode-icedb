@@ -31,7 +31,7 @@ def runQuery(db, sql, outTsv):
 
 def getIds(args):
     db = "hg38"
-    ver = "V27"
+    ver = "V28"
     sql = mkSelect(ver, args.gencodeIds)
     runQuery(db, sql, "/dev/stdout")
 

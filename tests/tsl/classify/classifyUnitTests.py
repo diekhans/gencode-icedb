@@ -41,7 +41,10 @@ class EvidCompareTest(TestCaseBase):
         return cls.extensionEvaluator if allowExtension else cls.stdEvaluator
 
     def _getAnnot(self, transId):
-        return self.gencodeReader.getByTranscriptIds(transId)[0]
+        annots = self.gencodeReader.getByTranscriptIds(transId)
+        if len(annots) == 0:
+            raise Exception("{} not found".format(transId))
+        return annots[0]
 
     def _pslToTrans(self, psl):
         return self.evidenceReader.evidFactory.fromPsl(psl)
@@ -82,7 +85,7 @@ class EvidCompareTest(TestCaseBase):
         self._classifyTest(transes, noDiff)
 
     def testGAB4(self):
-        self._classifyGeneTest("ENSG00000215568.7")
+        self._classifyGeneTest("ENSG00000215568.8")
 
     def testBCR(self):
         self._classifyGeneTest("ENSG00000186716.20")
@@ -92,17 +95,17 @@ class EvidCompareTest(TestCaseBase):
 
     def testSHOX(self):
         # PAR gene
-        self._classifyGeneTest("ENSG00000185960.13")
+        self._classifyGeneTest("ENSG00000185960.14")
 
     def testExtendWithTwoExonsOverInitial(self):
         # EST AA227241.1 has two 5' exons overlapping 5' exon, caused failure with allowExtension
-        annotName = "ENST00000489867.1"
+        annotName = "ENST00000489867.2"
         evidName = "AA227241.1"
         results = tuple(self._evalAnnotTransEvid(self._getAnnot(annotName),
                                                  EvidenceSource.UCSC_EST,
                                                  evidNames=evidName, allowExtension=True))
-        self.assertEqual(results,
-                         (('ENST00000489867.1', 'AA227241.1', EvidenceSupport.feat_mismatch),))
+        self.assertEqual((('ENST00000489867.2', 'AA227241.1', EvidenceSupport.feat_count_mismatch),),
+                         results)
 
     def _rawPslCmpr(self, annotTrans, evidRawPsl, allowExtension):
         evidTrans = self._pslToTrans(Psl(evidRawPsl))

@@ -12,7 +12,7 @@ from pycbio.hgdata.psl import PslDbReader
 from pycbio.hgdata.genePred import GenePredDbReader
 from gencode_icedb.genome import GenomeReader
 from gencode_icedb.general.evidFeatures import EvidencePslFactory
-from gencode_icedb.general.annotFeatures import AnnotationGenePredFactory
+from gencode_icedb.general.genePredAnnotFeatures import AnnotationGenePredFactory
 from twobitreader import TwoBitFile
 
 # FIXME: is this still needed with classify mondo?

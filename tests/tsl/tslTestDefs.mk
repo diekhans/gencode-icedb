@@ -1,7 +1,7 @@
 include ${ROOT}/tests/testDefs.mk
 
-hsGencodeVer = V27
-hsEnsemblVer = 91_38
+hsGencodeVer = V28
+hsEnsemblVer = 92_38
 hsEnsemblCDnaDb = homo_sapiens_cdna_${hsEnsemblVer}
 hsGrcRefAssembly = GRCh38
 hsGrcRefAssemblyReport = ${ROOT}/tests/tsl/etc/GCF_000001405.36_GRCh38.p10_assembly_report.txt
@@ -24,9 +24,10 @@ tslGencodeCollectSupport = ${BINDIR}/tslGencodeCollectSupport
 tslGencodeCollectSupportMkJobs = ${BINDIR}/tslGencodeCollectSupportMkJobs
 tslGencodeCollectSupportFinishJobs = ${BINDIR}/tslGencodeCollectSupportFinishJobs
 
-# use public database
-# FIXME disabled due to PAR tag bug in V27 (hgwdev has been updated).
-#export HGDB_CONF=${ROOT}/tests/tsl/etc/hg.pub.conf
+# use public database if not on hgwdev
+ifneq (${hostname}, hgwdev)
+   export HGDB_CONF=${ROOT}/tests/tsl/etc/hg.pub.conf
+endif
 
 # table names (match py definition)
 UCSC_RNA_ALN_TBL = ucsc_rna_aln

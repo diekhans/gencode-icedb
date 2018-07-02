@@ -3,7 +3,7 @@ include ${ROOT}/config.mk
 include ${ROOT}/tests/tsl/tslTestDefs.mk
 
 # IMPORTANT: use bin/getTestCaseInfo to obtain data for new tests
-testCases = input/v27-test-cases.tsv
+testCases = input/v28-test-cases.tsv
 
 allGenes = $(shell tawk 'NR>1 && !seen[$$4]{seen[$$4] = 1; print $$4}' ${testCases})
 
