@@ -3,7 +3,7 @@ import icedbProgSetup  # noqa: F401
 import argparse
 from pycbio.tsv import TsvReader
 from gencode_icedb.tsl.supportDefs import GenbankProblemReason
-from gencode_icedb.tsl.genbankProblemCasesDb import GenbankProblemCaseDbTable
+from gencode_icedb.tsl.genbankProblemCasesSqlite import GenbankProblemCaseSqliteTable
 from pycbio.db.sqliteOps import sqliteConnect
 
 
@@ -33,7 +33,7 @@ def genbankProblemCasesLoad(opts):
     "main function"
     recs = loadProblemCasesTsv(opts.problemTabFile)
     conn = sqliteConnect(opts.sqliteDb, create=True)
-    dbTbl = GenbankProblemCaseDbTable(conn, create=True)
+    dbTbl = GenbankProblemCaseSqliteTable(conn, create=True)
     dbTbl.loads(recs)
     conn.close()
 

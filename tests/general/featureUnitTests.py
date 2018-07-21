@@ -14,8 +14,9 @@ from gencode_icedb.general.transFeatures import AnnotationFeature, CdsRegionFeat
 from gencode_icedb.general.transFeatures import RnaInsertFeature, ChromInsertFeature
 from gencode_icedb.general.evidFeatures import EvidencePslFactory
 from gencode_icedb.general.genePredAnnotFeatures import AnnotationGenePredFactory
-from pycbio.hgdata.hgLite import sqliteConnect
-from pycbio.hgdata.hgLite import PslDbTable, GenePredDbTable
+from pycbio.db.sqliteOps import sqliteConnect
+from pycbio.hgdata.genePredSqlite import GenePredSqliteTable
+from pycbio.hgdata.pslSqlite import PslSqliteTable
 from pycbio.hgdata.psl import Psl
 from pycbio.hgdata.genePred import GenePredReader
 from pycbio.sys.pprint2 import nswpprint
@@ -63,7 +64,7 @@ class PslDbSrc(object):
     @classmethod
     def _loadDbTbl(cls, name):
         conn = sqliteConnect(None)
-        dbTbl = PslDbTable(conn, "psls", create=True)
+        dbTbl = PslSqliteTable(conn, "psls", create=True)
         dbTbl.loadPslFile(getInputFile(cls.srcs[name]))
         cls.pslTbls[name] = dbTbl
         return dbTbl
@@ -94,7 +95,7 @@ class GenePredDbSrc(object):
     @classmethod
     def _loadDbTbl(cls, name):
         conn = sqliteConnect(None)
-        dbTbl = GenePredDbTable(conn, name, create=True)
+        dbTbl = GenePredSqliteTable(conn, name, create=True)
         dbTbl.loadGenePredFile(getInputFile(cls.srcs[name]))
         cls.genePredTbls[name] = dbTbl
         return dbTbl
@@ -674,40 +675,40 @@ class AnnotationTests(FeatureTestBase):
         trans = self._gpToAnnotTranscript(self._getSet1Gp("ENST00000215794.7"))
         self._assertFeatures(trans,
                              ('t=chr22:18149898-18177397/+, rna=ENST00000215794.7:0-2129/+ 2129 <+>',
-                               (('exon 18149898-18150222 rna=0-324',
-                                   (("5'UTR 18149898-18150222 rna=0-324",),)),
-                                 ('intron 18150222-18157557 rna=324-324 sjBases=GC...AG (GC_AG)',),
-                                 ('exon 18157557-18157820 rna=324-587',
-                                   (("5'UTR 18157557-18157663 rna=324-430",),
-                                     ('CDS 18157663-18157820 rna=430-587 0',))),
-                                 ('intron 18157820-18160171 rna=587-587 sjBases=GT...AG (GT_AG)',),
-                                 ('exon 18160171-18160268 rna=587-684',
-                                   (('CDS 18160171-18160268 rna=587-684 1',),)),
-                                 ('intron 18160268-18161789 rna=684-684 sjBases=GT...AG (GT_AG)',),
-                                 ('exon 18161789-18161935 rna=684-830',
-                                   (('CDS 18161789-18161935 rna=684-830 2',),)),
-                                 ('intron 18161935-18167254 rna=830-830 sjBases=GT...AG (GT_AG)',),
-                                 ('exon 18167254-18167334 rna=830-910',
-                                   (('CDS 18167254-18167334 rna=830-910 1',),)),
-                                 ('intron 18167334-18167889 rna=910-910 sjBases=GT...AG (GT_AG)',),
-                                 ('exon 18167889-18168036 rna=910-1057',
-                                   (('CDS 18167889-18168036 rna=910-1057 0',),)),
-                                 ('intron 18168036-18169843 rna=1057-1057 sjBases=GT...AG (GT_AG)',),
-                                 ('exon 18169843-18169939 rna=1057-1153',
-                                   (('CDS 18169843-18169939 rna=1057-1153 0',),)),
-                                 ('intron 18169939-18170752 rna=1153-1153 sjBases=GT...AG (GT_AG)',),
-                                 ('exon 18170752-18170920 rna=1153-1321',
-                                   (('CDS 18170752-18170920 rna=1153-1321 0',),)),
-                                 ('intron 18170920-18173149 rna=1321-1321 sjBases=GT...AG (GT_AG)',),
-                                 ('exon 18173149-18173281 rna=1321-1453',
-                                   (('CDS 18173149-18173281 rna=1321-1453 0',),)),
-                                 ('intron 18173281-18173792 rna=1453-1453 sjBases=GT...AG (GT_AG)',),
-                                 ('exon 18173792-18173842 rna=1453-1503',
-                                   (('CDS 18173792-18173842 rna=1453-1503 0',),)),
-                                 ('intron 18173842-18176771 rna=1503-1503 sjBases=GT...AG (GT_AG)',),
-                                 ('exon 18176771-18177397 rna=1503-2129',
-                                   (('CDS 18176771-18176817 rna=1503-1549 2',),
-                                     ("3'UTR 18176817-18177397 rna=1549-2129",))))))
+                              (('exon 18149898-18150222 rna=0-324',
+                                (("5'UTR 18149898-18150222 rna=0-324",),)),
+                               ('intron 18150222-18157557 rna=324-324 sjBases=GC...AG (GC_AG)',),
+                               ('exon 18157557-18157820 rna=324-587',
+                                (("5'UTR 18157557-18157663 rna=324-430",),
+                                 ('CDS 18157663-18157820 rna=430-587 0',))),
+                               ('intron 18157820-18160171 rna=587-587 sjBases=GT...AG (GT_AG)',),
+                               ('exon 18160171-18160268 rna=587-684',
+                                (('CDS 18160171-18160268 rna=587-684 1',),)),
+                               ('intron 18160268-18161789 rna=684-684 sjBases=GT...AG (GT_AG)',),
+                               ('exon 18161789-18161935 rna=684-830',
+                                (('CDS 18161789-18161935 rna=684-830 2',),)),
+                               ('intron 18161935-18167254 rna=830-830 sjBases=GT...AG (GT_AG)',),
+                               ('exon 18167254-18167334 rna=830-910',
+                                (('CDS 18167254-18167334 rna=830-910 1',),)),
+                               ('intron 18167334-18167889 rna=910-910 sjBases=GT...AG (GT_AG)',),
+                               ('exon 18167889-18168036 rna=910-1057',
+                                (('CDS 18167889-18168036 rna=910-1057 0',),)),
+                               ('intron 18168036-18169843 rna=1057-1057 sjBases=GT...AG (GT_AG)',),
+                               ('exon 18169843-18169939 rna=1057-1153',
+                                (('CDS 18169843-18169939 rna=1057-1153 0',),)),
+                               ('intron 18169939-18170752 rna=1153-1153 sjBases=GT...AG (GT_AG)',),
+                               ('exon 18170752-18170920 rna=1153-1321',
+                                (('CDS 18170752-18170920 rna=1153-1321 0',),)),
+                               ('intron 18170920-18173149 rna=1321-1321 sjBases=GT...AG (GT_AG)',),
+                               ('exon 18173149-18173281 rna=1321-1453',
+                                (('CDS 18173149-18173281 rna=1321-1453 0',),)),
+                               ('intron 18173281-18173792 rna=1453-1453 sjBases=GT...AG (GT_AG)',),
+                               ('exon 18173792-18173842 rna=1453-1503',
+                                (('CDS 18173792-18173842 rna=1453-1503 0',),)),
+                               ('intron 18173842-18176771 rna=1503-1503 sjBases=GT...AG (GT_AG)',),
+                               ('exon 18176771-18177397 rna=1503-2129',
+                                (('CDS 18176771-18176817 rna=1503-1549 2',),
+                                 ("3'UTR 18176817-18177397 rna=1549-2129",))))))
 
         self.assertEqual("chr22\t18149898\t18177397\tENST00000215794.7\t0\t+\t18157663\t18176817\t0,1,2\t11\t324,263,97,146,80,147,96,168,132,50,626,\t0,7659,10273,11891,17356,17991,19945,20854,23251,23894,26873,",
                          str(trans.toBed("0,1,2")),)

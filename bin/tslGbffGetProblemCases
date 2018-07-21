@@ -7,7 +7,7 @@ import argparse
 from collections import namedtuple
 from pycbio.sys import fileOps
 from gencode_icedb.tsl.gbffProblemCaseParser import parseGbff, Organism
-from gencode_icedb.tsl.genbankProblemCasesDb import GenbankProblemCase
+from gencode_icedb.tsl.genbankProblemCasesSqlite import GenbankProblemCase
 
 
 def parseArgs():

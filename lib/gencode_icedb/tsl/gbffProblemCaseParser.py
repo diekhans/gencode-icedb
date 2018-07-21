@@ -4,7 +4,7 @@ Parse problem cases from set of genbank flat files.
 import re
 from pycbio.sys import fileOps
 from gencode_icedb.tsl.supportDefs import Organism, GenbankProblemReason, EvidenceType
-from gencode_icedb.tsl.genbankProblemCasesDb import GenbankProblemCase
+from gencode_icedb.tsl.genbankProblemCasesSqlite import GenbankProblemCase
 
 
 class RecordInfoParser(object):

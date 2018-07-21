@@ -3,8 +3,8 @@ import icedbProgSetup  # noqa: F401
 import os
 import argparse
 from pycbio.sys import fileOps
-from pycbio.hgdata.hgLite import sqliteConnect
-from pycbio.hgdata.hgLite import GencodeAttrsDbTable
+from pycbio.db.sqliteOps import sqliteConnect
+from pycbio.hgdata.gencodeSqlite import GencodeAttrsSqliteTable
 from gencode_icedb.general import gencodeDb
 from gencode_icedb.general.genome import GenomeReaderFactory
 
@@ -54,7 +54,7 @@ def rslGencodeCollectSupportMkJobs(opts):
     "main function"
     genomeReaderFactory = GenomeReaderFactory.factoryFromCmdOptions(opts)
     conn = sqliteConnect(opts.gencodeDb, readonly=True)
-    attrsDbTable = GencodeAttrsDbTable(conn, gencodeDb.GENCODE_ATTRS_TABLE)
+    attrsDbTable = GencodeAttrsSqliteTable(conn, gencodeDb.GENCODE_ATTRS_TABLE)
     gencodeIds = sorted(attrsDbTable.getGeneIds())
     if opts.maxgenes is not None:
         gencodeIds = gencodeIds[0:opts.maxgenes]

@@ -1,5 +1,5 @@
 """
-create AnnotationFeature objects from UCSC genePred records.
+create AnnotationFeature objects from Ensembl database records (see ensemblDb.py)
 """
 from __future__ import print_function
 from pycbio.hgdata.coords import Coords

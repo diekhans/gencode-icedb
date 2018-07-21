@@ -2,7 +2,7 @@
 GenBank problem cases management
 """
 from intervaltree import IntervalTree
-from gencode_icedb.tsl.genbankProblemCasesDb import GenbankProblemCaseDbTable
+from gencode_icedb.tsl.genbankProblemCasesSqlite import GenbankProblemCaseSqliteTable
 
 
 def accvToAcc(accv):
@@ -18,7 +18,7 @@ class GenbankProblemCases(object):
 
     def __init__(self, conn):
         self.itree = IntervalTree()
-        dbTbl = GenbankProblemCaseDbTable(conn)
+        dbTbl = GenbankProblemCaseSqliteTable(conn)
         for gpc in dbTbl.genAll():
             self._addCase(gpc)
 

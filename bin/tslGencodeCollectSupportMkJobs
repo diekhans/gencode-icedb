@@ -4,8 +4,8 @@ import sys
 import os
 import argparse
 from pycbio.sys import fileOps
-from pycbio.hgdata.hgLite import sqliteConnect
-from pycbio.hgdata.hgLite import GencodeAttrsDbTable
+from pycbio.db.sqliteOps import sqliteConnect
+from pycbio.hgdata.gencodeSqlite import GencodeAttrsSqliteTable
 from gencode_icedb.general import gencodeDb
 
 
@@ -61,7 +61,7 @@ class JobGenerator(object):
 def tslGencodeCollectSupportMkJobs(opts):
     "main function"
     conn = sqliteConnect(opts.gencodeDb, readonly=True)
-    attrsDbTable = GencodeAttrsDbTable(conn, gencodeDb.GENCODE_ATTRS_TABLE)
+    attrsDbTable = GencodeAttrsSqliteTable(conn, gencodeDb.GENCODE_ATTRS_TABLE)
     if opts.gencodeIdFile is not None:
         print("WARNING: subset of gencode annotations being processed", file=sys.stderr)
         gencodeIds = sorted(fileOps.readNonCommentLines(opts.gencodeIdFile))

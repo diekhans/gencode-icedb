@@ -8,10 +8,11 @@ import argparse
 from pycbio.hgdata import hgDb
 from pycbio.hgdata.psl import Psl, PslBlock, reverseCoords
 from pycbio.hgdata.cigar import ExonerateCigar
-from pycbio.hgdata.hgLite import sqliteConnect
-from pycbio.hgdata.hgLite import PslDbTable
+from pycbio.db.sqliteOps import sqliteConnect
+from pycbio.hgdata.pslSqlite import PslSqliteTable
 from pycbio.hgdata.coords import Coords
-from pycbio.sys import dbOps, fileOps, loggingOps
+from pycbio.sys import fileOps, loggingOps
+from pycbio.db import mysqlOps
 from pycbio.ncbi.assembly import AssemblyReport
 import eutils.client
 import MySQLdb
@@ -287,10 +288,10 @@ def cdnaEnsemblAligns(opts):
     ensChromRanges = ucscToEnsChroms(opts.chromSpecs, asmReport) if opts.chromSpecs is not None else None
     psls = converter.ensemblCDnasToPsls(opts.ensemblCDnaDb, opts.limit, accverSubset, ensChromRanges)
     conn = sqliteConnect(opts.sqliteDb, create=True)
-    pslDbTable = PslDbTable(conn, opts.table, create=True)
+    pslDbTable = PslSqliteTable(conn, opts.table, create=True)
     pslDbTable.loads(psls)
     conn.close()
 
 
-dbOps.mySqlSetErrorOnWarn()
+mysqlOps.mySqlSetErrorOnWarn()
 cdnaEnsemblAligns(parseArgs())

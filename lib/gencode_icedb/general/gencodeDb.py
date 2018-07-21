@@ -5,7 +5,10 @@ import six
 from collections import defaultdict
 from pycbio.sys.objDict import ObjDict
 from pycbio.hgdata.coords import Coords
-from pycbio.hgdata.hgLite import sqliteConnect, SqliteCursor, GenePredDbTable, GencodeAttrsDbTable, GencodeTagDbTable
+from pycbio.db.sqliteOps import sqliteConnect, SqliteCursor
+from pycbio.hgdata.genePredSqlite import GenePredSqliteTable
+from pycbio.hgdata.gencodeSqlite import GencodeAttrsSqliteTable, GencodeTagSqliteTable
+
 from pycbio.hgdata.genePred import GenePred
 from pycbio.hgdata.rangeFinder import Binner
 from gencode_icedb.general.genePredAnnotFeatures import AnnotationGenePredFactory
@@ -34,9 +37,9 @@ class UcscGencodeReader(object):
         self.conn = sqliteConnect(gencodeDbFile)
         self.filterChrYPar = filterChrYPar
         self.transcriptTypes = frozenset(transcriptTypes) if transcriptTypes is not None else None
-        self.genePredDbTable = GenePredDbTable(self.conn, GENCODE_ANN_TABLE)
-        self.attrDbTable = GencodeAttrsDbTable(self.conn, GENCODE_ATTRS_TABLE)
-        self.tagDbTable = GencodeTagDbTable(self.conn, GENCODE_TAG_TABLE)
+        self.genePredDbTable = GenePredSqliteTable(self.conn, GENCODE_ANN_TABLE)
+        self.attrDbTable = GencodeAttrsSqliteTable(self.conn, GENCODE_ATTRS_TABLE)
+        self.tagDbTable = GencodeTagSqliteTable(self.conn, GENCODE_TAG_TABLE)
         self.annotFactory = AnnotationGenePredFactory(genomeReader)
 
     def close(self):
@@ -74,7 +77,7 @@ class UcscGencodeReader(object):
         """Get the annotations genes that *start* in the range. To get whole
         chrom, start and end maybe None.
         """
-        columns = ",".join(GenePredDbTable.columnNames)
+        columns = ",".join(GenePredSqliteTable.columnNames)
         if start is None:
             rangeWhere = "(chrom = '{}')".format(chrom)
         else:

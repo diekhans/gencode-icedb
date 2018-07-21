@@ -2,7 +2,7 @@
 GenBank problem case accession and reason table.
 """
 from collections import namedtuple
-from pycbio.hgdata.hgLite import HgLiteTable
+from pycbio.hgdata.hgSqlite import HgSqliteTable
 from gencode_icedb.tsl.supportDefs import EvidenceType, GenbankProblemReason, Organism
 
 # IMPORTANT: this does not use peewee because the rest of the evidence database
@@ -24,7 +24,7 @@ class GenbankProblemCase(namedtuple("GenbankProblemCase",
                                                       startAcc, endAcc, GenbankProblemReason(reason))
 
 
-class GenbankProblemCaseDbTable(HgLiteTable):
+class GenbankProblemCaseSqliteTable(HgSqliteTable):
     """
     Storage for problem cases
     """
@@ -40,7 +40,7 @@ class GenbankProblemCaseDbTable(HgLiteTable):
     columnNames = ("organism", "etype", "startAcc", "endAcc", "reason")
 
     def __init__(self, conn, table=GENBANK_PROBLEM_CASE_TBL, create=False):
-        super(GenbankProblemCaseDbTable, self).__init__(conn, table)
+        super(GenbankProblemCaseSqliteTable, self).__init__(conn, table)
         if create:
             self.create()
 
