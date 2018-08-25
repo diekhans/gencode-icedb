@@ -2,15 +2,10 @@
 import icedbProgSetup  # noqa: F401
 import argparse
 import csv
-from collections import defaultdict
 from pycbio.sys import fileOps
-from pycbio.db.sqliteOps import sqliteConnect
-from pycbio.hgdata.genePredSqlite import GenePredSqliteTable
-from pycbio.hgdata.gencodeSqlite import GencodeAttrsSqliteTable
-from gencode_icedb.general import gencodeDb
+from gencode_icedb.general.gencodeDb import UcscGencodeReader
 from gencode_icedb.general.genome import GenomeReaderFactory
 from gencode_icedb.general.transFeatures import IntronFeature
-from gencode_icedb.general.genePredAnnotFeatures import AnnotationGenePredFactory
 from gencode_icedb.rsl.rslModels import rslConnect, rslClose, SjSupportReader
 from gencode_icedb.rsl.intronSupportCounter import IntronSupportCounter
 
@@ -23,13 +18,13 @@ def parseArgs():
     parser = argparse.ArgumentParser(description=desc)
     GenomeReaderFactory.addCmdOptions(parser)
     parser.add_argument('gencodeDb',
-                        help="""GENCODE sqlite3 database from gencodeDbLoad""")
+                        help="""GENCODE sqlite3 database""")
     parser.add_argument('sjDb',
                         help="""splice junction evidence sqlite3 database, a correspond *.sjsup.gz and tabix index file must exist""")
     parser.add_argument('resultsTsv',
                         help="""TSV file for results""")
-    parser.add_argument('gencodeIds', nargs='*',
-                        help="""GENCODE gene or transcript ids, including versions.  If not are specified, all transcript are processed""")
+    parser.add_argument('gencodeIds', nargs='+',
+                        help="""GENCODE gene or transcript ids, including versions.""")
     return parser.parse_args()
 
 
@@ -39,74 +34,28 @@ resultsHeader = ("geneId", "geneName", "transcriptId", "transcriptType",
 
 
 class SupportCounter(object):
-    # FIXME: switch to gencodeDb.py module, attrs from metadata field
-    def __init__(self, gencodeConn, sjConn, genomeReader):
-        self.attrsDbTable = GencodeAttrsSqliteTable(gencodeConn, gencodeDb.GENCODE_ATTRS_TABLE)
-        self.annDbTable = GenePredSqliteTable(gencodeConn, gencodeDb.GENCODE_ANN_TABLE)
-        self.sjSupportReader = SjSupportReader(sjDbConn=sjConn)
-        self.annFactory = AnnotationGenePredFactory(genomeReader)
+    def __init__(self, annotReader, genomeReader, sjConn):
+        self.annotReader = annotReader
         self.genomeReader = genomeReader
-
-    def _getAttrsById(self, gencodeId):
-        "try gene, then transcript id"
-        attrs = self.attrsDbTable.getByGeneId(gencodeId)
-        if len(attrs) > 0:
-            return attrs
-        attr = self.attrsDbTable.getByTranscriptId(gencodeId)
-        if attr is not None:
-            return [attr]
-        raise Exception("can't find GENCODE gene or transcript with id {}".format(gencodeId))
-
-    def _getTranscripts(self, attrs):
-        """return list of transcripts annotations, which would be empty if the annotations
-        were on alts that were not aligned"""
-        transes = []
-        for attr in attrs:
-            for gp in self.annDbTable.getByName(attr.transcriptId):
-                transes.append(self.annFactory.fromGenePred(gp))
-        return transes
-
-    def _getPrimaryTranscript(self, transes):
-        "get primary transcript, dropping PAR, alts, etc"
-        byChrom = defaultdict(list)
-        for trans in transes:
-            byChrom[trans.chrom.name].append(trans)
-        chroms = list(byChrom.keys())
-        if len(chroms) == 1:
-            return byChrom[chroms[0]]
-        if "chrY" in chroms:
-            # ignored Y
-            chroms.remove("chrY")
-        # use shortest
-        chroms.sort(key=lambda c: len(c))
-        return byChrom[chroms[0]]
-
-    def _splitAttrsByTrans(self, attrs):
-        attrsByTrans = dict()
-        for attr in attrs:
-            attrsByTrans[attr.transcriptId] = attr
-        return attrsByTrans
-
-    def _getBounds(self, transes):
-        start = min([a.chrom.start for a in transes])
-        end = max([a.chrom.end for a in transes])
-        return transes[0].chrom.name, start, end
+        self.sjSupportReader = SjSupportReader(sjDbConn=sjConn)
 
     def _sumSupportsByIntron(self, chrom, start, end):
+        # FIXME: use coords
         intronSupportCnts = IntronSupportCounter(self.genomeReader)
         for sjSupp in self.sjSupportReader.fetch(chrom, start, end):
             intronSupportCnts.sumSjSupp(sjSupp)
         return intronSupportCnts
 
-    def _sumSupportForTranses(self, transes, attrsByTrans):
+    def _sumSupportForGene(self, geneAnnots):
         """Sums support by introns for SJ in the range, so transcripts should be a locus,
         either transcripts in one gene locus or one transcript.  Collecting all upfront
         prevents multiple queries for shared introns."""
-        chrom, start, end = self._getBounds(transes)
-        return self._sumSupportsByIntron(chrom, start, end)
+        chrom = geneAnnots.chrom
+        return self._sumSupportsByIntron(chrom.name, chrom.start, chrom.end)
 
-    def _collectTransIntronSupport(self, trans, transAttrs, intronFeat, intronSupportCnts, resultsWriter):
+    def _collectTransIntronSupport(self, transAnnot, intronFeat, intronSupportCnts, resultsWriter):
         intron, sjCounts = intronSupportCnts.getIntronFeatCounts(intronFeat)
+        transAttrs = transAnnot.attrs
         resultsWriter.writerow([transAttrs.geneId, transAttrs.geneName,
                                 transAttrs.transcriptId,
                                 transAttrs.transcriptType,
@@ -116,39 +65,28 @@ class SupportCounter(object):
                                 sjCounts.numUniqueMapReads,
                                 sjCounts.numMultiMapReads])
 
-    def _collectTranscriptSupport(self, trans, transAttrs, intronSupportCnts, resultsWriter):
-        for feat in trans.features:
+    def _collectTranscriptSupport(self, transAnnot, intronSupportCnts, resultsWriter):
+        for feat in transAnnot.features:
             if isinstance(feat, IntronFeature):
-                self._collectTransIntronSupport(trans, transAttrs, feat, intronSupportCnts, resultsWriter)
+                self._collectTransIntronSupport(transAnnot, feat, intronSupportCnts, resultsWriter)
 
-    def _collectTranscriptsSupport(self, transes, attrsByTrans, resultsWriter):
-        intronSupportCnts = self._sumSupportForTranses(transes, resultsWriter)
-        for trans in transes:
-            self._collectTranscriptSupport(trans, attrsByTrans[trans.rna.name], intronSupportCnts, resultsWriter)
-
-    def _collectSupportId(self, gencodeId, resultsWriter):
-        attrs = self._getAttrsById(gencodeId)
-        transes = self._getTranscripts(attrs)
-        if len(transes) > 0:
-            self._collectTranscriptsSupport(self._getPrimaryTranscript(transes),
-                                            self._splitAttrsByTrans(attrs),
-                                            resultsWriter)
+    def _collectTranscriptsSupport(self, geneAnnot, resultsWriter):
+        intronSupportCnts = self._sumSupportForGene(geneAnnot)
+        for transAnnot in geneAnnot.transcripts:
+            self._collectTranscriptSupport(transAnnot, intronSupportCnts, resultsWriter)
 
     def collectSupport(self, gencodeIds, resultsWriter):
-        if len(gencodeIds) == 0:
-            gencodeIds = self.attrsDbTable.getGeneIds()
         resultsWriter.writerow(resultsHeader)
-        for gencodeId in gencodeIds:
-            self._collectSupportId(gencodeId, resultsWriter)
+        for geneAnnot in self.annotReader.getGenesByGencodeIds(gencodeIds):
+            self._collectTranscriptsSupport(geneAnnot, resultsWriter)
 
 
 def rslGencodeCollectSupport(opts):
     "entry point"
     genomeReader = GenomeReaderFactory.factoryFromCmdOptions(opts).obtain()
-
-    gencodeConn = sqliteConnect(opts.gencodeDb, readonly=True)
+    annotReader = UcscGencodeReader(opts.gencodeDb, genomeReader)
     sjConn = rslConnect(opts.sjDb, readonly=True)
-    supportCounter = SupportCounter(gencodeConn, sjConn, genomeReader)
+    supportCounter = SupportCounter(annotReader, genomeReader, sjConn)
 
     fileOps.ensureFileDir(opts.resultsTsv)
     resultsTmpTsv = fileOps.atomicTmpFile(opts.resultsTsv)
@@ -156,7 +94,8 @@ def rslGencodeCollectSupport(opts):
         supportCounter.collectSupport(opts.gencodeIds, csv.writer(fh, dialect=csv.excel_tab,
                                                                   lineterminator='\n'))
     fileOps.atomicInstall(resultsTmpTsv, opts.resultsTsv)
-    gencodeConn.close()
+    genomeReader.close()
+    annotReader.close()
     rslClose(sjConn)
 
 

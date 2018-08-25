@@ -3,12 +3,12 @@ import icedbProgSetup  # noqa: F401
 import os
 import sys
 import argparse
-import logging
 import glob
 from pycbio.sys import loggingOps, fileOps
 
 
 rslStarSjSupMergeJob = os.path.join(icedbProgSetup.rootDir, "bin", "rslStarSjSupMergeJob")
+
 
 def parseArgs():
     desc = """generate a series of parasol batches to merge splice split
@@ -23,6 +23,7 @@ def parseArgs():
     loggingOps.setupFromCmd(opts, sys.argv[0])
     return opts
 
+
 def getByChromSplits(byChromDir):
     "return list of split sjsup files, in chrom sorted order"
     sjsupSplits = []
@@ -33,6 +34,7 @@ def getByChromSplits(byChromDir):
         exit("Error: no sjsup fies found in under: {}".format(byChromDir))
     return sjsupSplits
 
+
 def createRunBatches(mergeWorkDir):
     fileOps.ensureDir(mergeWorkDir)
     runBatchesScript = os.path.join(mergeWorkDir, "run-batches")
@@ -42,9 +44,11 @@ def createRunBatches(mergeWorkDir):
     os.chmod(runBatchesScript, 0o755)
     return fh
 
+
 def writeInFile(sjsups, inFileFh):
     for sjsup in sjsups:
         print(sjsup, file=inFileFh)
+
 
 def writeMergeBatchJob(sjsupSplits, filesPerJob, mergeBatchFh, mergeBatchDir, iSplit, iJob, sjsupMerges):
     inFileList = os.path.join(mergeBatchDir, "{:03}.in".format(iJob))
@@ -74,6 +78,7 @@ def writeMergeBatch(sjsupSplits, filesPerJob, mergeBatchFh, mergeBatchDir):
         iJob += 1
     return sjsupMerges
 
+
 def mkMergeBatch(sjsupSplits, filesPerJob, mergeWorkDir, mergeBatchNum, runBatchesFh):
     """for a list of input files, generate a merge batch, return list of merge
     output"""
@@ -102,5 +107,6 @@ def rslMkStarSjOutSplits(opts):
         raise Exception("BUG: didn't end up with one file in the end")
     linkFinalResult(sjsupSplits[0], opts.mergeWorkDir, runBatchesFh)
     runBatchesFh.close()
+
 
 rslMkStarSjOutSplits(parseArgs())

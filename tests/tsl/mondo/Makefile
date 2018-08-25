@@ -82,13 +82,13 @@ ${mmEvidDb}:
 ${hsAnnonDb}:
 	@mkdir -p $(dir $@)
 	rm -f ${hsAnnonDb} ${hsAnnonDb}.tmp
-	${gencodeDbLoad} --hgdb=${hsUcscGenomeDb} --version=${hsGencodeVer} ${hsAnnonDb}.tmp
+	${ucscGencodeDbLoad} --hgdb=${hsUcscGenomeDb} --version=${hsGencodeVer} ${hsAnnonDb}.tmp
 	mv -f ${hsAnnonDb}.tmp ${hsAnnonDb}
 
 ${mmAnnonDb}:
 	@mkdir -p $(dir $@)
 	rm -f ${mmAnnonDb} ${mmAnnonDb}.tmp
-	${gencodeDbLoad} --hgdb=${mmUcscGenomeDb} --version=${mmGencodeVer} ${mmAnnonDb}.tmp
+	${ucscGencodeDbLoad} --hgdb=${mmUcscGenomeDb} --version=${mmGencodeVer} ${mmAnnonDb}.tmp
 	mv -f ${mmAnnonDb}.tmp ${mmAnnonDb}
 
 clean::

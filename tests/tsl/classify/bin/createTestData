@@ -77,7 +77,7 @@ def writeTransIdsTmpFile(testCases):
 def buildGencodeDb(testCases, ucscDb, gencodeVersion, gencodeDb):
     fileOps.rmFiles(gencodeDb)
     transIdTmp = writeTransIdsTmpFile(testCases)
-    cmd = ["gencodeDbLoad",
+    cmd = ["ucscGencodeDbLoad",
            "--hgdb={}".format(ucscDb),
            "--version={}".format(gencodeVersion),
            "--transIds={}".format(transIdTmp),

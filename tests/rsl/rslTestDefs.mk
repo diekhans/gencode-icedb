@@ -10,7 +10,7 @@ rslStarSjOutSplit = ${BINDIR}/rslStarSjOutSplit
 rslMkStarSjOutSplits = ${BINDIR}/rslMkStarSjOutSplits
 rslMkStarSjSupMergeJobs = ${BINDIR}/rslMkStarSjSupMergeJobs
 
-gencodeDbLoad = ${BINDIR}/gencodeDbLoad
+ucscGencodeDbLoad = ${BINDIR}/ucscGencodeDbLoad
 rslGencodeCollectSupport = ${BINDIR}/rslGencodeCollectSupport
 rslGencodeCollectSupportMkJobs = ${BINDIR}/rslGencodeCollectSupportMkJobs
 rslGencodeCollectSupportFinishJobs = ${BINDIR}/rslGencodeCollectSupportFinishJobs

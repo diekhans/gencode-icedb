@@ -15,7 +15,7 @@ def parseArgs():
     desc = """compare TSL with previous"""
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('gencodeDb',
-                        help="""GENCODE sqlite3 database from gencodeDbLoad""")
+                        help="""GENCODE sqlite3 database""")
     parser.add_argument('tslDb',
                         help="""TSL results sqlite3 database""")
     parser.add_argument('resultsTsv',

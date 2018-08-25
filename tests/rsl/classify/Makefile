@@ -14,15 +14,9 @@ test:	supportTests \
 ##
 # Test of support classify
 ##
-supportTests:   supportCollectAllTest \
-		supportCollectGenesTest \
+supportTests:	supportCollectGenesTest \
 		supportCollectTransTest \
 		supportCollectMkJobsTest
-
-# FIXME: change to use single database setup
-supportCollectAllTest: ${gencodeTestDb} ${sjTestDb} mkdirs
-	${rslGencodeCollectSupport} ${genomeSeqsSpecs} ${gencodeTestDb} ${sjTestDb} output/$@.supp.tsv
-	${diff} expected/$@.supp.tsv output/$@.supp.tsv
 
 supportCollectGenesTest: ${gencodeTestDb} ${sjTestDb} mkdirs
 	${rslGencodeCollectSupport} ${genomeSeqsSpecs} ${gencodeTestDb} ${sjTestDb} output/$@.supp.tsv ENSG00000235169.7
@@ -75,7 +69,7 @@ novelMkJobsTest: mkdirs
 ${gencodeTestDb}:
 	@mkdir -p $(dir $@)
 	@rm -f $@.tmp
-	${gencodeDbLoad} $@.tmp --attrs=${dbinput}/set1.hs.attrs.v26.tsv --transcriptSource=${dbinput}/set1.hs.trans-source.v26.tsv --transcriptionSupportLevel=${dbinput}/set1.hs.trans-support-level.v26.tsv --tags=${dbinput}/set1.hs.trans-tag.v26.tsv --genes=${dbinput}/set1.hs.comp.v26.gp --pseudoGenes=${dbinput}/set1.hs.pseudo.v26.gp
+	${ucscGencodeDbLoad} $@.tmp --attrs=${dbinput}/set1.hs.attrs.v26.tsv --transcriptSource=${dbinput}/set1.hs.trans-source.v26.tsv --transcriptionSupportLevel=${dbinput}/set1.hs.trans-support-level.v26.tsv --tags=${dbinput}/set1.hs.trans-tag.v26.tsv --genes=${dbinput}/set1.hs.comp.v26.gp --pseudoGenes=${dbinput}/set1.hs.pseudo.v26.gp
 	mv -f $@.tmp $@
 
 ${sjTestDb}:

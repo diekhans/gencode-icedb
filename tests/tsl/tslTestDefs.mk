@@ -15,7 +15,7 @@ mmGrcRefAssemblyReport = ${ROOT}/tests/tsl/etc/GCF_000001405.36_GRCh38.p10_assem
 mmUcscGenomeDb = mm10
 
 
-gencodeDbLoad = ${BINDIR}/gencodeDbLoad
+ucscGencodeDbLoad = ${BINDIR}/ucscGencodeDbLoad
 tslGetUcscRnaAligns = ${BINDIR}/tslGetUcscRnaAligns
 tslGetEnsemblRnaAligns = ${BINDIR}/tslGetEnsemblRnaAligns
 tslGbffGetProblemCases = ${BINDIR}/tslGbffGetProblemCases

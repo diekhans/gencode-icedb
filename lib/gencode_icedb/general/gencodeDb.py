@@ -2,18 +2,13 @@
 Read GENCODE annotations from a database.
 """
 import six
-from collections import defaultdict
 from pycbio.sys.objDict import ObjDict
-from pycbio.hgdata.coords import Coords
-from pycbio.db.sqliteOps import sqliteConnect, SqliteCursor
+from pycbio.db.sqliteOps import sqliteConnect
 from pycbio.hgdata.genePredSqlite import GenePredSqliteTable
 from pycbio.hgdata.gencodeSqlite import GencodeAttrsSqliteTable, GencodeTagSqliteTable
-
-from pycbio.hgdata.genePred import GenePred
-from pycbio.hgdata.rangeFinder import Binner
 from gencode_icedb.general.genePredAnnotFeatures import AnnotationGenePredFactory
+from gencode_icedb.general.geneAnnot import geneAnnotGroup
 
-# FIXME: use Coords here
 # FIXME: rename module to gencodeReader.py
 # FIXME: transcriptType filter should be done in sql
 
@@ -26,11 +21,13 @@ GENCODE_TAG_TABLE = "gencode_tag"
 
 
 def _isChrYPar(annotTrans):
-    return ("PAR" in annotTrans.attrs.tags) and (annotTrans.chrom.name == "chrY")
+    # ucsc data puts PAR tag on both chrX and chrY, since it tracks only by transcript id.
+    return ("PAR" in annotTrans.attrs.tags) and (annotTrans.chrom.name in ("chrY", "Y"))
 
 
 class UcscGencodeReader(object):
-    """Object for accessing a GENCODE sqlite database with UCSC tables """
+    """Object for accessing a GENCODE sqlite database with UCSC tables.
+    """
     def __init__(self, gencodeDbFile, genomeReader=None, filterChrYPar=True,
                  transcriptTypes=None):
         self.conn = None
@@ -69,32 +66,9 @@ class UcscGencodeReader(object):
         transIds = self.attrDbTable.getGeneTranscriptIds(geneId)
         return self.getByTranscriptIds(transIds)
 
-    def getByGeneIds(self, geneIds):
-        "get transcripts for genes as a list of list of transcripts, sorted for reputability"
-        return [self.getByGeneId(geneId) for geneId in sorted(geneIds)]
-
-    def getStartingInBounds(self, chrom, start, end):
-        """Get the annotations genes that *start* in the range. To get whole
-        chrom, start and end maybe None.
-        """
-        columns = ",".join(GenePredSqliteTable.columnNames)
-        if start is None:
-            rangeWhere = "(chrom = '{}')".format(chrom)
-        else:
-            # note: end is at txStart+1
-            rangeWhere = Binner.getOverlappingSqlExpr("bin", "chrom", "txStart", "txStart+1", chrom, start, end)
-        sql = "SELECT {columns} FROM {table} WHERE {rangeWhere}".format(columns=columns, table=GENCODE_ANN_TABLE, rangeWhere=rangeWhere)
-        transAnnots = []
-        with SqliteCursor(self.conn, rowFactory=lambda cur, row: GenePred(row)) as cur:
-            cur.execute(sql)
-            for gp in cur:
-                transAnnot = self._makeTransAnnot(gp)
-                if transAnnot is not None:
-                    transAnnots.append(transAnnot)
-        return transAnnots
-
     def getByTranscriptIds(self, transIds):
-        """get annotations as TranscriptFeatures by transcript id (or ids)"""
+        """Get an annotation as a TranscriptFeatures by transcript id (or ids).
+        """
         if isinstance(transIds, six.string_types):
             transIds = [transIds]
         transAnnots = []
@@ -116,7 +90,7 @@ class UcscGencodeReader(object):
                 raise Exception("Not a valid GENCODE gene or transcript id: {}".format(gencodeId))
             return self.getByTranscriptIds(gencodeId)
 
-    def getByGencodeIds(self, gencodeIds):
+    def _getByGencodeIds(self, gencodeIds):
         """get annotations as TranscriptFeatures by gene or transcript id (or ids)"""
         if isinstance(gencodeIds, six.string_types):
             gencodeIds = [gencodeIds]
@@ -125,49 +99,18 @@ class UcscGencodeReader(object):
             transAnnots.extend(self._getByGencodeId(gencodeId))
         return transAnnots
 
-    def getByGencodeIdsGrouped(self, gencodeIds):
-        """get annotations as TranscriptFeatures by gene or transcript id (or ids),
-        group into list or lists by geneId"""
-        byGeneId = defaultdict(list)
-        for transAnnot in self.getByGencodeIds(gencodeIds):
-            byGeneId[transAnnot.attrs.geneId].append(transAnnot)
-        return [[ta for ta in sorted(byGeneId[gi], key=lambda t: t.rna.name)]
-                for gi in sorted(byGeneId.keys())]
+    def getGenesByGencodeIds(self, gencodeIds):
+        """get annotations as GeneAnnotation object, containing the gene's
+        TranscriptFeatures.  This can be by gene or transcript id (or list of
+        ids)"""
+        return geneAnnotGroup(self._getByGencodeIds(gencodeIds))
 
-    def getOverlapping(self, chrom, start, end, strand=None):
+    def getTranscriptsOverlapping(self, chrom, start, end, strand=None):
+        # FIXME: switch to chords
         """generator get overlapping annotations as TranscriptFeatures"""
-        # FIXME: is this needed?
         transAnnots = []
         for gp in self.genePredDbTable.getRangeOverlap(chrom, start, end, strand=strand):
             transAnnot = self._makeTransAnnot(gp)
             if transAnnot is not None:
                 transAnnots.append(transAnnot)
         return transAnnots
-
-    def getAll(self):
-        """Get all annotations as TranscriptFeatures"""
-        transAnnots = []
-        for gp in self.genePredDbTable.getAll():
-            transAnnot = self._makeTransAnnot(gp)
-            if transAnnot is not None:
-                transAnnots.append(transAnnot)
-        return transAnnots
-
-
-def findAnnotationBounds(geneTranses):
-    """find the bounds of a list of gene transcripts on the same chromosome"""
-    annotId = geneTranses[0].rna.name
-    name = geneTranses[0].chrom.name
-    start = geneTranses[0].chrom.start
-    end = geneTranses[0].chrom.end
-    strand = geneTranses[0].rna.strand
-    for geneTrans in geneTranses:
-        if geneTrans.chrom.name != name:
-            raise Exception("Bug: mix of chromosomes provided: {} ({}) and {} ({})".format(geneTrans.rna.name, geneTrans.chrom.name, annotId, name))
-        if geneTrans.chrom.strand != '+':
-            raise Exception("Bug: assumes positive chromosome strand: {} and {}".format(geneTrans.rna.name, annotId))
-        if geneTrans.rna.strand != strand:
-            raise Exception("Bug: mix of RNA strand provided: {} and {}".format(geneTrans.rna.name, annotId))
-        start = min(geneTrans.chrom.start, start)
-        end = max(geneTrans.chrom.end, end)
-    return Coords(name, start, end, strand)

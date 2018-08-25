@@ -119,7 +119,7 @@ def loadTags(conn, hgdbConn, tags, transIdSubset):
         tagsDbTable.loadTsv(tags)
 
 
-def gencodeDbLoad(opts):
+def ucscGencodeDbLoad(opts):
     "main function"
     transIdSubset = loadTransIds(opts.transIds) if opts.transIds is not None else None
     conn = sqliteConnect(opts.sqliteDb, create=True)
@@ -141,4 +141,4 @@ def gencodeDbLoad(opts):
     conn.close()
 
 
-gencodeDbLoad(parseArgs())
+ucscGencodeDbLoad(parseArgs())

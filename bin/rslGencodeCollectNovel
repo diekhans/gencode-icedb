@@ -24,7 +24,7 @@ def parseArgs():
     parser.add_argument("--minUniqueMapped", type=int, default=0,
                         help="""Minimum number of uniquely mapped reads to call as novel""")
     parser.add_argument('gencodeDb',
-                        help="""GENCODE sqlite3 database from gencodeDbLoad""")
+                        help="""GENCODE sqlite3 database""")
     parser.add_argument('sjDb',
                         help="""splice junction evidence sqlite3 database, a correspond *.sjsup.gz and tabix index file must exist""")
     parser.add_argument('resultsTsv',
@@ -39,9 +39,9 @@ resultsHeader = ("chrom", "intronStart", "intronEnd", "strand", "intronMotif",
 
 
 class NovelFinder(object):
-    def __init__(self, annotReader, conn, genomeReader, minUniqueMapped):
+    def __init__(self, annotReader, sjConn, genomeReader, minUniqueMapped):
         self.annotReader = annotReader
-        self.sjSupportReader = SjSupportReader(sjDbConn=conn)
+        self.sjSupportReader = SjSupportReader(sjDbConn=sjConn)
         self.genomeReader = genomeReader
         self.minUniqueMapped = minUniqueMapped
 
@@ -54,8 +54,8 @@ class NovelFinder(object):
             if (sjSupp.strand in ('+', '-')) and (genomeCoords.start <= sjSupp.chromStart) and (sjSupp.chromStart < genomeCoords.end):
                 self.rangeSupportCnts.sumSjSupp(sjSupp)
 
-    def _getOverlappingTrans(self, intron):
-        return self.annotReader.getOverlapping(intron.chrom, intron.chromStart, intron.chromEnd, intron.strand)
+    def _getTranscriptsOverlapping(self, intron):
+        return self.annotReader.getTranscriptsOverlapping(intron.chrom, intron.chromStart, intron.chromEnd, intron.strand)
 
     def _haveIntron(self, intron, trans):
         # already strand-filtered
@@ -87,7 +87,7 @@ class NovelFinder(object):
                                 setOps.setJoin(geneIds, ",")])
 
     def _analyzeSj(self, intron, sjCounts, resultsWriter):
-        overlappingTranses = self._getOverlappingTrans(intron)
+        overlappingTranses = self._getTranscriptsOverlapping(intron)
         if not self._anyHaveIntron(intron, overlappingTranses):
             self._reportNovel(intron, sjCounts, overlappingTranses, resultsWriter)
 
@@ -109,8 +109,8 @@ def rslGencodeCollectNovel(opts):
     genomeCoords = Coords.parse(opts.chromRange)
     genomeReader = GenomeReaderFactory.factoryFromCmdOptions(opts).obtain()
     annotReader = UcscGencodeReader(opts.gencodeDb, genomeReader)
-    conn = rslConnect(opts.sjDb, readonly=True)
-    novelFinder = NovelFinder(annotReader, conn, genomeReader, opts.minUniqueMapped)
+    sjConn = rslConnect(opts.sjDb, readonly=True)
+    novelFinder = NovelFinder(annotReader, sjConn, genomeReader, opts.minUniqueMapped)
 
     fileOps.ensureFileDir(opts.resultsTsv)
     resultsTmpTsv = fileOps.atomicTmpFile(opts.resultsTsv)
@@ -118,7 +118,7 @@ def rslGencodeCollectNovel(opts):
         novelFinder.collectNovel(genomeCoords, csv.writer(fh, dialect=csv.excel_tab,
                                                           lineterminator='\n'))
     fileOps.atomicInstall(resultsTmpTsv, opts.resultsTsv)
-    rslClose(conn)
+    rslClose(sjConn)
 
 
 rslGencodeCollectNovel(parseArgs())

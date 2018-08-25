@@ -46,7 +46,7 @@ class Feature(object):
 
     Attributes maybe associated with any feature.  It supplied, they are of
     type ObjDict and thus addressable by field name. The attrs property will
-    be None if not supply, so this much be checked first.
+    be None if not supply, so this must be checked first.
     """
     # FIXME: this should be named simply Feature
     # FIXME: not sure like the *Loc names
@@ -452,7 +452,7 @@ class TranscriptFeatures(Feature):
     this may differ from the rna strand for 3' ESTs.
     """
     name = "trans"
-    __slots__ = ("chrom", "rna", "transcriptionStrand", "cdsChrom", "features")
+    __slots__ = ("chrom", "rna", "transcriptionStrand", "cdsChrom", "features", "geneAnnot")
 
     def __init__(self, chrom, rna, transcriptionStrand, cdsChrom=None, attrs=None):
         super(TranscriptFeatures, self).__init__(None, None, chrom, rna, attrs)
@@ -463,6 +463,7 @@ class TranscriptFeatures(Feature):
         self.transcriptionStrand = transcriptionStrand
         self.cdsChrom = cdsChrom
         self.features = None
+        self.geneAnnot = None  # will be set if contained in a GeneAnnotation object
 
     def __str__(self):
         return "t={}/{}, rna={}/{} {} <{}>".format(str(self.chrom), self.chrom.strand,

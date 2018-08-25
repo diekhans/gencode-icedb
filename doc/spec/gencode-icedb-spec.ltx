@@ -141,7 +141,7 @@ Summary
 
 Collect support for a GENCODE set:
 \begin{tightitemize}
-\item \texttt{gencodeDbLoad --hgdb=hg38 data/gencodeV26.db wgEncodeGencodeAttrsV26 wgEncodeGencodeCompV26 wgEncodeGencodePseudoGeneV26 }
+\item \texttt{ucscGencodeDbLoad --hgdb=hg38 data/gencodeV26.db wgEncodeGencodeAttrsV26 wgEncodeGencodeCompV26 wgEncodeGencodePseudoGeneV26 }
 \item \texttt{rslGencodeCollectSupportMkJobs --genomeSeqs=/hive/data/genomes/hg38/hg38.2bit data/gencodeV26.db ../../data/grch38/sjdb/czi.hs.db analyze.tmp}
 \item \texttt{para make -batch=analyze.tmp/batch analyze.tmp/batch.jobs}
 \item \texttt{bin/rslGencodeCollectSupportFinishJobs data/gencodeV26.db analyze.tmp results/gencodeV26-czi-sjsupp.db}

@@ -3,7 +3,7 @@ include ${ROOT}/config.mk
 
 faUcscToGencode = ${BINDIR}/faUcscToGencode
 genePredIntrons = ${BINDIR}/genePredIntrons
-gencodeDbLoad = ${BINDIR}/gencodeDbLoad
+ucscGencodeDbLoad = ${BINDIR}/ucscGencodeDbLoad
 featureMondoTester = ./bin/featureMondoTester
 
 .SECONDARY:
@@ -13,7 +13,7 @@ hsGencodeVer = V28
 hsGencodeCompTbl = wgEncodeGencodeComp${hsGencodeVer}
 
 test:   featureUnitTests \
-	gencodeDbLoadTest \
+	ucscGencodeDbLoadTest \
 	faTests \
 	genePredIntronsTests
 	@echo "Note: run make mondoTest for heavy-duty tests"
@@ -27,9 +27,9 @@ featureUnitTests:
 ##
 # tests of loading gencode data into sqlite
 ##
-gencodeDbLoadTest: mkdirs
+ucscGencodeDbLoadTest: mkdirs
 	rm -f output/$@.db
-	${gencodeDbLoad} --attrs=input/set1.gencodeAttrsV28.tsv --transcriptSource=input/set1.gencodeTranscriptSourceV28.tsv --transcriptionSupportLevel=input/set1.gencodeTranscriptionSupportLevelV28.tsv  --tags=input/set1.gencodeTagV28.tsv --genes=input/set1.gencodeCompV28.gp output/$@.db
+	${ucscGencodeDbLoad} --attrs=input/set1.gencodeAttrsV28.tsv --transcriptSource=input/set1.gencodeTranscriptSourceV28.tsv --transcriptionSupportLevel=input/set1.gencodeTranscriptionSupportLevelV28.tsv  --tags=input/set1.gencodeTagV28.tsv --genes=input/set1.gencodeCompV28.gp output/$@.db
 	sqlite3 -header -batch output/$@.db 'SELECT * FROM gencode_ann' >output/$@.gencode_ann.gp
 	sqlite3 -header -batch output/$@.db 'SELECT * FROM gencode_attrs' >output/$@.gencode_attrs.tsv
 	sqlite3 -header -batch output/$@.db 'SELECT * FROM gencode_transcript_source' >output/$@.gencode_trans_src.tsv
@@ -69,7 +69,7 @@ gpMondoTest: mkdirs
 
 gencodeDbMondoTest: mkdirs
 	rm -f output/$@.db
-	time ${gencodeDbLoad} --hgdb=${hsUcscGenomeDb} --version=${hsGencodeVer} output/$@.db
+	time ${ucscGencodeDbLoad} --hgdb=${hsUcscGenomeDb} --version=${hsGencodeVer} output/$@.db
 
 mkdirs:
 	@mkdir -p output

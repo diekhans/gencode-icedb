@@ -1,19 +1,7 @@
 ROOT = .
 include ${ROOT}/config.mk
 
-progs = icedbProgSetup.py \
-	gencodeDbLoad \
-	tslGbffGetProblemCases tslGenbankProblemCasesLoad tslGetEnsemblRnaAligns \
-	tslGencodeCollectSupport tslGencodeCollectSupportMkJobs tslGencodeCollectSupportFinishJobs \
-	rslEncodeDccQuery \
-	rslSraRunInfoFilter rslSraRunInfoDbLoad rslMappingMetadataDbLoad \
-	rslMkStarSjOutSplits \
-	rslGencodeCollectSupport rslGencodeCollectSupportMkJobs rslGencodeCollectSupportFinishJobs \
-	rslGencodeCollectNovel rslGencodeCollectNovelMkJobs rslGencodeCollectNovelFinishJobs
-testprogs = \
-	tests/tsl/classify/bin/createTestData \
-	tests/tsl/classify/bin/getTestCaseInfo \
-	tests/tsl/mondo/bin/tslCmp
+pyprogs = $(shell file -F $$'\t' bin/* tests/*/bin/* | awk '/Python script/{print $$1}')
 
 all::
 	(cd src && ${MAKE})
@@ -25,7 +13,7 @@ mondoTest::
 	(cd tests && ${MAKE} mondoTest)
 
 lint:
-	flake8-3 tests lib/gencode_icedb ${progs:%=bin/%} ${testprogs}
+	flake8 tests lib/gencode_icedb ${pyprogs}
 
 clean::
 	(cd src && ${MAKE} clean)

@@ -18,7 +18,7 @@ def parseArgs():
     parser.add_argument("--genesPerJob", type=int, default=1,
                         help="""number of genes in a job""")
     parser.add_argument('gencodeDb',
-                        help="""GENCODE sqlite3 database from gencodeDbLoad""")
+                        help="""GENCODE sqlite3 database""")
     parser.add_argument('sjDb',
                         help="""splice junction evidence sqlite3 database, a correspond *.sjsup.gz and tabix index file must exist""")
     parser.add_argument('workDir',

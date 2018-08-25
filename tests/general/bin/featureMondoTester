@@ -14,8 +14,8 @@ from gencode_icedb.genome import GenomeReader
 from gencode_icedb.general.evidFeatures import EvidencePslFactory
 from gencode_icedb.general.genePredAnnotFeatures import AnnotationGenePredFactory
 from twobitreader import TwoBitFile
-
 # FIXME: is this still needed with classify mondo?
+
 
 def parseArgs():
     desc = """Run a test from all data in one genome browser database table,
@@ -29,24 +29,28 @@ def parseArgs():
                         help="table format")
     return parser.parse_args()
 
+
 def getGenomeReader(hgdb):
     return GenomeReader(TwoBitFile("/hive/data/genomes/{hgdb}/{hgdb}.2bit".format(hgdb=hgdb)))
+
 
 def pslMondoTest(conn, table, genomeReader):
     factory = EvidencePslFactory(genomeReader)
     cnt = 0
     for psl in PslDbReader(conn, "SELECT * FROM {}".format(table)):
-        trans = factory.fromPsl(psl)
+        factory.fromPsl(psl)  # discard transcript
         cnt += 1
     return cnt
+
 
 def genePredMondoTest(conn, table, genomeReader):
     factory = AnnotationGenePredFactory(genomeReader)
     cnt = 0
     for genePred in GenePredDbReader(conn, "SELECT * FROM {}".format(table)):
-        trans = factory.fromGenePred(genePred)
+        factory.fromGenePred(genePred)  # discard transcript
         cnt += 1
     return cnt
+
 
 def mondoTester(opts):
     conn = hgDb.connect(opts.hgdb)

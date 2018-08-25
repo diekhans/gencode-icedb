@@ -16,7 +16,7 @@ def parseArgs():
     parser.add_argument("--testRange", type=Coords.parse,
                         help="""Only generate jobs that overlap the specified range, for testing""")
     parser.add_argument('gencodeDb',
-                        help="""GENCODE sqlite3 database from gencodeDbLoad""")
+                        help="""GENCODE sqlite3 database""")
     parser.add_argument('sjDb',
                         help="""splice junction evidence sqlite3 database, a correspond *.sjsup.gz and tabix index file must exist""")
     parser.add_argument('workDir',

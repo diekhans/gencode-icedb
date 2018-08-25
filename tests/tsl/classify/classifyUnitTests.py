@@ -10,6 +10,7 @@ from pycbio.sys.testCaseBase import TestCaseBase
 from pycbio.hgdata.psl import Psl
 from gencode_icedb.general.genome import GenomeReaderFactory
 from gencode_icedb.general.gencodeDb import UcscGencodeReader
+from gencode_icedb.general.geneAnnot import geneAnnotGroup
 from gencode_icedb.tsl.evidenceDb import EvidenceSource, EvidenceReader
 from gencode_icedb.tsl.supportDefs import EvidenceSupport
 from gencode_icedb.tsl.supportClassify import tightExonPolymorphicSizeLimit, tightExonPolymorphicFactionLimit, EvidenceQualityEval, MegSupportEvaluator, FullLengthSupportEvaluator
@@ -60,29 +61,30 @@ class EvidCompareTest(TestCaseBase):
             yield (annotTrans.rna.name, evidTrans.rna.name,
                    evaluator.compare(annotTrans, evidTrans))
 
-    def _classifyTest(self, annotTranses, noDiff=False):
+    def _classifyTest(self, geneAnnots, noDiff=False):
         "TSL testing with TSV"
         outTslTsv = self.getOutputFile(".tsl.tsv")
         outDetailsTsv = self.getOutputFile(".details.tsv")
         evaluator = FullLengthSupportEvaluator(self.evidenceReader, self.qualEval)
         with open(outTslTsv, 'w') as tslTsvFh, open(outDetailsTsv, 'w') as detailsTsvFh:
             evaluator.writeTsvHeaders(tslTsvFh, detailsTsvFh)
-            evaluator.classifyGeneTranscripts(annotTranses, tslTsvFh, detailsTsvFh)
+            for geneAnnot in geneAnnots:
+                evaluator.classifyGeneTranscripts(geneAnnot, tslTsvFh, detailsTsvFh)
         if not noDiff:
             self.diffFiles(self.getExpectedFile(".tsl.tsv"), outTslTsv)
             self.diffFiles(self.getExpectedFile(".details.tsv"), outDetailsTsv)
 
     def _classifyGeneTest(self, geneId):
-        geneTranses = self.gencodeReader.getByGeneId(geneId)
-        if len(geneTranses) == 0:
+        transAnnots = self.gencodeReader.getByGeneId(geneId)
+        if len(transAnnots) == 0:
             raise Exception("no transcripts found for {}".format(geneId))
-        self._classifyTest(geneTranses)
+        self._classifyTest(geneAnnotGroup(transAnnots))
 
     def _classifyTransTest(self, transId, noDiff=False):
-        transes = self.gencodeReader.getByTranscriptId(transId)
-        if len(transes) == 0:
+        transAnnots = self.gencodeReader.getByTranscriptId(transId)
+        if len(transAnnots) == 0:
             raise Exception("no transcripts found for {}".format(transId))
-        self._classifyTest(transes, noDiff)
+        self._classifyTest(geneAnnotGroup(transAnnots), noDiff)
 
     def testGAB4(self):
         self._classifyGeneTest("ENSG00000215568.8")
