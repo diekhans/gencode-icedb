@@ -55,7 +55,7 @@ class GenomeSeqSrc(object):
 class PslDbSrc(object):
     "caching psl sqlite database"
     srcs = {
-        "set1": "set1.ucsc-mrna.hg38.psl",
+        "V28": "ucsc-mrnaV28.psl",
         "hg38-mm10.transMap": "hg38-mm10.transMap.psl"
     }
     pslTbls = {}
@@ -86,8 +86,8 @@ class PslDbSrc(object):
 class GenePredDbSrc(object):
     "caching genpred sqlite database"
     srcs = {
-        "set1": "set1.gencodeCompV28.gp",
-        "v26cases": "gencodeV26.gp"
+        "V28": "gencodeCompV28.gp",
+        "V26": "gencodeV26.gp"
     }
     genePredTbls = {}
 
@@ -124,8 +124,8 @@ class FeatureTestBase(TestCaseBase):
 
 
 class EvidenceTests(FeatureTestBase):
-    def _getSet1Psl(self, acc):
-        return PslDbSrc.obtainPsl("set1", acc)
+    def _getV28Psl(self, acc):
+        return PslDbSrc.obtainPsl("V28", acc)
 
     def _pslToEvidTranscript(self, psl):
         return EvidencePslFactory(GenomeSeqSrc.obtain("hg38")).fromPsl(psl)
@@ -151,7 +151,7 @@ class EvidenceTests(FeatureTestBase):
                          msg="trans: {} alignments don't cover RNA range".format(trans.rna.name))
 
     def testAF010310(self):
-        trans = self._pslToEvidTranscript(self._getSet1Psl("AF010310.1"))
+        trans = self._pslToEvidTranscript(self._getV28Psl("AF010310.1"))
         self._assertFeatures(trans,
                              ('t=chr22:18912781-18918413/+, rna=AF010310.1:13-901/- 901 <->',
                               (('exon 18912781-18913362 rna=13-618',
@@ -215,7 +215,7 @@ class EvidenceTests(FeatureTestBase):
         self._checkRnaAln(trans)
 
     def testX96484(self):
-        trans = self._pslToEvidTranscript(self._getSet1Psl("X96484.1"))
+        trans = self._pslToEvidTranscript(self._getV28Psl("X96484.1"))
         self._assertFeatures(trans,
                              ('t=chr22:18906409-18912079/+, rna=X96484.1:48-1067/+ 1080 <+>',
                               (('exon 18906409-18906484 rna=48-123',
@@ -241,7 +241,7 @@ class EvidenceTests(FeatureTestBase):
         self._checkRnaAln(trans)
 
     def testX96484NoSJ(self):
-        trans = EvidencePslFactory(None).fromPsl(self._getSet1Psl("X96484.1"))
+        trans = EvidencePslFactory(None).fromPsl(self._getV28Psl("X96484.1"))
         self._assertFeatures(trans,
                              ('t=chr22:18906409-18912079/+, rna=X96484.1:48-1067/+ 1080 <+>',
                               (('exon 18906409-18906484 rna=48-123',
@@ -521,8 +521,8 @@ class EvidenceTests(FeatureTestBase):
                           'cins 148056110-148056150 rna=None-None'))
 
     def testExonRnaOverlap(self):
-        aln1 = self._pslToEvidTranscript(self._getSet1Psl("AF010310.1"))
-        aln2 = self._pslToEvidTranscript(self._getSet1Psl("AF120278.1"))
+        aln1 = self._pslToEvidTranscript(self._getV28Psl("AF010310.1"))
+        aln2 = self._pslToEvidTranscript(self._getV28Psl("AF120278.1"))
         exon1 = aln1.features[0]
         exon2 = aln2.features[0]
         self.assertTrue(exon1.rnaOverlaps(exon2))
@@ -662,8 +662,8 @@ class EvidenceTests(FeatureTestBase):
 
 
 class AnnotationTests(FeatureTestBase):
-    def _getSet1Gp(self, acc):
-        return GenePredDbSrc.obtainGenePred("set1", acc)
+    def _getV28Gp(self, acc):
+        return GenePredDbSrc.obtainGenePred("V28", acc)
 
     def _gpToAnnotTranscript(self, gp):
         factory = GenePredAnnotationFactory(GenomeSeqSrc.obtain("hg38"))
@@ -671,7 +671,7 @@ class AnnotationTests(FeatureTestBase):
 
     def testENST00000215794(self):
         # + strand
-        trans = self._gpToAnnotTranscript(self._getSet1Gp("ENST00000215794.7"))
+        trans = self._gpToAnnotTranscript(self._getV28Gp("ENST00000215794.7"))
         self._assertFeatures(trans,
                              ('t=chr22:18149898-18177397/+, rna=ENST00000215794.7:0-2129/+ 2129 <+>',
                               (('exon 18149898-18150222 rna=0-324',
@@ -714,7 +714,7 @@ class AnnotationTests(FeatureTestBase):
 
     def testENST00000334029(self):
         # - strand
-        trans = self._gpToAnnotTranscript(self._getSet1Gp("ENST00000334029.6"))
+        trans = self._gpToAnnotTranscript(self._getV28Gp("ENST00000334029.6"))
         self._assertFeatures(trans,
                              ('t=chr22:18912781-18936451/+, rna=ENST00000334029.6:0-1985/- 1985 <->',
                               (('exon 18912781-18913362 rna=0-581',
@@ -763,7 +763,7 @@ class AnnotationTests(FeatureTestBase):
 
     def testENST00000334029NoSJ(self):
         factory = GenePredAnnotationFactory(None)
-        trans = factory.fromGenePred(self._getSet1Gp("ENST00000334029.6"))
+        trans = factory.fromGenePred(self._getV28Gp("ENST00000334029.6"))
         self._assertFeatures(trans,
                              ('t=chr22:18912781-18936451/+, rna=ENST00000334029.6:0-1985/- 1985 <->',
                               (('exon 18912781-18913362 rna=0-581',
@@ -812,7 +812,7 @@ class AnnotationTests(FeatureTestBase):
 
     def testENST00000334029Rc(self):
         # - strand
-        trans = self._gpToAnnotTranscript(self._getSet1Gp("ENST00000334029.6"))
+        trans = self._gpToAnnotTranscript(self._getV28Gp("ENST00000334029.6"))
         rcTrans = trans.reverseComplement()
         self.assertEqual(len(rcTrans.features), len(trans.features))
         self._assertFeatures(rcTrans,
@@ -864,7 +864,7 @@ class AnnotationTests(FeatureTestBase):
     def testENST00000334029NoSJRc(self):
         # no splice sites, just sizes
         factory = GenePredAnnotationFactory(chromSizeFunc=GenomeSeqSrc.obtain("hg38").getChromSize)
-        trans = factory.fromGenePred(self._getSet1Gp("ENST00000334029.6"))
+        trans = factory.fromGenePred(self._getV28Gp("ENST00000334029.6"))
         rcTrans = trans.reverseComplement()
         self.assertEqual(len(rcTrans.features), len(trans.features))
         self._assertFeatures(rcTrans,
@@ -914,7 +914,7 @@ class AnnotationTests(FeatureTestBase):
                                  ("3'UTR 31905294-31905687 rna=1592-1985",))))))
 
     def testAnnotPrevNext(self):
-        trans = self._gpToAnnotTranscript(self._getSet1Gp("ENST00000334029.6"))
+        trans = self._gpToAnnotTranscript(self._getV28Gp("ENST00000334029.6"))
 
         feat = trans.firstFeature(AnnotationFeature)
         self.assertIs(feat, trans.features[0].annotFeatures[0])
@@ -936,7 +936,7 @@ class AnnotationTests(FeatureTestBase):
         self.assertEqual(cdsCnt, 13)
 
     def testGetStructureFeaturesOfType(self):
-        trans = self._gpToAnnotTranscript(self._getSet1Gp("ENST00000334029.6"))
+        trans = self._gpToAnnotTranscript(self._getV28Gp("ENST00000334029.6"))
         feats = trans.getFeaturesOfType(ExonFeature)
         featStrs = tuple([str(f) for f in feats])
         self.assertEqual(('exon 18912781-18913362 rna=0-581',
@@ -956,7 +956,7 @@ class AnnotationTests(FeatureTestBase):
                          featStrs)
 
     def testGetAnnotationFeaturesOfType(self):
-        trans = self._gpToAnnotTranscript(self._getSet1Gp("ENST00000334029.6"))
+        trans = self._gpToAnnotTranscript(self._getV28Gp("ENST00000334029.6"))
         feats = trans.getFeaturesOfType(CdsRegionFeature)
         featStrs = tuple([str(f) for f in feats])
         self.assertEqual(('CDS 18913174-18913362 rna=393-581 1',
@@ -976,7 +976,7 @@ class AnnotationTests(FeatureTestBase):
 
     def testENST00000434390(self):
         # non-coding, - strand
-        trans = self._gpToAnnotTranscript(self._getSet1Gp("ENST00000434390.1"))
+        trans = self._gpToAnnotTranscript(self._getV28Gp("ENST00000434390.1"))
         rcTrans = trans.reverseComplement()
         self.assertEqual(len(rcTrans.features), len(trans.features))
         self._assertFeatures(rcTrans,
@@ -1010,7 +1010,7 @@ class AnnotationTests(FeatureTestBase):
 
     def testENST00000538324(self):
         # ABO error in genome
-        gp = GenePredDbSrc.obtainGenePred("v26cases", "ENST00000538324.2")
+        gp = GenePredDbSrc.obtainGenePred("V26", "ENST00000538324.2")
         trans = GenePredAnnotationFactory(GenomeSeqSrc.obtain("hg38")).fromGenePred(gp)
         self._assertFeatures(trans,
                              ('t=chr9:133255601-133275214/+, rna=ENST00000538324.2:0-1153/- 1153 <->',
@@ -1054,7 +1054,7 @@ class AnnotationTests(FeatureTestBase):
         """test for conversion to BED"""
         # had a bug non-code genes had only basic columns because thickStart/thickEnd were None
         factory = GenePredAnnotationFactory()
-        for gp in GenePredReader(self.getInputFile("set1.gencodeCompV28.gp")):
+        for gp in GenePredReader(self.getInputFile("gencodeCompV28.gp")):
             trans = factory.fromGenePred(gp)
             bed = trans.toBed("100,0,0")
             self.assertEqual(len(bed.getRow()), 12)
@@ -1067,7 +1067,7 @@ class AnnotationTests(FeatureTestBase):
         factory = GenePredAnnotationFactory(GenomeSeqSrc.obtain("hg38"))
         tattrs = ObjDict(name="Fred")
         uattrs = ObjDict(name="Barney")
-        trans = factory.fromGenePred(self._getSet1Gp("ENST00000334029.6"), tattrs)
+        trans = factory.fromGenePred(self._getV28Gp("ENST00000334029.6"), tattrs)
         # has one 3'UTR feature, so use it for the attrs
         utr3 = getUtr3Feature(trans)
         utr3.attrs = uattrs

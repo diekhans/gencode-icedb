@@ -1,7 +1,6 @@
 """
 Common code used to build a TranscriptFeature object for an annotation.
 """
-import sys
 from gencode_icedb.general.transFeatures import ExonFeature, IntronFeature, TranscriptFeatures, Utr5RegionFeature, CdsRegionFeature, Utr3RegionFeature, GapAnnotFeature, NonCodingRegionFeature
 from gencode_icedb.general.spliceJuncs import spliceJuncsGetSeqs
 

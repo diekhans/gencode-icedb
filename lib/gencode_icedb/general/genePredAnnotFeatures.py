@@ -82,7 +82,8 @@ class GenePredAnnotationFactory(object):
             blk = gp.exons[iBlk]
             if chromNext != blk.start:
                 rnaNext = builder.addGap(chromNext, blk.start, rnaNext)
-            rnaNext = builder.addNonCodingFeature(blk.start, blk.end, rnaNext)
+                chromNext = blk.start
+            rnaNext = builder.addNonCodingFeature(chromNext, blk.end, rnaNext)
             chromNext = blk.end
         assert rnaNext == rnaEnd, "rnaNext={} != rnaEnd={}".format(rnaNext, rnaEnd)
 

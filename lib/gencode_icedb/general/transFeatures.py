@@ -88,7 +88,7 @@ class Feature(object):
         """print the tree for debugging purposes., optionally prefixing first line with
         msg and indenting beneath it"""
         if msg is not None:
-            fh.write(msg + "\n")
+            file.write(msg + "\n")
         # use override-able implementation
         self._dumpImpl(file, indent)
 

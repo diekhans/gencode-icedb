@@ -29,7 +29,7 @@ featureUnitTests:
 ##
 ucscGencodeDbLoadTest: mkdirs
 	rm -f output/$@.db
-	${ucscGencodeDbLoad} --attrs=input/set1.gencodeAttrsV28.tsv --transcriptSource=input/set1.gencodeTranscriptSourceV28.tsv --transcriptionSupportLevel=input/set1.gencodeTranscriptionSupportLevelV28.tsv  --tags=input/set1.gencodeTagV28.tsv --genes=input/set1.gencodeCompV28.gp output/$@.db
+	${ucscGencodeDbLoad} --attrs=input/gencodeAttrsV28.tsv --transcriptSource=input/gencodeTranscriptSourceV28.tsv --transcriptionSupportLevel=input/gencodeTranscriptionSupportLevelV28.tsv  --tags=input/gencodeTagV28.tsv --genes=input/gencodeCompV28.gp output/$@.db
 	sqlite3 -header -batch output/$@.db 'SELECT * FROM gencode_ann' >output/$@.gencode_ann.gp
 	sqlite3 -header -batch output/$@.db 'SELECT * FROM gencode_attrs' >output/$@.gencode_attrs.tsv
 	sqlite3 -header -batch output/$@.db 'SELECT * FROM gencode_transcript_source' >output/$@.gencode_trans_src.tsv
@@ -52,9 +52,9 @@ ucscGencodeFaTest: mkdirs
 ##
 # tests of program to get introns for genePreds
 ##
-genePredIntronsTests: genePredIntronsSet1Test
+genePredIntronsTests: genePredIntronsSmallTest
 
-genePredIntronsSet1Test: mkdirs
+genePredIntronsSmallTest: mkdirs
 	faToTwoBit  input/small-chr22.fa output/$@.2bit
 	${genePredIntrons} input/small-gencode.gp output/$@.2bit output/$@.tsv
 	diff expected/$@.tsv output/$@.tsv
