@@ -84,25 +84,25 @@ class Feature(object):
             r.append(feat.toStrTree())
         return tuple(r)
 
-    def dump(self, fh=sys.stderr, indent=0, msg=None):
+    def dump(self, file=sys.stderr, indent=0, msg=None):
         """print the tree for debugging purposes., optionally prefixing first line with
         msg and indenting beneath it"""
         if msg is not None:
             fh.write(msg + "\n")
         # use override-able implementation
-        self._dumpImpl(fh, indent)
+        self._dumpImpl(file, indent)
 
-    def _dumpImpl(self, fh, indent):
+    def _dumpImpl(self, file, indent):
         """print current node and children, assumes current indent has been done,
         This is overridden by derived classes as needed"""
-        fh.write(str(self) + '\n')
+        file.write(str(self) + '\n')
 
     @staticmethod
-    def _dumpChildren(fh, indent, features):
+    def _dumpChildren(file, indent, features):
         "utility to dump a list of children"
         for feat in features:
-            fh.write(indent * " ")
-            feat._dumpImpl(fh, indent)
+            file.write(indent * " ")
+            feat._dumpImpl(file, indent)
 
     @property
     def transcript(self):
@@ -152,6 +152,8 @@ class Feature(object):
 
 class AlignmentFeature(Feature):
     "ABC for alignment features"
+    __slots__ = ()
+
     def __init__(self, parent, iParent, chrom, rna, attrs=None):
         assert isinstance(parent, StructureFeature)
         super(AlignmentFeature, self).__init__(parent, iParent, chrom, rna, attrs)
@@ -216,6 +218,8 @@ class RnaInsertFeature(AlignmentFeature):
 
 class AnnotationFeature(Feature):
     "ABC for annotation features"
+    __slots__ = ()
+
     def __init__(self, parent, iParent, chrom, rna, attrs=None):
         super(AnnotationFeature, self).__init__(parent, iParent, chrom, rna, attrs)
 
@@ -357,14 +361,15 @@ class StructureFeature(Feature):
             r.append(self._getChildrenStrTree(self.alignFeatures))
         return tuple(r)
 
-    def _dumpImpl(self, fh, indent):
-        fh.write(str(self) + '\n')
-        self._dumpChildren(fh, indent + 2, self.annotFeatures)
-        self._dumpChildren(fh, indent + 2, self.alignFeatures)
+    def _dumpImpl(self, file, indent):
+        file.write(str(self) + '\n')
+        self._dumpChildren(file, indent + 2, self.annotFeatures)
+        self._dumpChildren(file, indent + 2, self.alignFeatures)
 
 
 class ExonFeature(StructureFeature):
     """exon with target gaps closed."""
+    __slots__ = ()
     name = "exon"
 
     def __init__(self, parent, iParent, chrom, rna, attrs=None):
@@ -476,9 +481,9 @@ class TranscriptFeatures(Feature):
             r.append(self._getChildrenStrTree(self.features))
         return tuple(r)
 
-    def _dumpImpl(self, fh, indent):
-        fh.write(str(self) + '\n')
-        self._dumpChildren(fh, indent + 2, self.features)
+    def _dumpImpl(self, file, indent):
+        file.write(str(self) + '\n')
+        self._dumpChildren(file, indent + 2, self.features)
 
     def toBed(self, itemRgb=""):
         """convert transcript and CDS to a Bed object"""

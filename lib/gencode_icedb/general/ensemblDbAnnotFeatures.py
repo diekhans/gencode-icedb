@@ -23,19 +23,18 @@ class EnsemblDbAnnotationFactory(object):
         without splice sites, provide the chromSizeFunc(chrom) function."""
         self.genomeReader = genomeReader
 
-    def _buildFeatures(self, geneTransRec, exonRecs, transAnnot):
+    def _buildFeatures(self, geneTransRec, exonRecs, builder):
         iBlkStart = 0
         rnaStart = 0
         features = []
         while iBlkStart < len(exonRecs):
             iBlkEnd, qCount = self._findExonEnd(exonRecs, iBlkStart)
             rnaEnd = rnaStart + qCount
-            features.append(self._makeExon(geneTransRec, exonRecs, iBlkStart, iBlkEnd, rnaStart, rnaEnd, transAnnot, len(features)))
+            self._makeExon(geneTransRec, exonRecs, iBlkStart, iBlkEnd, rnaStart, rnaEnd, builder)
             if iBlkEnd < len(exonRecs):
-                features.append(self._makeIntron(geneTransRec, exonRecs, iBlkEnd, rnaEnd, transAnnot, len(features)))
+                self._makeIntron(geneTransRec, exonRecs, iBlkEnd, rnaEnd, builder)
             rnaStart = rnaEnd
             iBlkStart = iBlkEnd
-        return features
 
     def _tGapSize(self, exonRecs, iBlk):
         "size of gap before the block"
@@ -58,58 +57,7 @@ class EnsemblDbAnnotationFactory(object):
             iBlkStart = iBlkEnd
         return rnaSize
 
-    def _addGapAnnot(self, chromStart, chromEnd, rnaNext, exon, features):
-        gap = GapAnnotFeature(exon, len(features),
-                              exon.chrom.subrange(chromStart, chromEnd),
-                              exon.rna.subrange(rnaNext, rnaNext + (chromEnd - chromStart)))
-        features.append(gap)
-        return gap.rna.end
-
-    def _addUtr5Annot(self, chromStart, chromEnd, rnaNext, exon, features):
-        utr5 = Utr5RegionFeature(exon, len(features),
-                                 exon.chrom.subrange(chromStart, chromEnd),
-                                 exon.rna.subrange(rnaNext, rnaNext + (chromEnd - chromStart)))
-        features.append(utr5)
-        return utr5.rna.end
-
-    def _addCdsAnnot(self, chromStart, chromEnd, rnaNext, exon, frame, features):
-        cds = CdsRegionFeature(exon, len(features),
-                               exon.chrom.subrange(chromStart, chromEnd),
-                               exon.rna.subrange(rnaNext, rnaNext + (chromEnd - chromStart)),
-                               frame)
-        features.append(cds)
-        return cds.rna.end
-
-    def _addUtr3Annot(self, chromStart, chromEnd, rnaNext, exon, features):
-        utr3 = Utr3RegionFeature(exon, len(features),
-                                 exon.chrom.subrange(chromStart, chromEnd),
-                                 exon.rna.subrange(rnaNext, rnaNext + (chromEnd - chromStart)))
-        features.append(utr3)
-        return utr3.rna.end
-
-    def _addBlkCodingFeatures(self, blk, rnaNext, exon, features):
-        # note that blk may not cover whole exon if there are annotation gaps
-        cds = exon.transcript.cdsChrom
-        chromNext = blk.start
-        if chromNext < cds.start:
-            chromEnd = min(blk.end, cds.start)
-            if blk.gene.strand == '+':
-                rnaNext = self._addUtr5Annot(chromNext, chromEnd, rnaNext, exon, features)
-            else:
-                rnaNext = self._addUtr3Annot(chromNext, chromEnd, rnaNext, exon, features)
-            chromNext = chromEnd
-        if (chromNext < blk.end) and (chromNext < cds.end):
-            chromEnd = min(blk.end, cds.end)
-            rnaNext = self._addCdsAnnot(chromNext, chromEnd, rnaNext, exon, Frame(blk.frame), features)
-            chromNext = chromEnd
-        if (chromNext < blk.end) and (chromNext >= cds.end):
-            if blk.gene.strand == '+':
-                rnaNext = self._addUtr3Annot(chromNext, blk.end, rnaNext, exon, features)
-            else:
-                rnaNext = self._addUtr5Annot(chromNext, blk.end, rnaNext, exon, features)
-        return rnaNext
-
-    def _addCodingFeatures(self, geneTransRec, exonRecs, iBlkStart, iBlkEnd, rnaStart, rnaEnd, exon):
+    def _addCodingFeatures(self, geneTransRec, exonRecs, iBlkStart, iBlkEnd, rnaStart, rnaEnd, builder):
         features = []
         rnaNext = rnaStart
         chromNext = exonRecs[iBlkStart].start
@@ -191,6 +139,7 @@ class EnsemblDbAnnotationFactory(object):
 
         chrom = Coords(geneTransRec.chrom, geneTransRec.start, geneTransRec.end, '+', geneTransRec.chromSize)
         rna = Coords(geneTransRec.transcriptionId, 0, rnaSize, geneTransRec.strand, rnaSize)
-        transAnnot = TranscriptFeatures(chrom, rna, transcriptionStrand=rna.strand, cdsChrom=cdsChrom, attrs=attrs)
-        transAnnot.features = tuple(self._buildFeatures(geneTransRec, exonRecs, trans))
-        return trans
+        builder = AnnotFeatureBuilder(chrom, rna, cdsChrom, transcriptionStrand, attrs, self.genomeReader)
+        self._buildFeatures(geneTransRec, exonRecs, builder)
+        builder.finish()
+        return build.transAnnot
