@@ -37,9 +37,15 @@ class EnsemblGeneTrans(namedtuple("EnsemblGeneTrans",
                                    "transcriptId",
                                    "transcriptType",
                                    "transcriptSource",
-                                   "transcriptStart",
-                                   "transcriptEnd",
-                                   "transcriptStrand"))):
+                                   "chrom",
+                                   "start",
+                                   "end",
+                                   "strand",
+                                   "chromSize",
+                                   "cdsStartExonDbId"
+                                   "cdsStartOffset"
+                                   "cdsEndExonDbId"
+                                   "cdsEndOffset"))):
     """
     One row for a transcript, including gene information
     """
@@ -48,7 +54,8 @@ class EnsemblGeneTrans(namedtuple("EnsemblGeneTrans",
 
 
 # Select that generates EnsemblGeneTrans objects
-_ensemblGeneTransSelect = """SELECT
+_ensemblGeneTransSelect = """
+SELECT
     g.gene_id AS geneDbId,
     concat(g.stable_id, ".", g.version) AS geneId,
     g.biotype AS geneType,
@@ -58,14 +65,21 @@ _ensemblGeneTransSelect = """SELECT
     concat(t.stable_id, ".", t.version) AS transcriptId,
     t.biotype AS transcriptType,
     t.source AS transcriptSource,
-    t.seq_region_start-1 AS transcriptStart,
-    t.seq_region_end AS transcriptEnd,
-    IF(t.seq_region_strand < 0, "-", "+") AS transcriptStrand
+    sr.name AS chrom,
+    t.seq_region_start-1 AS start,
+    t.seq_region_end AS end,
+    IF(t.seq_region_strand < 0, "-", "+") AS strand,
+    sr.length AS chromSize,
+    xlate.start_exon_id AS cdsStartExonDbId,
+    xlate.seq_start-1 AS cdsStartOffset,
+    xlate.end_exon_id AS cdsEndExonDbId,
+    xlate.seq_end-1 AS cdsEndOffset"
 FROM
     gene AS g
     LEFT JOIN xref AS gxr ON (g.display_xref_id = gxr.xref_id)
     LEFT JOIN transcript AS t ON (t.gene_id = g.gene_id)
     LEFT JOIN seq_region AS sr ON (sr.seq_region_id = t.seq_region_id)
+    LEFT JOIN translation AS xlate ON (xlate.transcript_id = t.transcript_id)
 WHERE (g.source NOT IN ("LRG database")) {extrawhere};"""
 
 
@@ -90,12 +104,10 @@ def ensemblGeneTransQuery(conn, coords=None):
 class EnsemblTransExon(namedtuple("EnsemblTransExon",
                                   ("geneDbId",
                                    "transcriptDbId",
+                                   "exonDbId",
                                    "chrom",
-                                   "transStart",
-                                   "transEnd",
-                                   "transStrand",
-                                   "exonStart",
-                                   "exonEnd",
+                                   "start",
+                                   "end",
                                    "startPhase",
                                    "endPhase"))):
     """
@@ -106,15 +118,14 @@ class EnsemblTransExon(namedtuple("EnsemblTransExon",
 
 
 # Select that generates EnsemblTransExon objects
-_ensemblTransExonsSelect = """SELECT
+_ensemblTransExonsSelect = """
+SELECT
     t.gene_id AS geneDbId,
     t.transcript_id AS transcriptDbId,
     sr.name AS chrom,
-    t.seq_region_start-1 AS transStart,
-    t.seq_region_end AS transEnd,
-    t.seq_region_strand AS transStrand,
-    e.seq_region_start-1 AS exonStart,
-    e.seq_region_end AS exonEnd,
+    t.seq_region_start-1 AS start,
+    t.seq_region_end AS end,
+    t.seq_region_strand AS strand,
     e.phase AS startPhase,
     e.end_phase AS endPhase
 FROM
@@ -138,7 +149,8 @@ def ensemblTransExonQuery(conn, geneDbIds):
 
 
 # Select that generates EnsemblTransAttr objects
-_ensemblTransAttrSelect = """SELECT
+_ensemblTransAttrSelect = """
+SELECT
     t.gene_id AS geneDbId,
     t.transcript_id AS transcriptDbId,
     concat(t.stable_id, ".", t.version) AS transcriptId,
@@ -188,12 +200,13 @@ def ensemblTransAttrQuery(conn, geneDbIds):
 
 
 # Select that generates Coords objects of PAR
-_ensemblParCoordsSelect = """SELECT
+_ensemblParCoordsSelect = """
+SELECT
     sr.name AS name,
     ae.seq_region_start-1 AS start,
     ae.seq_region_end AS end
 FROM
-    assembly_exception as ae
+    assembly_exception AS ae
     LEFT JOIN seq_region AS sr ON (sr.seq_region_id = ae.seq_region_id)
 WHERE ae.exc_type = "PAR";
 """

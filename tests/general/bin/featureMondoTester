@@ -12,7 +12,7 @@ from pycbio.hgdata.psl import PslDbReader
 from pycbio.hgdata.genePred import GenePredDbReader
 from gencode_icedb.genome import GenomeReader
 from gencode_icedb.general.evidFeatures import EvidencePslFactory
-from gencode_icedb.general.genePredAnnotFeatures import AnnotationGenePredFactory
+from gencode_icedb.general.genePredAnnotFeatures import GenePredAnnotationFactory
 from twobitreader import TwoBitFile
 # FIXME: is this still needed with classify mondo?
 
@@ -44,7 +44,7 @@ def pslMondoTest(conn, table, genomeReader):
 
 
 def genePredMondoTest(conn, table, genomeReader):
-    factory = AnnotationGenePredFactory(genomeReader)
+    factory = GenePredAnnotationFactory(genomeReader)
     cnt = 0
     for genePred in GenePredDbReader(conn, "SELECT * FROM {}".format(table)):
         factory.fromGenePred(genePred)  # discard transcript

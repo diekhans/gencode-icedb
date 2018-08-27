@@ -1,4 +1,3 @@
-from __future__ import print_function
 import sys
 import os
 if __name__ == '__main__':
@@ -13,7 +12,7 @@ from gencode_icedb.general.transFeatures import ExonFeature
 from gencode_icedb.general.transFeatures import AnnotationFeature, CdsRegionFeature, Utr3RegionFeature
 from gencode_icedb.general.transFeatures import RnaInsertFeature, ChromInsertFeature
 from gencode_icedb.general.evidFeatures import EvidencePslFactory
-from gencode_icedb.general.genePredAnnotFeatures import AnnotationGenePredFactory
+from gencode_icedb.general.genePredAnnotFeatures import GenePredAnnotationFactory
 from pycbio.db.sqliteOps import sqliteConnect
 from pycbio.hgdata.genePredSqlite import GenePredSqliteTable
 from pycbio.hgdata.pslSqlite import PslSqliteTable
@@ -667,7 +666,7 @@ class AnnotationTests(FeatureTestBase):
         return GenePredDbSrc.obtainGenePred("set1", acc)
 
     def _gpToAnnotTranscript(self, gp):
-        factory = AnnotationGenePredFactory(GenomeSeqSrc.obtain("hg38"))
+        factory = GenePredAnnotationFactory(GenomeSeqSrc.obtain("hg38"))
         return factory.fromGenePred(gp)
 
     def testENST00000215794(self):
@@ -720,16 +719,16 @@ class AnnotationTests(FeatureTestBase):
                              ('t=chr22:18912781-18936451/+, rna=ENST00000334029.6:0-1985/- 1985 <->',
                               (('exon 18912781-18913362 rna=0-581',
                                 (("3'UTR 18912781-18913174 rna=0-393",),
-                                 ('CDS 18913174-18913362 rna=393-581 2',))),
+                                 ('CDS 18913174-18913362 rna=393-581 1',))),
                                ('intron 18913362-18913437 rna=581-581 sjBases=GT...AG (GT_AG)',),
                                ('exon 18913437-18913526 rna=581-670',
-                                (('CDS 18913437-18913526 rna=581-670 0',),)),
+                                (('CDS 18913437-18913526 rna=581-670 2',),)),
                                ('intron 18913526-18916889 rna=670-670 sjBases=GT...AG (GT_AG)',),
                                ('exon 18916889-18916988 rna=670-769',
                                 (('CDS 18916889-18916988 rna=670-769 2',),)),
                                ('intron 18916988-18918315 rna=769-769 sjBases=GT...AG (GT_AG)',),
                                ('exon 18918315-18918491 rna=769-945',
-                                (('CDS 18918315-18918491 rna=769-945 1',),)),
+                                (('CDS 18918315-18918491 rna=769-945 0',),)),
                                ('intron 18918491-18919450 rna=945-945 sjBases=GC...AG (GC_AG)',),
                                ('exon 18919450-18919597 rna=945-1092',
                                 (('CDS 18919450-18919597 rna=945-1092 0',),)),
@@ -738,47 +737,47 @@ class AnnotationTests(FeatureTestBase):
                                 (('CDS 18919705-18919798 rna=1092-1185 0',),)),
                                ('intron 18919798-18921341 rna=1185-1185 sjBases=GT...AG (GT_AG)',),
                                ('exon 18921341-18921423 rna=1185-1267',
-                                (('CDS 18921341-18921423 rna=1185-1267 1',),)),
+                                (('CDS 18921341-18921423 rna=1185-1267 2',),)),
                                ('intron 18921423-18922324 rna=1267-1267 sjBases=GT...AG (GT_AG)',),
                                ('exon 18922324-18922404 rna=1267-1347',
-                                (('CDS 18922324-18922404 rna=1267-1347 1',),)),
+                                (('CDS 18922324-18922404 rna=1267-1347 0',),)),
                                ('intron 18922404-18922816 rna=1347-1347 sjBases=GT...AG (GT_AG)',),
                                ('exon 18922816-18922933 rna=1347-1464',
                                 (('CDS 18922816-18922933 rna=1347-1464 0',),)),
                                ('intron 18922933-18923114 rna=1464-1464 sjBases=GT...AG (GT_AG)',),
                                ('exon 18923114-18923179 rna=1464-1529',
-                                (('CDS 18923114-18923179 rna=1464-1529 2',),)),
+                                (('CDS 18923114-18923179 rna=1464-1529 1',),)),
                                ('intron 18923179-18925050 rna=1529-1529 sjBases=GT...AG (GT_AG)',),
                                ('exon 18925050-18925200 rna=1529-1679',
                                 (('CDS 18925050-18925200 rna=1529-1679 1',),)),
                                ('intron 18925200-18925687 rna=1679-1679 sjBases=GT...AG (GT_AG)',),
                                ('exon 18925687-18925722 rna=1679-1714',
-                                (('CDS 18925687-18925722 rna=1679-1714 0',),)),
+                                (('CDS 18925687-18925722 rna=1679-1714 2',),)),
                                ('intron 18925722-18930989 rna=1714-1714 sjBases=GT...AG (GT_AG)',),
                                ('exon 18930989-18931198 rna=1714-1923',
-                                (('CDS 18930989-18931147 rna=1714-1872 1',),
+                                (('CDS 18930989-18931147 rna=1714-1872 0',),
                                  ("5'UTR 18931147-18931198 rna=1872-1923",))),
                                ('intron 18931198-18936389 rna=1923-1923 sjBases=GT...AG (GT_AG)',),
                                ('exon 18936389-18936451 rna=1923-1985',
                                 (("5'UTR 18936389-18936451 rna=1923-1985",),)))))
 
     def testENST00000334029NoSJ(self):
-        factory = AnnotationGenePredFactory(None)
+        factory = GenePredAnnotationFactory(None)
         trans = factory.fromGenePred(self._getSet1Gp("ENST00000334029.6"))
         self._assertFeatures(trans,
                              ('t=chr22:18912781-18936451/+, rna=ENST00000334029.6:0-1985/- 1985 <->',
                               (('exon 18912781-18913362 rna=0-581',
                                 (("3'UTR 18912781-18913174 rna=0-393",),
-                                 ('CDS 18913174-18913362 rna=393-581 2',))),
+                                 ('CDS 18913174-18913362 rna=393-581 1',))),
                                ('intron 18913362-18913437 rna=581-581',),
                                ('exon 18913437-18913526 rna=581-670',
-                                (('CDS 18913437-18913526 rna=581-670 0',),)),
+                                (('CDS 18913437-18913526 rna=581-670 2',),)),
                                ('intron 18913526-18916889 rna=670-670',),
                                ('exon 18916889-18916988 rna=670-769',
                                 (('CDS 18916889-18916988 rna=670-769 2',),)),
                                ('intron 18916988-18918315 rna=769-769',),
                                ('exon 18918315-18918491 rna=769-945',
-                                (('CDS 18918315-18918491 rna=769-945 1',),)),
+                                (('CDS 18918315-18918491 rna=769-945 0',),)),
                                ('intron 18918491-18919450 rna=945-945',),
                                ('exon 18919450-18919597 rna=945-1092',
                                 (('CDS 18919450-18919597 rna=945-1092 0',),)),
@@ -787,25 +786,25 @@ class AnnotationTests(FeatureTestBase):
                                 (('CDS 18919705-18919798 rna=1092-1185 0',),)),
                                ('intron 18919798-18921341 rna=1185-1185',),
                                ('exon 18921341-18921423 rna=1185-1267',
-                                (('CDS 18921341-18921423 rna=1185-1267 1',),)),
+                                (('CDS 18921341-18921423 rna=1185-1267 2',),)),
                                ('intron 18921423-18922324 rna=1267-1267',),
                                ('exon 18922324-18922404 rna=1267-1347',
-                                (('CDS 18922324-18922404 rna=1267-1347 1',),)),
+                                (('CDS 18922324-18922404 rna=1267-1347 0',),)),
                                ('intron 18922404-18922816 rna=1347-1347',),
                                ('exon 18922816-18922933 rna=1347-1464',
                                 (('CDS 18922816-18922933 rna=1347-1464 0',),)),
                                ('intron 18922933-18923114 rna=1464-1464',),
                                ('exon 18923114-18923179 rna=1464-1529',
-                                (('CDS 18923114-18923179 rna=1464-1529 2',),)),
+                                (('CDS 18923114-18923179 rna=1464-1529 1',),)),
                                ('intron 18923179-18925050 rna=1529-1529',),
                                ('exon 18925050-18925200 rna=1529-1679',
                                 (('CDS 18925050-18925200 rna=1529-1679 1',),)),
                                ('intron 18925200-18925687 rna=1679-1679',),
                                ('exon 18925687-18925722 rna=1679-1714',
-                                (('CDS 18925687-18925722 rna=1679-1714 0',),)),
+                                (('CDS 18925687-18925722 rna=1679-1714 2',),)),
                                ('intron 18925722-18930989 rna=1714-1714',),
                                ('exon 18930989-18931198 rna=1714-1923',
-                                (('CDS 18930989-18931147 rna=1714-1872 1',),
+                                (('CDS 18930989-18931147 rna=1714-1872 0',),
                                  ("5'UTR 18931147-18931198 rna=1872-1923",))),
                                ('intron 18931198-18936389 rna=1923-1923',),
                                ('exon 18936389-18936451 rna=1923-1985',
@@ -864,7 +863,7 @@ class AnnotationTests(FeatureTestBase):
 
     def testENST00000334029NoSJRc(self):
         # no splice sites, just sizes
-        factory = AnnotationGenePredFactory(chromSizeFunc=GenomeSeqSrc.obtain("hg38").getChromSize)
+        factory = GenePredAnnotationFactory(chromSizeFunc=GenomeSeqSrc.obtain("hg38").getChromSize)
         trans = factory.fromGenePred(self._getSet1Gp("ENST00000334029.6"))
         rcTrans = trans.reverseComplement()
         self.assertEqual(len(rcTrans.features), len(trans.features))
@@ -960,19 +959,19 @@ class AnnotationTests(FeatureTestBase):
         trans = self._gpToAnnotTranscript(self._getSet1Gp("ENST00000334029.6"))
         feats = trans.getFeaturesOfType(CdsRegionFeature)
         featStrs = tuple([str(f) for f in feats])
-        self.assertEqual(('CDS 18913174-18913362 rna=393-581 2',
-                          'CDS 18913437-18913526 rna=581-670 0',
+        self.assertEqual(('CDS 18913174-18913362 rna=393-581 1',
+                          'CDS 18913437-18913526 rna=581-670 2',
                           'CDS 18916889-18916988 rna=670-769 2',
-                          'CDS 18918315-18918491 rna=769-945 1',
+                          'CDS 18918315-18918491 rna=769-945 0',
                           'CDS 18919450-18919597 rna=945-1092 0',
                           'CDS 18919705-18919798 rna=1092-1185 0',
-                          'CDS 18921341-18921423 rna=1185-1267 1',
-                          'CDS 18922324-18922404 rna=1267-1347 1',
+                          'CDS 18921341-18921423 rna=1185-1267 2',
+                          'CDS 18922324-18922404 rna=1267-1347 0',
                           'CDS 18922816-18922933 rna=1347-1464 0',
-                          'CDS 18923114-18923179 rna=1464-1529 2',
+                          'CDS 18923114-18923179 rna=1464-1529 1',
                           'CDS 18925050-18925200 rna=1529-1679 1',
-                          'CDS 18925687-18925722 rna=1679-1714 0',
-                          'CDS 18930989-18931147 rna=1714-1872 1'),
+                          'CDS 18925687-18925722 rna=1679-1714 2',
+                          'CDS 18930989-18931147 rna=1714-1872 0'),
                          featStrs)
 
     def testENST00000434390(self):
@@ -1010,43 +1009,42 @@ class AnnotationTests(FeatureTestBase):
                                 (('NC 32640003-32640431 rna=1431-1859',),)))))
 
     def testENST00000538324(self):
-        # ABO error in genomes
+        # ABO error in genome
         gp = GenePredDbSrc.obtainGenePred("v26cases", "ENST00000538324.2")
-        trans = AnnotationGenePredFactory(GenomeSeqSrc.obtain("hg38")).fromGenePred(gp)
+        trans = GenePredAnnotationFactory(GenomeSeqSrc.obtain("hg38")).fromGenePred(gp)
         self._assertFeatures(trans,
-                             ('t=chr9:133255601-133275214/+, rna=ENST00000538324.2:0-1147/- 1147 <->',
-                              (('exon 133255601-133256356 rna=0-751',
+                             ('t=chr9:133255601-133275214/+, rna=ENST00000538324.2:0-1153/- 1153 <->',
+                              (('exon 133255601-133256356 rna=0-755',
                                 (('CDS 133255601-133255670 rna=0-69 0',),
-                                 ('gap 133255670-133255674 rna=None-None',),
-                                 ('CDS 133255674-133256356 rna=69-751 1',))),
-                               ('intron 133256356-133257408 rna=751-751 sjBases=GT...AG (GT_AG)',),
-                               ('exon 133257408-133257542 rna=751-883',
-                                (('CDS 133257408-133257521 rna=751-864 1',),
-                                 ('gap 133257521-133257523 rna=None-None',),
-                                 ('CDS 133257523-133257542 rna=864-883 1',))),
-                               ('intron 133257542-133258096 rna=883-883 sjBases=GT...AG (GT_AG)',),
-                               ('exon 133258096-133258132 rna=883-919',
-                                (('CDS 133258096-133258132 rna=883-919 2',),)),
-                               ('intron 133258132-133259818 rna=919-919 sjBases=GT...AG (GT_AG)',),
-                               ('exon 133259818-133259866 rna=919-967',
-                                (('CDS 133259818-133259866 rna=919-967 2',),)),
-                               ('intron 133259866-133261317 rna=967-967 sjBases=GT...AG (GT_AG)',),
-                               ('exon 133261317-133261374 rna=967-1024',
-                                (('CDS 133261317-133261374 rna=967-1024 2',),)),
-                               ('intron 133261374-133262098 rna=1024-1024 sjBases=GT...AG (GT_AG)',),
-                               ('exon 133262098-133262168 rna=1024-1094',
-                                (('CDS 133262098-133262168 rna=1024-1094 0',),)),
-                               ('intron 133262168-133275161 rna=1094-1094 sjBases=GT...AG (GT_AG)',),
-                               ('exon 133275161-133275214 rna=1094-1147',
-                                (('CDS 133275161-133275189 rna=1094-1122 1',),
-                                 ("5'UTR 133275189-133275214 rna=1122-1147",))))))
+                                 ('gap 133255670-133255674 rna=69-73',),
+                                 ('CDS 133255674-133256356 rna=73-755 2',))),
+                               ('intron 133256356-133257408 rna=755-755 sjBases=GT...AG (GT_AG)',),
+                               ('exon 133257408-133257542 rna=755-889',
+                                (('CDS 133257408-133257521 rna=755-868 0',),
+                                 ('gap 133257521-133257523 rna=868-870',),
+                                 ('CDS 133257523-133257542 rna=870-889 2',))),
+                               ('intron 133257542-133258096 rna=889-889 sjBases=GT...AG (GT_AG)',),
+                               ('exon 133258096-133258132 rna=889-925',
+                                (('CDS 133258096-133258132 rna=889-925 2',),)),
+                               ('intron 133258132-133259818 rna=925-925 sjBases=GT...AG (GT_AG)',),
+                               ('exon 133259818-133259866 rna=925-973',
+                                (('CDS 133259818-133259866 rna=925-973 2',),)),
+                               ('intron 133259866-133261317 rna=973-973 sjBases=GT...AG (GT_AG)',),
+                               ('exon 133261317-133261374 rna=973-1030',
+                                (('CDS 133261317-133261374 rna=973-1030 2',),)),
+                               ('intron 133261374-133262098 rna=1030-1030 sjBases=GT...AG (GT_AG)',),
+                               ('exon 133262098-133262168 rna=1030-1100',
+                                (('CDS 133262098-133262168 rna=1030-1100 1',),)),
+                               ('intron 133262168-133275161 rna=1100-1100 sjBases=GT...AG (GT_AG)',),
+                               ('exon 133275161-133275214 rna=1100-1153',
+                                (('CDS 133275161-133275189 rna=1100-1128 0',),
+                                 ("5'UTR 133275189-133275214 rna=1128-1153",))))))
 
     def testGencodeV26Regress(self):
         "regression test for gencodeV26"
-        factory = AnnotationGenePredFactory()
+        factory = GenePredAnnotationFactory()
         names = ("ENST00000538324.2",  # ABO
-                 "ENST00000610542.1",  # 4-base gap that caused error
-                 )
+                 "ENST00000610542.1")  # 4-base gap that caused error
         gps = sorted(GenePredReader(self.getInputFile("gencodeV26.gp")), key=lambda g: g.name)
         for gp, name in zip(gps, names):
             trans = factory.fromGenePred(gp)
@@ -1055,7 +1053,7 @@ class AnnotationTests(FeatureTestBase):
     def testAnnotToBed(self):
         """test for conversion to BED"""
         # had a bug non-code genes had only basic columns because thickStart/thickEnd were None
-        factory = AnnotationGenePredFactory()
+        factory = GenePredAnnotationFactory()
         for gp in GenePredReader(self.getInputFile("set1.gencodeCompV28.gp")):
             trans = factory.fromGenePred(gp)
             bed = trans.toBed("100,0,0")
@@ -1066,7 +1064,7 @@ class AnnotationTests(FeatureTestBase):
             # test case has one 3'UTR feature
             return trans.getFeaturesOfType(Utr3RegionFeature)[0]
 
-        factory = AnnotationGenePredFactory(GenomeSeqSrc.obtain("hg38"))
+        factory = GenePredAnnotationFactory(GenomeSeqSrc.obtain("hg38"))
         tattrs = ObjDict(name="Fred")
         uattrs = ObjDict(name="Barney")
         trans = factory.fromGenePred(self._getSet1Gp("ENST00000334029.6"), tattrs)

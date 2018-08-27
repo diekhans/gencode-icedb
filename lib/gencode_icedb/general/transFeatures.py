@@ -1,7 +1,6 @@
 """
 Features of a transcript annotation or alignment.
 """
-from __future__ import print_function
 import sys
 from copy import deepcopy
 from pycbio.hgdata.coords import Coords
@@ -19,8 +18,8 @@ def _reverseComplementChildren(rcParent, features):
     if features is None:
         return None
     rcFeatures = []
-    for i in range(len(features) - 1, -1, -1):
-        rcFeatures.append(features[i].reverseComplement(rcParent, len(rcFeatures)))
+    for feat in reversed(features):
+        rcFeatures.append(feat.reverseComplement(rcParent, len(rcFeatures)))
     return tuple(rcFeatures)
 
 
@@ -248,12 +247,12 @@ class AnnotationFeature(Feature):
 
 
 class GapAnnotFeature(AnnotationFeature):
-    "A gap in the annotation for unspecified reasons"
+    """A gap in CDS annotation for unspecified reasons, often causes by join small gaps in exons"""
     name = "gap"
     __slots__ = ()
 
-    def __init__(self, parent, iParent, chrom, attrs=None):
-        super(GapAnnotFeature, self).__init__(parent, iParent, chrom, None, attrs)
+    def __init__(self, parent, iParent, chrom, rna, attrs=None):
+        super(GapAnnotFeature, self).__init__(parent, iParent, chrom, rna, attrs)
 
 
 class Utr5RegionFeature(AnnotationFeature):
@@ -277,8 +276,7 @@ class CdsRegionFeature(AnnotationFeature):
 
     def reverseComplement(self, rcParent, iRcParent):
         rcRnaLoc = self.rna.reverse()
-        rcFrame = self.frame + len(rcRnaLoc)
-        return CdsRegionFeature(rcParent, iRcParent, self.chrom.reverse(), rcRnaLoc, rcFrame, deepcopy(self.attrs))
+        return CdsRegionFeature(rcParent, iRcParent, self.chrom.reverse(), rcRnaLoc, self.frame, deepcopy(self.attrs))
 
 
 class Utr3RegionFeature(AnnotationFeature):

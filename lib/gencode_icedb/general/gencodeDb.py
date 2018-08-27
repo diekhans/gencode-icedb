@@ -6,7 +6,7 @@ from pycbio.sys.objDict import ObjDict
 from pycbio.db.sqliteOps import sqliteConnect
 from pycbio.hgdata.genePredSqlite import GenePredSqliteTable
 from pycbio.hgdata.gencodeSqlite import GencodeAttrsSqliteTable, GencodeTagSqliteTable
-from gencode_icedb.general.genePredAnnotFeatures import AnnotationGenePredFactory
+from gencode_icedb.general.genePredAnnotFeatures import GenePredAnnotationFactory
 from gencode_icedb.general.geneAnnot import geneAnnotGroup
 
 # FIXME: rename module to gencodeReader.py
@@ -37,7 +37,7 @@ class UcscGencodeReader(object):
         self.genePredDbTable = GenePredSqliteTable(self.conn, GENCODE_ANN_TABLE)
         self.attrDbTable = GencodeAttrsSqliteTable(self.conn, GENCODE_ATTRS_TABLE)
         self.tagDbTable = GencodeTagSqliteTable(self.conn, GENCODE_TAG_TABLE)
-        self.annotFactory = AnnotationGenePredFactory(genomeReader)
+        self.annotFactory = GenePredAnnotationFactory(genomeReader)
 
     def close(self):
         self.conn.close()
