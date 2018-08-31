@@ -3,16 +3,16 @@ import icedbProgSetup  # noqa: F401
 import os
 import argparse
 from pycbio.sys import fileOps
-from pycbio.db.sqliteOps import sqliteConnect
+from pycbio.db import sqliteOps
 from pycbio.hgdata.gencodeSqlite import GencodeAttrsSqliteTable
 from gencode_icedb.general import gencodeDb
-from gencode_icedb.general.genome import GenomeReaderFactory
+from gencode_icedb.general.genome import GenomeReader
 
 
 def parseArgs():
     desc = """Generate parasol jobs to collect splice site evidence for all GENCODE."""
     parser = argparse.ArgumentParser(description=desc)
-    GenomeReaderFactory.addCmdOptions(parser)
+    GenomeReader.addCmdOptions(parser)
     parser.add_argument("--maxgenes", type=int, default=None,
                         help="""maximum number of genes to use, for testing""")
     parser.add_argument("--genesPerJob", type=int, default=1,
@@ -27,16 +27,16 @@ def parseArgs():
 
 
 class JobGenerator(object):
-    def __init__(self, gencodeDb, sjDb, genomeReaderFactory, workDir):
+    def __init__(self, gencodeDb, sjDb, genomeReader, workDir):
         self.gencodeDb = gencodeDb
         self.sjDb = sjDb
-        self.genomeReaderFactory = genomeReaderFactory
+        self.genomeReader = genomeReader
         self.workDir = workDir
         self.resultDir = os.path.join(workDir, "results")
         self.suppProg = os.path.join(icedbProgSetup.binDir, "rslGencodeCollectSupportJob")
 
     def _generateJob(self, gencodeIds, batchFh, expectedFh):
-        cmd = [self.suppProg] + self.genomeReaderFactory.getOptionArgs()
+        cmd = [self.suppProg] + self.genomeReader.getOptionArgs()
         resultTsv = os.path.join(self.resultDir, "{}.supp.tsv".format(gencodeIds[0]))
         cmd.extend([self.gencodeDb, self.sjDb, "{{check out exists {}}}".format(resultTsv)])
         cmd.extend(gencodeIds)
@@ -52,13 +52,13 @@ class JobGenerator(object):
 
 def rslGencodeCollectSupportMkJobs(opts):
     "main function"
-    genomeReaderFactory = GenomeReaderFactory.factoryFromCmdOptions(opts)
-    conn = sqliteConnect(opts.gencodeDb, readonly=True)
+    genomeReader = GenomeReader.getFromCmdOptions(opts)
+    conn = sqliteOps.connect(opts.gencodeDb, readonly=True)
     attrsDbTable = GencodeAttrsSqliteTable(conn, gencodeDb.GENCODE_ATTRS_TABLE)
     gencodeIds = sorted(attrsDbTable.getGeneIds())
     if opts.maxgenes is not None:
         gencodeIds = gencodeIds[0:opts.maxgenes]
-    jobGen = JobGenerator(opts.gencodeDb, opts.sjDb, genomeReaderFactory, opts.workDir)
+    jobGen = JobGenerator(opts.gencodeDb, opts.sjDb, genomeReader, opts.workDir)
 
     fileOps.ensureDir(opts.workDir)
     batchFile = os.path.join(opts.workDir, "batch.jobs")

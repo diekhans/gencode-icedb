@@ -1,31 +1,66 @@
 """
 Functions around reading and classifying sequence
 """
-from __future__ import print_function
 import os
 from pycbio.hgdata import dnaOps
 from twobitreader import TwoBitFile
-
-# FIXME: is factory really needed?  Derived classes might be better,
-# interaction with command line and subprocess is part of this.
-
-# twobitreader warning, pull request was submitted.
-import warnings
-warnings.filterwarnings("ignore", category=DeprecationWarning, module='twobitreader')
+from pysam.libcfaidx import FastaFile
 
 
 class GenomeReader(object):
+    """Base class for genome sequence file readers. Also serves as a factory."""
+
+    @classmethod
+    def getFromFileName(cls, genomeFile):
+        """get read for *.2bit or *.fa file"""
+        if genomeFile.endswith(".2bit"):
+            return GenomeReaderTwoBit(genomeFile)
+        elif genomeFile.endswith(".fa") or genomeFile.endswith(".fa.gz"):
+            return GenomeReaderFasta(genomeFile)
+        else:
+            raise Exception("unrecognized genome sequence file extension: {}".format(genomeFile))
+
+    @classmethod
+    def getFromUcscDbName(cls, ucscDb):
+        """create GenomeReader from a twobit in standard UCSC development
+        server locations, checking for cluster location"""
+        tb = "/scratch/data/{ucscDb}/{ucscDb}.2bit".format(ucscDb=ucscDb)
+        if not os.path.exists(tb):
+            tb = "/hive/data/genomes/{ucscDb}/{ucscDb}.2bit".format(ucscDb=ucscDb)
+        return cls.getFromFileName(tb)
+
+    @classmethod
+    def addCmdOptions(cls, parser):
+        """Add command options used to create a factory to the parser"""
+        parser.add_argument('--genomeSeqs',
+                            help="""Genome sequence twobit or false file to obtain splice sites""")
+
+    @classmethod
+    def getFromCmdOptions(cls, opts):
+        """create a GenomeReader given option parse from command line"""
+        # this will check sanity of options
+        if opts.genomeSeqs is None:
+            raise Exception("must specify --genomeSeqs")
+        return GenomeReader.getFromFileName(opts.genomeSeqs)
+
+
+class GenomeReaderTwoBit(GenomeReader):
     """
-    Reads sequences from twoBitReader or perhaps other formats.
+    Reads sequences from TwoBit format files.
     """
-    def __init__(self, twoBitReader):
-        self.twoBitReader = twoBitReader
+    def __init__(self, twoBitFile):
+        self.twoBitFile = twoBitFile
+        self.twoBitReader = TwoBitFile(twoBitFile)
         self.chrom = self.size = None
 
     def close(self):
         self.twoBitReader.close()
         self.twoBitReader = None
         self.chrom = self.size = None
+
+    def getOptionArgs(self):
+        "create a vector of options and values for passing to another program"
+        return ["--genomeSeqs={}".format(self.twoBitFile)]
 
     def _obtainChrom(self, chrom):
         if self.chrom != chrom:
@@ -53,41 +88,36 @@ class GenomeReader(object):
         return self.size
 
 
-class GenomeReaderFactory(object):
-    """Obtain the appropriate genome reader."""
-    def __init__(self, twoBitFile):
-        self.twoBitFile = twoBitFile
-        if not os.path.exists(self.twoBitFile):
-            raise Exception("twoBitFile not found: ".format(self.twoBitFile))
+class GenomeReaderFasta(GenomeReader):
+    """
+    Reads sequences from indexed fasta format files.
+    """
+    def __init__(self, faFile):
+        self.faFile = faFile
+        self.faReader = FastaFile(faFile)
+        self.chrom = self.size = None
 
-    def obtain(self):
-        return GenomeReader(TwoBitFile(self.twoBitFile))
+    def close(self):
+        self.faReader.close()
+        self.faReader = None
 
     def getOptionArgs(self):
         "create a vector of options and values for passing to another program"
-        args = []
-        if self.twoBitFile is not None:
-            args.append("--genomeSeqs={}".format(self.twoBitFile))
-        return args
+        return ["--genomeSeqs={}".format(self.faFile)]
 
-    @staticmethod
-    def addCmdOptions(parser):
-        """Add command options used to create a factory to the parser"""
-        parser.add_argument('--genomeSeqs',
-                            help="""Genome sequence twobit file to obtain splice sites""")
+    def get(self, chrom, start, end, strand=None):
+        if strand == '-':
+            start, end = dnaOps.reverseCoords(start, end, self.size)
+        seq = self.faReader.fetch(chrom, start, end)
+        if strand == '-':
+            seq = dnaOps.reverseComplement(seq)
+        return seq
 
-    @staticmethod
-    def factoryFromCmdOptions(opts):
-        """create a factory given options parse from command line"""
-        # this will check sanity of options
-        if opts.genomeSeqs is None:
-            raise Exception("must specify --genomeSeqs")
-        return GenomeReaderFactory(opts.genomeSeqs)
+    def haveChrom(self, chrom):
+        return chrom in self.faReader
 
-    @staticmethod
-    def factoryFromUcscDb(ucscDb):
-        """create a factory from a file in ucsc locations, checking for cluster location"""
-        tb = "/scratch/data/{ucscDb}/{ucscDb}.2bit".format(ucscDb=ucscDb)
-        if not os.path.exists(tb):
-            tb = "/hive/data/genomes/{ucscDb}/{ucscDb}.2bit".format(ucscDb=ucscDb)
-        return GenomeReaderFactory(tb)
+    def getChroms(self):
+        return sorted(self.faReader.references)
+
+    def getChromSize(self, chrom):
+        return self.faReader.get_reference_length(chrom)

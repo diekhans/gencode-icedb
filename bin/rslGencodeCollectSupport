@@ -4,7 +4,7 @@ import argparse
 import csv
 from pycbio.sys import fileOps
 from gencode_icedb.general.gencodeDb import UcscGencodeReader
-from gencode_icedb.general.genome import GenomeReaderFactory
+from gencode_icedb.general.genome import GenomeReader
 from gencode_icedb.general.transFeatures import IntronFeature
 from gencode_icedb.rsl.rslModels import rslConnect, rslClose, SjSupportReader
 from gencode_icedb.rsl.intronSupportCounter import IntronSupportCounter
@@ -16,7 +16,7 @@ from gencode_icedb.rsl.intronSupportCounter import IntronSupportCounter
 def parseArgs():
     desc = """Collect splice site evidence for a subset of GENCODE annotations."""
     parser = argparse.ArgumentParser(description=desc)
-    GenomeReaderFactory.addCmdOptions(parser)
+    GenomeReader.addCmdOptions(parser)
     parser.add_argument('gencodeDb',
                         help="""GENCODE sqlite3 database""")
     parser.add_argument('sjDb',
@@ -83,7 +83,7 @@ class SupportCounter(object):
 
 def rslGencodeCollectSupport(opts):
     "entry point"
-    genomeReader = GenomeReaderFactory.factoryFromCmdOptions(opts).obtain()
+    genomeReader = GenomeReader.getFromCmdOptions(opts)
     annotReader = UcscGencodeReader(opts.gencodeDb, genomeReader)
     sjConn = rslConnect(opts.sjDb, readonly=True)
     supportCounter = SupportCounter(annotReader, genomeReader, sjConn)

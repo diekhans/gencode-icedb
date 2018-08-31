@@ -271,7 +271,7 @@ class CdsRegionFeature(AnnotationFeature):
     __slots__ = ("frame")
 
     def __init__(self, parent, iParent, chrom, rna, frame, attrs=None):
-        assert(isinstance(frame, Frame))
+        assert isinstance(frame, Frame), "{} is not a Frame object".format(type(frame))
         super(CdsRegionFeature, self).__init__(parent, iParent, chrom, rna, attrs)
         self.frame = frame
 

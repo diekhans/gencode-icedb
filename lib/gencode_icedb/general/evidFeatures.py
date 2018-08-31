@@ -1,7 +1,6 @@
 """
 Convert alignments (PSL) to features, closing and tracking gaps.
 """
-from __future__ import print_function
 from pycbio.hgdata.coords import Coords
 from gencode_icedb.general.spliceJuncs import spliceJuncsGetSeqs
 from gencode_icedb.tsl import minIntronSize

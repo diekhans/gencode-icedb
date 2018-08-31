@@ -4,7 +4,7 @@ Functions to support common peewee operations.
 import re
 import apsw
 from playhouse.apsw_ext import APSWDatabase
-from pycbio.db.sqliteOps import sqliteSetSynchronous
+from pycbio.db import sqliteOps
 
 
 def peeweeConnect(sqliteDb, bindModelFunc, create=False, readonly=True, timeout=None, synchronous=None):
@@ -25,7 +25,7 @@ def peeweeConnect(sqliteDb, bindModelFunc, create=False, readonly=True, timeout=
     conn = APSWDatabase(sqliteDb, **kwargs)
     bindModelFunc(conn)
     if synchronous is not None:
-        sqliteSetSynchronous(conn, synchronous)
+        sqliteOps.setSynchronous(conn, synchronous)
     return conn
 
 

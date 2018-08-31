@@ -7,7 +7,7 @@ import icedbProgSetup  # noqa: F401
 import argparse
 from collections import namedtuple
 from pycbio.sys import fileOps
-from pycbio.db.sqliteOps import sqliteConnect, SqliteCursor
+from pycbio.db import sqliteOps
 from gencode_icedb.tsl.supportDefs import TrascriptionSupportLevel
 
 
@@ -33,7 +33,7 @@ class TslSupport(namedtuple("TslSupport",
 
 def loadTsls(conn, select):
     #  current tsl table has entries like ENST00000432523.6_PAR_Y, skip
-    with SqliteCursor(conn, rowFactory=lambda c, r: TslSupport(*r)) as cur:
+    with sqliteOps.SqliteCursor(conn, rowFactory=lambda c, r: TslSupport(*r)) as cur:
         cur.execute(select)
         return {sup.transcriptId: sup for sup in cur
                 if not sup.transcriptId.endswith('_PAR_Y')}
@@ -82,7 +82,7 @@ def compareResults(currentSupps, newSupps, resultsTsvFh):
 
 
 def tslCmp(args):
-    conn = sqliteConnect(args.tslDb)
+    conn = sqliteOps.connect(args.tslDb)
     cur = conn.cursor()
     cur.execute("ATTACH DATABASE '{}' AS ann;".format(args.gencodeDb))
     cur.close()

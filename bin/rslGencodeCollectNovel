@@ -5,7 +5,7 @@ import csv
 from pycbio.sys import fileOps, setOps
 from pycbio.hgdata.coords import Coords
 from gencode_icedb.general.gencodeDb import UcscGencodeReader
-from gencode_icedb.general.genome import GenomeReaderFactory
+from gencode_icedb.general.genome import GenomeReader
 from gencode_icedb.general.transFeatures import IntronFeature
 from gencode_icedb.rsl.rslModels import rslConnect, rslClose, SjSupportReader
 from gencode_icedb.rsl.intronSupportCounter import IntronSupportCounter
@@ -20,7 +20,7 @@ def parseArgs():
     contiguous, non-overlapping regions.
     """
     parser = argparse.ArgumentParser(description=desc)
-    GenomeReaderFactory.addCmdOptions(parser)
+    GenomeReader.addCmdOptions(parser)
     parser.add_argument("--minUniqueMapped", type=int, default=0,
                         help="""Minimum number of uniquely mapped reads to call as novel""")
     parser.add_argument('gencodeDb',
@@ -107,7 +107,7 @@ class NovelFinder(object):
 def rslGencodeCollectNovel(opts):
     "entry point"
     genomeCoords = Coords.parse(opts.chromRange)
-    genomeReader = GenomeReaderFactory.factoryFromCmdOptions(opts).obtain()
+    genomeReader = GenomeReader.getFromCmdOptions(opts)
     annotReader = UcscGencodeReader(opts.gencodeDb, genomeReader)
     sjConn = rslConnect(opts.sjDb, readonly=True)
     novelFinder = NovelFinder(annotReader, sjConn, genomeReader, opts.minUniqueMapped)

@@ -7,13 +7,16 @@ if __name__ == '__main__':
 import unittest
 from pycbio.sys.objDict import ObjDict
 from pycbio.sys.testCaseBase import TestCaseBase
-from gencode_icedb.general.genome import GenomeReaderFactory
+from gencode_icedb.general.genome import GenomeReader
 from gencode_icedb.general.transFeatures import ExonFeature
 from gencode_icedb.general.transFeatures import AnnotationFeature, CdsRegionFeature, Utr3RegionFeature
 from gencode_icedb.general.transFeatures import RnaInsertFeature, ChromInsertFeature
 from gencode_icedb.general.evidFeatures import EvidencePslFactory
 from gencode_icedb.general.genePredAnnotFeatures import GenePredAnnotationFactory
-from pycbio.db.sqliteOps import sqliteConnect
+from gencode_icedb.general.ensemblDbAnnotFeatures import EnsemblDbAnnotationFactory
+from gencode_icedb.general.ensemblDb import ensemblGeneQuery
+from pycbio.db import sqliteOps
+from pycbio.db import mysqlOps
 from pycbio.hgdata.genePredSqlite import GenePredSqliteTable
 from pycbio.hgdata.pslSqlite import PslSqliteTable
 from pycbio.hgdata.psl import Psl
@@ -25,6 +28,7 @@ from pycbio.sys.pprint2 import nswpprint
 
 debugResults = False   # print out results for updated expected
 noCheckResults = False  # don't check results
+debugResults=True
 
 if debugResults or noCheckResults:
     print("WARNING: debug variables set", file=sys.stderr)
@@ -41,6 +45,7 @@ class GenomeSeqSrc(object):
     srcs = {
         "hg38": "/hive/data/genomes/hg38/hg38.2bit",
         "mm10": "/hive/data/genomes/mm10/mm10.2bit",
+        "grch38": "/hive/users/markd/gencode/data/grch38/GRCh38.fa.gz",
     }
     readers = {}
 
@@ -48,7 +53,7 @@ class GenomeSeqSrc(object):
     def obtain(cls, db):
         reader = cls.readers.get(db)
         if reader is None:
-            reader = cls.readers[db] = GenomeReaderFactory(cls.srcs[db]).obtain()
+            reader = cls.readers[db] = GenomeReader.getFromFileName(cls.srcs[db])
         return reader
 
 
@@ -62,7 +67,7 @@ class PslDbSrc(object):
 
     @classmethod
     def _loadDbTbl(cls, name):
-        conn = sqliteConnect(None)
+        conn = sqliteOps.connect(None)
         dbTbl = PslSqliteTable(conn, "psls", create=True)
         dbTbl.loadPslFile(getInputFile(cls.srcs[name]))
         cls.pslTbls[name] = dbTbl
@@ -93,7 +98,7 @@ class GenePredDbSrc(object):
 
     @classmethod
     def _loadDbTbl(cls, name):
-        conn = sqliteConnect(None)
+        conn = sqliteOps.connect(None)
         dbTbl = GenePredSqliteTable(conn, name, create=True)
         dbTbl.loadGenePredFile(getInputFile(cls.srcs[name]))
         cls.genePredTbls[name] = dbTbl
@@ -661,17 +666,11 @@ class EvidenceTests(FeatureTestBase):
         self.assertEqual('+', trans.transcriptionStrand)
 
 
-class AnnotationTests(FeatureTestBase):
-    def _getV28Gp(self, acc):
-        return GenePredDbSrc.obtainGenePred("V28", acc)
+class AnnotationCheckMixin(object):
+    """Mixin of functions to validate results that a common between GenePred
+    and EnsemblDb annotation tests"""
 
-    def _gpToAnnotTranscript(self, gp):
-        factory = GenePredAnnotationFactory(GenomeSeqSrc.obtain("hg38"))
-        return factory.fromGenePred(gp)
-
-    def testENST00000215794(self):
-        # + strand
-        trans = self._gpToAnnotTranscript(self._getV28Gp("ENST00000215794.7"))
+    def checkENST00000215794(self, trans):
         self._assertFeatures(trans,
                              ('t=chr22:18149898-18177397/+, rna=ENST00000215794.7:0-2129/+ 2129 <+>',
                               (('exon 18149898-18150222 rna=0-324',
@@ -709,6 +708,19 @@ class AnnotationTests(FeatureTestBase):
                                 (('CDS 18176771-18176817 rna=1503-1549 2',),
                                  ("3'UTR 18176817-18177397 rna=1549-2129",))))))
 
+
+class GenePredAnnotationTests(FeatureTestBase, AnnotationCheckMixin):
+    def _getV28Gp(self, acc):
+        return GenePredDbSrc.obtainGenePred("V28", acc)
+
+    def _gpToAnnotTranscript(self, gp):
+        factory = GenePredAnnotationFactory(GenomeSeqSrc.obtain("hg38"))
+        return factory.fromGenePred(gp)
+
+    def testENST00000215794(self):
+        # + strand
+        trans = self._gpToAnnotTranscript(self._getV28Gp("ENST00000215794.7"))
+        self.checkENST00000215794(trans)
         self.assertEqual("chr22\t18149898\t18177397\tENST00000215794.7\t0\t+\t18157663\t18176817\t0,1,2\t11\t324,263,97,146,80,147,96,168,132,50,626,\t0,7659,10273,11891,17356,17991,19945,20854,23251,23894,26873,",
                          str(trans.toBed("0,1,2")),)
 
@@ -1078,10 +1090,36 @@ class AnnotationTests(FeatureTestBase):
         self.assertEqual("Barney", rcUtr3.attrs.name)
 
 
-def suite():
-    ts = unittest.TestSuite()
-    ts.addTest(unittest.makeSuite(EvidenceTests))
-    return ts
+class EnsemblDbAnnotationTests(FeatureTestBase, AnnotationCheckMixin):
+    # HOST = "ensembldb.ensembl.org"
+    HOST = "useastdb.ensembl.org"
+    CORE_DB = "homo_sapiens_core_92_38"
+
+    conn = None
+    annotFactory = None
+
+    @classmethod
+    def _getConnect(cls):
+        if cls.conn is None:
+            cls.conn = mysqlOps.connect(host=cls.HOST, port=5306, user="anonymous", password="", db=cls.CORE_DB)
+        return cls.conn
+
+    @classmethod
+    def _getAnnotFactory(cls):
+        if cls.annotFactory is None:
+            cls.annotFactory = EnsemblDbAnnotationFactory(GenomeSeqSrc.obtain("grch38"))
+        return cls.annotFactory
+
+    def _getTransAnnot(self, transId):
+        ensGenes = ensemblGeneQuery(self._getConnect(), transId)
+        self.assertEqual(len(ensGenes), 1)
+        self.assertEqual(len(ensGenes[0].transcripts), 1)
+        return self._getAnnotFactory().fromEnsemblDb(ensGenes[0].transcripts[0])
+
+    def testENST00000215794(self):
+        # + strand
+        trans = self._getTransAnnot("ENST00000215794.7")
+        self.checkENST00000215794(trans)
 
 
 if __name__ == '__main__':

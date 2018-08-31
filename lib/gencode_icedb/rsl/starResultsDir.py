@@ -2,7 +2,6 @@
 TSV file used to track result files.  Paths are relative to directory containing
 the TSV.
 """
-from __future__ import print_function
 import os
 from pycbio.tsv import TsvReader
 

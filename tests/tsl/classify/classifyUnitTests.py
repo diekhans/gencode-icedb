@@ -1,4 +1,3 @@
-from __future__ import print_function
 import sys
 import os
 if __name__ == '__main__':
@@ -8,7 +7,7 @@ if __name__ == '__main__':
 import unittest
 from pycbio.sys.testCaseBase import TestCaseBase
 from pycbio.hgdata.psl import Psl
-from gencode_icedb.general.genome import GenomeReaderFactory
+from gencode_icedb.general.genome import GenomeReader
 from gencode_icedb.general.gencodeDb import UcscGencodeReader
 from gencode_icedb.general.geneAnnot import geneAnnotGroup
 from gencode_icedb.tsl.evidenceDb import EvidenceSource, EvidenceReader
@@ -24,7 +23,7 @@ class EvidCompareTest(TestCaseBase):
 
     @classmethod
     def setUpClass(cls):
-        cls.genomeReader = GenomeReaderFactory.factoryFromUcscDb(cls.UCSC_DB).obtain()
+        cls.genomeReader = GenomeReader.getFromUcscDbName(cls.UCSC_DB)
         cls.gencodeReader = UcscGencodeReader(cls.GENCODE_DB, cls.genomeReader)
         cls.evidenceReader = EvidenceReader(cls.EVIDENCE_DB, cls.genomeReader)
         cls.qualEval = EvidenceQualityEval(tightExonPolymorphicSizeLimit, tightExonPolymorphicFactionLimit)

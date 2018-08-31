@@ -4,13 +4,13 @@ import os
 import argparse
 from pycbio.sys import fileOps
 from pycbio.hgdata.coords import Coords
-from gencode_icedb.general.genome import GenomeReaderFactory
+from gencode_icedb.general.genome import GenomeReader
 
 
 def parseArgs():
     desc = """Generate parasol jobs site evidence considering GENCODE annotations."""
     parser = argparse.ArgumentParser(description=desc)
-    GenomeReaderFactory.addCmdOptions(parser)
+    GenomeReader.addCmdOptions(parser)
     parser.add_argument("--windowSize", type=int, default=10000000,
                         help="""maximum window size""")
     parser.add_argument("--testRange", type=Coords.parse,
@@ -26,18 +26,17 @@ def parseArgs():
 
 
 class JobGenerator(object):
-    def __init__(self, gencodeDb, sjDb, genomeReaderFactory, windowSize, workDir):
+    def __init__(self, gencodeDb, sjDb, genomeReader, windowSize, workDir):
         self.gencodeDb = gencodeDb
         self.sjDb = sjDb
-        self.genomeReaderFactory = genomeReaderFactory
-        self.genomeReader = genomeReaderFactory.obtain()
+        self.genomeReader = genomeReader
         self.windowSize = windowSize
         self.workDir = workDir
         self.resultDir = os.path.join(workDir, "results")
         self.novelProg = os.path.join(icedbProgSetup.binDir, "rslGencodeCollectNovelJob")
 
     def _generateJob(self, genomeCoords, batchFh, expectedFh):
-        cmd = [self.novelProg] + self.genomeReaderFactory.getOptionArgs()
+        cmd = [self.novelProg] + self.genomeReader.getOptionArgs()
         resultTsv = os.path.join(self.resultDir, "{}.novel.tsv".format(genomeCoords))
         cmd.extend([self.gencodeDb, self.sjDb, "{{check out exists {}}}".format(resultTsv), genomeCoords])
         print(*cmd, file=batchFh)
@@ -60,8 +59,8 @@ class JobGenerator(object):
 
 def rslGencodeCollectSupportMkJobs(opts):
     "main function"
-    genomeReaderFactory = GenomeReaderFactory.factoryFromCmdOptions(opts)
-    jobGen = JobGenerator(opts.gencodeDb, opts.sjDb, genomeReaderFactory, opts.windowSize, opts.workDir)
+    genomeReader = GenomeReader.getFromCmdOptions(opts)
+    jobGen = JobGenerator(opts.gencodeDb, opts.sjDb, genomeReader, opts.windowSize, opts.workDir)
 
     fileOps.ensureDir(opts.workDir)
     batchFile = os.path.join(opts.workDir, "batch.jobs")

@@ -3,7 +3,7 @@ Read GENCODE annotations from a database.
 """
 import six
 from pycbio.sys.objDict import ObjDict
-from pycbio.db.sqliteOps import sqliteConnect
+from pycbio.db import sqliteOps
 from pycbio.hgdata.genePredSqlite import GenePredSqliteTable
 from pycbio.hgdata.gencodeSqlite import GencodeAttrsSqliteTable, GencodeTagSqliteTable
 from gencode_icedb.general.genePredAnnotFeatures import GenePredAnnotationFactory
@@ -31,7 +31,7 @@ class UcscGencodeReader(object):
     def __init__(self, gencodeDbFile, genomeReader=None, filterChrYPar=True,
                  transcriptTypes=None):
         self.conn = None
-        self.conn = sqliteConnect(gencodeDbFile)
+        self.conn = sqliteOps.connect(gencodeDbFile)
         self.filterChrYPar = filterChrYPar
         self.transcriptTypes = frozenset(transcriptTypes) if transcriptTypes is not None else None
         self.genePredDbTable = GenePredSqliteTable(self.conn, GENCODE_ANN_TABLE)

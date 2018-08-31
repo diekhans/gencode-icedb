@@ -4,7 +4,7 @@ Read evidence alignments from a database.
 import six
 from pycbio.sys.symEnum import SymEnum
 from pycbio.sys.objDict import ObjDict
-from pycbio.db.sqliteOps import sqliteConnect
+from pycbio.db import sqliteOps
 from pycbio.hgdata.pslSqlite import PslSqliteTable
 from gencode_icedb.general.evidFeatures import EvidencePslFactory
 from gencode_icedb.general.transFeatures import ExonFeature
@@ -37,7 +37,7 @@ class EvidenceReader(object):
     debugging purposes.
     """
     def __init__(self, evidDbFile, genomeReader=None, sources=EvidenceSource, nameSubset=None):
-        self.conn = sqliteConnect(evidDbFile)
+        self.conn = sqliteOps.connect(evidDbFile)
         self.sources = sources
         self.nameSubset = frozenset(nameSubset) if nameSubset is not None else None
         self.dbTables = {}  # by EvidenceSource

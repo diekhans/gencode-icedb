@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 """run a mondo from ucsc browser database"""
-from __future__ import print_function
 import argparse
 import sys
 import os

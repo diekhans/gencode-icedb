@@ -1,7 +1,6 @@
 """
 PeeWee data models for RNA-Seq metadata and splice junctions.
 """
-from __future__ import print_function
 from peewee import Proxy, Model, Field, PrimaryKeyField, CharField, IntegerField
 from gencode_icedb.general.peeweeOps import peeweeConnect, peeweeClose, peeweeClassToTableName, PeeweeModelMixins
 from gencode_icedb.tsl.evidenceDb import EvidenceSource
