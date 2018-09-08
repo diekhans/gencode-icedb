@@ -1,0 +1,5 @@
+
+- data/GRCh38/GRCh38.fa.gz
+   ftp://ftp.ensembl.org/pub/current_fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna_sm.toplevel.fa.gz
+   zcat Homo_sapiens.GRCh38.dna_sm.toplevel.fa.gz | bgzip -c >GRCh38.fa.gz
+   

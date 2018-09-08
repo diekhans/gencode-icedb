@@ -56,10 +56,16 @@ class EnsemblDbAnnotationFactory(object):
     def _getExonFrame(self, transRec, exonRec):
         if (exonRec.startPhase < 0) and (exonRec.endPhase < 0):
             return None
-        elif exonRec.startPhase >= 0:
-            return Frame(exonRec.startPhase)
+        elif transRec.strand == '+':
+            if exonRec.exonDbId == transRec.cdsStartExonDbId:
+                return Frame(exonRec.endPhase) - transRec.cdsStartOffset
+            else:
+                return Frame(exonRec.startPhase)
         else:
-            return Frame(exonRec.endPhase) - transRec.cdsEndOffset
+            if exonRec.exonDbId == transRec.cdsEndExonDbId:
+                return Frame(exonRec.startPhase) + transRec.cdsEndOffset
+            else:
+                return Frame(exonRec.endPhase)
 
     def _addCodingFeatures(self, transRec, exonRecs, iBlkStart, iBlkEnd, rnaStart, rnaEnd, builder):
         rnaNext = rnaStart
@@ -113,8 +119,8 @@ class EnsemblDbAnnotationFactory(object):
 
     def fromEnsemblDb(self, ensTrans: EnsemblTranscript):
         """convert records from Ensembl database to TranscriptFeatures object."""
-        transRec = ensTrans.transcript
         ensTrans.dump()
+        transRec = ensTrans.transcript
         rnaSize = self._findRnaSize(ensTrans.exons)
         if transRec.cdsStartExonDbId is not None:
             cdsChrom = self._getCdsCoords(transRec, ensTrans.exons)

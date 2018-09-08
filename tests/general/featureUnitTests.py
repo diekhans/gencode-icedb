@@ -28,7 +28,7 @@ from pycbio.sys.pprint2 import nswpprint
 
 debugResults = False   # print out results for updated expected
 noCheckResults = False  # don't check results
-debugResults=True
+#debugResults=True
 
 if debugResults or noCheckResults:
     print("WARNING: debug variables set", file=sys.stderr)
@@ -45,7 +45,7 @@ class GenomeSeqSrc(object):
     srcs = {
         "hg38": "/hive/data/genomes/hg38/hg38.2bit",
         "mm10": "/hive/data/genomes/mm10/mm10.2bit",
-        "grch38": "/hive/users/markd/gencode/data/grch38/GRCh38.fa.gz",
+        "grch38": "../data/grch38/GRCh38.fa.gz"
     }
     readers = {}
 
@@ -92,7 +92,6 @@ class GenePredDbSrc(object):
     "caching genpred sqlite database"
     srcs = {
         "V28": "gencodeCompV28.gp",
-        "V26": "gencodeV26.gp"
     }
     genePredTbls = {}
 
@@ -670,263 +669,391 @@ class AnnotationCheckMixin(object):
     """Mixin of functions to validate results that a common between GenePred
     and EnsemblDb annotation tests"""
 
-    def checkENST00000215794(self, trans):
-        self._assertFeatures(trans,
-                             ('t=chr22:18149898-18177397/+, rna=ENST00000215794.7:0-2129/+ 2129 <+>',
-                              (('exon 18149898-18150222 rna=0-324',
-                                (("5'UTR 18149898-18150222 rna=0-324",),)),
-                               ('intron 18150222-18157557 rna=324-324 sjBases=GC...AG (GC_AG)',),
-                               ('exon 18157557-18157820 rna=324-587',
-                                (("5'UTR 18157557-18157663 rna=324-430",),
-                                 ('CDS 18157663-18157820 rna=430-587 0',))),
-                               ('intron 18157820-18160171 rna=587-587 sjBases=GT...AG (GT_AG)',),
-                               ('exon 18160171-18160268 rna=587-684',
-                                (('CDS 18160171-18160268 rna=587-684 1',),)),
-                               ('intron 18160268-18161789 rna=684-684 sjBases=GT...AG (GT_AG)',),
-                               ('exon 18161789-18161935 rna=684-830',
-                                (('CDS 18161789-18161935 rna=684-830 2',),)),
-                               ('intron 18161935-18167254 rna=830-830 sjBases=GT...AG (GT_AG)',),
-                               ('exon 18167254-18167334 rna=830-910',
-                                (('CDS 18167254-18167334 rna=830-910 1',),)),
-                               ('intron 18167334-18167889 rna=910-910 sjBases=GT...AG (GT_AG)',),
-                               ('exon 18167889-18168036 rna=910-1057',
-                                (('CDS 18167889-18168036 rna=910-1057 0',),)),
-                               ('intron 18168036-18169843 rna=1057-1057 sjBases=GT...AG (GT_AG)',),
-                               ('exon 18169843-18169939 rna=1057-1153',
-                                (('CDS 18169843-18169939 rna=1057-1153 0',),)),
-                               ('intron 18169939-18170752 rna=1153-1153 sjBases=GT...AG (GT_AG)',),
-                               ('exon 18170752-18170920 rna=1153-1321',
-                                (('CDS 18170752-18170920 rna=1153-1321 0',),)),
-                               ('intron 18170920-18173149 rna=1321-1321 sjBases=GT...AG (GT_AG)',),
-                               ('exon 18173149-18173281 rna=1321-1453',
-                                (('CDS 18173149-18173281 rna=1321-1453 0',),)),
-                               ('intron 18173281-18173792 rna=1453-1453 sjBases=GT...AG (GT_AG)',),
-                               ('exon 18173792-18173842 rna=1453-1503',
-                                (('CDS 18173792-18173842 rna=1453-1503 0',),)),
-                               ('intron 18173842-18176771 rna=1503-1503 sjBases=GT...AG (GT_AG)',),
-                               ('exon 18176771-18177397 rna=1503-2129',
-                                (('CDS 18176771-18176817 rna=1503-1549 2',),
-                                 ("3'UTR 18176817-18177397 rna=1549-2129",))))))
+    def _toEnsemblExpect(self, expect):
+        return (expect[0].replace('chr', ''), expect[1])
+
+    def checkENST00000215794(self, trans, ensChroms=False):
+        # coding, + strand
+        expect = ('t=chr22:18149898-18177397/+, rna=ENST00000215794.7:0-2129/+ 2129 <+>',
+                  (('exon 18149898-18150222 rna=0-324',
+                    (("5'UTR 18149898-18150222 rna=0-324",),)),
+                   ('intron 18150222-18157557 rna=324-324 sjBases=GC...AG (GC_AG)',),
+                   ('exon 18157557-18157820 rna=324-587',
+                    (("5'UTR 18157557-18157663 rna=324-430",),
+                     ('CDS 18157663-18157820 rna=430-587 0',))),
+                   ('intron 18157820-18160171 rna=587-587 sjBases=GT...AG (GT_AG)',),
+                   ('exon 18160171-18160268 rna=587-684',
+                    (('CDS 18160171-18160268 rna=587-684 1',),)),
+                   ('intron 18160268-18161789 rna=684-684 sjBases=GT...AG (GT_AG)',),
+                   ('exon 18161789-18161935 rna=684-830',
+                    (('CDS 18161789-18161935 rna=684-830 2',),)),
+                   ('intron 18161935-18167254 rna=830-830 sjBases=GT...AG (GT_AG)',),
+                   ('exon 18167254-18167334 rna=830-910',
+                    (('CDS 18167254-18167334 rna=830-910 1',),)),
+                   ('intron 18167334-18167889 rna=910-910 sjBases=GT...AG (GT_AG)',),
+                   ('exon 18167889-18168036 rna=910-1057',
+                    (('CDS 18167889-18168036 rna=910-1057 0',),)),
+                   ('intron 18168036-18169843 rna=1057-1057 sjBases=GT...AG (GT_AG)',),
+                   ('exon 18169843-18169939 rna=1057-1153',
+                    (('CDS 18169843-18169939 rna=1057-1153 0',),)),
+                   ('intron 18169939-18170752 rna=1153-1153 sjBases=GT...AG (GT_AG)',),
+                   ('exon 18170752-18170920 rna=1153-1321',
+                    (('CDS 18170752-18170920 rna=1153-1321 0',),)),
+                   ('intron 18170920-18173149 rna=1321-1321 sjBases=GT...AG (GT_AG)',),
+                   ('exon 18173149-18173281 rna=1321-1453',
+                    (('CDS 18173149-18173281 rna=1321-1453 0',),)),
+                   ('intron 18173281-18173792 rna=1453-1453 sjBases=GT...AG (GT_AG)',),
+                   ('exon 18173792-18173842 rna=1453-1503',
+                    (('CDS 18173792-18173842 rna=1453-1503 0',),)),
+                   ('intron 18173842-18176771 rna=1503-1503 sjBases=GT...AG (GT_AG)',),
+                   ('exon 18176771-18177397 rna=1503-2129',
+                    (('CDS 18176771-18176817 rna=1503-1549 2',),
+                     ("3'UTR 18176817-18177397 rna=1549-2129",)))))
+        if ensChroms:
+            expect = self._toEnsemblExpect(expect)
+        self._assertFeatures(trans, expect)
+
+    def checkENST00000334029(self, trans, ensChroms=False):
+        # coding, - strand
+        expect = ('t=chr22:18912781-18936451/+, rna=ENST00000334029.6:0-1985/- 1985 <->',
+                  (('exon 18912781-18913362 rna=0-581',
+                    (("3'UTR 18912781-18913174 rna=0-393",),
+                     ('CDS 18913174-18913362 rna=393-581 1',))),
+                   ('intron 18913362-18913437 rna=581-581 sjBases=GT...AG (GT_AG)',),
+                   ('exon 18913437-18913526 rna=581-670',
+                    (('CDS 18913437-18913526 rna=581-670 2',),)),
+                   ('intron 18913526-18916889 rna=670-670 sjBases=GT...AG (GT_AG)',),
+                   ('exon 18916889-18916988 rna=670-769',
+                    (('CDS 18916889-18916988 rna=670-769 2',),)),
+                   ('intron 18916988-18918315 rna=769-769 sjBases=GT...AG (GT_AG)',),
+                   ('exon 18918315-18918491 rna=769-945',
+                    (('CDS 18918315-18918491 rna=769-945 0',),)),
+                   ('intron 18918491-18919450 rna=945-945 sjBases=GC...AG (GC_AG)',),
+                   ('exon 18919450-18919597 rna=945-1092',
+                    (('CDS 18919450-18919597 rna=945-1092 0',),)),
+                   ('intron 18919597-18919705 rna=1092-1092 sjBases=GT...AG (GT_AG)',),
+                   ('exon 18919705-18919798 rna=1092-1185',
+                    (('CDS 18919705-18919798 rna=1092-1185 0',),)),
+                   ('intron 18919798-18921341 rna=1185-1185 sjBases=GT...AG (GT_AG)',),
+                   ('exon 18921341-18921423 rna=1185-1267',
+                    (('CDS 18921341-18921423 rna=1185-1267 2',),)),
+                   ('intron 18921423-18922324 rna=1267-1267 sjBases=GT...AG (GT_AG)',),
+                   ('exon 18922324-18922404 rna=1267-1347',
+                    (('CDS 18922324-18922404 rna=1267-1347 0',),)),
+                   ('intron 18922404-18922816 rna=1347-1347 sjBases=GT...AG (GT_AG)',),
+                   ('exon 18922816-18922933 rna=1347-1464',
+                    (('CDS 18922816-18922933 rna=1347-1464 0',),)),
+                   ('intron 18922933-18923114 rna=1464-1464 sjBases=GT...AG (GT_AG)',),
+                   ('exon 18923114-18923179 rna=1464-1529',
+                    (('CDS 18923114-18923179 rna=1464-1529 1',),)),
+                   ('intron 18923179-18925050 rna=1529-1529 sjBases=GT...AG (GT_AG)',),
+                   ('exon 18925050-18925200 rna=1529-1679',
+                    (('CDS 18925050-18925200 rna=1529-1679 1',),)),
+                   ('intron 18925200-18925687 rna=1679-1679 sjBases=GT...AG (GT_AG)',),
+                   ('exon 18925687-18925722 rna=1679-1714',
+                    (('CDS 18925687-18925722 rna=1679-1714 2',),)),
+                   ('intron 18925722-18930989 rna=1714-1714 sjBases=GT...AG (GT_AG)',),
+                   ('exon 18930989-18931198 rna=1714-1923',
+                    (('CDS 18930989-18931147 rna=1714-1872 0',),
+                     ("5'UTR 18931147-18931198 rna=1872-1923",))),
+                   ('intron 18931198-18936389 rna=1923-1923 sjBases=GT...AG (GT_AG)',),
+                   ('exon 18936389-18936451 rna=1923-1985',
+                    (("5'UTR 18936389-18936451 rna=1923-1985",),))))
+        if ensChroms:
+            expect = self._toEnsemblExpect(expect)
+        self._assertFeatures(trans, expect)
+
+    def checkENST00000334029NoSJ(self, trans, ensChroms=False):
+        # coding, - strand, no splice junctions
+        expect = ('t=chr22:18912781-18936451/+, rna=ENST00000334029.6:0-1985/- 1985 <->',
+                  (('exon 18912781-18913362 rna=0-581',
+                    (("3'UTR 18912781-18913174 rna=0-393",),
+                     ('CDS 18913174-18913362 rna=393-581 1',))),
+                   ('intron 18913362-18913437 rna=581-581',),
+                   ('exon 18913437-18913526 rna=581-670',
+                    (('CDS 18913437-18913526 rna=581-670 2',),)),
+                   ('intron 18913526-18916889 rna=670-670',),
+                   ('exon 18916889-18916988 rna=670-769',
+                    (('CDS 18916889-18916988 rna=670-769 2',),)),
+                   ('intron 18916988-18918315 rna=769-769',),
+                   ('exon 18918315-18918491 rna=769-945',
+                    (('CDS 18918315-18918491 rna=769-945 0',),)),
+                   ('intron 18918491-18919450 rna=945-945',),
+                   ('exon 18919450-18919597 rna=945-1092',
+                    (('CDS 18919450-18919597 rna=945-1092 0',),)),
+                   ('intron 18919597-18919705 rna=1092-1092',),
+                   ('exon 18919705-18919798 rna=1092-1185',
+                    (('CDS 18919705-18919798 rna=1092-1185 0',),)),
+                   ('intron 18919798-18921341 rna=1185-1185',),
+                   ('exon 18921341-18921423 rna=1185-1267',
+                    (('CDS 18921341-18921423 rna=1185-1267 2',),)),
+                   ('intron 18921423-18922324 rna=1267-1267',),
+                   ('exon 18922324-18922404 rna=1267-1347',
+                    (('CDS 18922324-18922404 rna=1267-1347 0',),)),
+                   ('intron 18922404-18922816 rna=1347-1347',),
+                   ('exon 18922816-18922933 rna=1347-1464',
+                    (('CDS 18922816-18922933 rna=1347-1464 0',),)),
+                   ('intron 18922933-18923114 rna=1464-1464',),
+                   ('exon 18923114-18923179 rna=1464-1529',
+                    (('CDS 18923114-18923179 rna=1464-1529 1',),)),
+                   ('intron 18923179-18925050 rna=1529-1529',),
+                   ('exon 18925050-18925200 rna=1529-1679',
+                    (('CDS 18925050-18925200 rna=1529-1679 1',),)),
+                   ('intron 18925200-18925687 rna=1679-1679',),
+                   ('exon 18925687-18925722 rna=1679-1714',
+                    (('CDS 18925687-18925722 rna=1679-1714 2',),)),
+                   ('intron 18925722-18930989 rna=1714-1714',),
+                   ('exon 18930989-18931198 rna=1714-1923',
+                    (('CDS 18930989-18931147 rna=1714-1872 0',),
+                     ("5'UTR 18931147-18931198 rna=1872-1923",))),
+                   ('intron 18931198-18936389 rna=1923-1923',),
+                   ('exon 18936389-18936451 rna=1923-1985',
+                    (("5'UTR 18936389-18936451 rna=1923-1985",),))))
+        if ensChroms:
+            expect = self._toEnsemblExpect(expect)
+        self._assertFeatures(trans, expect)
+
+    def checkENST00000334029Rc(self, trans, ensChroms=False):
+        # coding, - strand, reverse-complemented
+        expect = ('t=chr22:31882017-31905687/-, rna=ENST00000334029.6:0-1985/+ 1985 <->',
+                  (('exon 31882017-31882079 rna=0-62',
+                    (("5'UTR 31882017-31882079 rna=0-62",),)),
+                   ('intron 31882079-31887270 rna=62-62 sjBases=GT...AG (GT_AG)',),
+                   ('exon 31887270-31887479 rna=62-271',
+                    (("5'UTR 31887270-31887321 rna=62-113",),
+                     ('CDS 31887321-31887479 rna=113-271 0',))),
+                   ('intron 31887479-31892746 rna=271-271 sjBases=GT...AG (GT_AG)',),
+                   ('exon 31892746-31892781 rna=271-306',
+                    (('CDS 31892746-31892781 rna=271-306 2',),)),
+                   ('intron 31892781-31893268 rna=306-306 sjBases=GT...AG (GT_AG)',),
+                   ('exon 31893268-31893418 rna=306-456',
+                    (('CDS 31893268-31893418 rna=306-456 1',),)),
+                   ('intron 31893418-31895289 rna=456-456 sjBases=GT...AG (GT_AG)',),
+                   ('exon 31895289-31895354 rna=456-521',
+                    (('CDS 31895289-31895354 rna=456-521 1',),)),
+                   ('intron 31895354-31895535 rna=521-521 sjBases=GT...AG (GT_AG)',),
+                   ('exon 31895535-31895652 rna=521-638',
+                    (('CDS 31895535-31895652 rna=521-638 0',),)),
+                   ('intron 31895652-31896064 rna=638-638 sjBases=GT...AG (GT_AG)',),
+                   ('exon 31896064-31896144 rna=638-718',
+                    (('CDS 31896064-31896144 rna=638-718 0',),)),
+                   ('intron 31896144-31897045 rna=718-718 sjBases=GT...AG (GT_AG)',),
+                   ('exon 31897045-31897127 rna=718-800',
+                    (('CDS 31897045-31897127 rna=718-800 2',),)),
+                   ('intron 31897127-31898670 rna=800-800 sjBases=GT...AG (GT_AG)',),
+                   ('exon 31898670-31898763 rna=800-893',
+                    (('CDS 31898670-31898763 rna=800-893 0',),)),
+                   ('intron 31898763-31898871 rna=893-893 sjBases=GT...AG (GT_AG)',),
+                   ('exon 31898871-31899018 rna=893-1040',
+                    (('CDS 31898871-31899018 rna=893-1040 0',),)),
+                   ('intron 31899018-31899977 rna=1040-1040 sjBases=GC...AG (GC_AG)',),
+                   ('exon 31899977-31900153 rna=1040-1216',
+                    (('CDS 31899977-31900153 rna=1040-1216 0',),)),
+                   ('intron 31900153-31901480 rna=1216-1216 sjBases=GT...AG (GT_AG)',),
+                   ('exon 31901480-31901579 rna=1216-1315',
+                    (('CDS 31901480-31901579 rna=1216-1315 2',),)),
+                   ('intron 31901579-31904942 rna=1315-1315 sjBases=GT...AG (GT_AG)',),
+                   ('exon 31904942-31905031 rna=1315-1404',
+                    (('CDS 31904942-31905031 rna=1315-1404 2',),)),
+                   ('intron 31905031-31905106 rna=1404-1404 sjBases=GT...AG (GT_AG)',),
+                   ('exon 31905106-31905687 rna=1404-1985',
+                    (('CDS 31905106-31905294 rna=1404-1592 1',),
+                     ("3'UTR 31905294-31905687 rna=1592-1985",)))))
+        if ensChroms:
+            expect = self._toEnsemblExpect(expect)
+        self._assertFeatures(trans, expect)
+
+    def checkENST00000334029NoSJRc(self, trans, ensChroms=False):
+        # coding, - strand, reverse-complemented, no splice junctions
+        expect = ('t=chr22:31882017-31905687/-, rna=ENST00000334029.6:0-1985/+ 1985 <->',
+                  (('exon 31882017-31882079 rna=0-62',
+                    (("5'UTR 31882017-31882079 rna=0-62",),)),
+                   ('intron 31882079-31887270 rna=62-62',),
+                   ('exon 31887270-31887479 rna=62-271',
+                    (("5'UTR 31887270-31887321 rna=62-113",),
+                     ('CDS 31887321-31887479 rna=113-271 0',))),
+                   ('intron 31887479-31892746 rna=271-271',),
+                   ('exon 31892746-31892781 rna=271-306',
+                    (('CDS 31892746-31892781 rna=271-306 2',),)),
+                   ('intron 31892781-31893268 rna=306-306',),
+                   ('exon 31893268-31893418 rna=306-456',
+                    (('CDS 31893268-31893418 rna=306-456 1',),)),
+                   ('intron 31893418-31895289 rna=456-456',),
+                   ('exon 31895289-31895354 rna=456-521',
+                    (('CDS 31895289-31895354 rna=456-521 1',),)),
+                   ('intron 31895354-31895535 rna=521-521',),
+                   ('exon 31895535-31895652 rna=521-638',
+                    (('CDS 31895535-31895652 rna=521-638 0',),)),
+                   ('intron 31895652-31896064 rna=638-638',),
+                   ('exon 31896064-31896144 rna=638-718',
+                    (('CDS 31896064-31896144 rna=638-718 0',),)),
+                   ('intron 31896144-31897045 rna=718-718',),
+                   ('exon 31897045-31897127 rna=718-800',
+                    (('CDS 31897045-31897127 rna=718-800 2',),)),
+                   ('intron 31897127-31898670 rna=800-800',),
+                   ('exon 31898670-31898763 rna=800-893',
+                    (('CDS 31898670-31898763 rna=800-893 0',),)),
+                   ('intron 31898763-31898871 rna=893-893',),
+                   ('exon 31898871-31899018 rna=893-1040',
+                    (('CDS 31898871-31899018 rna=893-1040 0',),)),
+                   ('intron 31899018-31899977 rna=1040-1040',),
+                   ('exon 31899977-31900153 rna=1040-1216',
+                    (('CDS 31899977-31900153 rna=1040-1216 0',),)),
+                   ('intron 31900153-31901480 rna=1216-1216',),
+                   ('exon 31901480-31901579 rna=1216-1315',
+                    (('CDS 31901480-31901579 rna=1216-1315 2',),)),
+                   ('intron 31901579-31904942 rna=1315-1315',),
+                   ('exon 31904942-31905031 rna=1315-1404',
+                    (('CDS 31904942-31905031 rna=1315-1404 2',),)),
+                   ('intron 31905031-31905106 rna=1404-1404',),
+                   ('exon 31905106-31905687 rna=1404-1985',
+                    (('CDS 31905106-31905294 rna=1404-1592 1',),
+                     ("3'UTR 31905294-31905687 rna=1592-1985",)))))
+        if ensChroms:
+            expect = self._toEnsemblExpect(expect)
+        self._assertFeatures(trans, expect)
+
+    def checkENST00000434390(self, trans, ensChroms=False):
+        # non-coding, - strand
+        expect = ('t=chr22:18178037-18205915/+, rna=ENST00000434390.1:0-1859/- 1859 <->',
+                  (('exon 18178037-18178465 rna=0-428',
+                    (('NC 18178037-18178465 rna=0-428',),)),
+                   ('intron 18178465-18183109 rna=428-428 sjBases=GT...AG (GT_AG)',),
+                   ('exon 18183109-18184066 rna=428-1385',
+                    (('NC 18183109-18184066 rna=428-1385',),)),
+                   ('intron 18184066-18188622 rna=1385-1385 sjBases=GT...AG (GT_AG)',),
+                   ('exon 18188622-18188656 rna=1385-1419',
+                    (('NC 18188622-18188656 rna=1385-1419',),)),
+                   ('intron 18188656-18189121 rna=1419-1419 sjBases=GT...AG (GT_AG)',),
+                   ('exon 18189121-18189183 rna=1419-1481',
+                    (('NC 18189121-18189183 rna=1419-1481',),)),
+                   ('intron 18189183-18191182 rna=1481-1481 sjBases=GT...AG (GT_AG)',),
+                   ('exon 18191182-18191248 rna=1481-1547',
+                    (('NC 18191182-18191248 rna=1481-1547',),)),
+                   ('intron 18191248-18196156 rna=1547-1547 sjBases=GT...AG (GT_AG)',),
+                   ('exon 18196156-18196243 rna=1547-1634',
+                    (('NC 18196156-18196243 rna=1547-1634',),)),
+                   ('intron 18196243-18199189 rna=1634-1634 sjBases=GT...AG (GT_AG)',),
+                   ('exon 18199189-18199214 rna=1634-1659',
+                    (('NC 18199189-18199214 rna=1634-1659',),)),
+                   ('intron 18199214-18199682 rna=1659-1659 sjBases=GT...AG (GT_AG)',),
+                   ('exon 18199682-18199741 rna=1659-1718',
+                    (('NC 18199682-18199741 rna=1659-1718',),)),
+                   ('intron 18199741-18205774 rna=1718-1718 sjBases=GT...AG (GT_AG)',),
+                   ('exon 18205774-18205915 rna=1718-1859',
+                    (('NC 18205774-18205915 rna=1718-1859',),))))
+        if ensChroms:
+            expect = self._toEnsemblExpect(expect)
+        self._assertFeatures(trans, expect)
+
+    def checkENST00000434390Rc(self, trans, ensChroms=False):
+        # non-coding, - strand, reverse complemented
+        expect = ('t=chr22:32612553-32640431/-, rna=ENST00000434390.1:0-1859/+ 1859 <->',
+                  (('exon 32612553-32612694 rna=0-141',
+                    (('NC 32612553-32612694 rna=0-141',),)),
+                   ('intron 32612694-32618727 rna=141-141 sjBases=GT...AG (GT_AG)',),
+                   ('exon 32618727-32618786 rna=141-200',
+                    (('NC 32618727-32618786 rna=141-200',),)),
+                   ('intron 32618786-32619254 rna=200-200 sjBases=GT...AG (GT_AG)',),
+                   ('exon 32619254-32619279 rna=200-225',
+                    (('NC 32619254-32619279 rna=200-225',),)),
+                   ('intron 32619279-32622225 rna=225-225 sjBases=GT...AG (GT_AG)',),
+                   ('exon 32622225-32622312 rna=225-312',
+                    (('NC 32622225-32622312 rna=225-312',),)),
+                   ('intron 32622312-32627220 rna=312-312 sjBases=GT...AG (GT_AG)',),
+                   ('exon 32627220-32627286 rna=312-378',
+                    (('NC 32627220-32627286 rna=312-378',),)),
+                   ('intron 32627286-32629285 rna=378-378 sjBases=GT...AG (GT_AG)',),
+                   ('exon 32629285-32629347 rna=378-440',
+                    (('NC 32629285-32629347 rna=378-440',),)),
+                   ('intron 32629347-32629812 rna=440-440 sjBases=GT...AG (GT_AG)',),
+                   ('exon 32629812-32629846 rna=440-474',
+                    (('NC 32629812-32629846 rna=440-474',),)),
+                   ('intron 32629846-32634402 rna=474-474 sjBases=GT...AG (GT_AG)',),
+                   ('exon 32634402-32635359 rna=474-1431',
+                    (('NC 32634402-32635359 rna=474-1431',),)),
+                   ('intron 32635359-32640003 rna=1431-1431 sjBases=GT...AG (GT_AG)',),
+                   ('exon 32640003-32640431 rna=1431-1859',
+                    (('NC 32640003-32640431 rna=1431-1859',),))))
+        if ensChroms:
+            expect = self._toEnsemblExpect(expect)
+        self._assertFeatures(trans, expect)
+
+    def checkENST00000538324(self, trans, ensChroms=False):
+        # ABO error in genome
+        expect = ('t=chr9:133255601-133275214/+, rna=ENST00000538324.2:0-1153/- 1153 <->',
+                  (('exon 133255601-133256356 rna=0-755',
+                    (('CDS 133255601-133255670 rna=0-69 0',),
+                     ('gap 133255670-133255674 rna=69-73',),
+                     ('CDS 133255674-133256356 rna=73-755 2',))),
+                   ('intron 133256356-133257408 rna=755-755 sjBases=GT...AG (GT_AG)',),
+                   ('exon 133257408-133257542 rna=755-889',
+                    (('CDS 133257408-133257521 rna=755-868 0',),
+                     ('gap 133257521-133257523 rna=868-870',),
+                     ('CDS 133257523-133257542 rna=870-889 2',))),
+                   ('intron 133257542-133258096 rna=889-889 sjBases=GT...AG (GT_AG)',),
+                   ('exon 133258096-133258132 rna=889-925',
+                    (('CDS 133258096-133258132 rna=889-925 2',),)),
+                   ('intron 133258132-133259818 rna=925-925 sjBases=GT...AG (GT_AG)',),
+                   ('exon 133259818-133259866 rna=925-973',
+                    (('CDS 133259818-133259866 rna=925-973 2',),)),
+                   ('intron 133259866-133261317 rna=973-973 sjBases=GT...AG (GT_AG)',),
+                   ('exon 133261317-133261374 rna=973-1030',
+                    (('CDS 133261317-133261374 rna=973-1030 2',),)),
+                   ('intron 133261374-133262098 rna=1030-1030 sjBases=GT...AG (GT_AG)',),
+                   ('exon 133262098-133262168 rna=1030-1100',
+                    (('CDS 133262098-133262168 rna=1030-1100 1',),)),
+                   ('intron 133262168-133275161 rna=1100-1100 sjBases=GT...AG (GT_AG)',),
+                   ('exon 133275161-133275214 rna=1100-1153',
+                    (('CDS 133275161-133275189 rna=1100-1128 0',),
+                     ("5'UTR 133275189-133275214 rna=1128-1153",)))))
+        if ensChroms:
+            expect = self._toEnsemblExpect(expect)
+        self._assertFeatures(trans, expect)
 
 
 class GenePredAnnotationTests(FeatureTestBase, AnnotationCheckMixin):
-    def _getV28Gp(self, acc):
-        return GenePredDbSrc.obtainGenePred("V28", acc)
-
-    def _gpToAnnotTranscript(self, gp):
+    def _getTransAnnot(self, acc):
         factory = GenePredAnnotationFactory(GenomeSeqSrc.obtain("hg38"))
-        return factory.fromGenePred(gp)
+        return factory.fromGenePred(GenePredDbSrc.obtainGenePred("V28", acc))
+
+    def _getTransAnnotNoSJ(self, acc):
+        factory = GenePredAnnotationFactory(chromSizeFunc=GenomeSeqSrc.obtain("hg38").getChromSize)
+        return factory.fromGenePred(GenePredDbSrc.obtainGenePred("V28", acc))
 
     def testENST00000215794(self):
-        # + strand
-        trans = self._gpToAnnotTranscript(self._getV28Gp("ENST00000215794.7"))
+        # coding, + strand
+        trans = self._getTransAnnot("ENST00000215794.7")
         self.checkENST00000215794(trans)
         self.assertEqual("chr22\t18149898\t18177397\tENST00000215794.7\t0\t+\t18157663\t18176817\t0,1,2\t11\t324,263,97,146,80,147,96,168,132,50,626,\t0,7659,10273,11891,17356,17991,19945,20854,23251,23894,26873,",
                          str(trans.toBed("0,1,2")),)
 
     def testENST00000334029(self):
-        # - strand
-        trans = self._gpToAnnotTranscript(self._getV28Gp("ENST00000334029.6"))
-        self._assertFeatures(trans,
-                             ('t=chr22:18912781-18936451/+, rna=ENST00000334029.6:0-1985/- 1985 <->',
-                              (('exon 18912781-18913362 rna=0-581',
-                                (("3'UTR 18912781-18913174 rna=0-393",),
-                                 ('CDS 18913174-18913362 rna=393-581 1',))),
-                               ('intron 18913362-18913437 rna=581-581 sjBases=GT...AG (GT_AG)',),
-                               ('exon 18913437-18913526 rna=581-670',
-                                (('CDS 18913437-18913526 rna=581-670 2',),)),
-                               ('intron 18913526-18916889 rna=670-670 sjBases=GT...AG (GT_AG)',),
-                               ('exon 18916889-18916988 rna=670-769',
-                                (('CDS 18916889-18916988 rna=670-769 2',),)),
-                               ('intron 18916988-18918315 rna=769-769 sjBases=GT...AG (GT_AG)',),
-                               ('exon 18918315-18918491 rna=769-945',
-                                (('CDS 18918315-18918491 rna=769-945 0',),)),
-                               ('intron 18918491-18919450 rna=945-945 sjBases=GC...AG (GC_AG)',),
-                               ('exon 18919450-18919597 rna=945-1092',
-                                (('CDS 18919450-18919597 rna=945-1092 0',),)),
-                               ('intron 18919597-18919705 rna=1092-1092 sjBases=GT...AG (GT_AG)',),
-                               ('exon 18919705-18919798 rna=1092-1185',
-                                (('CDS 18919705-18919798 rna=1092-1185 0',),)),
-                               ('intron 18919798-18921341 rna=1185-1185 sjBases=GT...AG (GT_AG)',),
-                               ('exon 18921341-18921423 rna=1185-1267',
-                                (('CDS 18921341-18921423 rna=1185-1267 2',),)),
-                               ('intron 18921423-18922324 rna=1267-1267 sjBases=GT...AG (GT_AG)',),
-                               ('exon 18922324-18922404 rna=1267-1347',
-                                (('CDS 18922324-18922404 rna=1267-1347 0',),)),
-                               ('intron 18922404-18922816 rna=1347-1347 sjBases=GT...AG (GT_AG)',),
-                               ('exon 18922816-18922933 rna=1347-1464',
-                                (('CDS 18922816-18922933 rna=1347-1464 0',),)),
-                               ('intron 18922933-18923114 rna=1464-1464 sjBases=GT...AG (GT_AG)',),
-                               ('exon 18923114-18923179 rna=1464-1529',
-                                (('CDS 18923114-18923179 rna=1464-1529 1',),)),
-                               ('intron 18923179-18925050 rna=1529-1529 sjBases=GT...AG (GT_AG)',),
-                               ('exon 18925050-18925200 rna=1529-1679',
-                                (('CDS 18925050-18925200 rna=1529-1679 1',),)),
-                               ('intron 18925200-18925687 rna=1679-1679 sjBases=GT...AG (GT_AG)',),
-                               ('exon 18925687-18925722 rna=1679-1714',
-                                (('CDS 18925687-18925722 rna=1679-1714 2',),)),
-                               ('intron 18925722-18930989 rna=1714-1714 sjBases=GT...AG (GT_AG)',),
-                               ('exon 18930989-18931198 rna=1714-1923',
-                                (('CDS 18930989-18931147 rna=1714-1872 0',),
-                                 ("5'UTR 18931147-18931198 rna=1872-1923",))),
-                               ('intron 18931198-18936389 rna=1923-1923 sjBases=GT...AG (GT_AG)',),
-                               ('exon 18936389-18936451 rna=1923-1985',
-                                (("5'UTR 18936389-18936451 rna=1923-1985",),)))))
+        # coding, - strand
+        trans = self._getTransAnnot("ENST00000334029.6")
+        self.checkENST00000334029(trans)
 
     def testENST00000334029NoSJ(self):
-        factory = GenePredAnnotationFactory(None)
-        trans = factory.fromGenePred(self._getV28Gp("ENST00000334029.6"))
-        self._assertFeatures(trans,
-                             ('t=chr22:18912781-18936451/+, rna=ENST00000334029.6:0-1985/- 1985 <->',
-                              (('exon 18912781-18913362 rna=0-581',
-                                (("3'UTR 18912781-18913174 rna=0-393",),
-                                 ('CDS 18913174-18913362 rna=393-581 1',))),
-                               ('intron 18913362-18913437 rna=581-581',),
-                               ('exon 18913437-18913526 rna=581-670',
-                                (('CDS 18913437-18913526 rna=581-670 2',),)),
-                               ('intron 18913526-18916889 rna=670-670',),
-                               ('exon 18916889-18916988 rna=670-769',
-                                (('CDS 18916889-18916988 rna=670-769 2',),)),
-                               ('intron 18916988-18918315 rna=769-769',),
-                               ('exon 18918315-18918491 rna=769-945',
-                                (('CDS 18918315-18918491 rna=769-945 0',),)),
-                               ('intron 18918491-18919450 rna=945-945',),
-                               ('exon 18919450-18919597 rna=945-1092',
-                                (('CDS 18919450-18919597 rna=945-1092 0',),)),
-                               ('intron 18919597-18919705 rna=1092-1092',),
-                               ('exon 18919705-18919798 rna=1092-1185',
-                                (('CDS 18919705-18919798 rna=1092-1185 0',),)),
-                               ('intron 18919798-18921341 rna=1185-1185',),
-                               ('exon 18921341-18921423 rna=1185-1267',
-                                (('CDS 18921341-18921423 rna=1185-1267 2',),)),
-                               ('intron 18921423-18922324 rna=1267-1267',),
-                               ('exon 18922324-18922404 rna=1267-1347',
-                                (('CDS 18922324-18922404 rna=1267-1347 0',),)),
-                               ('intron 18922404-18922816 rna=1347-1347',),
-                               ('exon 18922816-18922933 rna=1347-1464',
-                                (('CDS 18922816-18922933 rna=1347-1464 0',),)),
-                               ('intron 18922933-18923114 rna=1464-1464',),
-                               ('exon 18923114-18923179 rna=1464-1529',
-                                (('CDS 18923114-18923179 rna=1464-1529 1',),)),
-                               ('intron 18923179-18925050 rna=1529-1529',),
-                               ('exon 18925050-18925200 rna=1529-1679',
-                                (('CDS 18925050-18925200 rna=1529-1679 1',),)),
-                               ('intron 18925200-18925687 rna=1679-1679',),
-                               ('exon 18925687-18925722 rna=1679-1714',
-                                (('CDS 18925687-18925722 rna=1679-1714 2',),)),
-                               ('intron 18925722-18930989 rna=1714-1714',),
-                               ('exon 18930989-18931198 rna=1714-1923',
-                                (('CDS 18930989-18931147 rna=1714-1872 0',),
-                                 ("5'UTR 18931147-18931198 rna=1872-1923",))),
-                               ('intron 18931198-18936389 rna=1923-1923',),
-                               ('exon 18936389-18936451 rna=1923-1985',
-                                (("5'UTR 18936389-18936451 rna=1923-1985",),)))))
+        # coding, - strand, no splice junctions
+        trans = self._getTransAnnotNoSJ("ENST00000334029.6")
+        self.checkENST00000334029NoSJ(trans)
 
     def testENST00000334029Rc(self):
-        # - strand
-        trans = self._gpToAnnotTranscript(self._getV28Gp("ENST00000334029.6"))
+        # coding, - strand, reverse-complemented
+        trans = self._getTransAnnot("ENST00000334029.6")
         rcTrans = trans.reverseComplement()
         self.assertEqual(len(rcTrans.features), len(trans.features))
-        self._assertFeatures(rcTrans,
-                             ('t=chr22:31882017-31905687/-, rna=ENST00000334029.6:0-1985/+ 1985 <->',
-                              (('exon 31882017-31882079 rna=0-62',
-                                (("5'UTR 31882017-31882079 rna=0-62",),)),
-                               ('intron 31882079-31887270 rna=62-62 sjBases=GT...AG (GT_AG)',),
-                               ('exon 31887270-31887479 rna=62-271',
-                                (("5'UTR 31887270-31887321 rna=62-113",),
-                                 ('CDS 31887321-31887479 rna=113-271 0',))),
-                               ('intron 31887479-31892746 rna=271-271 sjBases=GT...AG (GT_AG)',),
-                               ('exon 31892746-31892781 rna=271-306',
-                                (('CDS 31892746-31892781 rna=271-306 2',),)),
-                               ('intron 31892781-31893268 rna=306-306 sjBases=GT...AG (GT_AG)',),
-                               ('exon 31893268-31893418 rna=306-456',
-                                (('CDS 31893268-31893418 rna=306-456 1',),)),
-                               ('intron 31893418-31895289 rna=456-456 sjBases=GT...AG (GT_AG)',),
-                               ('exon 31895289-31895354 rna=456-521',
-                                (('CDS 31895289-31895354 rna=456-521 1',),)),
-                               ('intron 31895354-31895535 rna=521-521 sjBases=GT...AG (GT_AG)',),
-                               ('exon 31895535-31895652 rna=521-638',
-                                (('CDS 31895535-31895652 rna=521-638 0',),)),
-                               ('intron 31895652-31896064 rna=638-638 sjBases=GT...AG (GT_AG)',),
-                               ('exon 31896064-31896144 rna=638-718',
-                                (('CDS 31896064-31896144 rna=638-718 0',),)),
-                               ('intron 31896144-31897045 rna=718-718 sjBases=GT...AG (GT_AG)',),
-                               ('exon 31897045-31897127 rna=718-800',
-                                (('CDS 31897045-31897127 rna=718-800 2',),)),
-                               ('intron 31897127-31898670 rna=800-800 sjBases=GT...AG (GT_AG)',),
-                               ('exon 31898670-31898763 rna=800-893',
-                                (('CDS 31898670-31898763 rna=800-893 0',),)),
-                               ('intron 31898763-31898871 rna=893-893 sjBases=GT...AG (GT_AG)',),
-                               ('exon 31898871-31899018 rna=893-1040',
-                                (('CDS 31898871-31899018 rna=893-1040 0',),)),
-                               ('intron 31899018-31899977 rna=1040-1040 sjBases=GC...AG (GC_AG)',),
-                               ('exon 31899977-31900153 rna=1040-1216',
-                                (('CDS 31899977-31900153 rna=1040-1216 0',),)),
-                               ('intron 31900153-31901480 rna=1216-1216 sjBases=GT...AG (GT_AG)',),
-                               ('exon 31901480-31901579 rna=1216-1315',
-                                (('CDS 31901480-31901579 rna=1216-1315 2',),)),
-                               ('intron 31901579-31904942 rna=1315-1315 sjBases=GT...AG (GT_AG)',),
-                               ('exon 31904942-31905031 rna=1315-1404',
-                                (('CDS 31904942-31905031 rna=1315-1404 2',),)),
-                               ('intron 31905031-31905106 rna=1404-1404 sjBases=GT...AG (GT_AG)',),
-                               ('exon 31905106-31905687 rna=1404-1985',
-                                (('CDS 31905106-31905294 rna=1404-1592 1',),
-                                 ("3'UTR 31905294-31905687 rna=1592-1985",))))))
+        self.checkENST00000334029Rc(rcTrans)
 
     def testENST00000334029NoSJRc(self):
-        # no splice sites, just sizes
-        factory = GenePredAnnotationFactory(chromSizeFunc=GenomeSeqSrc.obtain("hg38").getChromSize)
-        trans = factory.fromGenePred(self._getV28Gp("ENST00000334029.6"))
+        # coding, - strand, reverse-complemented, no splice junctions
+        trans = self._getTransAnnotNoSJ("ENST00000334029.6")
         rcTrans = trans.reverseComplement()
         self.assertEqual(len(rcTrans.features), len(trans.features))
-        self._assertFeatures(rcTrans,
-                             ('t=chr22:31882017-31905687/-, rna=ENST00000334029.6:0-1985/+ 1985 <->',
-                              (('exon 31882017-31882079 rna=0-62',
-                                (("5'UTR 31882017-31882079 rna=0-62",),)),
-                               ('intron 31882079-31887270 rna=62-62',),
-                               ('exon 31887270-31887479 rna=62-271',
-                                (("5'UTR 31887270-31887321 rna=62-113",),
-                                 ('CDS 31887321-31887479 rna=113-271 0',))),
-                               ('intron 31887479-31892746 rna=271-271',),
-                               ('exon 31892746-31892781 rna=271-306',
-                                (('CDS 31892746-31892781 rna=271-306 2',),)),
-                               ('intron 31892781-31893268 rna=306-306',),
-                               ('exon 31893268-31893418 rna=306-456',
-                                (('CDS 31893268-31893418 rna=306-456 1',),)),
-                               ('intron 31893418-31895289 rna=456-456',),
-                               ('exon 31895289-31895354 rna=456-521',
-                                (('CDS 31895289-31895354 rna=456-521 1',),)),
-                               ('intron 31895354-31895535 rna=521-521',),
-                               ('exon 31895535-31895652 rna=521-638',
-                                (('CDS 31895535-31895652 rna=521-638 0',),)),
-                               ('intron 31895652-31896064 rna=638-638',),
-                               ('exon 31896064-31896144 rna=638-718',
-                                (('CDS 31896064-31896144 rna=638-718 0',),)),
-                               ('intron 31896144-31897045 rna=718-718',),
-                               ('exon 31897045-31897127 rna=718-800',
-                                (('CDS 31897045-31897127 rna=718-800 2',),)),
-                               ('intron 31897127-31898670 rna=800-800',),
-                               ('exon 31898670-31898763 rna=800-893',
-                                (('CDS 31898670-31898763 rna=800-893 0',),)),
-                               ('intron 31898763-31898871 rna=893-893',),
-                               ('exon 31898871-31899018 rna=893-1040',
-                                (('CDS 31898871-31899018 rna=893-1040 0',),)),
-                               ('intron 31899018-31899977 rna=1040-1040',),
-                               ('exon 31899977-31900153 rna=1040-1216',
-                                (('CDS 31899977-31900153 rna=1040-1216 0',),)),
-                               ('intron 31900153-31901480 rna=1216-1216',),
-                               ('exon 31901480-31901579 rna=1216-1315',
-                                (('CDS 31901480-31901579 rna=1216-1315 2',),)),
-                               ('intron 31901579-31904942 rna=1315-1315',),
-                               ('exon 31904942-31905031 rna=1315-1404',
-                                (('CDS 31904942-31905031 rna=1315-1404 2',),)),
-                               ('intron 31905031-31905106 rna=1404-1404',),
-                               ('exon 31905106-31905687 rna=1404-1985',
-                                (('CDS 31905106-31905294 rna=1404-1592 1',),
-                                 ("3'UTR 31905294-31905687 rna=1592-1985",))))))
+        self.checkENST00000334029NoSJRc(rcTrans)
 
     def testAnnotPrevNext(self):
-        trans = self._gpToAnnotTranscript(self._getV28Gp("ENST00000334029.6"))
+        trans = self._getTransAnnot("ENST00000334029.6")
 
         feat = trans.firstFeature(AnnotationFeature)
         self.assertIs(feat, trans.features[0].annotFeatures[0])
@@ -948,7 +1075,8 @@ class GenePredAnnotationTests(FeatureTestBase, AnnotationCheckMixin):
         self.assertEqual(cdsCnt, 13)
 
     def testGetStructureFeaturesOfType(self):
-        trans = self._gpToAnnotTranscript(self._getV28Gp("ENST00000334029.6"))
+        # coding, - strand, exon features
+        trans = self._getTransAnnot("ENST00000334029.6")
         feats = trans.getFeaturesOfType(ExonFeature)
         featStrs = tuple([str(f) for f in feats])
         self.assertEqual(('exon 18912781-18913362 rna=0-581',
@@ -968,7 +1096,8 @@ class GenePredAnnotationTests(FeatureTestBase, AnnotationCheckMixin):
                          featStrs)
 
     def testGetAnnotationFeaturesOfType(self):
-        trans = self._gpToAnnotTranscript(self._getV28Gp("ENST00000334029.6"))
+        # coding, - strand, CDS features
+        trans = self._getTransAnnot("ENST00000334029.6")
         feats = trans.getFeaturesOfType(CdsRegionFeature)
         featStrs = tuple([str(f) for f in feats])
         self.assertEqual(('CDS 18913174-18913362 rna=393-581 1',
@@ -988,79 +1117,26 @@ class GenePredAnnotationTests(FeatureTestBase, AnnotationCheckMixin):
 
     def testENST00000434390(self):
         # non-coding, - strand
-        trans = self._gpToAnnotTranscript(self._getV28Gp("ENST00000434390.1"))
+        trans = self._getTransAnnot("ENST00000434390.1")
+        self.checkENST00000434390(trans)
+
+    def testENST00000434390Rc(self):
+        # non-coding, - strand, reverse complemented
+        trans = self._getTransAnnot("ENST00000434390.1")
         rcTrans = trans.reverseComplement()
         self.assertEqual(len(rcTrans.features), len(trans.features))
-        self._assertFeatures(rcTrans,
-                             ('t=chr22:32612553-32640431/-, rna=ENST00000434390.1:0-1859/+ 1859 <->',
-                              (('exon 32612553-32612694 rna=0-141',
-                                (('NC 32612553-32612694 rna=0-141',),)),
-                               ('intron 32612694-32618727 rna=141-141 sjBases=GT...AG (GT_AG)',),
-                               ('exon 32618727-32618786 rna=141-200',
-                                (('NC 32618727-32618786 rna=141-200',),)),
-                               ('intron 32618786-32619254 rna=200-200 sjBases=GT...AG (GT_AG)',),
-                               ('exon 32619254-32619279 rna=200-225',
-                                (('NC 32619254-32619279 rna=200-225',),)),
-                               ('intron 32619279-32622225 rna=225-225 sjBases=GT...AG (GT_AG)',),
-                               ('exon 32622225-32622312 rna=225-312',
-                                (('NC 32622225-32622312 rna=225-312',),)),
-                               ('intron 32622312-32627220 rna=312-312 sjBases=GT...AG (GT_AG)',),
-                               ('exon 32627220-32627286 rna=312-378',
-                                (('NC 32627220-32627286 rna=312-378',),)),
-                               ('intron 32627286-32629285 rna=378-378 sjBases=GT...AG (GT_AG)',),
-                               ('exon 32629285-32629347 rna=378-440',
-                                (('NC 32629285-32629347 rna=378-440',),)),
-                               ('intron 32629347-32629812 rna=440-440 sjBases=GT...AG (GT_AG)',),
-                               ('exon 32629812-32629846 rna=440-474',
-                                (('NC 32629812-32629846 rna=440-474',),)),
-                               ('intron 32629846-32634402 rna=474-474 sjBases=GT...AG (GT_AG)',),
-                               ('exon 32634402-32635359 rna=474-1431',
-                                (('NC 32634402-32635359 rna=474-1431',),)),
-                               ('intron 32635359-32640003 rna=1431-1431 sjBases=GT...AG (GT_AG)',),
-                               ('exon 32640003-32640431 rna=1431-1859',
-                                (('NC 32640003-32640431 rna=1431-1859',),)))))
+        self.checkENST00000434390Rc(rcTrans)
 
     def testENST00000538324(self):
         # ABO error in genome
-        gp = GenePredDbSrc.obtainGenePred("V26", "ENST00000538324.2")
-        trans = GenePredAnnotationFactory(GenomeSeqSrc.obtain("hg38")).fromGenePred(gp)
-        self._assertFeatures(trans,
-                             ('t=chr9:133255601-133275214/+, rna=ENST00000538324.2:0-1153/- 1153 <->',
-                              (('exon 133255601-133256356 rna=0-755',
-                                (('CDS 133255601-133255670 rna=0-69 0',),
-                                 ('gap 133255670-133255674 rna=69-73',),
-                                 ('CDS 133255674-133256356 rna=73-755 2',))),
-                               ('intron 133256356-133257408 rna=755-755 sjBases=GT...AG (GT_AG)',),
-                               ('exon 133257408-133257542 rna=755-889',
-                                (('CDS 133257408-133257521 rna=755-868 0',),
-                                 ('gap 133257521-133257523 rna=868-870',),
-                                 ('CDS 133257523-133257542 rna=870-889 2',))),
-                               ('intron 133257542-133258096 rna=889-889 sjBases=GT...AG (GT_AG)',),
-                               ('exon 133258096-133258132 rna=889-925',
-                                (('CDS 133258096-133258132 rna=889-925 2',),)),
-                               ('intron 133258132-133259818 rna=925-925 sjBases=GT...AG (GT_AG)',),
-                               ('exon 133259818-133259866 rna=925-973',
-                                (('CDS 133259818-133259866 rna=925-973 2',),)),
-                               ('intron 133259866-133261317 rna=973-973 sjBases=GT...AG (GT_AG)',),
-                               ('exon 133261317-133261374 rna=973-1030',
-                                (('CDS 133261317-133261374 rna=973-1030 2',),)),
-                               ('intron 133261374-133262098 rna=1030-1030 sjBases=GT...AG (GT_AG)',),
-                               ('exon 133262098-133262168 rna=1030-1100',
-                                (('CDS 133262098-133262168 rna=1030-1100 1',),)),
-                               ('intron 133262168-133275161 rna=1100-1100 sjBases=GT...AG (GT_AG)',),
-                               ('exon 133275161-133275214 rna=1100-1153',
-                                (('CDS 133275161-133275189 rna=1100-1128 0',),
-                                 ("5'UTR 133275189-133275214 rna=1128-1153",))))))
+        trans = self._getTransAnnot("ENST00000538324.2")
+        self.checkENST00000538324(trans)
 
-    def testGencodeV26Regress(self):
-        "regression test for gencodeV26"
-        factory = GenePredAnnotationFactory()
-        names = ("ENST00000538324.2",  # ABO
-                 "ENST00000610542.1")  # 4-base gap that caused error
-        gps = sorted(GenePredReader(self.getInputFile("gencodeV26.gp")), key=lambda g: g.name)
-        for gp, name in zip(gps, names):
-            trans = factory.fromGenePred(gp)
-            self.assertEqual(trans.rna.name, name)
+    def testGencodeV28Regress(self):
+        "regression test for V26 and V28"
+        # 4-base gap that caused error, just try to parse
+        trans = self._getTransAnnot("ENST00000610542.1")
+        self.assertEqual(trans.rna.name, "ENST00000610542.1")
 
     def testAnnotToBed(self):
         """test for conversion to BED"""
@@ -1079,7 +1155,7 @@ class GenePredAnnotationTests(FeatureTestBase, AnnotationCheckMixin):
         factory = GenePredAnnotationFactory(GenomeSeqSrc.obtain("hg38"))
         tattrs = ObjDict(name="Fred")
         uattrs = ObjDict(name="Barney")
-        trans = factory.fromGenePred(self._getV28Gp("ENST00000334029.6"), tattrs)
+        trans = factory.fromGenePred(GenePredDbSrc.obtainGenePred("V28", "ENST00000334029.6"), tattrs)
         # has one 3'UTR feature, so use it for the attrs
         utr3 = getUtr3Feature(trans)
         utr3.attrs = uattrs
@@ -1119,8 +1195,29 @@ class EnsemblDbAnnotationTests(FeatureTestBase, AnnotationCheckMixin):
     def testENST00000215794(self):
         # + strand
         trans = self._getTransAnnot("ENST00000215794.7")
-        self.checkENST00000215794(trans)
+        self.checkENST00000215794(trans, ensChroms=True)
 
+    def testENST00000334029(self):
+        # coding, - strand
+        trans = self._getTransAnnot("ENST00000334029.6")
+        self.checkENST00000334029(trans, ensChroms=True)
+
+    def testENST00000434390(self):
+        # non-coding, - strand
+        trans = self._getTransAnnot("ENST00000434390.1")
+        self.checkENST00000434390(trans, ensChroms=True)
+
+    def testENST00000434390Rc(self):
+        # non-coding, - strand, reverse complemented
+        trans = self._getTransAnnot("ENST00000434390.1")
+        rcTrans = trans.reverseComplement()
+        self.assertEqual(len(rcTrans.features), len(trans.features))
+        self.checkENST00000434390Rc(rcTrans, ensChroms=True)
+
+    def testENST00000538324(self):
+        # ABO error in genome
+        trans = self._getTransAnnot("ENST00000538324.2")
+        self.checkENST00000538324(trans, ensChroms=True)
 
 if __name__ == '__main__':
     unittest.main()

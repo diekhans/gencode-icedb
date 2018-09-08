@@ -109,7 +109,7 @@ SELECT
     xlate.start_exon_id AS cdsStartExonDbId,
     xlate.seq_start-1 AS cdsStartOffset,
     xlate.end_exon_id AS cdsEndExonDbId,
-    xlate.seq_end-1 AS cdsEndOffset
+    xlate.seq_end AS cdsEndOffset
 FROM
     gene AS g
     LEFT JOIN xref AS gxr ON (g.display_xref_id = gxr.xref_id)

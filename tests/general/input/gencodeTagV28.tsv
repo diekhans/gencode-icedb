@@ -99,3 +99,8 @@ ENST00000540896.1	overlapping_locus
 ENST00000449918.1	cds_end_NF
 ENST00000449918.1	mRNA_end_NF
 ENST00000449918.1	overlapping_locus
+ENST00000538324.2	basic
+ENST00000538324.2	appris_principal_5
+ENST00000538324.2	reference_genome_error
+ENST00000610542.1	basic
+ENST00000610542.1	overlapping_locus
