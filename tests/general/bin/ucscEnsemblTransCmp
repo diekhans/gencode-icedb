@@ -1,0 +1,261 @@
+#!/usr/bin/env python3
+"""compare transcripts from Ensembl database and UCSC GTF inport"""
+import argparse
+import sys
+import os
+import traceback
+rootDir = "../.."
+sys.path = [os.path.join(rootDir, "lib"),
+            os.path.join(rootDir, "extern/pycbio/lib")] + sys.path
+from pycbio.ncbi.assembly import AssemblyReport
+from gencode_icedb.general.genome import GenomeReader
+from gencode_icedb.general import gencodeDb
+from gencode_icedb.general.transFeatures import TranscriptFeatures, IntronFeature, CdsRegionFeature, StructureFeature
+
+
+def parseArgs():
+    desc = """Compare transcripts from Ensembl database and UCSC GTF import.
+    Takes a bit over an hour with an local copy of the Ensembl core database."""
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument("ncbiAssemblyReport",
+                        help="NCBI assembly report file to map between chromosome names")
+    parser.add_argument("ucscGencodeDb",
+                        help="SQLite database with UCSC import of gencode data")
+    parser.add_argument("ucscGenome",
+                        help="UCSC two-bit file ")
+    parser.add_argument("ensemblCoreDb",
+                        help="Ensembl core database")
+    parser.add_argument("ensemblGenome",
+                        help="Indexed Ensembl Genome")
+    parser.add_argument("output",
+                        help="output file for report")
+    return parser.parse_args()
+
+
+class DiffError(Exception):
+    """Report a diff error where message is newline terminated lines of messsage"""
+    pass
+
+
+class SkipGeneException(Exception):
+    """Indicates a gene should be skipped"""
+    pass
+
+
+class TestCounts(object):
+    """Count of total tries and failures"""
+    __slots__ = ("count", "failed", "skipped")
+
+    def __init__(self, count=0, failed=0, skipped=0):
+        self.count = count
+        self.failed = failed
+        self.skipped = skipped
+
+    def __str__(self):
+        return format("TestCounts(count={}, failed={}, skipped={})".format(self.count, self.failed, self.skipped))
+
+    def __add__(self, counts):
+        self.count += counts.count,
+        self.failed += counts.failed
+        self.skipped += counts.skipped
+
+    def __iadd__(self, counts):
+        self.count += counts.count
+        self.failed += counts.failed
+        self.skipped += counts.skipped
+        return self
+
+
+def getGeneIds(ucscReader, ensemblReader):
+    return ucscReader.getGeneIds()
+
+
+def createUcscReader(ucscGencodeDb, ucscGenome):
+    return gencodeDb.UcscGencodeReader(ucscGencodeDb, GenomeReader.getFromFileName(ucscGenome))
+
+
+def createEnsemblReader(ensemblCoreDb, ensemblGenome):
+    return gencodeDb.EnsemblGencodeReader(ensemblCoreDb, GenomeReader.getFromFileName(ensemblGenome))
+
+
+def diffChrom(asmReport, ucscChrom, ensemblChrom):
+    """compare with different naming conventions, allowing for both to be
+    None"""
+    if (ucscChrom is None) and (ensemblChrom is None):
+        return True
+    elif (ucscChrom is None) or (ensemblChrom is None):
+        return False
+    else:
+        return ((ucscChrom.name == asmReport.seqNameToUcscName(ensemblChrom.name))
+                and (ucscChrom.start == ensemblChrom.start)
+                and (ucscChrom.end == ensemblChrom.end)
+                and (ucscChrom.strand == ensemblChrom.strand))
+
+
+def reportDiff(ucscFeat, ensemblFeat, fh):
+    raise DiffError("u< {}\n".format(ucscFeat)
+                    + "e> {}\n".format(ensemblFeat))
+
+
+def numChildren(children):
+    return 0 if children is None else len(children)
+
+
+def reportNumChildrenDiff(childDesc, ucscFeat, ucscChildren, ensemblFeat, ensemblChildren, fh):
+    raise DiffError("u< has {} {} children: {}\n".format(numChildren(ucscChildren), childDesc, ucscFeat)
+                    + "e> has {} {} children: {}\n".format(numChildren(ensemblChildren), childDesc, ensemblFeat))
+
+
+def compareChildren(asmReport, ucscFeat, ensemblFeat, childVar, fh):
+    ucscChildren = getattr(ucscFeat, childVar)
+    ensemblChildren = getattr(ensemblFeat, childVar)
+    if numChildren(ucscChildren) != numChildren(ensemblChildren):
+        reportNumChildrenDiff(childVar, ucscFeat, ucscChildren, ensemblFeat, ensemblChildren, fh)
+    for ucscChild, ensemblChild in zip(ucscChildren, ensemblChildren):
+        compareFeatureTree(asmReport, ucscChild, ensemblChild, fh)
+
+
+def diffFeature(asmReport, ucscFeat, ensemblFeat):
+    if type(ucscFeat) != type(ensemblFeat):
+        return False
+    elif not diffChrom(asmReport, ucscFeat.chrom, ensemblFeat.chrom):
+        return False
+    elif ucscFeat.rna != ensemblFeat.rna:
+        return False
+    else:
+        return True
+
+
+def diffTranscriptFeature(asmReport, ucscFeat, ensemblFeat):
+    if ucscFeat.transcriptionStrand != ensemblFeat.transcriptionStrand:
+        return False
+    elif not diffChrom(asmReport, ucscFeat.cdsChrom, ensemblFeat.cdsChrom):
+        return False
+    else:
+        return True
+
+
+def diffIntronFeature(ucscFeat, ensemblFeat):
+    return ((ucscFeat.donorSeq == ensemblFeat.donorSeq)
+            and (ucscFeat.acceptorSeq == ensemblFeat.acceptorSeq)
+            and (ucscFeat.spliceJuncs == ensemblFeat.spliceJuncs))
+
+
+def diffCdsRegionFeature(ucscFeat, ensemblFeat):
+    return (ucscFeat.frame == ensemblFeat.frame)
+
+
+def diffFeatureType(asmReport, ucscFeat, ensemblFeat):
+    if not diffFeature(asmReport, ucscFeat, ensemblFeat):
+        return False
+    # Handle ones with additional attributes
+    if isinstance(ucscFeat, TranscriptFeatures):
+        return diffTranscriptFeature(asmReport, ucscFeat, ensemblFeat)
+    elif isinstance(ucscFeat, IntronFeature):
+        return diffIntronFeature(ucscFeat, ensemblFeat)
+    elif isinstance(ucscFeat, CdsRegionFeature):
+        return diffCdsRegionFeature(ucscFeat, ensemblFeat)
+    else:
+        return True
+
+
+def compareFeatureTree(asmReport, ucscFeat, ensemblFeat, fh):
+    if not diffFeatureType(asmReport, ucscFeat, ensemblFeat):
+        reportDiff(ucscFeat, ensemblFeat, fh)
+
+    # only recurse if objects are of the same type
+    if type(ucscFeat) == type(ensemblFeat):
+        if isinstance(ucscFeat, TranscriptFeatures):
+            compareChildren(asmReport, ucscFeat, ensemblFeat, "features", fh)
+        elif isinstance(ucscFeat, StructureFeature):
+            compareChildren(asmReport, ucscFeat, ensemblFeat, "annotFeatures", fh)
+            compareChildren(asmReport, ucscFeat, ensemblFeat, "alignFeatures", fh)
+
+
+def compareTranscript(asmReport, geneId, ucscTrans, ensemblTrans, fh):
+    try:
+        compareFeatureTree(asmReport, ucscTrans, ensemblTrans, fh)
+        return True
+    except DiffError as ex:
+        print(10 * "=====", file=fh)
+        print("Diff:", geneId, ucscTrans.rna, ucscTrans.chrom, ucscTrans.transcriptionStrand, "CDS:", ucscTrans.cdsChrom, file=fh)
+        print(str(ex), end='', file=fh)
+        return False
+
+
+def compareGeneLocus(asmReport, geneId, ucscGene, ensemblGene, fh):
+    if not diffChrom(asmReport, ucscGene.chrom, ensemblGene.chrom):
+        raise Exception("For gene {} UCSC locus {} doesn't match Ensembl locus {}".format(geneId, ucscGene.chrom, ensemblGene.chrom))
+    ucscTransIds = frozenset(ucscGene.transcriptsById.keys())
+    ensemblTransIds = frozenset(ensemblGene.transcriptsById.keys())
+    if ucscTransIds != ensemblTransIds:
+        raise Exception("For gene {} UCSC transcripts {} do not match Ensembl transcripts {}".format(geneId, ucscTransIds, ensemblTransIds.chrom))
+    transCounts = TestCounts()
+    for transId in sorted(ucscTransIds):
+        transCounts.count += 1
+        if not compareTranscript(asmReport, geneId, ucscGene.transcriptsById[transId], ensemblGene.transcriptsById[transId], fh):
+            transCounts.failed += 1
+    return transCounts
+
+
+def compareGene(asmReport, geneId, ucscReader, ensemblReader, fh):
+    # for PAR, sort by location
+    ucscGenes = sorted(ucscReader.getGenesByGencodeIds(geneId), key=lambda g: g.chrom)
+    if len(ucscGenes) == 0:
+        raise Exception("Gene not found using UCSC database: {}".format(geneId))
+
+    # must check for unknown chrom before sorting
+    ensemblGenes = ensemblReader.getGenesByGencodeIds(geneId)
+    if len(ensemblGenes) == 0:
+        raise Exception("Gene not found using Ensembl database: {}".format(geneId))
+    if ensemblGenes[0].chrom.name not in asmReport.bySequenceName:
+        raise SkipGeneException("{} Ensembl chrom {} can't be mapped to UCSC".format(geneId, ensemblGenes[0].chrom.name))
+    ensemblGenes = sorted(ensemblGenes, key=lambda g: asmReport.seqNameToUcscName(g.chrom.name))
+    if len(ucscGenes) != len(ensemblGenes):
+        raise Exception("For gene {} UCSC returned {} loci and Ensembl return {} loci".format(geneId, len(ucscGenes), len(ensemblGenes)))
+    transCounts = TestCounts()
+    for ucscGene, ensemblGene in zip(ucscGenes, ensemblGenes):
+        transCounts += compareGeneLocus(asmReport, geneId, ucscGene, ensemblGene, fh)
+    return transCounts
+
+
+def compareGeneChecked(asmReport, geneId, ucscReader, ensemblReader, geneCounts, transCounts, fh):
+    geneCounts.count += 1
+    try:
+        transCounts += compareGene(asmReport, geneId, ucscReader, ensemblReader, fh)
+    except SkipGeneException as ex:
+        print(10 * "=====", file=fh)
+        print("Skip:", str(ex), file=fh)
+        geneCounts.skipped += 1
+    except Exception:
+        print(10 * "=====", file=fh)
+        print("Failed: ", geneId, file=fh)
+        traceback.print_exc(file=fh)
+        geneCounts.failed += 1
+
+
+def printStatus(geneCounts, transCounts, fh):
+    print("{} genes with {} slipped, {} exceptions".format(geneCounts.count, geneCounts.skipped, geneCounts.failed), file=fh)
+    print("{} transcripts with {} differences".format(transCounts.count, transCounts.failed), file=fh)
+
+
+def ucscEnsemblTransCmp(opts):
+    asmReport = AssemblyReport(opts.ncbiAssemblyReport)
+    ucscReader = createUcscReader(opts.ucscGencodeDb, opts.ucscGenome)
+    ensemblReader = createEnsemblReader(opts.ensemblCoreDb, opts.ensemblGenome)
+    geneIds = getGeneIds(ucscReader, ensemblReader)
+
+    geneCounts = TestCounts()
+    transCounts = TestCounts()
+    with open(opts.output, "w", buffering=1) as fh:
+        for geneId in geneIds:
+            compareGeneChecked(asmReport, geneId, ucscReader, ensemblReader, geneCounts, transCounts, fh)
+        print(10 * "-----", file=fh)
+        printStatus(geneCounts, transCounts, fh)
+
+    if (geneCounts.failed + transCounts.failed) > 0:
+        printStatus(geneCounts, transCounts, sys.stderr)
+        exit(1)
+
+
+ucscEnsemblTransCmp(parseArgs())

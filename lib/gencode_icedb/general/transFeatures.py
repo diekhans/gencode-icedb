@@ -469,9 +469,9 @@ class TranscriptFeatures(Feature):
         self.geneAnnot = None  # will be set if contained in a GeneAnnotation object
 
     def __str__(self):
-        return "t={}/{}, rna={}/{} {} <{}>".format(str(self.chrom), self.chrom.strand,
-                                                   str(self.rna), self.rna.strand, self.rna.size,
-                                                   self.transcriptionStrand)
+        return "t={}/{}, rna={}/{} {} <{}> CDS: {}".format(str(self.chrom), self.chrom.strand,
+                                                           str(self.rna), self.rna.strand, self.rna.size,
+                                                           self.transcriptionStrand, self.cdsChrom)
 
     def toStrTree(self):
         """recursively convert to a recursive tuple of strings representing

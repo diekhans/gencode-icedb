@@ -51,21 +51,21 @@ def parseArgs():
     return opts
 
 
-def loadTransIds(transIdFile):
+def readTransIds(transIdFile):
     transIdSubset = frozenset(fileOps.iterLines(transIdFile))
     if len(transIdSubset) == 0:
         raise Exception("no transcript ids found in file: {}".format(transIdFile))
     return transIdSubset
 
 
-def loadHgDbTable(hgdbConn, tbl, transIdCol, transIdSubset):
-    cur = hgdbConn.cursor()
+def readHgDbTable(hgdbConn, tbl, transIdCol, transIdSubset):
     if transIdSubset is not None:
         sql = "SELECT * FROM {} WHERE {} IN ({})".format(tbl, transIdCol, ','.join(len(transIdSubset) * ['%s']))
         sqlArgs = tuple(transIdSubset)
     else:
         sql = "SELECT * FROM {}".format(tbl)
         sqlArgs = ()
+    cur = hgdbConn.cursor()
     try:
         cur.execute(sql, sqlArgs)
         return cur.fetchall()
@@ -77,51 +77,56 @@ def loadAnnotations(conn, hgdbConn, genes, pseudoGenes, transIdSubset):
     annDbTable = GenePredSqliteTable(conn, gencodeDb.GENCODE_ANN_TABLE, create=True)
     if hgdbConn is not None:
         if genes is not None:
-            annDbTable.loadsWithBin(loadHgDbTable(hgdbConn, genes, "name", transIdSubset))
+            annDbTable.loadsWithBin(readHgDbTable(hgdbConn, genes, "name", transIdSubset))
         if pseudoGenes is not None:
-            annDbTable.loadsWithBin(loadHgDbTable(hgdbConn, pseudoGenes, "name", transIdSubset))
+            annDbTable.loadsWithBin(readHgDbTable(hgdbConn, pseudoGenes, "name", transIdSubset))
     else:
         if genes is not None:
             annDbTable.loadGenePredFile(genes)
         if pseudoGenes is not None:
             annDbTable.loadGenePredFile(pseudoGenes)
+    annDbTable.index()
 
 
 def loadAttrs(conn, hgdbConn, attrs, transIdSubset):
     attrsDbTable = GencodeAttrsSqliteTable(conn, gencodeDb.GENCODE_ATTRS_TABLE, create=True)
     if hgdbConn is not None:
-        attrsDbTable.loads(loadHgDbTable(hgdbConn, attrs, "transcriptId", transIdSubset))
+        attrsDbTable.loads(readHgDbTable(hgdbConn, attrs, "transcriptId", transIdSubset))
     else:
         attrsDbTable.loadTsv(attrs)
+    attrsDbTable.index()
 
 
 def loadTransSource(conn, hgdbConn, transSource, transIdSubset):
     transSourceDbTable = GencodeTranscriptSourceSqliteTable(conn, gencodeDb.GENCODE_TRANSCRIPT_SOURCE_TABLE, create=True)
     if hgdbConn is not None:
-        transSourceDbTable.loads(loadHgDbTable(hgdbConn, transSource, "transcriptId", transIdSubset))
+        transSourceDbTable.loads(readHgDbTable(hgdbConn, transSource, "transcriptId", transIdSubset))
     else:
         transSourceDbTable.loadTsv(transSource)
+    transSourceDbTable.index()
 
 
 def loadTransSupportLevel(conn, hgdbConn, transSupportLevel, transIdSubset):
-    transSourceDbTable = GencodeTranscriptionSupportLevelSqliteTable(conn, gencodeDb.GENCODE_TRANSCRIPTION_SUPPORT_LEVEL_TABLE, create=True)
+    transSupportLevelDbTable = GencodeTranscriptionSupportLevelSqliteTable(conn, gencodeDb.GENCODE_TRANSCRIPTION_SUPPORT_LEVEL_TABLE, create=True)
     if hgdbConn is not None:
-        transSourceDbTable.loads(loadHgDbTable(hgdbConn, transSupportLevel, "transcriptId", transIdSubset))
+        transSupportLevelDbTable.loads(readHgDbTable(hgdbConn, transSupportLevel, "transcriptId", transIdSubset))
     else:
-        transSourceDbTable.loadTsv(transSupportLevel)
+        transSupportLevelDbTable.loadTsv(transSupportLevel)
+    transSupportLevelDbTable.index()
 
 
 def loadTags(conn, hgdbConn, tags, transIdSubset):
     tagsDbTable = GencodeTagSqliteTable(conn, gencodeDb.GENCODE_TAG_TABLE, create=True)
     if hgdbConn is not None:
-        tagsDbTable.loads(loadHgDbTable(hgdbConn, tags, "transcriptId", transIdSubset))
+        tagsDbTable.loads(readHgDbTable(hgdbConn, tags, "transcriptId", transIdSubset))
     else:
         tagsDbTable.loadTsv(tags)
+    tagsDbTable.index()
 
 
 def ucscGencodeDbLoad(opts):
     "main function"
-    transIdSubset = loadTransIds(opts.transIds) if opts.transIds is not None else None
+    transIdSubset = readTransIds(opts.transIds) if opts.transIds is not None else None
     conn = sqliteOps.connect(opts.sqliteDb, create=True)
     hgdbConn = None
     if opts.hgdb is not None:

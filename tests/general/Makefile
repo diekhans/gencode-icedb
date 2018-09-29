@@ -5,6 +5,7 @@ faUcscToGencode = ${BINDIR}/faUcscToGencode
 genePredIntrons = ${BINDIR}/genePredIntrons
 ucscGencodeDbLoad = ${BINDIR}/ucscGencodeDbLoad
 featureMondoTester = ./bin/featureMondoTester
+ucscEnsemblTransCmp = ./bin/ucscEnsemblTransCmp
 
 .SECONDARY:
 
@@ -12,11 +13,20 @@ hsUcscGenomeDb = hg38
 hsGencodeVer = V28
 hsGencodeCompTbl = wgEncodeGencodeComp${hsGencodeVer}
 
+assemblyRep = input/GCF_000001405.38_GRCh38.p12_assembly_report.txt
+
+gencodeV28Db = output/gencodeV28.db
+hg38TwoBit = /hive/data/genomes/hg38/hg38.2bit
+
+ensemblDb = homo_sapiens_core_92_38
+grch38Fa = ../data/grch38/GRCh38.fa.gz
+
 test:   featureUnitTests \
 	ucscGencodeDbLoadTest \
 	faTests \
 	genePredIntronsTests
 	@echo "Note: run make mondoTest for heavy-duty tests"
+	@echo "Note: run make ucscEnsemblCmp to compare import from UCSC database (via GTF) or direct from Ensembl database"
 
 ##
 # test of features
@@ -70,6 +80,15 @@ gpMondoTest: mkdirs
 gencodeDbMondoTest: mkdirs
 	rm -f output/$@.db
 	time ${ucscGencodeDbLoad} --hgdb=${hsUcscGenomeDb} --version=${hsGencodeVer} output/$@.db
+
+ucscEnsemblCmp: ${gencodeV28Db} mkdirs
+	${ucscEnsemblTransCmp} ${assemblyRep} ${gencodeV28Db} ${hg38TwoBit} ${ensemblDb} ${grch38Fa} output/$@.out
+
+${gencodeV28Db}:
+	@mkdir -p output
+	rm -f $@ $@.tmp
+	${ucscGencodeDbLoad} --hgdb=${hsUcscGenomeDb} --version=${hsGencodeVer} $@.tmp
+	mv -f $@.tmp $@
 
 mkdirs:
 	@mkdir -p output

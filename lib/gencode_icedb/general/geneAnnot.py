@@ -17,7 +17,7 @@ class GeneAnnotation(object):
     Bounds are only for transcripts that have been added to object.
     """
     # FIXME: rename `chrom'
-    __slots__ = ("geneId", "chrom", "transcriptionStrand", "attrs", "transcripts")
+    __slots__ = ("geneId", "chrom", "transcriptionStrand", "attrs", "transcripts", "transcriptsById")
 
     def __init__(self, geneId, attrs=None):
         assert (attrs is None) or isinstance(attrs, ObjDict)
@@ -26,6 +26,7 @@ class GeneAnnotation(object):
         self.transcriptionStrand = None
         self.attrs = attrs
         self.transcripts = []
+        self.transcriptsById = {}
 
     def _updateBounds(self, transAnnot):
         if transAnnot.chrom.name != self.chrom.name:
@@ -47,6 +48,7 @@ class GeneAnnotation(object):
         else:
             self._updateBounds(transAnnot)
         self.transcripts.append(transAnnot)
+        self.transcriptsById[transAnnot.rna.name] = transAnnot
         transAnnot.geneAnnot = self
 
 

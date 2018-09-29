@@ -1,6 +1,7 @@
 """
 Query Ensembl's database for gene annotations.
 """
+import six
 import sys
 import re
 from collections import namedtuple, defaultdict
@@ -21,8 +22,6 @@ mysqlOps.mySqlSetErrorOnWarn()
 
 def _query(conn, dataCls, sql, args=None):
     cur = conn.cursor(cursorclass=MySQLdb.cursors.DictCursor)
-    #print("sql", sql)
-    #print("arg", len(args), args)
     try:
         cur.execute(sql, args)
         for row in cur:
@@ -34,6 +33,13 @@ def _query(conn, dataCls, sql, args=None):
 def _dump(fh, val, indent):
     "debugging print"
     fh.write((indent * '    ') + str(val) + '\n')
+
+
+def _ensureList(strOrList):
+    if isinstance(strOrList, six.string_types):
+        return [strOrList]
+    else:
+        return strOrList
 
 
 ####################################################################################################
@@ -119,17 +125,16 @@ FROM
 WHERE (g.source NOT IN ("LRG database")) {extrawhere};"""
 
 
-def _splitEnsIds(ensIds):
+def ensemblIdSplit(ensIds):
     """split into gene and transcript ids"""
     # split by matching pattern
-    if isinstance(ensIds, str):
-        ensIds = [ensIds]
+    ensIds = _ensureList(ensIds)
     geneIds = []
     transIds = []
     for ensId in ensIds:
-        if re.match("E[A-Z]+G[0-9]+\\.[0-9]+$", ensId):
+        if re.match("ENS[A-Z]*G[0-9]+\\.[0-9]+$", ensId):
             geneIds.append(ensId)
-        elif re.match("E[A-Z]+T[0-9]+\\.[0-9]+$", ensId):
+        elif re.match("ENS[A-Z]*T[0-9]+\\.[0-9]+$", ensId):
             transIds.append(ensId)
         else:
             raise Exception("not a valid Ensembl id: {}".format(ensId))
@@ -140,23 +145,24 @@ def _idSqlInClause(idField, ids):
     return "({} IN ({}))".format(idField, ','.join(len(ids) * ['%s']))
 
 
-def ensemblTransRecQuery(conn, ensIds):
-    """Select EnsemblGeneTrans records for a list of gene or transcript id.
+def ensemblTransRecByTransQuery(conn, transIds):
+    """Select EnsemblGeneTrans records for a transcript ids or list of transcript ids.
     """
-    geneIds, transIds = _splitEnsIds(ensIds)
-    inClauses = []
-    args = []
-    if len(geneIds) > 0:
-        inClauses.append("({})".format(_idSqlInClause('concat(g.stable_id, ".", g.version)', geneIds)))
-        args.extend(geneIds)
-    if len(transIds) > 0:
-        inClauses.append("({})".format(_idSqlInClause('concat(t.stable_id, ".", t.version)', transIds)))
-        args.extend(transIds)
-
-    extrawhere = "AND " + " OR ".join(inClauses)
+    transIds = _ensureList(transIds)
+    clause = " AND ({})".format(_idSqlInClause('concat(t.stable_id, ".", t.version)', transIds))
     yield from _query(conn, EnsemblTransRec,
-                      _ensemblTransRecSelect.format(extrawhere=extrawhere),
-                      tuple(args))
+                      _ensemblTransRecSelect.format(extrawhere=clause),
+                      tuple(transIds))
+
+
+def ensemblTransRecByGeneQuery(conn, geneIds):
+    """Select EnsemblGeneTrans records for a gene id or list of gene ids.
+    """
+    geneIds = _ensureList(geneIds)
+    clause = " AND ({})".format(_idSqlInClause('concat(g.stable_id, ".", g.version)', geneIds))
+    yield from _query(conn, EnsemblTransRec,
+                      _ensemblTransRecSelect.format(extrawhere=clause),
+                      tuple(geneIds))
 
 
 ####################################################################################################
@@ -256,22 +262,6 @@ def ensemblParCoordsRecQuery(conn):
 
 
 ####################################################################################################
-class EnsemblGene(namedtuple("EnsemblGene",
-                             ("geneDbId",
-                              "geneId",
-                              "transcripts"))):
-    """Result records for a gene and it's transcripts.  If query is
-    by-transcript, it may not have all the genes.  Multiple results are
-    returned when the same gene is in different sequences (e.g. PAR).  Use
-    geneDbId to distinguish."""
-    __slots__ = ()
-
-    def dump(self, fh=sys.stderr, indent=0):
-        _dump(fh, self, indent)
-        for t in self.transcripts:
-            _dump(fh, t, indent + 1)
-
-
 class EnsemblTranscript(namedtuple("EnsemblTranscript",
                                    ("transcriptDbId",
                                     "transcript", "exons", "attrs"))):
@@ -286,17 +276,15 @@ class EnsemblTranscript(namedtuple("EnsemblTranscript",
             _dump(fh, a, indent + 1)
 
 
-def ensemblGeneQuery(conn, ensIds):
-    """Combined query to create EnsemblGene objects for a set of geneIds """
-    transDbIds = set()
-    # genes and transcripts
-    transRecs = defaultdict(dict)  # by geneDbId then transcriptDbId
-    for transRec in ensemblTransRecQuery(conn, ensIds):
-        transRecs[transRec.geneDbId][transRec.transcriptDbId] = transRec
-        transDbIds.add(transRec.transcriptDbId)
-    transDbIds = tuple(transDbIds)
+def _makeTrans(transRec, exonRecs, attrRecs):
+    return EnsemblTranscript(transRec.transcriptDbId, transRec,
+                             tuple(sorted(exonRecs, key=lambda e: e.start)),
+                             tuple(sorted(attrRecs, key=lambda a: (a.code, a.value))))
 
+
+def _buildTrans(conn, transRecs):
     # per-transcript data
+    transDbIds = [transRec.transcriptDbId for transRec in transRecs]
     exonRecs = defaultdict(list)  # by transcript id
     for exonRec in ensemblExonRecQuery(conn, transDbIds):
         exonRecs[exonRec.transcriptDbId].append(exonRec)
@@ -305,15 +293,15 @@ def ensemblGeneQuery(conn, ensIds):
         attrRecs[attrRec.transcriptDbId].append(attrRec)
 
     # pull all together
-    genes = []
-    for geneDbId in sorted(transRecs.keys()):
-        geneTrans = []
-        for transDbId in sorted(transRecs[geneDbId].keys()):
-            exons = tuple(sorted(exonRecs[transDbId], key=lambda e: e.start))
-            attrs = tuple(sorted(attrRecs[transDbId], key=lambda a: (a.code, a.value)))
-            geneTrans.append(EnsemblTranscript(transDbId,
-                                               transRecs[geneDbId][transDbId],
-                                               exons, attrs))
-        genes.append(EnsemblGene(geneDbId, geneTrans[0].transcript.geneId, tuple(geneTrans)))
+    return [_makeTrans(transRec, exonRecs[transRec.transcriptDbId], attrRecs[transRec.transcriptDbId])
+            for transRec in transRecs]
 
-    return tuple(genes)
+
+def ensemblTransQuery(conn, transIds):
+    """Combined query to a list of EnsemblTranscript for a set of transcript ids"""
+    return _buildTrans(conn, list(ensemblTransRecByTransQuery(conn, transIds)))
+
+
+def ensemblGeneQuery(conn, geneIds):
+    """Combined query to a list of EnsemblTranscript for a set of gene ids"""
+    return _buildTrans(conn, list(ensemblTransRecByGeneQuery(conn, geneIds)))

@@ -6,3 +6,4 @@ pipettor
 pysam
 intervaltree
 twobitreader
+mysqlclient

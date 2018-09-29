@@ -14,7 +14,7 @@ from gencode_icedb.general.transFeatures import RnaInsertFeature, ChromInsertFea
 from gencode_icedb.general.evidFeatures import EvidencePslFactory
 from gencode_icedb.general.genePredAnnotFeatures import GenePredAnnotationFactory
 from gencode_icedb.general.ensemblDbAnnotFeatures import EnsemblDbAnnotationFactory
-from gencode_icedb.general.ensemblDb import ensemblGeneQuery
+from gencode_icedb.general.ensemblDb import ensemblTransQuery
 from pycbio.db import sqliteOps
 from pycbio.db import mysqlOps
 from pycbio.hgdata.genePredSqlite import GenePredSqliteTable
@@ -28,7 +28,6 @@ from pycbio.sys.pprint2 import nswpprint
 
 debugResults = False   # print out results for updated expected
 noCheckResults = False  # don't check results
-#debugResults=True
 
 if debugResults or noCheckResults:
     print("WARNING: debug variables set", file=sys.stderr)
@@ -157,7 +156,7 @@ class EvidenceTests(FeatureTestBase):
     def testAF010310(self):
         trans = self._pslToEvidTranscript(self._getV28Psl("AF010310.1"))
         self._assertFeatures(trans,
-                             ('t=chr22:18912781-18918413/+, rna=AF010310.1:13-901/- 901 <->',
+                             ('t=chr22:18912781-18918413/+, rna=AF010310.1:13-901/- 901 <-> CDS: None',
                               (('exon 18912781-18913362 rna=13-618',
                                 (('aln 18912781-18912939 rna=13-171',),
                                  ('rins None-None rna=171-174',),
@@ -221,7 +220,7 @@ class EvidenceTests(FeatureTestBase):
     def testX96484(self):
         trans = self._pslToEvidTranscript(self._getV28Psl("X96484.1"))
         self._assertFeatures(trans,
-                             ('t=chr22:18906409-18912079/+, rna=X96484.1:48-1067/+ 1080 <+>',
+                             ('t=chr22:18906409-18912079/+, rna=X96484.1:48-1067/+ 1080 <+> CDS: None',
                               (('exon 18906409-18906484 rna=48-123',
                                 (('aln 18906409-18906484 rna=48-123',),)),
                                ('intron 18906484-18906564 rna=123-123 sjBases=GT...AG (GT_AG)',
@@ -247,7 +246,7 @@ class EvidenceTests(FeatureTestBase):
     def testX96484NoSJ(self):
         trans = EvidencePslFactory(None).fromPsl(self._getV28Psl("X96484.1"))
         self._assertFeatures(trans,
-                             ('t=chr22:18906409-18912079/+, rna=X96484.1:48-1067/+ 1080 <+>',
+                             ('t=chr22:18906409-18912079/+, rna=X96484.1:48-1067/+ 1080 <+> CDS: None',
                               (('exon 18906409-18906484 rna=48-123',
                                 (('aln 18906409-18906484 rna=48-123',),)),
                                ('intron 18906484-18906564 rna=123-123',
@@ -275,7 +274,7 @@ class EvidenceTests(FeatureTestBase):
         psl = PslDbSrc.obtainPsl("hg38-mm10.transMap", "ENST00000641446")
         trans = EvidencePslFactory(GenomeSeqSrc.obtain("mm10")).fromPsl(psl)
         self._assertFeatures(trans,
-                             ('t=chr4:148039043-148056154/+, rna=ENST00000641446:0-2820/+ 2820 <+>',
+                             ('t=chr4:148039043-148056154/+, rna=ENST00000641446:0-2820/+ 2820 <+> CDS: None',
                               (('exon 148039043-148039141 rna=0-106',
                                 (('aln 148039043-148039050 rna=0-7',),
                                  ('cins 148039050-148039051 rna=None-None',),
@@ -381,7 +380,7 @@ class EvidenceTests(FeatureTestBase):
         trans = EvidencePslFactory(GenomeSeqSrc.obtain("mm10")).fromPsl(psl)
         transRc = trans.reverseComplement()
         self._assertFeatures(transRc,
-                             ('t=chr4:8451962-8469073/-, rna=ENST00000641446:0-2820/- 2820 <+>',
+                             ('t=chr4:8451962-8469073/-, rna=ENST00000641446:0-2820/- 2820 <+> CDS: None',
                               (('exon 8451962-8451966 rna=0-4', (('aln 8451962-8451966 rna=0-4',),)),
                                ('intron 8451966-8452006 rna=4-70 sjBases=ca...tg (unknown)',
                                 (('cins 8451966-8452006 rna=None-None',), ('rins None-None rna=4-70',))),
@@ -590,7 +589,7 @@ class EvidenceTests(FeatureTestBase):
         estPsl = ["620", "11", "0", "8", "0", "0", "3", "6544", "--", "BX371226.2", "645", "6", "645", "chr22", "50818468", "41938778", "41945961", "4", "49,80,92,418,", "0,49,129,221,", "8872507,8873164,8874767,8879272,"]
         trans = EvidencePslFactory(GenomeSeqSrc.obtain("hg38")).fromPsl(Psl(estPsl), orientChrom=False)
         self._assertFeatures(trans,
-                             ('t=chr22:8872507-8879690/-, rna=BX371226.2:0-639/- 645 <->',
+                             ('t=chr22:8872507-8879690/-, rna=BX371226.2:0-639/- 645 <-> CDS: None',
                               (('exon 8872507-8872556 rna=0-49', (('aln 8872507-8872556 rna=0-49',),)),
                                ('intron 8872556-8873164 rna=49-49 sjBases=GT...AG (GT_AG)',
                                 (('cins 8872556-8873164 rna=None-None',),)),
@@ -607,7 +606,7 @@ class EvidenceTests(FeatureTestBase):
         # check the same PSL can be oriented chrom +
         trans = EvidencePslFactory(GenomeSeqSrc.obtain("hg38")).fromPsl(Psl(estPsl), orientChrom=True)
         self._assertFeatures(trans,
-                             ('t=chr22:41938778-41945961/+, rna=BX371226.2:6-645/+ 645 <->',
+                             ('t=chr22:41938778-41945961/+, rna=BX371226.2:6-645/+ 645 <-> CDS: None',
                               (('exon 41938778-41939196 rna=6-424',
                                 (('aln 41938778-41939196 rna=6-424',),)),
                                ('intron 41939196-41943609 rna=424-424 sjBases=GT...AG (GT_AG)',
@@ -629,7 +628,7 @@ class EvidenceTests(FeatureTestBase):
         estPsl = ["646", "3", "0", "1", "0", "0", "3", "9480", "+-", "BM969800.1", "675", "15", "665", "chr22", "50818468", "45422286", "45432416", "4", "133,167,228,122,", "15,148,315,543,", "5386052,5387402,5392293,5396060,"]
         trans = EvidencePslFactory(GenomeSeqSrc.obtain("hg38")).fromPsl(Psl(estPsl), orientChrom=False)
         self._assertFeatures(trans,
-                             ('t=chr22:5386052-5396182/-, rna=BM969800.1:15-665/+ 675 <+>',
+                             ('t=chr22:5386052-5396182/-, rna=BM969800.1:15-665/+ 675 <+> CDS: None',
                               (('exon 5386052-5386185 rna=15-148', (('aln 5386052-5386185 rna=15-148',),)),
                                ('intron 5386185-5387402 rna=148-148 sjBases=GT...AG (GT_AG)',
                                 (('cins 5386185-5387402 rna=None-None',),)),
@@ -647,7 +646,7 @@ class EvidenceTests(FeatureTestBase):
         # check the same PSL can be oriented chrom +
         trans = EvidencePslFactory(GenomeSeqSrc.obtain("hg38")).fromPsl(Psl(estPsl), orientChrom=True)
         self._assertFeatures(trans,
-                             ('t=chr22:45422286-45432416/+, rna=BM969800.1:10-660/- 675 <+>',
+                             ('t=chr22:45422286-45432416/+, rna=BM969800.1:10-660/- 675 <+> CDS: None',
                               (('exon 45422286-45422408 rna=10-132',
                                 (('aln 45422286-45422408 rna=10-132',),)),
                                ('intron 45422408-45425947 rna=132-132 sjBases=GT...AG (GT_AG)',
@@ -674,7 +673,7 @@ class AnnotationCheckMixin(object):
 
     def checkENST00000215794(self, trans, ensChroms=False):
         # coding, + strand
-        expect = ('t=chr22:18149898-18177397/+, rna=ENST00000215794.7:0-2129/+ 2129 <+>',
+        expect = ('t=chr22:18149898-18177397/+, rna=ENST00000215794.7:0-2129/+ 2129 <+> CDS: chr22:18157663-18176817',
                   (('exon 18149898-18150222 rna=0-324',
                     (("5'UTR 18149898-18150222 rna=0-324",),)),
                    ('intron 18150222-18157557 rna=324-324 sjBases=GC...AG (GC_AG)',),
@@ -715,7 +714,7 @@ class AnnotationCheckMixin(object):
 
     def checkENST00000334029(self, trans, ensChroms=False):
         # coding, - strand
-        expect = ('t=chr22:18912781-18936451/+, rna=ENST00000334029.6:0-1985/- 1985 <->',
+        expect = ('t=chr22:18912781-18936451/+, rna=ENST00000334029.6:0-1985/- 1985 <-> CDS: chr22:18913174-18931147',
                   (('exon 18912781-18913362 rna=0-581',
                     (("3'UTR 18912781-18913174 rna=0-393",),
                      ('CDS 18913174-18913362 rna=393-581 1',))),
@@ -765,7 +764,7 @@ class AnnotationCheckMixin(object):
 
     def checkENST00000334029NoSJ(self, trans, ensChroms=False):
         # coding, - strand, no splice junctions
-        expect = ('t=chr22:18912781-18936451/+, rna=ENST00000334029.6:0-1985/- 1985 <->',
+        expect = ('t=chr22:18912781-18936451/+, rna=ENST00000334029.6:0-1985/- 1985 <-> CDS: chr22:18913174-18931147',
                   (('exon 18912781-18913362 rna=0-581',
                     (("3'UTR 18912781-18913174 rna=0-393",),
                      ('CDS 18913174-18913362 rna=393-581 1',))),
@@ -815,7 +814,7 @@ class AnnotationCheckMixin(object):
 
     def checkENST00000334029Rc(self, trans, ensChroms=False):
         # coding, - strand, reverse-complemented
-        expect = ('t=chr22:31882017-31905687/-, rna=ENST00000334029.6:0-1985/+ 1985 <->',
+        expect = ('t=chr22:31882017-31905687/-, rna=ENST00000334029.6:0-1985/+ 1985 <-> CDS: chr22:31887321-31905294',
                   (('exon 31882017-31882079 rna=0-62',
                     (("5'UTR 31882017-31882079 rna=0-62",),)),
                    ('intron 31882079-31887270 rna=62-62 sjBases=GT...AG (GT_AG)',),
@@ -865,7 +864,7 @@ class AnnotationCheckMixin(object):
 
     def checkENST00000334029NoSJRc(self, trans, ensChroms=False):
         # coding, - strand, reverse-complemented, no splice junctions
-        expect = ('t=chr22:31882017-31905687/-, rna=ENST00000334029.6:0-1985/+ 1985 <->',
+        expect = ('t=chr22:31882017-31905687/-, rna=ENST00000334029.6:0-1985/+ 1985 <-> CDS: chr22:31887321-31905294',
                   (('exon 31882017-31882079 rna=0-62',
                     (("5'UTR 31882017-31882079 rna=0-62",),)),
                    ('intron 31882079-31887270 rna=62-62',),
@@ -915,7 +914,7 @@ class AnnotationCheckMixin(object):
 
     def checkENST00000434390(self, trans, ensChroms=False):
         # non-coding, - strand
-        expect = ('t=chr22:18178037-18205915/+, rna=ENST00000434390.1:0-1859/- 1859 <->',
+        expect = ('t=chr22:18178037-18205915/+, rna=ENST00000434390.1:0-1859/- 1859 <-> CDS: None',
                   (('exon 18178037-18178465 rna=0-428',
                     (('NC 18178037-18178465 rna=0-428',),)),
                    ('intron 18178465-18183109 rna=428-428 sjBases=GT...AG (GT_AG)',),
@@ -948,7 +947,7 @@ class AnnotationCheckMixin(object):
 
     def checkENST00000434390Rc(self, trans, ensChroms=False):
         # non-coding, - strand, reverse complemented
-        expect = ('t=chr22:32612553-32640431/-, rna=ENST00000434390.1:0-1859/+ 1859 <->',
+        expect = ('t=chr22:32612553-32640431/-, rna=ENST00000434390.1:0-1859/+ 1859 <-> CDS: None',
                   (('exon 32612553-32612694 rna=0-141',
                     (('NC 32612553-32612694 rna=0-141',),)),
                    ('intron 32612694-32618727 rna=141-141 sjBases=GT...AG (GT_AG)',),
@@ -981,7 +980,7 @@ class AnnotationCheckMixin(object):
 
     def checkENST00000538324(self, trans, ensChroms=False):
         # ABO error in genome
-        expect = ('t=chr9:133255601-133275214/+, rna=ENST00000538324.2:0-1153/- 1153 <->',
+        expect = ('t=chr9:133255601-133275214/+, rna=ENST00000538324.2:0-1153/- 1153 <-> CDS: chr9:133255601-133275189',
                   (('exon 133255601-133256356 rna=0-755',
                     (('CDS 133255601-133255670 rna=0-69 0',),
                      ('gap 133255670-133255674 rna=69-73',),
@@ -1187,10 +1186,9 @@ class EnsemblDbAnnotationTests(FeatureTestBase, AnnotationCheckMixin):
         return cls.annotFactory
 
     def _getTransAnnot(self, transId):
-        ensGenes = ensemblGeneQuery(self._getConnect(), transId)
-        self.assertEqual(len(ensGenes), 1)
-        self.assertEqual(len(ensGenes[0].transcripts), 1)
-        return self._getAnnotFactory().fromEnsemblDb(ensGenes[0].transcripts[0])
+        ensTrans = ensemblTransQuery(self._getConnect(), transId)
+        self.assertEqual(len(ensTrans), 1)
+        return self._getAnnotFactory().fromEnsemblDb(ensTrans[0])
 
     def testENST00000215794(self):
         # + strand
@@ -1218,6 +1216,7 @@ class EnsemblDbAnnotationTests(FeatureTestBase, AnnotationCheckMixin):
         # ABO error in genome
         trans = self._getTransAnnot("ENST00000538324.2")
         self.checkENST00000538324(trans, ensChroms=True)
+
 
 if __name__ == '__main__':
     unittest.main()
