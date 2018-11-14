@@ -8,7 +8,7 @@ import unittest
 from pycbio.sys.testCaseBase import TestCaseBase
 from pycbio.hgdata.psl import Psl
 from gencode_icedb.general.genome import GenomeReader
-from gencode_icedb.general.gencodeDb import UcscGencodeReader
+from gencode_icedb.general.ucscGencodeSource import UcscGencodeReader
 from gencode_icedb.general.geneAnnot import geneAnnotGroup
 from gencode_icedb.tsl.evidenceDb import EvidenceSource, EvidenceReader
 from gencode_icedb.tsl.supportDefs import EvidenceSupport
@@ -109,7 +109,7 @@ class EvidCompareTest(TestCaseBase):
                          results)
 
     def _rawPslCmpr(self, annotTrans, evidRawPsl, allowExtension):
-        evidTrans = self._pslToTrans(Psl(evidRawPsl))
+        evidTrans = self._pslToTrans(Psl.fromRow(evidRawPsl))
         evaluator = self._getEvaluator(allowExtension)
         return evaluator.compare(annotTrans, evidTrans)
 

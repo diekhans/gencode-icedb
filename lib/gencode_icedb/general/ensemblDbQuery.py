@@ -3,7 +3,6 @@ Query Ensembl's database for gene annotations.
 """
 import six
 import sys
-import re
 from collections import namedtuple, defaultdict
 from pycbio.db import mysqlOps
 import MySQLdb   # mysqlclient is required for python 3
@@ -123,22 +122,6 @@ FROM
     LEFT JOIN seq_region AS sr ON (sr.seq_region_id = t.seq_region_id)
     LEFT JOIN translation AS xlate ON (xlate.transcript_id = t.transcript_id)
 WHERE (g.source NOT IN ("LRG database")) {extrawhere};"""
-
-
-def ensemblIdSplit(ensIds):
-    """split into gene and transcript ids"""
-    # split by matching pattern
-    ensIds = _ensureList(ensIds)
-    geneIds = []
-    transIds = []
-    for ensId in ensIds:
-        if re.match("ENS[A-Z]*G[0-9]+\\.[0-9]+$", ensId):
-            geneIds.append(ensId)
-        elif re.match("ENS[A-Z]*T[0-9]+\\.[0-9]+$", ensId):
-            transIds.append(ensId)
-        else:
-            raise Exception("not a valid Ensembl id: {}".format(ensId))
-    return geneIds, transIds
 
 
 def _idSqlInClause(idField, ids):

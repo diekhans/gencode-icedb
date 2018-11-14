@@ -6,7 +6,7 @@ import argparse
 from pycbio.sys import fileOps
 from pycbio.db import sqliteOps
 from pycbio.hgdata.gencodeSqlite import GencodeAttrsSqliteTable
-from gencode_icedb.general import gencodeDb
+from gencode_icedb.general.ucscGencodeSource import GENCODE_ATTRS_TABLE
 
 
 def parseArgs():
@@ -61,7 +61,7 @@ class JobGenerator(object):
 def tslGencodeCollectSupportMkJobs(opts):
     "main function"
     conn = sqliteOps.connect(opts.gencodeDb, readonly=True)
-    attrsDbTable = GencodeAttrsSqliteTable(conn, gencodeDb.GENCODE_ATTRS_TABLE)
+    attrsDbTable = GencodeAttrsSqliteTable(conn, GENCODE_ATTRS_TABLE)
     if opts.gencodeIdFile is not None:
         print("WARNING: subset of gencode annotations being processed", file=sys.stderr)
         gencodeIds = sorted(fileOps.readNonCommentLines(opts.gencodeIdFile))

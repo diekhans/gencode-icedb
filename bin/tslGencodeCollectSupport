@@ -3,7 +3,7 @@ import icedbProgSetup  # noqa: F401
 import argparse
 from contextlib import ExitStack
 from pycbio.sys import fileOps
-from gencode_icedb.general.gencodeDb import UcscGencodeReader
+from gencode_icedb.general.ucscGencodeSource import UcscGencodeReader
 from gencode_icedb.tsl.evidenceDb import EvidenceReader, EvidenceSource
 from gencode_icedb.tsl.supportClassify import tightExonPolymorphicSizeLimit, tightExonPolymorphicFactionLimit, EvidenceQualityEval, FullLengthSupportEvaluator
 

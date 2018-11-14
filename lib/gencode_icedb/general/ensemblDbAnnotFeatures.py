@@ -1,10 +1,10 @@
 """
-create AnnotationFeature objects from Ensembl database records (see ensemblDb.py)
+create AnnotationFeature objects from Ensembl database records (see ensemblDbQuery.py)
 """
 from pycbio.sys.objDict import ObjDict
 from pycbio.hgdata.coords import Coords
 from pycbio.hgdata.frame import Frame
-from gencode_icedb.general.ensemblDb import EnsemblTranscript
+from gencode_icedb.general.ensemblDbQuery import EnsemblTranscript
 from gencode_icedb.tsl import minIntronSize
 from gencode_icedb.general.annotFeatureBuilder import AnnotFeatureBuilder
 

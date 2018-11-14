@@ -4,7 +4,7 @@ import argparse
 import csv
 from pycbio.sys import fileOps, setOps
 from pycbio.hgdata.coords import Coords
-from gencode_icedb.general.gencodeDb import UcscGencodeReader
+from gencode_icedb.general.ucscGencodeSource import UcscGencodeReader
 from gencode_icedb.general.genome import GenomeReader
 from gencode_icedb.general.transFeatures import IntronFeature
 from gencode_icedb.rsl.rslModels import rslConnect, rslClose, SjSupportReader

@@ -159,9 +159,7 @@ def ensemblCDnaQuery(ensemblCDnaDb, limit=None, accverSubset=None, ensChromRange
 
 
 def processCigarMatch(psl, size, qNext, tNext):
-    blk = PslBlock(psl, qNext, tNext, size)
-    psl.blocks.append(blk)
-    psl.blockCount += 1
+    psl.addBlock(PslBlock(qNext, tNext, size))
     psl.match += size
     return (qNext + size, tNext + size)
 
@@ -181,16 +179,9 @@ def processCigarDelete(psl, size, qNext):
 def pslFromCigar(qName, qSize, qStart, qEnd, qStrand, tName, tSize, tStart, tEnd, tStrand, cigarStr):
     "create a PSL from an Ensembl-style cigar formatted alignment"
     cigar = ExonerateCigar(cigarStr)
-    psl = Psl()
-    psl.qName = qName
-    psl.qSize = qSize
-    psl.qStart = qStart
-    psl.qEnd = qEnd
-    psl.tName = tName
-    psl.tSize = tSize
-    psl.tStart = tStart
-    psl.tEnd = tEnd
-    psl.strand = qStrand + tStrand
+    psl = Psl.create(qName=qName, qSize=qSize, qStart=qStart, qEnd=qEnd,
+                     tName=tName, tSize=tSize, tStart=tStart, tEnd=tEnd,
+                     strand=qStrand + tStrand)
 
     qNext = qStart
     qBlkEnd = qEnd
@@ -215,7 +206,6 @@ def pslFromCigar(qName, qSize, qStart, qEnd, qStrand, tName, tSize, tStart, tEnd
         raise Exception("CIGAR length does not match aligned query range: {} {}".format(qName, cigar))
     if tNext != tBlkEnd:
         raise Exception("CIGAR length does not match aligned target range: {} {}".format(qName, cigar))
-    assert(len(psl.blocks) == psl.blockCount)
     if psl.getTStrand() == '-':
         psl = psl.reverseComplement()
     psl.strand = psl.strand[0]   # BLAT convention

@@ -1,10 +1,39 @@
-""""functions to operate on read and other data"""
-
+""""general functions to operate on file or memory data"""
 import os
 import socket
+import re
 from pycbio.sys import fileOps
 import pipettor
 import logging
+
+
+def ensureList(strOrList):
+    if isinstance(strOrList, str):
+        return [strOrList]
+    else:
+        return strOrList
+
+
+def isChrYPar(annotTrans):
+    """Is this a PAR gene on Y"""
+    # UCSC db puts PAR tag on both chrX and chrY, since it tracks only by transcript id
+    return ("PAR" in annotTrans.attrs.tags) and (annotTrans.chrom.name in ("chrY", "Y"))
+
+
+def ensemblIdSplit(ensIds):
+    """split into gene and transcript ids"""
+    # split by matching pattern
+    ensIds = ensureList(ensIds)
+    geneIds = []
+    transIds = []
+    for ensId in ensIds:
+        if re.match("ENS[A-Z]*G[0-9]+\\.[0-9]+$", ensId):
+            geneIds.append(ensId)
+        elif re.match("ENS[A-Z]*T[0-9]+\\.[0-9]+$", ensId):
+            transIds.append(ensId)
+        else:
+            raise Exception("not a valid Ensembl id: {}".format(ensId))
+    return geneIds, transIds
 
 
 def isFastq(readsFile):

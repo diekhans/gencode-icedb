@@ -14,7 +14,7 @@ from gencode_icedb.general.transFeatures import RnaInsertFeature, ChromInsertFea
 from gencode_icedb.general.evidFeatures import EvidencePslFactory
 from gencode_icedb.general.genePredAnnotFeatures import GenePredAnnotationFactory
 from gencode_icedb.general.ensemblDbAnnotFeatures import EnsemblDbAnnotationFactory
-from gencode_icedb.general.ensemblDb import ensemblTransQuery
+from gencode_icedb.general.ensemblDbQuery import ensemblTransQuery
 from pycbio.db import sqliteOps
 from pycbio.db import mysqlOps
 from pycbio.hgdata.genePredSqlite import GenePredSqliteTable
@@ -587,7 +587,7 @@ class EvidenceTests(FeatureTestBase):
     def testEst3PslMinus(self):
         # test handing 3' EST for negative strand gene
         estPsl = ["620", "11", "0", "8", "0", "0", "3", "6544", "--", "BX371226.2", "645", "6", "645", "chr22", "50818468", "41938778", "41945961", "4", "49,80,92,418,", "0,49,129,221,", "8872507,8873164,8874767,8879272,"]
-        trans = EvidencePslFactory(GenomeSeqSrc.obtain("hg38")).fromPsl(Psl(estPsl), orientChrom=False)
+        trans = EvidencePslFactory(GenomeSeqSrc.obtain("hg38")).fromPsl(Psl.fromRow(estPsl), orientChrom=False)
         self._assertFeatures(trans,
                              ('t=chr22:8872507-8879690/-, rna=BX371226.2:0-639/- 645 <-> CDS: None',
                               (('exon 8872507-8872556 rna=0-49', (('aln 8872507-8872556 rna=0-49',),)),
@@ -604,7 +604,7 @@ class EvidenceTests(FeatureTestBase):
                                 (('aln 8879272-8879690 rna=221-639',),)))))
         self.assertEqual('-', trans.transcriptionStrand)
         # check the same PSL can be oriented chrom +
-        trans = EvidencePslFactory(GenomeSeqSrc.obtain("hg38")).fromPsl(Psl(estPsl), orientChrom=True)
+        trans = EvidencePslFactory(GenomeSeqSrc.obtain("hg38")).fromPsl(Psl.fromRow(estPsl), orientChrom=True)
         self._assertFeatures(trans,
                              ('t=chr22:41938778-41945961/+, rna=BX371226.2:6-645/+ 645 <-> CDS: None',
                               (('exon 41938778-41939196 rna=6-424',
@@ -626,7 +626,7 @@ class EvidenceTests(FeatureTestBase):
     def testEst3PslPlus(self):
         # test handing 3' EST for positive strand gene
         estPsl = ["646", "3", "0", "1", "0", "0", "3", "9480", "+-", "BM969800.1", "675", "15", "665", "chr22", "50818468", "45422286", "45432416", "4", "133,167,228,122,", "15,148,315,543,", "5386052,5387402,5392293,5396060,"]
-        trans = EvidencePslFactory(GenomeSeqSrc.obtain("hg38")).fromPsl(Psl(estPsl), orientChrom=False)
+        trans = EvidencePslFactory(GenomeSeqSrc.obtain("hg38")).fromPsl(Psl.fromRow(estPsl), orientChrom=False)
         self._assertFeatures(trans,
                              ('t=chr22:5386052-5396182/-, rna=BM969800.1:15-665/+ 675 <+> CDS: None',
                               (('exon 5386052-5386185 rna=15-148', (('aln 5386052-5386185 rna=15-148',),)),
@@ -644,7 +644,7 @@ class EvidenceTests(FeatureTestBase):
                                 (('aln 5396060-5396182 rna=543-665',),)))))
         self.assertEqual('+', trans.transcriptionStrand)
         # check the same PSL can be oriented chrom +
-        trans = EvidencePslFactory(GenomeSeqSrc.obtain("hg38")).fromPsl(Psl(estPsl), orientChrom=True)
+        trans = EvidencePslFactory(GenomeSeqSrc.obtain("hg38")).fromPsl(Psl.fromRow(estPsl), orientChrom=True)
         self._assertFeatures(trans,
                              ('t=chr22:45422286-45432416/+, rna=BM969800.1:10-660/- 675 <+> CDS: None',
                               (('exon 45422286-45422408 rna=10-132',
@@ -1166,8 +1166,8 @@ class GenePredAnnotationTests(FeatureTestBase, AnnotationCheckMixin):
 
 
 class EnsemblDbAnnotationTests(FeatureTestBase, AnnotationCheckMixin):
-    # HOST = "ensembldb.ensembl.org"
-    HOST = "useastdb.ensembl.org"
+    HOST = "ensembldb.ensembl.org"
+    # HOST = "useastdb.ensembl.org"
     CORE_DB = "homo_sapiens_core_92_38"
 
     conn = None

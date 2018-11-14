@@ -9,7 +9,8 @@ sys.path = [os.path.join(rootDir, "lib"),
             os.path.join(rootDir, "extern/pycbio/lib")] + sys.path
 from pycbio.ncbi.assembly import AssemblyReport
 from gencode_icedb.general.genome import GenomeReader
-from gencode_icedb.general import gencodeDb
+from gencode_icedb.general.ucscGencodeSource import UcscGencodeReader
+from gencode_icedb.general.ensemblGencodeSource import EnsemblGencodeReader
 from gencode_icedb.general.transFeatures import TranscriptFeatures, IntronFeature, CdsRegionFeature, StructureFeature
 
 
@@ -71,11 +72,11 @@ def getGeneIds(ucscReader, ensemblReader):
 
 
 def createUcscReader(ucscGencodeDb, ucscGenome):
-    return gencodeDb.UcscGencodeReader(ucscGencodeDb, GenomeReader.getFromFileName(ucscGenome))
+    return UcscGencodeReader(ucscGencodeDb, GenomeReader.getFromFileName(ucscGenome))
 
 
 def createEnsemblReader(ensemblCoreDb, ensemblGenome):
-    return gencodeDb.EnsemblGencodeReader(ensemblCoreDb, GenomeReader.getFromFileName(ensemblGenome))
+    return EnsemblGencodeReader(ensemblCoreDb, GenomeReader.getFromFileName(ensemblGenome))
 
 
 def diffChrom(asmReport, ucscChrom, ensemblChrom):
