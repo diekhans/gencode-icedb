@@ -79,7 +79,7 @@ class EvidencePslFactory(object):
 
     def _addExon(self, psl, iBlkStart, iBlkEnd, trans, features):
         # include either initial or terminal unaligned parts of RNA if at start or end
-        qStart =  psl.blocks[iBlkStart].qStart if iBlkStart > 0 else 0
+        qStart = psl.blocks[iBlkStart].qStart if iBlkStart > 0 else 0
         qEnd = psl.blocks[iBlkEnd - 1].qEnd if iBlkEnd < psl.blockCount else psl.qSize
 
         exon = ExonFeature(trans, len(features),

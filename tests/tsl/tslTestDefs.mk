@@ -14,16 +14,6 @@ mmGrcRefAssembly = GRCh38
 mmGrcRefAssemblyReport = ${ROOT}/tests/tsl/etc/GCF_000001405.36_GRCh38.p10_assembly_report.txt
 mmUcscGenomeDb = mm10
 
-
-ucscGencodeDbLoad = ${BINDIR}/ucscGencodeDbLoad
-tslGetUcscRnaAligns = ${BINDIR}/tslGetUcscRnaAligns
-tslGetEnsemblRnaAligns = ${BINDIR}/tslGetEnsemblRnaAligns
-tslGbffGetProblemCases = ${BINDIR}/tslGbffGetProblemCases
-tslGenbankProblemCasesLoad = ${BINDIR}/tslGenbankProblemCasesLoad
-tslGencodeCollectSupport = ${BINDIR}/tslGencodeCollectSupport
-tslGencodeCollectSupportMkJobs = ${BINDIR}/tslGencodeCollectSupportMkJobs
-tslGencodeCollectSupportFinishJobs = ${BINDIR}/tslGencodeCollectSupportFinishJobs
-
 # use public database if not on hgwdev
 ifneq (${hostname}, hgwdev)
    export HGDB_CONF=${ROOT}/tests/tsl/etc/hg.pub.conf

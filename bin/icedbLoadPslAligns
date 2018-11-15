@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+"""
+Load PSL alignments into a sqlite database
+"""
+import icedbProgSetup  # noqa: F401
+import sys
+import argparse
+from pycbio.hgdata.psl import PslReader
+from pycbio.db import sqliteOps
+from pycbio.hgdata.pslSqlite import PslSqliteTable
+from pycbio.sys import loggingOps
+
+
+def parseArgs():
+    desc = """Fetch cDNA alignments from Ensembl and load as PSLs in evidence
+    sqllite3 database.
+
+"""
+    parser = argparse.ArgumentParser(description=desc)
+    loggingOps.addCmdOptions(parser)
+    parser.add_argument('--table', default="psl_aln",
+                        help="""table to load alignments""")
+    parser.add_argument('pslFile',
+                        help="""PSL file to import""")
+    parser.add_argument('sqliteDb',
+                        help="""database to load alignments into""")
+    opts = parser.parse_args()
+    loggingOps.setupFromCmd(opts, sys.argv[0])
+    return opts
+
+
+def icedbLoadPslAligns(opts):
+    "main function"
+    psls = [psl for psl in PslReader(opts.pslFile)]
+    psls.sort(key=lambda p: (p.tName, p.tStart, -p.tEnd))
+    conn = sqliteOps.connect(opts.sqliteDb, create=True)
+    pslDbTable = PslSqliteTable(conn, opts.table, create=True)
+    pslDbTable.loads(psls)
+    conn.close()
+
+
+icedbLoadPslAligns(parseArgs())

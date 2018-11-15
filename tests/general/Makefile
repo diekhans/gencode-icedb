@@ -1,12 +1,6 @@
 ROOT = ../..
 include ${ROOT}/config.mk
 
-faUcscToGencode = ${BINDIR}/faUcscToGencode
-genePredIntrons = ${BINDIR}/genePredIntrons
-ucscGencodeDbLoad = ${BINDIR}/ucscGencodeDbLoad
-featureMondoTester = ./bin/featureMondoTester
-ucscEnsemblTransCmp = ./bin/ucscEnsemblTransCmp
-
 .SECONDARY:
 
 hsUcscGenomeDb = hg38
@@ -24,7 +18,8 @@ grch38Fa = ../data/grch38/GRCh38.fa.gz
 test:   featureUnitTests \
 	ucscGencodeDbLoadTest \
 	faTests \
-	genePredIntronsTests
+	genePredIntronsTests \
+	loadPslAlignsTest
 	@echo "Note: run make mondoTest for heavy-duty tests"
 	@echo "Note: run make ucscEnsemblCmp to compare import from UCSC database (via GTF) or direct from Ensembl database"
 
@@ -68,6 +63,12 @@ genePredIntronsSmallTest: mkdirs
 	faToTwoBit  input/small-chr22.fa output/$@.2bit
 	${genePredIntrons} input/small-gencode.gp output/$@.2bit output/$@.tsv
 	diff expected/$@.tsv output/$@.tsv
+
+loadPslAlignsTest: mkdirs
+	${icedbLoadPslAligns} --table=$@ input/ucsc-mrnaV28.psl output/$@.db
+	cut -f 10 input/ucsc-mrnaV28.psl | sort > output/$@.file.ids
+	sqlite3 -batch -readonly output/$@.db 'SELECT qName FROM $@ ORDER BY qName' > output/$@.db.ids
+	diff output/$@.file.ids output/$@.db.ids
 
 mondoTest: pslMondoTest gpMondoTest gencodeDbMondoTest
 

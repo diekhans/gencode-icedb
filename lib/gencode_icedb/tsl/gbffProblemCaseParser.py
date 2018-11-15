@@ -31,7 +31,7 @@ class RecordInfoParser(object):
             self.etype = EvidenceType.EST if line.find(' EST ') > 0 else EvidenceType.RNA
 
     def _parseLineForVersion(self, line):
-        m = re.match("^VERSION     (\S+)", line)
+        m = re.match("^VERSION     (\\S+)", line)
         if m is not None:
             assert self.accv is None
             self.accv = m.group(1)

@@ -14,6 +14,34 @@ OBJDIR = ${ROOT}/objs
 
 PYLIBDIR = ${ROOT}/lib/gencode_icedb
 
+# programs
+faUcscToGencode = ${BINDIR}/faUcscToGencode
+genePredIntrons = ${BINDIR}/genePredIntrons
+icedbLoadPslAligns = ${BINDIR}/icedbLoadPslAligns
+rslEncodeDccQuery = ${BINDIR}/rslEncodeDccQuery
+rslGencodeCollectNovel = ${BINDIR}/rslGencodeCollectNovel
+rslGencodeCollectNovelFinishJobs = ${BINDIR}/rslGencodeCollectNovelFinishJobs
+rslGencodeCollectNovelMkJobs = ${BINDIR}/rslGencodeCollectNovelMkJobs
+rslGencodeCollectSupport = ${BINDIR}/rslGencodeCollectSupport
+rslGencodeCollectSupportFinishJobs = ${BINDIR}/rslGencodeCollectSupportFinishJobs
+rslGencodeCollectSupportMkJobs = ${BINDIR}/rslGencodeCollectSupportMkJobs
+rslMappingMetadataDbLoad = ${BINDIR}/rslMappingMetadataDbLoad
+rslMkStarSjOutSplits = ${BINDIR}/rslMkStarSjOutSplits
+rslMkStarSjSupMergeJobs = ${BINDIR}/rslMkStarSjSupMergeJobs
+rslSraRunInfoDbLoad = ${BINDIR}/rslSraRunInfoDbLoad
+rslSraRunInfoFilter = ${BINDIR}/rslSraRunInfoFilter
+rslStarSjOutSplit = ${BINDIR}/rslStarSjOutSplit
+tslGbffGetProblemCases = ${BINDIR}/tslGbffGetProblemCases
+tslGenbankProblemCasesLoad = ${BINDIR}/tslGenbankProblemCasesLoad
+tslGencodeCollectSupport = ${BINDIR}/tslGencodeCollectSupport
+tslGencodeCollectSupportFinishJobs = ${BINDIR}/tslGencodeCollectSupportFinishJobs
+tslGencodeCollectSupportMkJobs = ${BINDIR}/tslGencodeCollectSupportMkJobs
+tslGetEnsemblRnaAligns = ${BINDIR}/tslGetEnsemblRnaAligns
+tslGetUcscRnaAligns = ${BINDIR}/tslGetUcscRnaAligns
+ucscGencodeDbLoad = ${BINDIR}/ucscGencodeDbLoad
+
+
+
 .SECONDARY:
 
 CFLAGS =  -Wall -Werror -Wno-sign-compare -std=c99

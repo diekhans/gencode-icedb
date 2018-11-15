@@ -99,7 +99,7 @@ class GenePredAnnotationFactory(object):
     def _makeIntron(self, gp, iBlkNext, rnaEnd, builder):
         builder.addIntron(gp.exons[iBlkNext - 1].end, gp.exons[iBlkNext].start, rnaEnd)
 
-    def fromGenePred(self, gp: GenePred, attrs: ObjDict=None):
+    def fromGenePred(self, gp: GenePred, attrs: ObjDict = None):
         "convert a genePred to an TranscriptFeatures"
         chromSize = self.chromSizeFunc(gp.chrom)
         rnaSize = self._findRnaSize(gp)
