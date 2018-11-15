@@ -1,12 +1,10 @@
 """
-Convert alignments (PSL) to features, closing and tracking gaps.
+Convert alignments (PSL or BAM) to features, closing and tracking gaps.
 """
 from pycbio.hgdata.coords import Coords
 from gencode_icedb.general.spliceJuncs import spliceJuncsGetSeqs
 from gencode_icedb.tsl import minIntronSize
 from gencode_icedb.general.transFeatures import ExonFeature, IntronFeature, TranscriptFeatures, AlignedFeature, ChromInsertFeature, RnaInsertFeature
-
-# FIXME: rename to alignfeatures.
 
 
 class EvidencePslFactory(object):
@@ -22,9 +20,9 @@ class EvidencePslFactory(object):
         features = []
         while iBlkStart < len(psl.blocks):
             iBlkEnd = self._findExonEnd(psl, iBlkStart)
-            self._makeExon(psl, iBlkStart, iBlkEnd, trans, features)
+            self._addExon(psl, iBlkStart, iBlkEnd, trans, features)
             if iBlkEnd < len(psl.blocks):
-                self._makeIntron(psl, iBlkEnd, trans, features)
+                self._addIntron(psl, iBlkEnd, trans, features)
             iBlkStart = iBlkEnd
         return features
 
@@ -40,24 +38,16 @@ class EvidencePslFactory(object):
         return iBlkEnd
 
     def _addFirstUnaligned(self, psl, exon, alignFeatures):
-        return  # FIXME: ignored, see issues.org
-        if exon.rna.strand == '+':
-            qStart, qEnd = 0, psl.qStart
-        else:
-            qStart, qEnd = 0, psl.qSize - psl.qEnd
-        if qStart < qEnd:
+        blk = psl.blocks[0]
+        if blk.qStart > 0:
             alignFeatures.append(RnaInsertFeature(exon, len(alignFeatures),
-                                                  exon.rna.subrange(qStart, qEnd, psl.qStrand)))
+                                                  exon.rna.subrange(0, blk.qStart, psl.qStrand)))
 
     def _addLastUnaligned(self, psl, exon, alignFeatures):
-        return  # FIXME: ignored, see issues.org
-        if exon.rna.strand == '+':
-            qStart, qEnd = psl.qEnd, psl.qSize
-        else:
-            qStart, qEnd = 0, psl.qSize - psl.qStart
-        if qStart < qEnd:
+        blk = psl.blocks[-1]
+        if blk.qEnd < psl.qSize:
             alignFeatures.append(RnaInsertFeature(exon, len(alignFeatures),
-                                                  exon.rna.subrange(qStart, qEnd, psl.qStrand)))
+                                                  exon.rna.subrange(blk.qEnd, psl.qSize, psl.qStrand)))
 
     def _addAlignedFeature(self, psl, iBlk, exon, alignFeatures):
         blk = psl.blocks[iBlk]
@@ -83,14 +73,18 @@ class EvidencePslFactory(object):
             if iBlk > iBlkStart:
                 self._addUnalignedFeatures(psl, iBlk, exon, alignFeatures)
             self._addAlignedFeature(psl, iBlk, exon, alignFeatures)  # after since unaligned is before block
-        if iBlkEnd == psl.blockCount - 1:
+        if iBlkEnd == psl.blockCount:
             self._addLastUnaligned(psl, exon, alignFeatures)
         exon.alignFeatures = tuple(alignFeatures)
 
-    def _makeExon(self, psl, iBlkStart, iBlkEnd, trans, features):
+    def _addExon(self, psl, iBlkStart, iBlkEnd, trans, features):
+        # include either initial or terminal unaligned parts of RNA if at start or end
+        qStart =  psl.blocks[iBlkStart].qStart if iBlkStart > 0 else 0
+        qEnd = psl.blocks[iBlkEnd - 1].qEnd if iBlkEnd < psl.blockCount else psl.qSize
+
         exon = ExonFeature(trans, len(features),
                            trans.chrom.subrange(psl.blocks[iBlkStart].tStart, psl.blocks[iBlkEnd - 1].tEnd, psl.tStrand),
-                           trans.rna.subrange(psl.blocks[iBlkStart].qStart, psl.blocks[iBlkEnd - 1].qEnd, psl.qStrand))
+                           trans.rna.subrange(qStart, qEnd, psl.qStrand))
         features.append(exon)
         self._addAlignFeatures(psl, iBlkStart, iBlkEnd, exon)
 
@@ -104,7 +98,7 @@ class EvidencePslFactory(object):
                 coords = coords.reverse()
             return spliceJuncsGetSeqs(self.genomeReader, coords.name, coords.start, coords.end, trans.transcriptionStrand)
 
-    def _makeIntron(self, psl, iBlkNext, trans, features):
+    def _addIntron(self, psl, iBlkNext, trans, features):
         donorSeq, acceptorSeq = self._getSpliceSites(psl, iBlkNext, trans)
         intron = IntronFeature(trans, len(features),
                                trans.chrom.subrange(psl.blocks[iBlkNext - 1].tEnd, psl.blocks[iBlkNext].tStart, psl.tStrand),
@@ -129,10 +123,17 @@ class EvidencePslFactory(object):
         chrom = Coords(psl.tName, psl.tStart, psl.tEnd, '+', psl.tSize)
         if psl.tStrand == '-':
             chrom = chrom.reverse()
-        rna = Coords(psl.qName, psl.qStart, psl.qEnd, '+', psl.qSize)
+        rna = Coords(psl.qName, 0, psl.qSize, '+', psl.qSize)
         if psl.qStrand == '-':
             rna = rna.reverse()
 
         trans = TranscriptFeatures(chrom, rna, transcriptionStrand=transcriptionStrand, attrs=attrs)
         trans.features = tuple(self._buildFeatures(psl, trans))
         return trans
+
+
+class EvidenceSamFactory(object):
+    """
+    Factory to create evidence features from SAM/BAM/CRAM records.
+    """
+    pass

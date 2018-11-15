@@ -136,7 +136,7 @@ class EvidenceTests(FeatureTestBase):
     def _checkRnaAln(self, trans):
         "validate that full RNA is covered by alignment"
         prevChromEnd = trans.chrom.start
-        prevRnaEnd = trans.rna.start
+        prevRnaEnd = 0
         for feat in trans.features:
             if feat.alignFeatures is not None:
                 for alnFeat in feat.alignFeatures:
@@ -150,15 +150,16 @@ class EvidenceTests(FeatureTestBase):
                         prevRnaEnd = alnFeat.rna.end
         self.assertEqual(prevChromEnd, trans.chrom.end,
                          msg="trans: {} alignments don't cover chrom range".format(trans.rna.name))
-        self.assertEqual(prevRnaEnd, trans.rna.end,
+        self.assertEqual(prevRnaEnd, trans.rna.size,
                          msg="trans: {} alignments don't cover RNA range".format(trans.rna.name))
 
     def testAF010310(self):
         trans = self._pslToEvidTranscript(self._getV28Psl("AF010310.1"))
         self._assertFeatures(trans,
-                             ('t=chr22:18912781-18918413/+, rna=AF010310.1:13-901/- 901 <-> CDS: None',
-                              (('exon 18912781-18913362 rna=13-618',
-                                (('aln 18912781-18912939 rna=13-171',),
+                             ('t=chr22:18912781-18918413/+, rna=AF010310.1:0-901/- 901 <-> CDS: None',
+                              (('exon 18912781-18913362 rna=0-618',
+                                (('rins None-None rna=0-13',),
+                                 ('aln 18912781-18912939 rna=13-171',),
                                  ('rins None-None rna=171-174',),
                                  ('cins 18912939-18912940 rna=None-None',),
                                  ('aln 18912940-18913022 rna=174-256',),
@@ -220,9 +221,10 @@ class EvidenceTests(FeatureTestBase):
     def testX96484(self):
         trans = self._pslToEvidTranscript(self._getV28Psl("X96484.1"))
         self._assertFeatures(trans,
-                             ('t=chr22:18906409-18912079/+, rna=X96484.1:48-1067/+ 1080 <+> CDS: None',
-                              (('exon 18906409-18906484 rna=48-123',
-                                (('aln 18906409-18906484 rna=48-123',),)),
+                             ('t=chr22:18906409-18912079/+, rna=X96484.1:0-1080/+ 1080 <+> CDS: None',
+                              (('exon 18906409-18906484 rna=0-123',
+                                (('rins None-None rna=0-48',),
+                                 ('aln 18906409-18906484 rna=48-123',),)),
                                ('intron 18906484-18906564 rna=123-123 sjBases=GT...AG (GT_AG)',
                                 (('cins 18906484-18906564 rna=None-None',),)),
                                ('exon 18906564-18906725 rna=123-285',
@@ -239,16 +241,18 @@ class EvidenceTests(FeatureTestBase):
                                 (('aln 18910887-18911028 rna=386-527',),)),
                                ('intron 18911028-18911539 rna=527-527 sjBases=GT...AG (GT_AG)',
                                 (('cins 18911028-18911539 rna=None-None',),)),
-                               ('exon 18911539-18912079 rna=527-1067',
-                                (('aln 18911539-18912079 rna=527-1067',),)))))
+                               ('exon 18911539-18912079 rna=527-1080',
+                                (('aln 18911539-18912079 rna=527-1067',),
+                                 ('rins None-None rna=1067-1080',))))))
         self._checkRnaAln(trans)
 
     def testX96484NoSJ(self):
         trans = EvidencePslFactory(None).fromPsl(self._getV28Psl("X96484.1"))
         self._assertFeatures(trans,
-                             ('t=chr22:18906409-18912079/+, rna=X96484.1:48-1067/+ 1080 <+> CDS: None',
-                              (('exon 18906409-18906484 rna=48-123',
-                                (('aln 18906409-18906484 rna=48-123',),)),
+                             ('t=chr22:18906409-18912079/+, rna=X96484.1:0-1080/+ 1080 <+> CDS: None',
+                              (('exon 18906409-18906484 rna=0-123',
+                                (('rins None-None rna=0-48',),
+                                 ('aln 18906409-18906484 rna=48-123',),)),
                                ('intron 18906484-18906564 rna=123-123',
                                 (('cins 18906484-18906564 rna=None-None',),)),
                                ('exon 18906564-18906725 rna=123-285',
@@ -265,8 +269,9 @@ class EvidenceTests(FeatureTestBase):
                                 (('aln 18910887-18911028 rna=386-527',),)),
                                ('intron 18911028-18911539 rna=527-527',
                                 (('cins 18911028-18911539 rna=None-None',),)),
-                               ('exon 18911539-18912079 rna=527-1067',
-                                (('aln 18911539-18912079 rna=527-1067',),)))))
+                               ('exon 18911539-18912079 rna=527-1080',
+                                (('aln 18911539-18912079 rna=527-1067',),
+                                 ('rins None-None rna=1067-1080',))))))
         self._checkRnaAln(trans)
 
     def testTransMapDropExon(self):
@@ -522,6 +527,7 @@ class EvidenceTests(FeatureTestBase):
                           'rins None-None rna=2727-2729',
                           'rins None-None rna=2750-2816',
                           'cins 148056110-148056150 rna=None-None'))
+        self._checkRnaAln(trans)
 
     def testExonRnaOverlap(self):
         aln1 = self._pslToEvidTranscript(self._getV28Psl("AF010310.1"))
@@ -589,26 +595,32 @@ class EvidenceTests(FeatureTestBase):
         estPsl = ["620", "11", "0", "8", "0", "0", "3", "6544", "--", "BX371226.2", "645", "6", "645", "chr22", "50818468", "41938778", "41945961", "4", "49,80,92,418,", "0,49,129,221,", "8872507,8873164,8874767,8879272,"]
         trans = EvidencePslFactory(GenomeSeqSrc.obtain("hg38")).fromPsl(Psl.fromRow(estPsl), orientChrom=False)
         self._assertFeatures(trans,
-                             ('t=chr22:8872507-8879690/-, rna=BX371226.2:0-639/- 645 <-> CDS: None',
-                              (('exon 8872507-8872556 rna=0-49', (('aln 8872507-8872556 rna=0-49',),)),
+                             ('t=chr22:8872507-8879690/-, rna=BX371226.2:0-645/- 645 <-> CDS: None',
+                              (('exon 8872507-8872556 rna=0-49',
+                                (('aln 8872507-8872556 rna=0-49',),)),
                                ('intron 8872556-8873164 rna=49-49 sjBases=GT...AG (GT_AG)',
                                 (('cins 8872556-8873164 rna=None-None',),)),
-                               ('exon 8873164-8873244 rna=49-129', (('aln 8873164-8873244 rna=49-129',),)),
+                               ('exon 8873164-8873244 rna=49-129',
+                                (('aln 8873164-8873244 rna=49-129',),)),
                                ('intron 8873244-8874767 rna=129-129 sjBases=GT...AG (GT_AG)',
                                 (('cins 8873244-8874767 rna=None-None',),)),
                                ('exon 8874767-8874859 rna=129-221',
                                 (('aln 8874767-8874859 rna=129-221',),)),
                                ('intron 8874859-8879272 rna=221-221 sjBases=GT...AG (GT_AG)',
                                 (('cins 8874859-8879272 rna=None-None',),)),
-                               ('exon 8879272-8879690 rna=221-639',
-                                (('aln 8879272-8879690 rna=221-639',),)))))
+                               ('exon 8879272-8879690 rna=221-645',
+                                (('aln 8879272-8879690 rna=221-639',),
+                                 ('rins None-None rna=639-645',))))))
         self.assertEqual('-', trans.transcriptionStrand)
+        self._checkRnaAln(trans)
+
         # check the same PSL can be oriented chrom +
         trans = EvidencePslFactory(GenomeSeqSrc.obtain("hg38")).fromPsl(Psl.fromRow(estPsl), orientChrom=True)
         self._assertFeatures(trans,
-                             ('t=chr22:41938778-41945961/+, rna=BX371226.2:6-645/+ 645 <-> CDS: None',
-                              (('exon 41938778-41939196 rna=6-424',
-                                (('aln 41938778-41939196 rna=6-424',),)),
+                             ('t=chr22:41938778-41945961/+, rna=BX371226.2:0-645/+ 645 <-> CDS: None',
+                              (('exon 41938778-41939196 rna=0-424',
+                                (('rins None-None rna=0-6',),
+                                 ('aln 41938778-41939196 rna=6-424',),)),
                                ('intron 41939196-41943609 rna=424-424 sjBases=GT...AG (GT_AG)',
                                 (('cins 41939196-41943609 rna=None-None',),)),
                                ('exon 41943609-41943701 rna=424-516',
@@ -622,14 +634,17 @@ class EvidenceTests(FeatureTestBase):
                                ('exon 41945912-41945961 rna=596-645',
                                 (('aln 41945912-41945961 rna=596-645',),)))))
         self.assertEqual('-', trans.transcriptionStrand)
+        self._checkRnaAln(trans)
 
     def testEst3PslPlus(self):
         # test handing 3' EST for positive strand gene
         estPsl = ["646", "3", "0", "1", "0", "0", "3", "9480", "+-", "BM969800.1", "675", "15", "665", "chr22", "50818468", "45422286", "45432416", "4", "133,167,228,122,", "15,148,315,543,", "5386052,5387402,5392293,5396060,"]
         trans = EvidencePslFactory(GenomeSeqSrc.obtain("hg38")).fromPsl(Psl.fromRow(estPsl), orientChrom=False)
         self._assertFeatures(trans,
-                             ('t=chr22:5386052-5396182/-, rna=BM969800.1:15-665/+ 675 <+> CDS: None',
-                              (('exon 5386052-5386185 rna=15-148', (('aln 5386052-5386185 rna=15-148',),)),
+                             ('t=chr22:5386052-5396182/-, rna=BM969800.1:0-675/+ 675 <+> CDS: None',
+                              (('exon 5386052-5386185 rna=0-148',
+                                (('rins None-None rna=0-15',),
+                                 ('aln 5386052-5386185 rna=15-148',),)),
                                ('intron 5386185-5387402 rna=148-148 sjBases=GT...AG (GT_AG)',
                                 (('cins 5386185-5387402 rna=None-None',),)),
                                ('exon 5387402-5387569 rna=148-315',
@@ -640,15 +655,19 @@ class EvidenceTests(FeatureTestBase):
                                 (('aln 5392293-5392521 rna=315-543',),)),
                                ('intron 5392521-5396060 rna=543-543 sjBases=GT...AG (GT_AG)',
                                 (('cins 5392521-5396060 rna=None-None',),)),
-                               ('exon 5396060-5396182 rna=543-665',
-                                (('aln 5396060-5396182 rna=543-665',),)))))
+                               ('exon 5396060-5396182 rna=543-675',
+                                (('aln 5396060-5396182 rna=543-665',),
+                                 ('rins None-None rna=665-675',))))))
         self.assertEqual('+', trans.transcriptionStrand)
+        self._checkRnaAln(trans)
+
         # check the same PSL can be oriented chrom +
         trans = EvidencePslFactory(GenomeSeqSrc.obtain("hg38")).fromPsl(Psl.fromRow(estPsl), orientChrom=True)
         self._assertFeatures(trans,
-                             ('t=chr22:45422286-45432416/+, rna=BM969800.1:10-660/- 675 <+> CDS: None',
-                              (('exon 45422286-45422408 rna=10-132',
-                                (('aln 45422286-45422408 rna=10-132',),)),
+                             ('t=chr22:45422286-45432416/+, rna=BM969800.1:0-675/- 675 <+> CDS: None',
+                              (('exon 45422286-45422408 rna=0-132',
+                                (('rins None-None rna=0-10',),
+                                 ('aln 45422286-45422408 rna=10-132',),)),
                                ('intron 45422408-45425947 rna=132-132 sjBases=GT...AG (GT_AG)',
                                 (('cins 45422408-45425947 rna=None-None',),)),
                                ('exon 45425947-45426175 rna=132-360',
@@ -659,9 +678,11 @@ class EvidenceTests(FeatureTestBase):
                                 (('aln 45430899-45431066 rna=360-527',),)),
                                ('intron 45431066-45432283 rna=527-527 sjBases=GT...AG (GT_AG)',
                                 (('cins 45431066-45432283 rna=None-None',),)),
-                               ('exon 45432283-45432416 rna=527-660',
-                                (('aln 45432283-45432416 rna=527-660',),)))))
+                               ('exon 45432283-45432416 rna=527-675',
+                                (('aln 45432283-45432416 rna=527-660',),
+                                 ('rins None-None rna=660-675',))))))
         self.assertEqual('+', trans.transcriptionStrand)
+        self._checkRnaAln(trans)
 
 
 class AnnotationCheckMixin(object):

@@ -86,10 +86,13 @@ class EvidenceQualityEval(object):
     def _checkExonIndels(self, evidExon):
         "check for allowed indel polymorphism"
 
+        def isInitialTerminalUnaligned(evidExon, aln):
+            return (aln.rna.start == 0) or (aln.rna.end == evidExon.transcript.rna.size)
+
         def getIndelSize(aln):
             if isinstance(aln, ChromInsertFeature):
                 return len(aln.chrom)
-            elif isinstance(aln, RnaInsertFeature):
+            elif isinstance(aln, RnaInsertFeature) and not isInitialTerminalUnaligned(evidExon, aln):
                 return len(aln.rna)
             else:
                 return 0  # not an indel
@@ -103,7 +106,10 @@ class EvidenceQualityEval(object):
             if indelSize > self.exonPolymorphicSizeLimit:
                 return EvidenceSupport.large_indel_size
             totalIndelSize += indelSize
-        if totalIndelSize > self.exonPolymorphicFactionLimit * len(evidExon.chrom):
+
+        if totalIndelSize == 0:
+            return EvidenceSupport.good
+        elif totalIndelSize > self.exonPolymorphicFactionLimit * len(evidExon.chrom):
             return EvidenceSupport.large_indel_content
         else:
             return EvidenceSupport.polymorphic

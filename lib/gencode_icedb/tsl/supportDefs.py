@@ -39,13 +39,14 @@ class EvidenceSupport(SymEnum):
     """One or more of these attributes describe the support provided to an annotation
     by a given piece of evidence"""
     __slots__ = ()
-    good = 1
-    polymorphic = 2
+    good = 1                    # good support
+    polymorphic = 2             # minor variation
 
     poor = 10                   # value greater than this a detail of poor
-    large_indel_size = 12       # give indel exceeds a threshold
-    large_indel_content = 14    # indel context if a given exon exceeded
+    large_indel_size = 12       # size of an indel exceeds a threshold (excludes initial/terminal)
+    large_indel_content = 14    # indel context if a given exon exceeded (excludes initial/terminal)
     internal_unaligned = 15     # intron contains unaligned
+    large_indel_ends = 16       # size of an initial or terminal indel exceeds a threshold
 
     exon_boundry_mismatch = 50  # exon boundaries differs
     feat_count_mismatch = 51    # different number of features
@@ -53,6 +54,7 @@ class EvidenceSupport(SymEnum):
     not_useful = 90             # support deemed not useful for other reasons
     no_support = 100
 
+    # These were in previous version
     # endsMedium = 2
     # endsWeak = 3
     # suspectMRna = 4
