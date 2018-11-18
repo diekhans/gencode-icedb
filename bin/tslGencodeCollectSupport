@@ -22,7 +22,7 @@ def parseArgs():
                         type=EvidenceSource,
                         help="""only used evidence from this source, maybe repeated""")
     parser.add_argument('--evidId', dest='evidIds', action='append', default=None,
-                        help="""only used evidence from this source, maybe repeated""")
+                        help="""only used evidence with this id from the source, maybe repeated.  For debugging.""")
     parser.add_argument('gencodeDb',
                         help="""GENCODE sqlite3 database""")
     parser.add_argument('evidenceDb',
