@@ -1,7 +1,6 @@
 """
 Read evidence alignments from a database.
 """
-import six
 from pycbio.sys.symEnum import SymEnum
 from pycbio.sys.objDict import ObjDict
 from pycbio.db import sqliteOps
@@ -59,7 +58,7 @@ class EvidenceReader(object):
 
     def genByNames(self, evidSrc, names):
         "names can be a single name or a list"
-        if isinstance(names, six.string_types):
+        if isinstance(names, str):
             names = [names]
         for name in names:
             for psl in self.dbTables[evidSrc].getByQName(name):

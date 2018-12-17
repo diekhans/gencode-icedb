@@ -1,7 +1,6 @@
 """
 Query Ensembl's database for gene annotations.
 """
-import six
 import sys
 from collections import namedtuple, defaultdict
 from pycbio.db import mysqlOps
@@ -35,7 +34,7 @@ def _dump(fh, val, indent):
 
 
 def _ensureList(strOrList):
-    if isinstance(strOrList, six.string_types):
+    if isinstance(strOrList, str):
         return [strOrList]
     else:
         return strOrList

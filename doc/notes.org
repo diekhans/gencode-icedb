@@ -1,14 +1,12 @@
 
-# estimating read length of fastq
+* estimating read length of fastq
 
-awk 'NR%4 == 2 {lengths[length($0)]++} END {for (l in lengths) {print l, lengths[l]}}' file.fastq
+  awk 'NR%4 == 2 {lengths[length($0)]++} END {for (l in lengths) {print l, lengths[l]}}' file.fastq
 
-git@github.com:maasha/biopieces.git
+  git@github.com:maasha/biopieces.git
 
 
----------- 
-
-2016-01-04 Adam:
+* 2016-01-04 Adam:
     Are you able to calculate the percent spliced in (PSI) for each exon - see
     Dmitri's paper on this here (http://www.ncbi.nlm.nih.gov/pubmed/23172860)
     - from the data you have. I think in the absence of full transcript level
@@ -17,6 +15,8 @@ git@github.com:maasha/biopieces.git
     in relatively few transcripts.
 
 
-2017-08-09:
-     issues: no file name: tabix.TabixError: Can't open the index file.
-             taxix no close method
+* 2018-03-15 rnaseqer API:
+   https://www.ebi.ac.uk/fg/rnaseq/api/
+   https://github.com/nunofonseca/irap
+
+https://www.ebi.ac.uk/fg/rnaseq/api/tsv/0/getRunsByOrganism/homo_sapiens/

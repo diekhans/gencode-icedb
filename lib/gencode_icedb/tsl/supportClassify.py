@@ -15,7 +15,6 @@ The current algorithm is:
      - tsl4 - the best supporting EST is flagged as suspect
      - tsl5 - no single transcript supports the model structure
 """
-import six
 import re
 from collections import namedtuple, defaultdict
 from pycbio.sys import fileOps
@@ -282,7 +281,7 @@ class MegSupportEvaluator(object):
                 evidTrans.dump(msg="evidence")
             return self._compareMegWithEvidenceImpl(transAnnot, evidTrans)
         except Exception as ex:
-            six.raise_from(Exception("Bug evaluating {} with {}".format(transAnnot.rna.name, evidTrans.rna.name)), ex)
+            raise Exception("Bug evaluating {} with {}".format(transAnnot.rna.name, evidTrans.rna.name)) from ex
 
 
 class EvidenceCache(object):

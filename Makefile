@@ -13,7 +13,7 @@ mondoTest::
 	(cd tests && ${MAKE} mondoTest)
 
 lint:
-	flake8 tests lib/gencode_icedb ${pyprogs}
+	${PYTHON} -m flake8 tests lib/gencode_icedb ${pyprogs}
 
 clean::
 	(cd src && ${MAKE} clean)
