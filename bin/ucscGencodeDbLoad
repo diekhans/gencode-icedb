@@ -10,7 +10,7 @@ from gencode_icedb.general.ucscGencodeSource import GENCODE_ANN_TABLE, GENCODE_A
 
 
 def parseArgs():
-    desc = """Load GENCODE genePreds and attributes into sqlite databases."""
+    desc = """Load GENCODE genePreds and attributes from a UCSC database or files into an SQLite3 databases."""
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('--hgdb',
                         help="""load from mysql hgdb instead of files""")

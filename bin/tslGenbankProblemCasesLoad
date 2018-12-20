@@ -9,7 +9,7 @@ from pycbio.db import sqliteOps
 
 def parseArgs():
     desc = """Load problem case tab file generate gbffGetProblemCases by
-    into a sqlite3 databases. """
+    into an SQLite3 databases. """
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('problemTabFile',
                         help="""tab file with problem accessions and reasons""")

@@ -12,9 +12,7 @@ from pycbio.sys import loggingOps
 
 
 def parseArgs():
-    desc = """Fetch cDNA alignments from Ensembl and load as PSLs in evidence
-    sqllite3 database.
-
+    desc = """Load PSL-format alignments into an evidence SQLLite3 database.
 """
     parser = argparse.ArgumentParser(description=desc)
     loggingOps.addCmdOptions(parser)

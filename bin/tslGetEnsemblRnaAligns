@@ -26,8 +26,7 @@ ensDbUser = "anonymous"
 
 
 def parseArgs():
-    desc = """Fetch cDNA alignments from Ensembl and load as PSLs in evidence
-    sqllite3 database.
+    desc = """Fetch cDNA alignments from Ensembl and load as PSLs into an SQLite3 database.
 
     The Ensembl alignments don't include the poly-A and lack the lengths,
     The length of cDNA sequences are obtained from either the UCSC browser

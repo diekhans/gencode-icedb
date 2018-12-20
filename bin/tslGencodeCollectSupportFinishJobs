@@ -24,7 +24,7 @@ setPragmaSql = (
 
 
 def parseArgs():
-    desc = """Combine tslGencodeCollectSupport job results."""
+    desc = """Combine tslGencodeCollectSupport job results and store in an SQLite3 table."""
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('--saveDetails', action='store_true', default=False,
                         help="""Save the details in a table.  This is very slow if full details have been saved.""")

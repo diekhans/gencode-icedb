@@ -10,7 +10,7 @@ from gencode_icedb.general.ucscGencodeSource import GENCODE_ATTRS_TABLE
 
 
 def parseArgs():
-    desc = """Generate parasol jobs to collect support for all GENCODE."""
+    desc = """Generate parasol jobs to collect TSLs for GENCODE."""
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('--allDetails', action="store_true", default=False,
                         help="""write details for all evaluations the detailsTsv file, not just supporting ones""")

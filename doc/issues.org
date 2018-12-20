@@ -1,5 +1,5 @@
 * drop PY2 stuff (from future)
-* the term `load' is getting confusing, use read or write
+* the term `load' is getting confusing, use load and store, etc.
 * tslGbffGetProblemCases should be run on cluster, drop multiprocessor mode.
 * make clear genbank problem vs suspect (problem makes a gb suspect)
 * should TSL not use RNAs with large initial/terminal unaligned sequence
@@ -26,3 +26,4 @@
 * TransFeatures could be immutable namedtuple if parent was found through a weak reference lookup table.
 * Make TSL thresholds configurable
 * is genePredIntrons needed any more?
+* Add TSL override list, for things like 3-base exon
