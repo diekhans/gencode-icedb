@@ -26,8 +26,12 @@ test:   featureUnitTests \
 ##
 # test of features
 ##
-featureUnitTests:
-	${PYTHON} featureUnitTests.py
+unitTestCases = EvidenceTests GenePredAnnotationTests EnsemblDbAnnotationTests
+featureUnitTests: ${unitTestCases:%=%_run}
+
+%_run:
+	${PYTHON} featureUnitTests.py $*
+
  
 ##
 # tests of loading gencode data into sqlite
