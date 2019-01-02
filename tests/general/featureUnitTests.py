@@ -49,10 +49,14 @@ class GenomeSeqSrc(object):
     readers = {}
 
     @classmethod
+    def getGenomeFile(cls, db):
+        return cls.srcs[db]
+
+    @classmethod
     def obtain(cls, db):
         reader = cls.readers.get(db)
         if reader is None:
-            reader = cls.readers[db] = GenomeReader.getFromFileName(cls.srcs[db])
+            reader = cls.readers[db] = GenomeReader.getFromFileName(cls.getGenomeFile(db))
         return reader
 
 
@@ -1193,6 +1197,13 @@ class EnsemblDbAnnotationTests(FeatureTestBase, AnnotationCheckMixin):
 
     conn = None
     annotFactory = None
+
+    def setUp(cls):
+        "Skip test if genome file isn't available"
+        fa = GenomeSeqSrc.getGenomeFile("grch38")
+        if not os.path.exists(fa):
+            raise unittest.SkipTest("WARNING: optional genome sequence file not found, skipping EnsemblDbAnnotationTests: {}".format(fa))
+
 
     @classmethod
     def _getConnect(cls):
