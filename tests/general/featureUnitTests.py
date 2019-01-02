@@ -37,7 +37,6 @@ def getInputFile(base):
     "from input relative to test file"
     return os.path.join(os.path.dirname(__file__), "input", base)
 
-
 class GenomeSeqSrc(object):
     "caching genome reader"
 
@@ -58,6 +57,13 @@ class GenomeSeqSrc(object):
         if reader is None:
             reader = cls.readers[db] = GenomeReader.getFromFileName(cls.getGenomeFile(db))
         return reader
+
+
+def errorIfNoGenomeFile(db):
+    "Raise a error if genome file need for tests is not found"
+    fa = GenomeSeqSrc.getGenomeFile(db)
+    if not os.path.exists(fa):
+        raise AssertionError("Genome sequence file not found: {}".format(fa))
 
 
 class PslDbSrc(object):
@@ -131,6 +137,11 @@ class FeatureTestBase(TestCaseBase):
 
 
 class EvidenceTests(FeatureTestBase):
+    @classmethod
+    def setUpClass(cls):
+        errorIfNoGenomeFile("hg38")
+        errorIfNoGenomeFile("mm10")
+
     def _getV28Psl(self, acc):
         return PslDbSrc.obtainPsl("V28", acc)
 
@@ -1037,6 +1048,10 @@ class AnnotationCheckMixin(object):
 
 
 class GenePredAnnotationTests(FeatureTestBase, AnnotationCheckMixin):
+    @classmethod
+    def setUpClass(cls):
+        errorIfNoGenomeFile("hg38")
+
     def _getTransAnnot(self, acc):
         factory = GenePredAnnotationFactory(GenomeSeqSrc.obtain("hg38"))
         return factory.fromGenePred(GenePredDbSrc.obtainGenePred("V28", acc))
@@ -1198,12 +1213,9 @@ class EnsemblDbAnnotationTests(FeatureTestBase, AnnotationCheckMixin):
     conn = None
     annotFactory = None
 
-    def setUp(cls):
-        "Skip test if genome file isn't available"
-        fa = GenomeSeqSrc.getGenomeFile("grch38")
-        if not os.path.exists(fa):
-            raise unittest.SkipTest("WARNING: optional genome sequence file not found, skipping EnsemblDbAnnotationTests: {}".format(fa))
-
+    @classmethod
+    def setUpClass(cls):
+        errorIfNoGenomeFile("grch38")
 
     @classmethod
     def _getConnect(cls):
