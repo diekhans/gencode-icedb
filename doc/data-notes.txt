@@ -36,8 +36,9 @@ https://www.illumina.com/informatics/research/sequencing-data-analysis-managemen
         http://www.proteinatlas.org/download/rna_celline.csv.zip
         http://www.ncbi.nlm.nih.gov/bioproject/PRJNA183192
 
-2018-09-14;
-  tabularis
+2019-01-29;
+  tabula muris
   https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE109774
   https://trace.ncbi.nlm.nih.gov/Traces/sra/?run=SRR6835871
-  
+  /hive/groups/hca/pilot/biohub
+

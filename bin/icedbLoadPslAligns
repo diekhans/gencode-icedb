@@ -34,6 +34,7 @@ def icedbLoadPslAligns(opts):
     conn = sqliteOps.connect(opts.sqliteDb, create=True)
     pslDbTable = PslSqliteTable(conn, opts.table, create=True)
     pslDbTable.loads(psls)
+    pslDbTable.index()
     conn.close()
 
 
