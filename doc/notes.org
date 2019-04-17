@@ -20,3 +20,14 @@
    https://github.com/nunofonseca/irap
 
 https://www.ebi.ac.uk/fg/rnaseq/api/tsv/0/getRunsByOrganism/homo_sapiens/
+
+* 2019-04-16
+** How to store TSL evidence
+- tabidx PSL files per experiment
+- database table combined or per experiment
+** decision:
+- tabidx per PSL
+- store results in table
+
+
+

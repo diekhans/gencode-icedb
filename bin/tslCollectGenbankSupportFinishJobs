@@ -24,7 +24,7 @@ setPragmaSql = (
 
 
 def parseArgs():
-    desc = """Combine tslGencodeCollectSupport job results and store in an SQLite3 table."""
+    desc = """Combine tslCollectGenbankSupport job results and store in an SQLite3 table."""
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('--saveDetails', action='store_true', default=False,
                         help="""Save the details in a table.  This is very slow if full details have been saved.""")
@@ -126,7 +126,7 @@ def dbInsertDetails(conn, expectedTsvs):
     bulkInsert(conn, GencodeTranscriptSupportDetails, recs)
 
 
-def tslGencodeCollectSupportFinishJobs(opts):
+def tslCollectGenbankSupportFinishJobs(opts):
     "main function"
     fileOps.ensureFileDir(opts.resultsDb)
     conn = tslConnect(opts.resultsDb, create=True, readonly=False)
@@ -139,4 +139,4 @@ def tslGencodeCollectSupportFinishJobs(opts):
     tslClose(conn)
 
 
-tslGencodeCollectSupportFinishJobs(parseArgs())
+tslCollectGenbankSupportFinishJobs(parseArgs())

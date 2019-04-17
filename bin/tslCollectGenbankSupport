@@ -45,7 +45,7 @@ def classifyGenes(evidenceReader, geneAnnots, tslTsvFh, detailsTsvFh):
         evaluator.classifyGeneTranscripts(geneAnnot, tslTsvFh, detailsTsvFh)
 
 
-def tslGencodeCollectSupport(args):
+def tslCollectGenbankSupport(args):
     gencodeReader = UcscGencodeReader(args.gencodeDb)
     evidenceReader = EvidenceReader(args.evidenceDb, sources=args.evidSources, nameSubset=args.evidIds)
     genesAnnots = gencodeReader.getGenesByGencodeIds(args.gencodeIds)
@@ -60,4 +60,4 @@ def tslGencodeCollectSupport(args):
     fileOps.atomicInstall(tslTmpTsv, args.tslTsv)
 
 
-tslGencodeCollectSupport(parseArgs())
+tslCollectGenbankSupport(parseArgs())

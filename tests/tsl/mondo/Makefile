@@ -27,14 +27,14 @@ test::
 	@echo "run make setup or make finishup"
 
 setup: ${hsAnnonDb} ${hsEvidDb}
-	${tslGencodeCollectSupportMkJobs} --genesPerJob=${genesPerJob} ${allDetails} ${hsAnnonDb} ${hsEvidDb} output
+	${tslCollectGenbankSupportMkJobs} --genesPerJob=${genesPerJob} ${allDetails} ${hsAnnonDb} ${hsEvidDb} output
 
 finishup: ${cmpTsv} ${tslDb} ${detailsTsv}
 
 tsldb: ${tslDb}
 ${tslDb}:
 	@mkdir -p $(dir $@)
-	${tslGencodeCollectSupportFinishJobs} ${saveDetails} output ${tslDb}.tmp
+	${tslCollectGenbankSupportFinishJobs} ${saveDetails} output ${tslDb}.tmp
 	mv -f ${tslDb}.tmp ${tslDb}
 
 

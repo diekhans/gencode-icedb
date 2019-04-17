@@ -37,7 +37,7 @@ class JobGenerator(object):
         self.allDetails = allDetails
         self.workDir = workDir
         self.resultDir = os.path.join(workDir, "results")
-        self.suppProg = os.path.join(icedbProgSetup.binDir, "tslGencodeCollectSupportJob")
+        self.suppProg = os.path.join(icedbProgSetup.binDir, "tslCollectGenbankSupportJob")
 
     def _generateJob(self, gencodeIds, batchFh, expectedFh):
         cmd = [self.suppProg]
@@ -58,7 +58,7 @@ class JobGenerator(object):
             iNext += self.genesPerJob
 
 
-def tslGencodeCollectSupportMkJobs(opts):
+def tslCollectGenbankSupportMkJobs(opts):
     "main function"
     conn = sqliteOps.connect(opts.gencodeDb, readonly=True)
     attrsDbTable = GencodeAttrsSqliteTable(conn, GENCODE_ATTRS_TABLE)
@@ -79,4 +79,4 @@ def tslGencodeCollectSupportMkJobs(opts):
     conn.close()
 
 
-tslGencodeCollectSupportMkJobs(parseArgs())
+tslCollectGenbankSupportMkJobs(parseArgs())

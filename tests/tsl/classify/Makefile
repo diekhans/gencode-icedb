@@ -19,19 +19,19 @@ classifyUnitTests: ${testInputDone}
 	${PYTHON} classifyUnitTests.py
 
 supportCollectGenesTest: ${testInputDone} mkdirs
-	${tslGencodeCollectSupport} ${gencodeDb} ${evidDb} --details=output/$@.details.tsv output/$@.tsl.tsv ENSG00000177663.13
+	${tslCollectGenbankSupport} ${gencodeDb} ${evidDb} --details=output/$@.details.tsv output/$@.tsl.tsv ENSG00000177663.13
 	${diff} expected/$@.tsl.tsv output/$@.tsl.tsv
 	${diff} expected/$@.details.tsv output/$@.details.tsv
 
 supportCollectMkJobsTest: ${testInputDone} mkdirs
 	rm -rf output/$@.work output/$@.db
-	${tslGencodeCollectSupportMkJobs} --allDetails ${gencodeDb} ${evidDb} output/$@.work
-	sed -Ee 's#^.*(/bin/tslGencodeCollectSupport)#??\1#' output/$@.work/batch.jobs > output/$@.batch.jobs.cleaned
+	${tslCollectGenbankSupportMkJobs} --allDetails ${gencodeDb} ${evidDb} output/$@.work
+	sed -Ee 's#^.*(/bin/tslCollectGenbankSupport)#??\1#' output/$@.work/batch.jobs > output/$@.batch.jobs.cleaned
 	${diff} expected/$@.batch.jobs.cleaned output/$@.batch.jobs.cleaned
 	${jobsToCmds} output/$@.work/batch.jobs | bash -e  
 	ls -1 output/$@.work/results/ > output/$@.results.lst
 	${diff} expected/$@.results.lst output/$@.results.lst
-	${tslGencodeCollectSupportFinishJobs} --saveDetails output/$@.work output/$@.db
+	${tslCollectGenbankSupportFinishJobs} --saveDetails output/$@.work output/$@.db
 	$(call sqldumpdiff,gencode_transcript_support)
 	$(call sqldumpdiff,gencode_transcript_support_details)
 
