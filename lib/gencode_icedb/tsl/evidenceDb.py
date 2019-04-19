@@ -1,7 +1,7 @@
 """
 Read evidence alignments from a database.
 """
-from pycbio.sys.symEnum import SymEnum
+from pycbio.sys.symEnum import SymEnum, auto
 from pycbio.sys.objDict import ObjDict
 from pycbio.db import sqliteOps
 from pycbio.hgdata.pslSqlite import PslSqliteTable
@@ -13,9 +13,12 @@ from gencode_icedb.tsl.genbankProblemCases import GenbankProblemCases
 class EvidenceSource(SymEnum):
     """Source of evidence used in support"""
     __slots__ = ()
-    UCSC_RNA = 1
-    ENSEMBL_RNA = 2
-    UCSC_EST = 3
+    UCSC_RNA = auto()
+    ENSEMBL_RNA = auto()
+    UCSC_EST = auto()
+    NANOPORE_DRNA = auto()
+    NANOPORE_CDNA = auto()
+    ISOSEQ_CDNA = auto()
 
 
 # sqlite3 table names

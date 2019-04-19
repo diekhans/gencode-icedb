@@ -11,15 +11,13 @@ ucscTests: ucscRnaChrMTest ucscEstChrMTest
 
 ucscRnaChrMTest: mkdirs
 	@rm -f output/$@.db
-	${tslGetUcscRnaAligns} -chromSpec=chrM ${hsUcscGenomeDb} rna output/$@.db
-	sqlite3 --batch output/$@.db 'select * from ${UCSC_RNA_ALN_TBL};' | cut -f 2- | sort > output/$@.sort.psl
-	diff expected/$@.sort.psl output/$@.sort.psl
+	${tslGetUcscRnaAligns} -chromSpec=chrM ${hsUcscGenomeDb} rna output/$@.psl
+	diff expected/$@.psl output/$@.psl
 
 ucscEstChrMTest: mkdirs
 	@rm -f output/$@.db
-	${tslGetUcscRnaAligns} -chromSpec=chrM ${hsUcscGenomeDb} est output/$@.db
-	sqlite3 --batch output/$@.db 'select * from ${UCSC_EST_ALN_TBL};' | cut -f 2- | sort > output/$@.sort.psl
-	diff expected/$@.sort.psl output/$@.sort.psl
+	${tslGetUcscRnaAligns} -chromSpec=chrM ${hsUcscGenomeDb} est output/$@.psl
+	diff expected/$@.psl output/$@.psl
 
 ##
 # Ensembl
@@ -28,15 +26,13 @@ ensemblTests: ensemblChrMTest ensemblIdListTest
 
 ensemblChrMTest: mkdirs
 	@rm -f output/$@.db
-	${tslGetEnsemblRnaAligns} --chromSpec=chrM ${hsEnsemblCDnaDb} ${hsGrcRefAssemblyReport} output/$@.db
-	sqlite3 --batch output/$@.db 'select * from ${ENSEMBL_RNA_ALN_TBL};' | cut -f 2- | sort > output/$@.sort.psl
-	diff expected/$@.sort.psl output/$@.sort.psl
+	${tslGetEnsemblRnaAligns} --chromSpec=chrM ${hsEnsemblCDnaDb} ${hsGrcRefAssemblyReport} output/$@.psl
+	diff expected/$@.psl output/$@.psl
 
 ensemblIdListTest: mkdirs
 	@rm -f output/$@.db
-	${tslGetEnsemblRnaAligns} --accverList=input/ensembl-cdna.acc ${hsEnsemblCDnaDb} ${hsGrcRefAssemblyReport} output/$@.db
-	sqlite3 --batch output/$@.db 'select * from ${ENSEMBL_RNA_ALN_TBL};' | cut -f 2- | sort > output/$@.sort.psl
-	diff expected/$@.sort.psl output/$@.sort.psl
+	${tslGetEnsemblRnaAligns} --accverList=input/ensembl-cdna.acc ${hsEnsemblCDnaDb} ${hsGrcRefAssemblyReport} output/$@.psl
+	diff expected/$@.psl output/$@.psl
 
 ##
 # GBFF problem case parser

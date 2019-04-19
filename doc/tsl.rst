@@ -12,3 +12,10 @@ Commands
 * ``tslCollectGenbankSupportJob`` - Job wrapper to run ``rslGencodeCollectSupport``.
 * ``tslCollectGenbankSupportFinishJobs`` - Combine ``tslCollectGenbankSupport`` job results and store in an SQLite3 table.
 
+Steps
+-----
+
+#. Evidence as alignments
+   - ``evidence-meta.db`` - evidence metadata database (SqlLite or MySql)
+   - PSL alignments per-dataset, in tabix format
+   

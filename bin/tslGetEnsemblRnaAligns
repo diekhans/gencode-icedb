@@ -6,10 +6,7 @@ import icedbProgSetup  # noqa: F401
 import sys
 import argparse
 from pycbio.hgdata import hgDb
-from pycbio.hgdata.psl import Psl, PslBlock, reverseCoords
-from pycbio.hgdata.cigar import ExonerateCigar
-from pycbio.db import sqliteOps
-from pycbio.hgdata.pslSqlite import PslSqliteTable
+from pycbio.hgdata.psl import pslFromExonerateCigar
 from pycbio.hgdata.coords import Coords
 from pycbio.sys import fileOps, loggingOps
 from pycbio.db import mysqlOps
@@ -26,7 +23,7 @@ ensDbUser = "anonymous"
 
 
 def parseArgs():
-    desc = """Fetch cDNA alignments from Ensembl and load as PSLs into an SQLite3 database.
+    desc = """Fetch cDNA alignments from Ensembl and load as PSLs into an sorted PSL file.
 
     The Ensembl alignments don't include the poly-A and lack the lengths,
     The length of cDNA sequences are obtained from either the UCSC browser
@@ -40,16 +37,14 @@ def parseArgs():
                         help="""limit on query results, used for tests""")
     parser.add_argument('--accverList',
                         help="""file with list of accession/versions to process, used for testing.""")
-    parser.add_argument('--table', default="ensembl_rna_aln",
-                        help="""table to load alignments""")
     parser.add_argument('--chromSpec', action="append", dest="chromSpecs", type=Coords.parse,
                         help="""Restrict to this chromosome or chromosome range (UCSC chromosome naming), maybe repeated, used for testing.""")
     parser.add_argument('ensemblCDnaDb',
                         help="""Ensembl cDNA database to use""")
     parser.add_argument('assemblyReport',
                         help="""NCBI assembly report for mapping chromosome names""")
-    parser.add_argument('sqliteDb',
-                        help="""database to load alignments into""")
+    parser.add_argument('pslFile',
+                        help="""PSL file, sorted for tabix indexing""")
     opts = parser.parse_args()
     loggingOps.setupFromCmd(opts, sys.argv[0])
     return opts
@@ -157,68 +152,14 @@ def ensemblCDnaQuery(ensemblCDnaDb, limit=None, accverSubset=None, ensChromRange
         conn.close()
 
 
-def processCigarMatch(psl, size, qNext, tNext):
-    psl.addBlock(PslBlock(qNext, tNext, size))
-    psl.match += size
-    return (qNext + size, tNext + size)
-
-
-def processCigarInsert(psl, size, tNext):
-    psl.tNumInsert += 1
-    psl.tBaseInsert += size
-    return tNext + size
-
-
-def processCigarDelete(psl, size, qNext):
-    psl.qNumInsert += 1
-    psl.qBaseInsert += size
-    return qNext + size
-
-
-def pslFromCigar(qName, qSize, qStart, qEnd, qStrand, tName, tSize, tStart, tEnd, tStrand, cigarStr):
-    "create a PSL from an Ensembl-style cigar formatted alignment"
-    cigar = ExonerateCigar(cigarStr)
-    psl = Psl.create(qName=qName, qSize=qSize, qStart=qStart, qEnd=qEnd,
-                     tName=tName, tSize=tSize, tStart=tStart, tEnd=tEnd,
-                     strand=qStrand + tStrand)
-
-    qNext = qStart
-    qBlkEnd = qEnd
-    if qStrand == '-':
-        qNext, qBlkEnd = reverseCoords(qNext, qBlkEnd, qSize)
-    tNext = tStart
-    tBlkEnd = tEnd
-    if tStrand == '-':
-        tNext, tBlkEnd = reverseCoords(tNext, tBlkEnd, tSize)
-
-    for op in cigar:
-        if op.aligned:
-            qNext, tNext = processCigarMatch(psl, op.count, qNext, tNext)
-        elif op.tinsert:
-            tNext = processCigarInsert(psl, op.count, tNext)
-        elif op.tdelete:
-            qNext = processCigarDelete(psl, op.count, qNext)
-        else:
-            raise Exception("invalid CIGAR op {} in {}".format(op, cigar))
-
-    if qNext != qBlkEnd:
-        raise Exception("CIGAR length does not match aligned query range: {} {}".format(qName, cigar))
-    if tNext != tBlkEnd:
-        raise Exception("CIGAR length does not match aligned target range: {} {}".format(qName, cigar))
-    if psl.getTStrand() == '-':
-        psl = psl.reverseComplement()
-    psl.strand = psl.strand[0]   # BLAT convention
-    return psl
-
-
 def orientToStrand(orient):
     return '-' if orient < 0 else '+'
 
 
 def pslFromEnsembl(row, qSize, tName, tSize):
-    return pslFromCigar(row["hit_name"], qSize, row["hit_start"] - 1, row["hit_end"], orientToStrand(row["hit_strand"]),
-                        tName, tSize, row["seq_region_start"] - 1, row["seq_region_end"], orientToStrand(row["seq_region_strand"]),
-                        row["cigar_line"])
+    return pslFromExonerateCigar(row["hit_name"], qSize, row["hit_start"] - 1, row["hit_end"], orientToStrand(row["hit_strand"]),
+                                 tName, tSize, row["seq_region_start"] - 1, row["seq_region_end"], orientToStrand(row["seq_region_strand"]),
+                                 row["cigar_line"])
 
 
 class EnsemblCDnaConverter(object):
@@ -276,10 +217,11 @@ def cdnaEnsemblAligns(opts):
     accverSubset = fileOps.readFileLines(opts.accverList) if opts.accverList is not None else None
     ensChromRanges = ucscToEnsChroms(opts.chromSpecs, asmReport) if opts.chromSpecs is not None else None
     psls = converter.ensemblCDnasToPsls(opts.ensemblCDnaDb, opts.limit, accverSubset, ensChromRanges)
-    conn = sqliteOps.connect(opts.sqliteDb, create=True)
-    pslDbTable = PslSqliteTable(conn, opts.table, create=True)
-    pslDbTable.loads(psls)
-    conn.close()
+    # make sure order is predictable for tests
+    psls.sort(key=lambda p: (p.tName, p.tStart, p.tEnd, p.qName))
+    with open(opts.pslFile, "w") as fh:
+        for psl in psls:
+            psl.write(fh)
 
 
 mysqlOps.mySqlSetErrorOnWarn()

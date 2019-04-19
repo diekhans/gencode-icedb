@@ -7,15 +7,14 @@
 #include "estOrientInfo.h"
 #include "verbose.h"
 #include "dystring.h"
-#include "sqliteEz.h"
 
 /* usage message and abort */
 static void usage(char *msg) {
-    static char* usageMsg = "tslGetUcscRnaAligns ucscDb type sqliteDb\n"
+    static char* usageMsg = "tslGetUcscRnaAligns ucscDb type pslFile\n"
         "\n"
-        "Load PSL alignments from UCSC all_mrna or all_est tables into an SQLite\n"
-        "database.  EST PSLs will be reverse-complement if estOrientInfo table\n"
-        "indicates.  Type is `rna' or `est'.\n"
+        "Load PSL alignments from UCSC all_mrna or all_est tables and write to\n"
+        "sorted PSL file for indexing.  EST PSLs will be reverse-complement if\n"
+        "the estOrientInfo table indicates it is a 3' EST.  Type is `rna' or `est'.\n"
         "\n"
         "Options:\n"
         "  -verbose=n\n"
@@ -28,45 +27,10 @@ static void usage(char *msg) {
 }
 static struct optionSpec optionSpecs[] = {
     {"chromSpec", OPTION_STRING|OPTION_MULTI},
-    {"table", OPTION_STRING},
     {NULL, 0}
 };
 
 static int noOrientInfoCnt = 0;
-
-static char *UCSC_RNA_ALN_TBL = "ucsc_rna_aln";
-static char *UCSC_EST_ALN_TBL = "ucsc_est_aln";
-
-static char *pslCreateSqliteTbl =
-    "CREATE TABLE {table} ("
-    "bin INT UNSIGNED NOT NULL,"
-    "matches INT UNSIGNED NOT NULL,"
-    "misMatches INT UNSIGNED NOT NULL,"
-    "repMatches INT UNSIGNED NOT NULL,"
-    "nCount INT UNSIGNED NOT NULL,"
-    "qNumInsert INT UNSIGNED NOT NULL,"
-    "qBaseInsert INT UNSIGNED NOT NULL,"
-    "tNumInsert INT UNSIGNED NOT NULL,"
-    "tBaseInsert INT UNSIGNED NOT NULL,"
-    "strand TEXT NOT NULL,"
-    "qName TEXT NOT NULL,"
-    "qSize INT UNSIGNED NOT NULL,"
-    "qStart INT UNSIGNED NOT NULL,"
-    "qEnd INT UNSIGNED NOT NULL,"
-    "tName TEXT NOT NULL,"
-    "tSize INT UNSIGNED NOT NULL,"
-    "tStart INT UNSIGNED NOT NULL,"
-    "tEnd INT UNSIGNED NOT NULL,"
-    "blockCount INT UNSIGNED NOT NULL,"
-    "blockSizes TEXT NOT NULL,"
-    "qStarts TEXT NOT NULL,"
-    "tStarts TEXT NOT NULL);";
-static char *pslInsertSqlite =
-    "INSERT INTO {table} VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22);";
-static char *pslCreateSqliteBinIndex =
-    "CREATE INDEX {table}_tName_bin ON {table} (tName, bin);";
-static char *pslCreateSqliteQnameIndex =
-    "CREATE INDEX {table}_qname ON {table} (qName);";
 
 /* chromosome spec */
 struct ChromSpec {
@@ -284,99 +248,11 @@ static struct psl *loadAligns(char *ucscDb, char *type, struct ChromSpec *chromS
     return psls;
 }
 
-/* autoSql pack an unsigned array into a string */
-static void strPackUnsignedArray(struct dyString *strBuf,
-                                 int count,
-                                 unsigned *values) {
-    dyStringClear(strBuf);
-    for (int i = 0; i < count; i++) {
-        dyStringPrintf(strBuf, "%d,", values[i]);
-    }
-}
-
-/* prepare insert statement */
-static sqlite3_stmt* prepPslInsert(sqlite3 *conn,
-                                   char *table) {
-    char *sql = sqliteEzSubTable(table, pslInsertSqlite);
-    sqlite3_stmt* stmt = NULL;
-    if (sqlite3_prepare_v2(conn, sql, -1, &stmt, NULL) != SQLITE_OK) {
-        errAbort("error preparing open sqlite3 statement %s: \"%s\"", sqlite3_errmsg(conn), sql);
-    }
-    freeMem(sql);
-    return stmt;
-}
-
-/* write a single PSL to the database */
-static void writePslToDb(struct psl *psl,
-                         sqlite3_stmt* stmt) {
-    pslVerb(3, "store", psl);
-    static struct dyString *blockSizesBuf = NULL, *qStartsBuf = NULL, *tStartsBuf = NULL;
-    if (blockSizesBuf == NULL) {
-        blockSizesBuf = dyStringNew(512);
-        qStartsBuf = dyStringNew(512);
-        tStartsBuf = dyStringNew(512);
-    }
-    strPackUnsignedArray(blockSizesBuf, psl->blockCount, psl->blockSizes);
-    strPackUnsignedArray(qStartsBuf, psl->blockCount, psl->qStarts);
-    strPackUnsignedArray(tStartsBuf, psl->blockCount, psl->tStarts);
-
-    sqliteExBindInt(stmt, 1, hFindBin(psl->tStart, psl->tEnd));
-    sqliteExBindInt(stmt, 2, psl->match);
-    sqliteExBindInt(stmt, 3, psl->misMatch);
-    sqliteExBindInt(stmt, 4, psl->repMatch);
-    sqliteExBindInt(stmt, 5, psl->nCount);
-    sqliteExBindInt(stmt, 6, psl->qNumInsert);
-    sqliteExBindInt(stmt, 7, psl->qBaseInsert);
-    sqliteExBindInt(stmt, 8, psl->tNumInsert);
-    sqliteExBindInt(stmt, 9, psl->tBaseInsert);
-    sqliteExBindText(stmt, 10, psl->strand);
-    sqliteExBindText(stmt, 11, psl->qName);
-    sqliteExBindInt(stmt, 12, psl->qSize);
-    sqliteExBindInt(stmt, 13, psl->qStart);
-    sqliteExBindInt(stmt, 14, psl->qEnd);
-    sqliteExBindText(stmt, 15, psl->tName);
-    sqliteExBindInt(stmt, 16, psl->tSize);
-    sqliteExBindInt(stmt, 17, psl->tStart);
-    sqliteExBindInt(stmt, 18, psl->tEnd);
-    sqliteExBindInt(stmt, 19, psl->blockCount);
-    sqliteExBindText(stmt, 20, dyStringContents(blockSizesBuf));
-    sqliteExBindText(stmt, 21, dyStringContents(qStartsBuf));
-    sqliteExBindText(stmt, 22, dyStringContents(tStartsBuf));
-
-    if (sqlite3_step(stmt) != SQLITE_DONE) {
-        errAbort("PSL insert failed %s", sqlite3_errmsg(sqlite3_db_handle(stmt)));
-    }
-    sqlite3_reset(stmt);
-}
-
-/* write a PSLs to the database */
-static void writePslsToDb(struct psl *psls, sqlite3 *conn, char *table) {
-    sqlite3_stmt* stmt = prepPslInsert(conn, table);
-    for (struct psl *psl = psls; psl != NULL; psl = psl->next) {
-        writePslToDb(psl, stmt);
-    }
-    if (sqlite3_finalize(stmt) != SQLITE_OK) {
-        errAbort("error finalizing sqlite3 statement %s", sqlite3_errmsg(conn));
-    }
-}
-
-/* load PSLs into sqlite database, adding bin */
-static void storeSqliteDb(struct psl *psls, char *sqliteDb, char *table) {
-    sqlite3 *conn = sqliteEzOpen(sqliteDb, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE);
-    sqliteEzExec(conn, "BEGIN TRANSACTION;");
-    sqliteEzCreateTable(conn, table, pslCreateSqliteTbl, TRUE);
-    writePslsToDb(psls, conn, table);
-    sqliteEzExec(conn, "COMMIT TRANSACTION;");
-    sqliteEzExecTable(conn, table, pslCreateSqliteBinIndex);
-    sqliteEzExecTable(conn, table, pslCreateSqliteQnameIndex);
-    sqliteEzClose(conn);
-}
-
 /* get rna or est alignments */
-static void tslGetUcscRnaAligns(char *ucscDb, char *type, char *sqliteDb, char *sqliteTable,
+static void tslGetUcscRnaAligns(char *ucscDb, char *type, char *pslFile,
                                 struct ChromSpec *chromSpecs) {
     struct psl *psls = loadAligns(ucscDb, type, chromSpecs);
-    storeSqliteDb(psls, sqliteDb, sqliteTable);
+    pslWriteAll(psls, pslFile, FALSE);
     // Don't bother: pslFreeList(&psls);
 }
 
@@ -393,9 +269,7 @@ int main(int argc, char** argv) {
     if (chromSpecStrs != NULL) {
         chromSpecs = parseChromSpecs(argv[1], chromSpecStrs);
     }
-    char *sqliteTable = optionVal("table",
-                                  (sameString(argv[2], "rna") ? UCSC_RNA_ALN_TBL : UCSC_EST_ALN_TBL));
-    tslGetUcscRnaAligns(argv[1], argv[2], argv[3], sqliteTable, chromSpecs);
+    tslGetUcscRnaAligns(argv[1], argv[2], argv[3], chromSpecs);
     if (noOrientInfoCnt > 0) {
         fprintf(stderr, "WARNING: %d orientInfo records not found", noOrientInfoCnt);
     }

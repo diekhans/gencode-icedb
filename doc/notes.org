@@ -27,7 +27,13 @@ https://www.ebi.ac.uk/fg/rnaseq/api/tsv/0/getRunsByOrganism/homo_sapiens/
 - database table combined or per experiment
 ** decision:
 - tabidx per PSL
+bgzip  foo.psl
+tabix --sequence 14 --begin 16 --end 17 --zero-based foo.psl.gz
 - store results in table
+
+
+
+* output:
 
 
 

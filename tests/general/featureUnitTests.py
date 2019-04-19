@@ -37,6 +37,7 @@ def getInputFile(base):
     "from input relative to test file"
     return os.path.join(os.path.dirname(__file__), "input", base)
 
+
 class GenomeSeqSrc(object):
     "caching genome reader"
 

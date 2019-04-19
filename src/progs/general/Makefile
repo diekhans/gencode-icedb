@@ -1,6 +1,8 @@
 ROOT = ../..
 
-SUBDIRS = faUcscToGencode genePredIntrons
+SUBDIRS = faUcscToGencode
+
+# not used: genePredIntrons
 
 all: ${SUBDIRS:%=%.all}
 

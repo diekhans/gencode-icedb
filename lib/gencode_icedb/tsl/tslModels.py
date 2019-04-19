@@ -66,7 +66,7 @@ class GenbankProblemReasonField(Field):
         return None if value is None else str(value)
 
     def python_value(self, value):
-        if (value is None) or (value is ''):
+        if (value is None) or (value == ''):
             return None
         else:
             return GenbankProblemReason(value)

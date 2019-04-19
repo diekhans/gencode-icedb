@@ -2,9 +2,7 @@
 Structure for loading spliceJunctionCollectEvidence along with
 gencode annotations for analysis.
 """
-from pycbio import tsv
 from pycbio.sys.symEnum import SymEnum
-from collections import defaultdict
 
 # FIXME: name confusion with supportAnalysis.GencodeIntronEvid
 
@@ -28,6 +26,7 @@ def intronEvidSupportLevel(numReads):
         return IntronSupportLevel.WEAK
     else:
         return IntronSupportLevel.NONE
+
 
 class SpliceJuncCat(SymEnum):
     consensus = 1
