@@ -37,7 +37,7 @@ supportCollectMkJobsTest: ${testDbDone} mkdirs
 
 
 ${testDbDone}: ${createTestData} ${testCases}
-	@mkdir -p output
+	@mkdir -p $(dir $@)
 	${createTestData} ${testCases} ${hsGencodeVer} ${hsUcscGenomeDb} ${hsEnsemblCDnaDb} ${hsGrcRefAssemblyReport} ${gencodeDb} ${evidDbDir}
 	touch $@
 
