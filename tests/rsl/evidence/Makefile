@@ -82,6 +82,7 @@ mkStarSplitsTest: mkdirs
 	${diff} expected/$@.md5 output/$@.md5
 
 # path in job file varies, just check for count (and make wc output portable)
+# batches must be run in order, hence muliple jobsToMake
 mkStarMergeTest: mkdirs
 	rm -rf output/$@.mergework
 	${rslMkStarSjOutSplits} --numprocs=2 input/set1.hs.stardir.tsv output/$@.mergework
@@ -89,7 +90,7 @@ mkStarMergeTest: mkdirs
 	wc -l output/$@.mergework/*.jobs | tawko '{print $$2,$$1}' > output/$@.jobs.cnt
 	${diff} expected/$@.jobs.cnt output/$@.jobs.cnt
 	${diff} expected/$@.run-batches output/$@.mergework/run-batches
-	for j in output/mkStarMergeTest.mergework/*.jobs ; do ${jobsToCmds} $$j | bash -e ; done
+	for j in output/mkStarMergeTest.mergework/*.jobs ; do ${jobsToMake} $$j output/$@.mk && ${MAKE} -f output/$@.mk ; done
 	${diff} expected/$@.merged.sjsup output/$@.mergework/001.merged/000.sjsup
 	bgzip -c output/mkStarMergeTest.mergework/001.merged/000.sjsup >output/$@.sjsup.gz
 	tabix -0 -p bed output/$@.sjsup.gz

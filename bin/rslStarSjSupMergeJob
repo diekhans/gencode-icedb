@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Job to do merge of one set of sort sj support files. Files
+# Job to do merge of one set of sorted sj support files. Files
 # supplied must be already sorted.
 #
 # 

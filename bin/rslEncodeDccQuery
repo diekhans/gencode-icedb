@@ -138,7 +138,7 @@ def collectMetadata(expr):
     replicate = expr["replicates"][0]
     return typeOps.annon(
         organism=getValue(replicate, ("library", "biosample", "organism", "name")),
-        tissue=getValue(replicate, ("library", "biosample", "biosample_term_name")),
+        tissue=getValue(replicate, ("library", "biosample", "biosample_ontology", "term_name")),
         description=expr["description"])
 
 

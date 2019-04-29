@@ -19,16 +19,23 @@ def parseArgs():
     return parser.parse_args()
 
 def parseCmd(jobCmd):
-    m = re.match("^(.+ ){check out exists (.+)}( .+)$", jobCmd)
+    m = re.match("^(.+ ){check out exists (.+)}(.*)$", jobCmd)
     if m is None:
         raise Exception("can't parse command: {}".format(jobCmd))
     return (m.group(1) + m.group(2) + m.group(3)), m.group(2)
 
+def safeTargetName(target):
+    """Target names containing colon don't work, so transforming them.  We
+    don't ever check file name, things just get rebuild, so this is OK"""
+    # FIXME: this can go away at some point
+    return target.replace(':', '_')
+
 def processCmd(jobCmd, mkfh):
     cmd, target = parseCmd(jobCmd)
-    print("{}:".format(target), file=mkfh)
+    starget = safeTargetName(target)
+    print("{}:".format(starget), file=mkfh)
     print("\t{}".format(cmd), file=mkfh)
-    return target
+    return starget
 
 def generateMakeFile(jobFile, mkfh):
     print("all: targets", file=mkfh)
