@@ -1,7 +1,7 @@
 ROOT = .
 include ${ROOT}/config.mk
 
-pyprogs = $(shell file -F $$'\t' bin/* tests/*/bin/* | awk '/Python script/{print $$1}')
+pyprogs = $(shell file -F $$'\t' bin/* tests/bin tests/*/bin/* | awk '/Python script/{print $$1}')
 
 all::
 	(cd src && ${MAKE})
@@ -21,3 +21,6 @@ clean::
 	rm -rf  ${OBJDIR}
 	find . -type f -name '*.pyc' -exec rm -f {} \;
 	find . -depth -type d -name __pycache__ -exec rmdir {} \;
+
+savebak:
+	savebak -git gencode-icedb

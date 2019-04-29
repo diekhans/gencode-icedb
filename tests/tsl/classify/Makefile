@@ -7,38 +7,38 @@ testCases = input/v28-test-cases.tsv
 
 allGenes = $(shell tawk 'NR>1 && !seen[$$4]{seen[$$4] = 1; print $$4}' ${testCases})
 
-gencodeDb = output/gencode.db
-evidDb = output/evid.db
+gencodeDb = output/db/gencode.db
+evidDbDir = output/db/evidDb
 createTestData = bin/createTestData
 
-testInputDone = output/test-input.done
+testDbDone = output/db/db.done
 
 test:: classifyUnitTests supportCollectGenesTest supportCollectMkJobsTest
 
-classifyUnitTests: ${testInputDone}
+classifyUnitTests: ${testDbDone}
 	${PYTHON} classifyUnitTests.py
 
-supportCollectGenesTest: ${testInputDone} mkdirs
-	${tslCollectGenbankSupport} ${gencodeDb} ${evidDb} --details=output/$@.details.tsv output/$@.tsl.tsv ENSG00000177663.13
-	${diff} expected/$@.tsl.tsv output/$@.tsl.tsv
+supportCollectGenesTest: ${testDbDone} mkdirs
+	${tslCollectSupport} ${gencodeDb} 02c995e3-372c-4cde-b216-5d3376c51988 ${evidDbDir}/RNA.psl.gz --details=output/$@.details.tsv output/$@.support.tsv ENSG00000177663.13
+	${diff} expected/$@.support.tsv output/$@.support.tsv
 	${diff} expected/$@.details.tsv output/$@.details.tsv
 
-supportCollectMkJobsTest: ${testInputDone} mkdirs
+supportCollectMkJobsTest: ${testDbDone} mkdirs
 	rm -rf output/$@.work output/$@.db
-	${tslCollectGenbankSupportMkJobs} --allDetails ${gencodeDb} ${evidDb} output/$@.work
-	sed -Ee 's#^.*(/bin/tslCollectGenbankSupport)#??\1#' output/$@.work/batch.jobs > output/$@.batch.jobs.cleaned
+	${tslCollectSupportMkJobs} --genesPerJob=2 --allDetails ${gencodeDb} ${evidDbDir} output/$@.work
+	sed -Ee 's#^.*(/bin/tslCollectSupport)#??\1#' output/$@.work/batch.jobs > output/$@.batch.jobs.cleaned
 	${diff} expected/$@.batch.jobs.cleaned output/$@.batch.jobs.cleaned
-	${jobsToCmds} output/$@.work/batch.jobs | bash -e  
-	ls -1 output/$@.work/results/ > output/$@.results.lst
+	${jobsToMake} output/$@.work/batch.jobs output/$@.mk
+	${MAKE} -f output/$@.mk
+	(cd output/$@.work/results && find . -type f) | sort > output/$@.results.lst
 	${diff} expected/$@.results.lst output/$@.results.lst
-	${tslCollectGenbankSupportFinishJobs} --saveDetails output/$@.work output/$@.db
-	$(call sqldumpdiff,gencode_transcript_support)
-	$(call sqldumpdiff,gencode_transcript_support_details)
+	${tslCollectSupportFinishJobs} --details=output/$@.support-eval-details.tsv output/$@.work output/$@.db
+	$(call sqldumpdiff,gencode_support_eval)
 
 
-${testInputDone}: ${createTestData} ${testCases}
+${testDbDone}: ${createTestData} ${testCases}
 	@mkdir -p output
-	${createTestData} ${testCases} ${hsGencodeVer} ${hsUcscGenomeDb} ${hsEnsemblCDnaDb} ${hsGrcRefAssemblyReport} ${evidDb} ${gencodeDb}
+	${createTestData} ${testCases} ${hsGencodeVer} ${hsUcscGenomeDb} ${hsEnsemblCDnaDb} ${hsGrcRefAssemblyReport} ${gencodeDb} ${evidDbDir}
 	touch $@
 
 

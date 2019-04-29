@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+import icedbProgSetup  # noqa: F401
+import os
+import argparse
+from pycbio.sys import fileOps
+from pycbio.tsv import TsvReader, tsvRowToDict
+from pycbio.sys import loggingOps
+from pycbio.db import sqliteOps
+from gencode_icedb.general.peeweeOps import peeweeBulkLoadSetup
+from gencode_icedb.tsl.supportDefs import TrascriptionSupportLevel, EvidenceSupport
+from gencode_icedb.tsl.supportEvalDb import SupportEvalResult, SupportEvidEvalResult
+from gencode_icedb.tsl.tslModels import tslConnect, tslClose, GencodeSupportEval
+
+bulk_size = 100   # size of each bulk insert
+
+
+def parseArgs():
+    desc = """Combine tslCollectSupport job results and store in an SQLite3 table."""
+    parser = argparse.ArgumentParser(description=desc)
+    loggingOps.addCmdOptions(parser)
+    parser.add_argument('--detailsTsv',
+                        help="""Save the details to this TSV file.""")
+    parser.add_argument('workDir',
+                        help="""directory contains results directory""")
+    parser.add_argument('resultsDb',
+                        help="""Sqlite database were results are stored."""
+                        """This does not append results, existing gencodesupport table is dropped.""")
+    opts = parser.parse_args()
+    loggingOps.setupFromCmd(opts)
+    return opts
+
+
+def bulkInsert(conn, tblcls, recs):
+    with conn.atomic():
+        for idx in range(0, len(recs), bulk_size):
+            tblcls.insert_many(recs[idx:idx + bulk_size]).execute()
+
+
+def readResultsTsv(resultsTsv):
+    # FIXME: lots of type conversion here
+    def rowParse(rdr, row):
+        return SupportEvalResult(*row)
+    return [rec._asdict() for rec in TsvReader(resultsTsv, rowClass=rowParse)]
+
+
+def dbInsertResults(conn, expectedTsvs):
+    GencodeSupportEval.create_table()
+    recs = []
+    for resultsTsv in expectedTsvs:
+        recs.extend(readResultsTsv(resultsTsv))
+    bulkInsert(conn, GencodeSupportEval, recs)
+
+
+def resultsTsvToDetailsPath(resultsTsv):
+    " *.tsl.tsv -> *.support-details.tsv"
+    # FIXME change to save both paths in expected as with utrAddCollect
+    p1 = os.path.splitext(os.path.splitext(resultsTsv)[0])[0]
+    return "{}.support-details.tsv".format(p1)
+
+
+def combineDetailsTsv(expectedTsvs, combinedDetailsTsv):
+    with open(combinedDetailsTsv, "w") as outFh:
+        fileOps.prRow(outFh, SupportEvidEvalResult.tsvHeader())
+        for expectedTsv in expectedTsvs:
+            for row in TsvReader(resultsTsvToDetailsPath(expectedTsv)):
+                fileOps.prRow(outFh, row.getRow())
+
+def tslCollectSupportFinishJobs(opts):
+    "main function"
+    expectedTsvs = fileOps.readFileLines(os.path.join(opts.workDir, "expected.lst"))
+    fileOps.ensureFileDir(opts.resultsDb)
+    conn = tslConnect(opts.resultsDb, create=True, readonly=False)
+    peeweeBulkLoadSetup(conn)
+    GencodeSupportEval.drop_table(fail_silently=True)
+    dbInsertResults(conn, expectedTsvs)
+    tslClose(conn)
+    if opts.detailsTsv is not None:
+        combineDetailsTsv(expectedTsvs, opts.detailsTsv)
+
+
+tslCollectSupportFinishJobs(parseArgs())

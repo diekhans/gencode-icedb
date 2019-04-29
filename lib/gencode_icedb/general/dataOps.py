@@ -51,6 +51,21 @@ def getReadsCatCommand(readsFile):
         return [fileOps.decompressCmd(readsFile), readsFile]
 
 
+def outCnv(v):
+    """convert to return empty if value is None, else str of v"""
+    return "" if v is None else str(v)
+
+
+def inCnv(v, t=str):
+    """"convert empty to None, pass through None, or else convert to the specified type"""
+    if (v is None) or (isinstance(v, str) and (v == '')):
+        return None
+    elif isinstance(v, t):
+        return t
+    else:
+        return t(v)
+
+
 class TmpUncompress(object):
     """Wrapper for possibly compressed files to pass to programs that can't read
     them."""

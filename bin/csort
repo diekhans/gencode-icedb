@@ -1,0 +1,4 @@
+#!/bin/bash
+set -beEu -o pipefail
+export LC_ALL=C
+exec sort "$@"

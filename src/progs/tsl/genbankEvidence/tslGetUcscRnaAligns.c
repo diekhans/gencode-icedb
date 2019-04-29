@@ -18,7 +18,6 @@ static void usage(char *msg) {
         "\n"
         "Options:\n"
         "  -verbose=n\n"
-        "  -table=tbl - load this table, defaults to ucsc_rna_aln or ucsc_est_aln.\n"
         "  -chromSpec=spec - restrict to this chrom or chrom range, for testing.\n"
         "   Maybe repeated. Duplicates caused by alignments being in multiple ranges\n"
         "   are discarded.\n"

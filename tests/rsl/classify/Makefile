@@ -31,7 +31,8 @@ supportCollectMkJobsTest: mkdirs
 	${rslGencodeCollectSupportMkJobs} --maxgenes=10 ${genomeSeqsSpecs} ${gencodeTestDb} ${sjTestDb} output/$@.work
 	sed -Ee 's#^.*(/bin/rslGencodeCollectSupport)#??\1#' output/$@.work/batch.jobs > output/$@.batch.jobs.cleaned
 	${diff} expected/$@.batch.jobs.cleaned output/$@.batch.jobs.cleaned
-	${jobsToCmds} output/$@.work/batch.jobs | bash -e  
+	${jobsToMake} output/$@.work/batch.jobs output/$@.mk
+	${MAKE} -f output/$@.mk
 	ls -1 output/$@.work/results/ > output/$@.results.lst
 	${diff} expected/$@.results.lst output/$@.results.lst
 	${rslGencodeCollectSupportFinishJobs} output/$@.work output/$@.db

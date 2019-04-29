@@ -20,7 +20,7 @@ def parseArgs():
     parser.add_argument('mergeWorkDir',
                         help="""Directory for doing split and merge.  Chrom splits should be in mergeWorkDir/byChrom""")
     opts = parser.parse_args()
-    loggingOps.setupFromCmd(opts, sys.argv[0])
+    loggingOps.setupFromCmd(opts)
     return opts
 
 

@@ -1,10 +1,9 @@
 """
 PeeWee data models for RNA-Seq metadata and splice junctions.
 """
-from peewee import Proxy, Model, Field, PrimaryKeyField, CharField, IntegerField
+from peewee import Proxy, Model, Field, PrimaryKeyField, CharField, IntegerField, UUIDField
 from gencode_icedb.general.peeweeOps import peeweeConnect, peeweeClose, peeweeClassToTableName, PeeweeModelMixins
-from gencode_icedb.tsl.evidenceDb import EvidenceSource
-from gencode_icedb.tsl.supportDefs import TrascriptionSupportLevel, EvidenceSupport, GenbankProblemReason
+from gencode_icedb.tsl.supportDefs import TrascriptionSupportLevel, EvidenceSupport
 
 _database_proxy = Proxy()
 
@@ -58,25 +57,31 @@ class EvidenceSupportField(Field):
         return EvidenceSupport(value)
 
 
-class GenbankProblemReasonField(Field):
-    """A field storing an GenbankProblemReason python enumeration as a string in the database."""
-    db_field = 'text'
-
-    def db_value(self, value):
-        return None if value is None else str(value)
-
-    def python_value(self, value):
-        if (value is None) or (value == ''):
-            return None
-        else:
-            return GenbankProblemReason(value)
-
-
 class BaseModel(Model, PeeweeModelMixins):
     "base for peewee models, used to bind proxy"
     class Meta:
         database = _database_proxy
         table_function = peeweeClassToTableName
+
+
+class GencodeSupportEval(BaseModel):
+    """Support for GENCODE transcripts from various evidence set.
+    """
+    id = PrimaryKeyField()
+    transcriptId = CharField(index=True,
+                             help_text="""GENCODE trancript id""")
+    evidSetUuid = UUIDField(index=True,
+                            help_text="""UUID of the evidence set""")
+    support = EvidenceSupportField(help_text="""Best support by this evidence set""")
+    evidCount = IntegerField(help_text="""Number of evidence alignments at this support level.""")
+    offset5 = IntegerField(help_text="""Offset of the start of the first evidence exon to the start of """
+                           """annotation.  Positive indicates the evidence is longer than annotation, """
+                           """negative is shorter. This is in the direction of transcription.  This is """
+                           """the longest support of any supporting evidence.""")
+    offset3 = IntegerField(help_text="""Offset of the end of the first evidence exon to the end of """
+                           """annotation.  Interpretation is the same as offset3.""")
+    extend5Exons = IntegerField(help_text="""Maximum extending 5' number of exons.""")
+    extend3Exons = IntegerField(help_text="""Maximum extending 3' number of exons.""")
 
 
 class GencodeTranscriptSupport(BaseModel):
@@ -88,18 +93,3 @@ class GencodeTranscriptSupport(BaseModel):
                                           help_text="""GENCODE TSL""")
     intLevel = IntegerField(index=True,
                             help_text="""GENCODE TSL as an integer""")
-
-
-class GencodeTranscriptSupportDetails(BaseModel):
-    """Transcript-level support"""
-    id = PrimaryKeyField()
-    transcriptId = CharField(index=True,
-                             help_text="""GENCODE trancript id""")
-    evidSrc = EvidenceSourceField(index=True,
-                                  help_text="""Evidence source""")
-    evidId = CharField(index=True,
-                       help_text="""Evidence identifier""")
-    evidSupport = EvidenceSupportField(index=False,
-                                       help_text="""Support provided by this piece of evidence""")
-    suspect = GenbankProblemReasonField(index=False, null=True,
-                                        help_text="""If not NULL evidence is suspect with this reason""")

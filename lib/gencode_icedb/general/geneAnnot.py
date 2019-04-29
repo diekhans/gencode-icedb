@@ -1,6 +1,7 @@
 """
 Annotation of a gene locus.
 """
+import copy
 from pycbio.hgdata.coords import Coords
 from pycbio.sys.objDict import ObjDict
 
@@ -56,7 +57,8 @@ def _obtainGene(transAnnot, byGeneIdChrom):
     key = (transAnnot.chrom.name, transAnnot.attrs.geneId)
     geneAnnot = byGeneIdChrom.get(key)
     if geneAnnot is None:
-        geneAnnot = byGeneIdChrom[key] = GeneAnnotation(transAnnot.attrs.geneId)
+        geneAnnot = byGeneIdChrom[key] = GeneAnnotation(transAnnot.attrs.geneId,
+                                                        attrs=copy.deepcopy(transAnnot.attrs))
     return geneAnnot
 
 

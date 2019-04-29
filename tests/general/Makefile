@@ -18,7 +18,6 @@ grch38Fa = ../data/grch38/GRCh38.fa.gz
 test:   featureUnitTests \
 	ucscGencodeDbLoadTest \
 	faTests \
-	genePredIntronsTests \
 	loadPslAlignsTest
 	@echo "Note: run make mondoTest for heavy-duty tests"
 	@echo "Note: run make ucscEnsemblCmp to compare import from UCSC database (via GTF) or direct from Ensembl database"
@@ -57,16 +56,6 @@ faTests: ucscGencodeFaTest
 ucscGencodeFaTest: mkdirs
 	${faUcscToGencode} input/ucscGenome.fa input/ucsc2GencodeNames.tsv output/$@.fa
 	diff expected/$@.fa output/$@.fa
-
-##
-# tests of program to get introns for genePreds
-##
-genePredIntronsTests: genePredIntronsSmallTest
-
-genePredIntronsSmallTest: mkdirs
-	faToTwoBit  input/small-chr22.fa output/$@.2bit
-	${genePredIntrons} input/small-gencode.gp output/$@.2bit output/$@.tsv
-	diff expected/$@.tsv output/$@.tsv
 
 loadPslAlignsTest: mkdirs
 	${icedbLoadPslAligns} --table=$@ input/ucsc-mrnaV28.psl output/$@.db

@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+"""
+Get metadata and alignments from GENBANK RNAs and ESTs
+"""
+import icedbProgSetup  # noqa: F401
+import os
+import sys
+import argparse
+from pycbio.hgdata.coords import Coords
+from pycbio.sys import fileOps, loggingOps
+import pipettor
+import logging
+
+
+def parseArgs():
+    desc = """Get current GENBANK evidence from UCSC and Ensembl add it to the evidence database.
+    """
+    parser = argparse.ArgumentParser(description=desc)
+    loggingOps.addCmdOptions(parser)
+    parser.add_argument('--hgFixedDb', default="hgFixed",
+                        help="""hgFixed database to use to get sizes for Ensembl cDNAs""")
+    parser.add_argument('--chromSpec', action="append", dest="chromSpecs", type=Coords.parse, default=[],
+                        help="""Restrict to this chromosome or chromosome range (UCSC chromosome naming), maybe repeated, used for testing.""")
+    parser.add_argument('ucscDb',
+                        help="""UCSC GENOME database to use (located via ~/.hg.conf)""")
+    parser.add_argument('ensemblCDnaDb',
+                        help="""Ensembl cDNA database to use""")
+    parser.add_argument('assemblyReport',
+                        help="""NCBI assembly report for mapping chromosome names""")
+    parser.add_argument('evidDbDir',
+                        help="""evidence database directory""")
+    opts = parser.parse_args()
+    loggingOps.setupFromCmd(opts)
+    pipettor.setDefaultLogger(logging.getLogger())
+    return opts
+
+
+def tslGetUcscRnaAligns(ucscDb, type, chromSpecs, pslFile):
+    pipettor.run(["tslGetUcscRnaAligns", ucscDb, type, pslFile] + ["-chromSpec={}".format(c) for c in chromSpecs])
+
+
+def tslGetEnsemblRnaAligns(ensemblCDnaDb, assemblyReport, hgFixedDb, chromSpecs, pslFile):
+    pipettor.run(["tslGetEnsemblRnaAligns", "--hgFixedDb={}".format(hgFixedDb),
+                  ensemblCDnaDb, assemblyReport, pslFile] + ["--chromSpec={}".format(c) for c in chromSpecs])
+
+
+def buildTabixDb(pslUncompTmp, pslFile):
+    "compress and index in a atomic manner"
+    pslCompTmp = pslUncompTmp + ".gz"
+    pipettor.run(["bgzip", "--force", pslUncompTmp])
+    pipettor.run(["tabix", "--force", "--sequence=14", "--begin=16", "--end=17", "--zero-based", pslCompTmp])
+    fileOps.atomicInstall(pslCompTmp + ".tbi", pslFile + ".tbi")
+    fileOps.atomicInstall(pslCompTmp, pslFile)  # must be last
+
+
+def getRnaAligns(ucscDb, ensemblCDnaDb, assemblyReport, hgFixedDb, chromSpecs, pslFile):
+    """combine UCSC and Ensembl RNA alignments, making them unique, although still might
+    have multiple near-identical alignments from the two database.  pslFile must end in
+    .gz, as it will be bgzip-ed."""
+    tmpUcscRnaPsl = fileOps.tmpFileGet(prefix="ucsc_rna", suffix=".psl")
+    tslGetUcscRnaAligns(ucscDb, "rna", chromSpecs, tmpUcscRnaPsl)
+
+    tmpEnsemblRnaPsl = fileOps.tmpFileGet(prefix="ensembl_rna", suffix=".psl")
+    tslGetEnsemblRnaAligns(ensemblCDnaDb, assemblyReport, hgFixedDb, chromSpecs, tmpEnsemblRnaPsl)
+
+    pslUncompTmp = fileOps.atomicTmpFile(os.path.splitext(pslFile)[0])
+    # csort wrapper to prevent locale from causing problems
+    pipettor.run([("csort", "-u", tmpUcscRnaPsl, tmpEnsemblRnaPsl),
+                  ("csort", "-k14,14", "-k16,16n", "-k17,17n")],
+                 stdout=pslUncompTmp)
+    buildTabixDb(pslUncompTmp, pslFile)
+    fileOps.rmFiles(tmpUcscRnaPsl, tmpEnsemblRnaPsl)
+
+
+def getEstAligns(ucscDb, chromSpecs, pslFile):
+    pslUncompTmp = fileOps.atomicTmpFile(os.path.splitext(pslFile)[0])
+    tslGetUcscRnaAligns(ucscDb, "est", chromSpecs, pslUncompTmp)
+    buildTabixDb(pslUncompTmp, pslFile)
+
+
+def tslGetGenbankEvid(opts):
+    fileOps.ensureDir(opts.evidDbDir)
+    getRnaAligns(opts.ucscDb, opts.ensemblCDnaDb, opts.assemblyReport, opts.hgFixedDb, opts.chromSpecs,
+                 os.path.join(opts.evidDbDir, "rna.psl.gz"))
+    getEstAligns(opts.ucscDb, opts.chromSpecs,
+                 os.path.join(opts.evidDbDir, "est.psl.gz"))
+
+
+tslGetGenbankEvid(parseArgs())

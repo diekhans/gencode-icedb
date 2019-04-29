@@ -27,41 +27,29 @@ def parseArgs():
                         help="""Ensembl database for cDNAs""")
     parser.add_argument('assemblyReport',
                         help="""NCBI assembly report for mapping chromosome names""")
-    parser.add_argument('evidDb',
-                        help="""evidence database to load alignments into""")
     parser.add_argument('gencodeDb',
                         help="""database to load gencode annotations into""")
+    parser.add_argument('evidDbDir',
+                        help="""evidence database directory""")
     return parser.parse_args()
 
 
-def mkChromSpecs(opt, ranges):
-    return ["{}={}".format(opt, str(r)) for r in ranges]
+def tslGetGenbankEvid(ucscDb, ensemblCDnaDb, assemblyReport, ranges, evidDbDir):
+    pipettor.run(["tslGetGenbankEvid", ucscDb, ensemblCDnaDb, assemblyReport, evidDbDir]
+                 + ["--chromSpec={}".format(str(r)) for r in ranges])
 
 
-def getUcscAlns(ucscDb, alntype, ranges, evidDbFile):
-    cmd = ["tslGetUcscRnaAligns", ucscDb, alntype, evidDbFile] + mkChromSpecs("-chromSpec", ranges)
-    pipettor.run(cmd)
-
-
-def getEnsemblAlns(ensemblCDnaDb, assemblyReport, ranges, evidDbFile):
-    cmd = ["tslGetEnsemblRnaAligns", ensemblCDnaDb, assemblyReport, evidDbFile] + mkChromSpecs("--chromSpec", ranges)
-    pipettor.run(cmd)
-
-
-def getProblemCases(ucscDb, evidDbFile):
+def getProblemCases(ucscDb, evidDbDir):
     tsvPre = "hs" if ucscDb.startswith("hg") else "mm"
     probTsv = os.path.join(icedbProgSetup.rootDir, "data", "{}.genbank-problem-cases.tsv".format(tsvPre))
-    cmd = ["tslGenbankProblemCasesLoad", probTsv, evidDbFile]
-    pipettor.run(cmd)
+    pipettor.run(["tslGenbankProblemCasesLoad", probTsv, evidDbDir])
 
 
-def buildEvidDb(testCases, assemblyReport, ucscDb, ensemblCDnaDb, evidDbFile):
-    fileOps.rmFiles(evidDbFile)
+def buildEvidDb(testCases, ucscDb, ensemblCDnaDb, assemblyReport, evidDbDir):
+    fileOps.rmTree(evidDbDir)
     ranges = testCases.getRanges()
-    getUcscAlns(ucscDb, "rna", ranges, evidDbFile)
-    getUcscAlns(ucscDb, "est", ranges, evidDbFile)
-    getEnsemblAlns(ensemblCDnaDb, assemblyReport, ranges, evidDbFile)
-    getProblemCases(ucscDb, evidDbFile)
+    tslGetGenbankEvid(ucscDb, ensemblCDnaDb, assemblyReport, ranges, evidDbDir)
+    #FIXME: getProblemCases(ucscDb, evidDbDir)
 
 
 def writeTransIdsTmpFile(testCases):
@@ -87,15 +75,15 @@ def buildGencodeDb(testCases, ucscDb, gencodeVersion, gencodeDb):
         os.unlink(transIdTmp)
 
 
-def createTestData(args):
-    if args.debug:
+def createTestData(opts):
+    if opts.debug:
         logging.getLogger().setLevel(logging.DEBUG)
         pipettor.setDefaultLogger(logging.getLogger())
         pipettor.setDefaultLogLevel(logging.DEBUG)
         logging.debug("Debugging enabled")  # FIXME for some reason, this is required to start output
-    testCases = TestCases(args.testCaseTsv)
-    buildGencodeDb(testCases, args.ucscDb, args.gencodeVersion, args.gencodeDb)
-    buildEvidDb(testCases, args.assemblyReport, args.ucscDb, args.ensemblCDnaDb, args.evidDb)
+    testCases = TestCases(opts.testCaseTsv)
+    buildGencodeDb(testCases, opts.ucscDb, opts.gencodeVersion, opts.gencodeDb)
+    buildEvidDb(testCases, opts.ucscDb, opts.ensemblCDnaDb, opts.assemblyReport, opts.evidDbDir)
 
 
 createTestData(parseArgs())

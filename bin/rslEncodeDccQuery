@@ -4,6 +4,7 @@ import os
 import sys
 import argparse
 from pycbio.sys import fileOps, typeOps, loggingOps
+from gencode_icedb.general.dataOps import outCnv
 import urllib
 import requests  # from pip
 import json
@@ -31,17 +32,13 @@ def parseArgs():
     parser.add_argument('selectedUrls',
                         help="""URLs for downloading written to this file""")
     opts = parser.parse_args()
-    loggingOps.setupFromCmd(opts, sys.argv[0])
+    loggingOps.setupFromCmd(opts)
     return opts
 
 
 selectedTsvHeader = ("runname", "organism", "tissue", "description",
                      "readsfileurl", "readsfile", "md5sum", "readlength",
                      "readsfile2url", "readsfile2", "md5sum2")
-
-
-def emptyIfNone(v):
-    return "" if v is None else v
 
 
 def buildUrl(scientificName, limit):
@@ -152,8 +149,8 @@ def processExpr(expr, minReadLength, selectedTsvFh, selectedUrlsFh):
     for fastq in fastqs:
         fileOps.prRowv(selectedTsvFh, fastq.runname, metadata.organism, metadata.tissue,
                        metadata.description, fastq.readsfileurl, fastq.readsfile, fastq.md5sum,
-                       fastq.readlength, emptyIfNone(fastq.readsfile2url),
-                       emptyIfNone(fastq.readsfile2), emptyIfNone(fastq.md5sum2))
+                       fastq.readlength, outCnv(fastq.readsfile2url),
+                       outCnv(fastq.readsfile2), outCnv(fastq.md5sum2))
         fileOps.prRowv(selectedUrlsFh, fastq.readsfileurl)
         if fastq.readsfile2url is not None:
             fileOps.prRowv(selectedUrlsFh, fastq.readsfile2url)

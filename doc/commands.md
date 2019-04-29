@@ -22,10 +22,10 @@ rslStarSjOutSplit
 rslStarSjSupMergeJob
 tslGbffGetProblemCases
 tslGenbankProblemCasesLoad
-tslCollectGenbankSupport
-tslCollectGenbankSupportFinishJobs
-tslCollectGenbankSupportJob
-tslCollectGenbankSupportMkJobs
+tslCollectSupport
+tslCollectSupportFinishJobs
+tslCollectSupportJob
+tslCollectSupportMkJobs
 tslGetEnsemblRnaAligns
 tslGetUcscRnaAligns
 ucscGencodeDbLoad

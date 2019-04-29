@@ -24,8 +24,4 @@ sys.path.insert(0, os.path.join(rootDir, "lib"))
 
 # executable PATH, make sure we can override kent commands and
 # we get ~markd commands rather than installed ones.
-os.environ["PATH"] = ":".join([binDir,
-                               os.path.expanduser("~markd/opt/current/x86_64/bin"),
-                               os.path.expanduser("~/kent/bin/x86_64"),
-                               "/cluster/bin/x86_64",
-                               os.environ["PATH"]])
+os.environ["PATH"] = ":".join([binDir, os.environ["PATH"]])

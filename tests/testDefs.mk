@@ -2,8 +2,8 @@
 export LC_ALL=C
 .SECONDARY:
 
-# remove {make out exists ... } from job file so it can be executed as commands
-jobsToCmds = sed -Ee 's/\{check out exists (.+)\}/\1/'
+# remove {make out exists ... } from job file and create Makefile to run them
+jobsToMake = ${ROOT}/tests/bin/jobsToMake
 
 # basic command to dump a database created by a test
 sqldumpcmd = sqlite3 -header -batch output/$@.db

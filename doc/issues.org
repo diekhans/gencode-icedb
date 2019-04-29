@@ -27,3 +27,4 @@
 * Make TSL thresholds configurable
 * is genePredIntrons needed any more?
 * Add TSL override list, for things like 3-base exon
+* change tranAnnot .chrom name to .chromRange or .chromCoords, or chromLoc

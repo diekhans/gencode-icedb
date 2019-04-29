@@ -23,7 +23,7 @@ def parseArgs():
                         help="""TSV file with column `sjout', which has the path to the splice junction file, which maybe compressed."""
                         """The path is relative to the directory containing starResultsTsv""")
     opts = parser.parse_args()
-    loggingOps.setupFromCmd(opts, sys.argv[0])
+    loggingOps.setupFromCmd(opts)
     return opts
 
 

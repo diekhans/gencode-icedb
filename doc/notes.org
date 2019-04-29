@@ -35,5 +35,10 @@ tabix --sequence 14 --begin 16 --end 17 --zero-based foo.psl.gz
 
 * output:
 
+GenbankProblemCases(self.conn)
 
+* tsl reorg
+- evidenceMeta
+- evidenceAligns
+- supportEval
 
