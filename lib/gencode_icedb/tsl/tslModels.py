@@ -35,17 +35,6 @@ class TrascriptionSupportLevelField(Field):
         return TrascriptionSupportLevel(value)
 
 
-class EvidenceSourceField(Field):
-    """A field storing an EvidenceSource python enumeration as a string in the database."""
-    db_field = 'text'
-
-    def db_value(self, value):
-        return str(value)
-
-    def python_value(self, value):
-        return EvidenceSource(value)
-
-
 class EvidenceSupportField(Field):
     """A field storing an EvidenceSupport python enumeration as a string in the database."""
     db_field = 'text'
@@ -82,6 +71,14 @@ class GencodeSupportEval(BaseModel):
                            """annotation.  Interpretation is the same as offset3.""")
     extend5Exons = IntegerField(help_text="""Maximum extending 5' number of exons.""")
     extend3Exons = IntegerField(help_text="""Maximum extending 3' number of exons.""")
+
+
+class GencodeGenbankSupportEval(GencodeSupportEval):
+    """Support for GENCODE transcripts from GENBANK evidence.  This is handled
+    differently due to GENBANK being a combination of UCSC and Ensembl RNA alignments
+    and UCSC dbEST alignments and are not versioned as a set.
+    """
+    pass
 
 
 class GencodeTranscriptSupport(BaseModel):

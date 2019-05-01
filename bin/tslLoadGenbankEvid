@@ -4,12 +4,12 @@ Get metadata and alignments from GENBANK RNAs and ESTs
 """
 import icedbProgSetup  # noqa: F401
 import os
-import sys
 import argparse
-from pycbio.hgdata.coords import Coords
-from pycbio.sys import fileOps, loggingOps
 import pipettor
 import logging
+from pycbio.hgdata.coords import Coords
+from pycbio.sys import fileOps, loggingOps
+from gencode_icedb.tsl.evidenceDataDb import evidenceAlignsIndexPsl
 
 
 def parseArgs():
@@ -48,15 +48,15 @@ def buildTabixDb(pslUncompTmp, pslFile):
     "compress and index in a atomic manner"
     pslCompTmp = pslUncompTmp + ".gz"
     pipettor.run(["bgzip", "--force", pslUncompTmp])
-    pipettor.run(["tabix", "--force", "--sequence=14", "--begin=16", "--end=17", "--zero-based", pslCompTmp])
+    evidenceAlignsIndexPsl(pslCompTmp)
     fileOps.atomicInstall(pslCompTmp + ".tbi", pslFile + ".tbi")
     fileOps.atomicInstall(pslCompTmp, pslFile)  # must be last
 
 
 def getRnaAligns(ucscDb, ensemblCDnaDb, assemblyReport, hgFixedDb, chromSpecs, pslFile):
-    """combine UCSC and Ensembl RNA alignments, making them unique, although still might
-    have multiple near-identical alignments from the two database.  pslFile must end in
-    .gz, as it will be bgzip-ed."""
+    """Combine UCSC and Ensembl RNA alignments, making them unique, as would
+    happen with have multiple near-identical alignments from the two
+    database. File name should have .gz, as it will be bgzip-ed."""
     tmpUcscRnaPsl = fileOps.tmpFileGet(prefix="ucsc_rna", suffix=".psl")
     tslGetUcscRnaAligns(ucscDb, "rna", chromSpecs, tmpUcscRnaPsl)
 
@@ -78,7 +78,7 @@ def getEstAligns(ucscDb, chromSpecs, pslFile):
     buildTabixDb(pslUncompTmp, pslFile)
 
 
-def tslGetGenbankEvid(opts):
+def tslLoadGenbankEvid(opts):
     fileOps.ensureDir(opts.evidDbDir)
     getRnaAligns(opts.ucscDb, opts.ensemblCDnaDb, opts.assemblyReport, opts.hgFixedDb, opts.chromSpecs,
                  os.path.join(opts.evidDbDir, "RNA.psl.gz"))
@@ -86,4 +86,4 @@ def tslGetGenbankEvid(opts):
                  os.path.join(opts.evidDbDir, "EST.psl.gz"))
 
 
-tslGetGenbankEvid(parseArgs())
+tslLoadGenbankEvid(parseArgs())

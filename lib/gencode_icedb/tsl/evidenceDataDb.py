@@ -7,6 +7,7 @@ from pycbio.sys.objDict import ObjDict
 from pycbio.hgdata.psl import Psl
 from gencode_icedb.general.evidFeatures import EvidencePslFactory
 from gencode_icedb.general.transFeatures import ExonFeature
+import pipettor
 
 
 class EvidenceSource(SymEnum):
@@ -22,12 +23,18 @@ class EvidenceSource(SymEnum):
     ISOSEQ_CDNA = auto()
 
 
+def evidenceAlignsIndexPsl(pslFile):
+    """Index the pslFile. It must be sorted."""
+    pipettor.run(["tabix", "--force", "--sequence=14", "--begin=16", "--end=17", "--zero-based", pslFile])
+
+
 class EvidenceAlignsReader(object):
     """Object for accessing overlapping alignment evidence data from a tabix file.
     """
     def __init__(self, evidSetUuid, evidPslTabix, genomeReader=None, genbankProblems=None):
         self.evidSetUuid = evidSetUuid
         self.tabix = pysam.TabixFile(evidPslTabix)
+        self.contigs = frozenset(self.tabix.contigs)
         self.nameSubset = None  # used for testing and debugging.
         self.genbankProblems = genbankProblems
         self.evidFactory = EvidencePslFactory(genomeReader)
@@ -68,14 +75,17 @@ class EvidenceAlignsReader(object):
         else:
             return self._negStrands
 
-    def genOverlapping(self, coords, transcriptionStrand=None, minExons=0):
-        """Generator of overlapping alignments as TranscriptFeatures, possibly filtered
-        by nameSubset.
-        """
-        strands = self._getSelectStrands(transcriptionStrand)
+    def _genOverlapping(self, coords, strands, minExons):
         for line in self.tabix.fetch(coords.name, coords.start, coords.end):
             psl = Psl.fromRow(line.split('\t'))
             if self._usePsl(psl, strands):
                 trans = self._makeTrans(psl)
                 if len(trans.getFeaturesOfType(ExonFeature)) >= minExons:
                     yield trans
+
+    def genOverlapping(self, coords, transcriptionStrand=None, minExons=0):
+        """Generator of overlapping alignments as TranscriptFeatures, possibly filtered
+        by nameSubset.
+        """
+        if coords.name in self.contigs:
+            yield from self._genOverlapping(coords, self._getSelectStrands(transcriptionStrand), minExons)

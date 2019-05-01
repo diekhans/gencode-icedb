@@ -1,0 +1,48 @@
+#!/usr/bin/env python3
+"""
+Get metadata and alignments from GENBANK RNAs and ESTs
+"""
+import icedbProgSetup  # noqa: F401
+import os
+import argparse
+import pipettor
+import logging
+from pycbio.sys import fileOps, loggingOps
+from gencode_icedb.tsl.evidenceDataDb import evidenceAlignsIndexPsl
+
+
+def parseArgs():
+    desc = """Load an PSL alignment file into the evidence database.
+    """
+    parser = argparse.ArgumentParser(description=desc)
+    loggingOps.addCmdOptions(parser)
+    parser.add_argument('srcPsl',
+                        help="""input PSL""")
+    parser.add_argument('evidDbDir',
+                        help="""evidence database directory""")
+    parser.add_argument('evidSetName',
+                        help="""evidence set name""")
+    opts = parser.parse_args()
+    loggingOps.setupFromCmd(opts)
+    pipettor.setDefaultLogger(logging.getLogger())
+    return opts
+
+
+def buildTabixDb(srcPsl, evidDbDir, evidSetName):
+    "sort, compress and index in a atomic manner"
+    evidPsl = os.path.join(evidDbDir, evidSetName + ".psl.gz")
+    evidTmpPsl = fileOps.atomicTmpFile(evidPsl)
+    pipettor.run([[fileOps.decompressCmd(srcPsl), srcPsl],
+                  ["csort", "-k14,14", "-k16,16n", "-k17,18n"],
+                  ["bgzip", "--force"]], stdout=evidTmpPsl)
+    evidenceAlignsIndexPsl(evidTmpPsl)
+    fileOps.atomicInstall(evidTmpPsl + ".tbi", evidPsl + ".tbi")
+    fileOps.atomicInstall(evidTmpPsl, evidPsl)  # must be last
+
+
+def tslLoadAlignEvid(opts):
+    fileOps.ensureDir(opts.evidDbDir)
+    buildTabixDb(opts.srcPsl, opts.evidDbDir, opts.evidSetName)
+
+
+tslLoadAlignEvid(parseArgs())

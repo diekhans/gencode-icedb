@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import icedbProgSetup  # noqa: F401
-import sys
 import argparse
 from gencode_icedb.rsl.rslModels import rslConnect, rslClose, RunMetadata, MappingMetadata, MappingParameters
 from gencode_icedb.rsl.rslModelCache import MappingParametersCache

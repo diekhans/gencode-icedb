@@ -24,6 +24,10 @@ def parseArgs():
                         help="""file containing subset of ids""")
     parser.add_argument("--genesPerJob", type=int, default=8,
                         help="""number of genes in a job""")
+    parser.add_argument("--evidSetName", default="genbank",
+                        help="""name of evidence, with 'genbank' getting special handling to combine RNAs and ESTs:""")
+    parser.add_argument("--evidSetUuid",
+                        help="""For non-genbank evidence, this is UUID to added to output""")
     parser.add_argument('gencodeDb',
                         help="""GENCODE sqlite3 database""")
     parser.add_argument('evidDbDir',
@@ -31,6 +35,8 @@ def parseArgs():
     parser.add_argument('workDir',
                         help="""directory where jobFile and temporary results are stored""")
     opts = parser.parse_args()
+    if (opts.evidSetName == "genbank") and (opts.evidSetUuid is not None):
+        parser.error("can't specify --evidSetUuid if --evidSetName is 'genbank'")
     if opts.allDetails:
         opts.details = True
     loggingOps.setupFromCmd(opts)
@@ -48,9 +54,9 @@ class JobGenerator(object):
         self.resultDir = os.path.join(workDir, "results")
         self.suppProg = os.path.join(icedbProgSetup.binDir, "tslCollectSupportJob")
 
-    def _generateJob(self, gencodeIds, evidSetUuid, evidName, evidPslTabix, batchFh, expectedFh):
-        resultTsv = os.path.join(self.resultDir, evidName, "{}.support.tsv".format(gencodeIds[0]))
-        detailsTsv = os.path.join(self.resultDir, evidName, "{}.support-details.tsv".format(gencodeIds[0]))
+    def _generateJob(self, gencodeIds, evidSetUuid, evidSetName, evidPslTabix, batchFh, expectedFh):
+        resultTsv = os.path.join(self.resultDir, evidSetName, "{}.support.tsv".format(gencodeIds[0]))
+        detailsTsv = os.path.join(self.resultDir, evidSetName, "{}.support-details.tsv".format(gencodeIds[0]))
         cmd = [self.suppProg, self.gencodeDb, evidSetUuid, evidPslTabix]
         if self.details:
             cmd.append("--detailsTsv={}".format(detailsTsv))
@@ -61,17 +67,17 @@ class JobGenerator(object):
         print(*cmd, file=batchFh)
         print(resultTsv, file=expectedFh)
 
-    def generateEvidJobs(self, gencodeIds, evidSetUuid, evidName, batchFh, expectedFh):
-        evidPslTabix = os.path.join(self.evidDbDir, evidName + ".psl.gz")
+    def generateJobs(self, gencodeIds, evidSetUuid, evidSetName, batchFh, expectedFh):
+        evidPslTabix = os.path.join(self.evidDbDir, evidSetName + ".psl.gz")
         iNext = 0
         while iNext < len(gencodeIds):
-            self._generateJob(gencodeIds[iNext: iNext + self.genesPerJob], evidSetUuid, evidName, evidPslTabix, batchFh, expectedFh)
+            self._generateJob(gencodeIds[iNext: iNext + self.genesPerJob], evidSetUuid, evidSetName, evidPslTabix, batchFh, expectedFh)
             iNext += self.genesPerJob
 
-    def generateJobs(self, gencodeIds, batchFh, expectedFh):
+    def generateGenbankJobs(self, gencodeIds, batchFh, expectedFh):
         for evidType in (EvidenceType.RNA, EvidenceType.EST):
             evidSetUuid = fakeGenbankUuid[evidType]  # FIXME: tmp
-            self.generateEvidJobs(gencodeIds, evidSetUuid, str(evidType), batchFh, expectedFh)
+            self.generateJobs(gencodeIds, evidSetUuid, str(evidType), batchFh, expectedFh)
 
 
 def tslCollectSupportMkJobs(opts):
@@ -91,7 +97,10 @@ def tslCollectSupportMkJobs(opts):
     batchFile = os.path.join(opts.workDir, "batch.jobs")
     expectedLst = os.path.join(opts.workDir, "expected.lst")
     with open(batchFile, "w") as batchFh, open(expectedLst, "w") as expectedFh:
-        jobGen.generateJobs(gencodeIds, batchFh, expectedFh)
+        if opts.evidSetName == 'genbank':
+            jobGen.generateGenbankJobs(gencodeIds, batchFh, expectedFh)
+        else:
+            jobGen.generateJobs(gencodeIds, opts.evidSetUuid, opts.evidSetName, batchFh, expectedFh)
     conn.close()
 
 

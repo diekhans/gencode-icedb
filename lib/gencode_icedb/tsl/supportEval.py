@@ -29,6 +29,7 @@ looseExonPolymorphicFactionLimit = 1.0
 # Categories we keep
 keepEvidenceSupport = (EvidenceSupport.good, EvidenceSupport.polymorphic, EvidenceSupport.extends_exons)
 
+
 def sameChromBounds(feat1, feat2):
     """is the location on the chromosome identical, regardless of strand"""
     return feat1.chrom.eqAbsLoc(feat2.chrom)
@@ -202,7 +203,7 @@ class MegSupportEvaluator(object):
             offset5, offset3, extend5Exons, extend3Exons = firstOffset, lastOffset, firstExtend, lastExtend
         else:
             offset5, offset3, extend5Exons, extend3Exons = lastOffset, firstOffset, lastExtend, firstExtend
-        return SupportEvidEvalResult(transAnnot.rna.name,  self.evidSetUuid, evidTrans.rna.name, support,
+        return SupportEvidEvalResult(transAnnot.rna.name, self.evidSetUuid, evidTrans.rna.name, support,
                                      offset5, offset3, extend5Exons, extend3Exons)
 
     def _compareFeatures(self, transAnnot, evidTrans, firstEvidExon, lastEvidExon):

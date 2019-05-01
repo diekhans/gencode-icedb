@@ -7,6 +7,7 @@ Commands
 * ``tslGetEnsemblRnaAligns`` - Fetch cDNA alignments from Ensembl and load as PSLs into an SQLite3 database.
 * ``tslGbffGetProblemCases`` - Scan genbank flat files looking for known problem libraries.
 * ``tslGenbankProblemCasesLoad`` - Load problem case tab file generate ``gbffGetProblemCases`` by into an SQLite3 databases.
+* ``tslLoadGenbankEvid`` - Build and load all GenBank evidence.
 * ``tslCollectSupport`` - Collect support for GENCODE annotations.  Normally run in a cluster job.
 * ``tslCollectSupportMkJobs`` - Generate parasol jobs to collect TSLs for GENCODE.
 * ``tslCollectSupportJob`` - Job wrapper to run ``rslGencodeCollectSupport``.

@@ -38,6 +38,7 @@ tslCollectSupportFinishJobs = ${BINDIR}/tslCollectSupportFinishJobs
 tslCollectSupportMkJobs = ${BINDIR}/tslCollectSupportMkJobs
 tslGetEnsemblRnaAligns = ${BINDIR}/tslGetEnsemblRnaAligns
 tslGetUcscRnaAligns = ${BINDIR}/tslGetUcscRnaAligns
+tslLoadAlignEvid = ${BINDIR}/tslLoadAlignEvid
 ucscGencodeDbLoad = ${BINDIR}/ucscGencodeDbLoad
 
 

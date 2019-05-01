@@ -28,11 +28,13 @@ class EvidenceType(SymEnum):
     NANOPORE_CDNA = auto()
     ISOSEQ_CDNA = auto()
 
+
 # FIXME: this is tmp
 fakeGenbankUuid = {
     EvidenceType.RNA: "02c995e3-372c-4cde-b216-5d3376c51988",
     EvidenceType.EST: "fcfc5121-7e07-42f6-93a2-331a513eeb2c",
-    }
+}
+
 
 class EvidenceSupport(SymEnum):
     """One or more of these attributes describe the support provided to an annotation

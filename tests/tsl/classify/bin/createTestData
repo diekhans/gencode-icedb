@@ -34,8 +34,8 @@ def parseArgs():
     return parser.parse_args()
 
 
-def tslGetGenbankEvid(ucscDb, ensemblCDnaDb, assemblyReport, ranges, evidDbDir):
-    pipettor.run(["tslGetGenbankEvid", ucscDb, ensemblCDnaDb, assemblyReport, evidDbDir]
+def tslLoadGenbankEvid(ucscDb, ensemblCDnaDb, assemblyReport, ranges, evidDbDir):
+    pipettor.run(["tslLoadGenbankEvid", ucscDb, ensemblCDnaDb, assemblyReport, evidDbDir]
                  + ["--chromSpec={}".format(str(r)) for r in ranges])
 
 
@@ -48,7 +48,7 @@ def getProblemCases(ucscDb, evidDbDir):
 def buildEvidDb(testCases, ucscDb, ensemblCDnaDb, assemblyReport, evidDbDir):
     fileOps.rmTree(evidDbDir)
     ranges = testCases.getRanges()
-    tslGetGenbankEvid(ucscDb, ensemblCDnaDb, assemblyReport, ranges, evidDbDir)
+    tslLoadGenbankEvid(ucscDb, ensemblCDnaDb, assemblyReport, ranges, evidDbDir)
     #FIXME: getProblemCases(ucscDb, evidDbDir)
 
 

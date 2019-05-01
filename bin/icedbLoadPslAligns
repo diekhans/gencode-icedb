@@ -3,7 +3,6 @@
 Load PSL alignments into a sqlite database
 """
 import icedbProgSetup  # noqa: F401
-import sys
 import argparse
 from pycbio.hgdata.psl import PslReader
 from pycbio.db import sqliteOps

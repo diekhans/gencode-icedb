@@ -9,11 +9,14 @@ allGenes = $(shell tawk 'NR>1 && !seen[$$4]{seen[$$4] = 1; print $$4}' ${testCas
 
 gencodeDb = output/db/gencode.db
 evidDbDir = output/db/evidDb
+ucscDRnaName = ucsc-drna
+ucscDRnaUuid = f108c86b-8e0b-4dbd-96ae-6e75d8566eac
+ucscDRnaPsl = ${evidDbDir}/${ucscDRnaName}.psl
 createTestData = bin/createTestData
 
 testDbDone = output/db/db.done
 
-test:: classifyUnitTests supportCollectGenesTest supportCollectMkJobsTest
+test:: classifyUnitTests supportCollectGenesTest supportCollectMkJobsTest ucscDRnaTest
 
 classifyUnitTests: ${testDbDone}
 	${PYTHON} classifyUnitTests.py
@@ -33,12 +36,22 @@ supportCollectMkJobsTest: ${testDbDone} mkdirs
 	(cd output/$@.work/results && find . -type f) | sort > output/$@.results.lst
 	${diff} expected/$@.results.lst output/$@.results.lst
 	${tslCollectSupportFinishJobs} --details=output/$@.support-eval-details.tsv output/$@.work output/$@.db
+	$(call sqldumpdiff,gencode_genbank_support_eval)
+
+
+ucscDRnaTest: ${testDbDone} mkdirs
+	rm -rf output/$@.work output/$@.db
+	${tslCollectSupportMkJobs} --genesPerJob=2 --allDetails ${gencodeDb} --evidSetUuid=${ucscDRnaUuid} --evidSetName=${ucscDRnaName} ${evidDbDir} output/$@.work
+	${jobsToMake} output/$@.work/batch.jobs output/$@.mk
+	${MAKE} -f output/$@.mk
+	${tslCollectSupportFinishJobs} --details=output/$@.support-eval-details.tsv --evidSetName=${ucscDRnaName} output/$@.work output/$@.db
 	$(call sqldumpdiff,gencode_support_eval)
 
 
 ${testDbDone}: ${createTestData} ${testCases}
 	@mkdir -p $(dir $@)
 	${createTestData} ${testCases} ${hsGencodeVer} ${hsUcscGenomeDb} ${hsEnsemblCDnaDb} ${hsGrcRefAssemblyReport} ${gencodeDb} ${evidDbDir}
+	${tslLoadAlignEvid} input/ucsc-drna.psl ${evidDbDir} ${ucscDRnaName}
 	touch $@
 
 

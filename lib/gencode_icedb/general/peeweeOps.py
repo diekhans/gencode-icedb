@@ -57,6 +57,7 @@ class PeeweeModelMixins(object):
         "get field objects for this model"
         return list(cls._meta.fields.values())
 
+
 def peeweeBulkLoadSetup(conn):
     conn.cache_size = -32 * 1024 * 1024
     conn.synchronous = 0

@@ -2,3 +2,6 @@
 - input/v27-test-cases.tsv:
   - a manually select subset entries found with:
       bin/getTestCaseInfo id ... >tmp.tsv
+
+- input/ucsc-drna.psl
+  - FLAIR direct RNA (sensitive mode) from 2019-04-30.  Stats in this PSL are not valid.
