@@ -72,7 +72,8 @@ def resultsTsvToDetailsPath(resultsTsv):
 
 
 def combineDetailsTsv(expectedTsvs, combinedDetailsTsv):
-    with open(combinedDetailsTsv, "w") as outFh:
+    fileOps.ensureFileDir(combinedDetailsTsv)
+    with fileOps.opengz(combinedDetailsTsv, "w") as outFh:
         fileOps.prRow(outFh, SupportEvidEvalResult.tsvHeader())
         for expectedTsv in expectedTsvs:
             for row in TsvReader(resultsTsvToDetailsPath(expectedTsv)):
