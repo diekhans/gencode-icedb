@@ -25,10 +25,10 @@ def parseArgs():
                         help="""number of genes in a job""")
     parser.add_argument('gencodeDb',
                         help="""GENCODE sqlite3 database""")
-    parser.add_argument("evidSetUuid",
-                        help="""For non-genbank evidence, this is UUID to added to output""")
     parser.add_argument("evidSetName",
                         help="""name of evidence set""")
+    parser.add_argument("evidSetUuid",
+                        help="""evidence set UUID to added to output""")
     parser.add_argument('evidFile',
                         help="""evidence psl.gz or bam, or directory contain RNA.psl.gz or EST.psl.gz for genbank""")
     parser.add_argument('tmpDir',

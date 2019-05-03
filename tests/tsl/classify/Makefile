@@ -38,10 +38,10 @@ supportCollectGenesTest: ${testDbDone} mkdirs
 
 supportCollectMkJobsTest: ${testDbDone} mkdirs
 	rm -rf output/$@.work output/$@.db
-	${tslCollectSupportMkJobs} --genesPerJob=2 --allDetails ${gencodeDb} ${rnaUuid} ${rnaName} ${rnaPsl} output/$@.tmp
+	${tslCollectSupportMkJobs} --genesPerJob=2 --allDetails ${gencodeDb} ${rnaName} ${rnaUuid} ${rnaPsl} output/$@.tmp
 	${jobsToMake} output/$@.tmp/${rnaName}/batch.jobs output/$@.RNA.mk
 	${MAKE} -f output/$@.RNA.mk
-	${tslCollectSupportMkJobs} --genesPerJob=2 --allDetails ${gencodeDb} ${estUuid} ${estName} ${estPsl} output/$@.tmp
+	${tslCollectSupportMkJobs} --genesPerJob=2 --allDetails ${gencodeDb} ${estName} ${estUuid} ${estPsl} output/$@.tmp
 	${jobsToMake} output/$@.tmp/${estName}/batch.jobs output/$@.EST.mk
 	${MAKE} -f output/$@.EST.mk
 	(cd output/$@.tmp && find . -type f) | sort > output/$@.results.lst
@@ -53,7 +53,7 @@ supportCollectMkJobsTest: ${testDbDone} mkdirs
 
 ucscDRnaTest: ${testDbDone} mkdirs
 	rm -rf output/$@.work output/$@.db
-	${tslCollectSupportMkJobs} --genesPerJob=2 --allDetails ${gencodeDb} ${ucscDRnaUuid} ${ucscDRnaName} ${ucscDRnaPsl} output/$@.work
+	${tslCollectSupportMkJobs} --genesPerJob=2 --allDetails ${gencodeDb} ${ucscDRnaName} ${ucscDRnaUuid} ${ucscDRnaPsl} output/$@.work
 	${jobsToMake} output/$@.work/${ucscDRnaName}/batch.jobs output/$@.mk
 	${MAKE} -f output/$@.mk
 	${tslCollectSupportFinishJobs} --details=output/$@.support-eval-details.tsv ${ucscDRnaName} output/$@.work output/$@.db
