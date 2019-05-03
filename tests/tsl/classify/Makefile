@@ -21,12 +21,13 @@ estPsl = ${genbankDbDir}/EST.psl.gz
 ucscDRnaName = ucsc-drna
 ucscDRnaUuid = f108c86b-8e0b-4dbd-96ae-6e75d8566eac
 ucscDRnaPsl = ${genbankDbDir}/${ucscDRnaName}.psl.gz
+ucscDRnaBam = output/${ucscDRnaName}.bam
 
 createTestData = bin/createTestData
 
 testDbDone = output/db/db.done
 
-test:: classifyUnitTests supportCollectGenesTest supportCollectMkJobsTest ucscDRnaTest
+test:: classifyUnitTests supportCollectGenesTest supportCollectMkJobsTest ucscDRnaTest ucscDRnaBamTest
 
 classifyUnitTests: ${testDbDone}
 	${PYTHON} classifyUnitTests.py
@@ -59,6 +60,14 @@ ucscDRnaTest: ${testDbDone} mkdirs
 	${tslCollectSupportFinishJobs} --details=output/$@.support-eval-details.tsv ${ucscDRnaName} output/$@.work output/$@.db
 	$(call sqldumpdiff,gencode_support_eval)
 
+ucscDRnaBamTest: ${testDbDone} ${ucscDRnaBam} mkdirs
+	rm -rf output/$@.work output/$@.db
+	${tslCollectSupportMkJobs} --genesPerJob=2 --allDetails ${gencodeDb} ${ucscDRnaName} ${ucscDRnaUuid} ${ucscDRnaBam} output/$@.work
+	${jobsToMake} output/$@.work/${ucscDRnaName}/batch.jobs output/$@.mk
+	${MAKE} -f output/$@.mk
+	${tslCollectSupportFinishJobs} --details=output/$@.support-eval-details.tsv ${ucscDRnaName} output/$@.work output/$@.db
+	$(call sqldumpdiff,gencode_support_eval)
+
 
 ${testDbDone}: ${createTestData} ${testCases}
 	@mkdir -p $(dir $@)
@@ -66,6 +75,9 @@ ${testDbDone}: ${createTestData} ${testCases}
 	${tslLoadAlignEvid} input/ucsc-drna.psl ${genbankDbDir} ${ucscDRnaName}
 	touch $@
 
+output/%.bam: input/%.sam
+	samtools sort -O BAM -o $@ $<
+	samtools index -b $@
 
 mkdirs:
 	@mkdir -p output

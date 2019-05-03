@@ -103,6 +103,7 @@ class _BamEvidenceAlignsReader(EvidenceAlignsReader):
     def __init__(self, evidSetUuid, evidBam, genomeReader=None):
         super(_BamEvidenceAlignsReader, self).__init__(evidSetUuid)
         self.bamfh = pysam.AlignmentFile(evidBam)
+        self.contigs = frozenset([self.bamfh.get_reference_name(i) for i in range(self.bamfh.nreferences)])
         self.evidFactory = EvidenceSamFactory(genomeReader)
 
     def close(self):
@@ -112,15 +113,15 @@ class _BamEvidenceAlignsReader(EvidenceAlignsReader):
 
     def _makeTrans(self, alnseg):
         attrs = ObjDict(evidSetUuid=self.evidSetUuid)
-        return self.evidFactory.fromSam(self.samfh, alnseg, attrs=attrs, orientChrom=True)
+        return self.evidFactory.fromSam(self.bamfh, alnseg, attrs=attrs, orientChrom=True)
 
     def _useAln(self, alnseg, transcriptionStrand):
-        strand = '-' if self.alnseg.is_reverse else '+'
+        strand = '-' if alnseg.is_reverse else '+'
         return (((self.nameSubset is None) or (alnseg.query_name in self.nameSubset))
                 and ((transcriptionStrand is None) or (strand == transcriptionStrand)))
 
     def _genOverlapping(self, coords, transcriptionStrand, minExons):
-        for alnseg in self.samfh.fetch(coords.name, coords.start, coords.end):
+        for alnseg in self.bamfh.fetch(coords.name, coords.start, coords.end):
             if self._useAln(alnseg, transcriptionStrand):
                 trans = self._makeTrans(alnseg)
                 if len(trans.getFeaturesOfType(ExonFeature)) >= minExons:
@@ -130,7 +131,8 @@ class _BamEvidenceAlignsReader(EvidenceAlignsReader):
         """Generator of overlapping alignments as TranscriptFeatures, possibly filtered
         by nameSubset.
         """
-        yield from self._genOverlapping(coords, transcriptionStrand, minExons)
+        if coords.name in self.contigs:
+            yield from self._genOverlapping(coords, transcriptionStrand, minExons)
 
 
 def evidenceAlignsReaderFactory(evidSetUuid, evidFile, genomeReader=None, genbankProblems=None):
