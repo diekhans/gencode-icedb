@@ -11,6 +11,8 @@ assemblyRep = input/GCF_000001405.38_GRCh38.p12_assembly_report.txt
 
 gencodeV28Db = output/gencodeV28.db
 hg38TwoBit = /hive/data/genomes/hg38/hg38.2bit
+hg38TestBams = output/ucsc-mrnaV28.bam output/hg38-mm10.transMap.bam
+
 
 ensemblDb = homo_sapiens_core_92_38
 grch38Fa = ../data/grch38/GRCh38.fa.gz
@@ -28,7 +30,7 @@ test:   featureUnitTests \
 unitTestCases = EvidenceTests GenePredAnnotationTests EnsemblDbAnnotationTests
 featureUnitTests: ${unitTestCases:%=%_run}
 
-%_run:
+%_run: ${hg38TestBams} ${gencodeV28Db}
 	${PYTHON} featureUnitTests.py $*
 
  
@@ -83,6 +85,10 @@ ${gencodeV28Db}:
 	rm -f $@ $@.tmp
 	${ucscGencodeDbLoad} --hgdb=${hsUcscGenomeDb} --version=${hsGencodeVer} $@.tmp
 	mv -f $@.tmp $@
+
+output/%.bam: input/%.sam
+	samtools sort -O BAM -o $@ $<
+	samtools index -b $@
 
 mkdirs:
 	@mkdir -p output

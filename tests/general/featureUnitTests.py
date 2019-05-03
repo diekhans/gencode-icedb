@@ -5,13 +5,14 @@ if __name__ == '__main__':
     sys.path = [os.path.join(rootDir, "lib"),
                 os.path.join(rootDir, "extern/pycbio/lib")] + sys.path
 import unittest
+import pysam
 from pycbio.sys.objDict import ObjDict
 from pycbio.sys.testCaseBase import TestCaseBase
 from gencode_icedb.general.genome import GenomeReader
 from gencode_icedb.general.transFeatures import ExonFeature
 from gencode_icedb.general.transFeatures import AnnotationFeature, CdsRegionFeature, Utr3RegionFeature
 from gencode_icedb.general.transFeatures import RnaInsertFeature, ChromInsertFeature
-from gencode_icedb.general.evidFeatures import EvidencePslFactory
+from gencode_icedb.general.evidFeatures import EvidencePslFactory, EvidenceSamFactory
 from gencode_icedb.general.genePredAnnotFeatures import GenePredAnnotationFactory
 from gencode_icedb.general.ensemblDbAnnotFeatures import EnsemblDbAnnotationFactory
 from gencode_icedb.general.ensemblDbQuery import ensemblTransQuery
@@ -36,6 +37,11 @@ if debugResults or noCheckResults:
 def getInputFile(base):
     "from input relative to test file"
     return os.path.join(os.path.dirname(__file__), "input", base)
+
+
+def getOutputFile(base):
+    "from output relative to test file"
+    return os.path.join(os.path.dirname(__file__), "output", base)
 
 
 class GenomeSeqSrc(object):
@@ -76,26 +82,53 @@ class PslDbSrc(object):
     pslTbls = {}
 
     @classmethod
-    def _loadDbTbl(cls, name):
+    def _loadDbTbl(cls, srcName):
         conn = sqliteOps.connect(None)
-        dbTbl = PslSqliteTable(conn, "psls", create=True)
-        dbTbl.loadPslFile(getInputFile(cls.srcs[name]))
-        cls.pslTbls[name] = dbTbl
+        cls.pslTbls[srcName] = dbTbl = PslSqliteTable(conn, "psls", create=True)
+        dbTbl.loadPslFile(getInputFile(cls.srcs[srcName]))
         return dbTbl
 
     @classmethod
-    def obtain(cls, name):
-        dbTbl = cls.pslTbls.get(name)
+    def _obtain(cls, srcName):
+        dbTbl = cls.pslTbls.get(srcName)
         if dbTbl is None:
-            dbTbl = cls._loadDbTbl(name)
+            dbTbl = cls._loadDbTbl(srcName)
         return dbTbl
 
     @classmethod
-    def obtainPsl(cls, name, acc):
-        psls = cls.obtain(name).getByQName(acc)
+    def obtainPsl(cls, srcName, acc):
+        psls = cls._obtain(srcName).getByQName(acc)
         if len(psls) == 0:
             raise Exception("psl not found: {}".format(acc))
         return psls[0]
+
+
+class SamDbSrc(object):
+    "caching SAM/BAM pysam database"
+    srcs = {
+        "V28": "ucsc-mrnaV28.bam",
+        "hg38-mm10.transMap": "hg38-mm10.transMap.bam"
+    }
+    samFhs = {}  # src to open BAM file
+    samRecs = {}  # src -> dict of BAM records
+
+    @classmethod
+    def _loadSam(cls, srcName):
+        cls.samFhs[srcName] = pysam.AlignmentFile(getOutputFile(cls.srcs[srcName]), "rb")
+        cls.samRecs[srcName] = {r.query_name: r for r in cls.samFhs[srcName]}
+
+    @classmethod
+    def _obtain(cls, srcName, acc):
+        if srcName not in cls.samFhs:
+            cls._loadSam(srcName)
+        return cls.samFhs[srcName], cls.samRecs[srcName].get(acc)
+
+    @classmethod
+    def obtainSam(cls, srcName, acc):
+        samFh, rec = cls._obtain(srcName, acc)
+        if rec is None:
+            raise Exception("SAM record not found: {}".format(acc))
+        return samFh, rec
 
 
 class GenePredDbSrc(object):
@@ -143,11 +176,15 @@ class EvidenceTests(FeatureTestBase):
         errorIfNoGenomeFile("hg38")
         errorIfNoGenomeFile("mm10")
 
-    def _getV28Psl(self, acc):
-        return PslDbSrc.obtainPsl("V28", acc)
+    def _getPslTrans(self, genomeName, srcName, acc):
+        psl = PslDbSrc.obtainPsl(srcName, acc)
+        genomeReader = GenomeSeqSrc.obtain(genomeName) if genomeName is not None else None
+        return EvidencePslFactory(genomeReader).fromPsl(psl)
 
-    def _pslToEvidTranscript(self, psl):
-        return EvidencePslFactory(GenomeSeqSrc.obtain("hg38")).fromPsl(psl)
+    def _getSamTrans(self, genomeName, srcName, acc):
+        samfh, samrec = SamDbSrc.obtainSam(srcName, acc)
+        genomeReader = GenomeSeqSrc.obtain(genomeName) if genomeName is not None else None
+        return EvidenceSamFactory(genomeReader).fromSam(samfh, samrec)
 
     def _checkRnaAln(self, trans):
         "validate that full RNA is covered by alignment"
@@ -169,8 +206,7 @@ class EvidenceTests(FeatureTestBase):
         self.assertEqual(prevRnaEnd, trans.rna.size,
                          msg="trans: {} alignments don't cover RNA range".format(trans.rna.name))
 
-    def testAF010310(self):
-        trans = self._pslToEvidTranscript(self._getV28Psl("AF010310.1"))
+    def _checkAF010310(self, trans):
         self._assertFeatures(trans,
                              ('t=chr22:18912781-18918413/+, rna=AF010310.1:0-901/- 901 <-> CDS: None',
                               (('exon 18912781-18913362 rna=0-618',
@@ -234,8 +270,13 @@ class EvidenceTests(FeatureTestBase):
                                  ('aln 18918380-18918413 rna=868-901',))))))
         self._checkRnaAln(trans)
 
-    def testX96484(self):
-        trans = self._pslToEvidTranscript(self._getV28Psl("X96484.1"))
+    def testAF010310Psl(self):
+        self._checkAF010310(self._getPslTrans("hg38", "V28", "AF010310.1"))
+
+    def testAF010310Sam(self):
+        self._checkAF010310(self._getSamTrans("hg38", "V28", "AF010310.1"))
+
+    def _checkX96484(self, trans):
         self._assertFeatures(trans,
                              ('t=chr22:18906409-18912079/+, rna=X96484.1:0-1080/+ 1080 <+> CDS: None',
                               (('exon 18906409-18906484 rna=0-123',
@@ -262,8 +303,14 @@ class EvidenceTests(FeatureTestBase):
                                  ('rins None-None rna=1067-1080',))))))
         self._checkRnaAln(trans)
 
+    def testX96484Psl(self):
+        self._checkX96484(self._getPslTrans("hg38", "V28", "X96484.1"))
+
+    def testX96484Sam(self):
+        self._checkX96484(self._getSamTrans("hg38", "V28", "X96484.1"))
+
     def testX96484NoSJ(self):
-        trans = EvidencePslFactory(None).fromPsl(self._getV28Psl("X96484.1"))
+        trans = self._getPslTrans(None, "V28", "X96484.1")
         self._assertFeatures(trans,
                              ('t=chr22:18906409-18912079/+, rna=X96484.1:0-1080/+ 1080 <+> CDS: None',
                               (('exon 18906409-18906484 rna=0-123',
@@ -290,10 +337,8 @@ class EvidenceTests(FeatureTestBase):
                                  ('rins None-None rna=1067-1080',))))))
         self._checkRnaAln(trans)
 
-    def testTransMapDropExon(self):
+    def _checkTransMapDropExon(self, trans):
         # internal exon was not mapped, causing an intron to contain unaligned
-        psl = PslDbSrc.obtainPsl("hg38-mm10.transMap", "ENST00000641446")
-        trans = EvidencePslFactory(GenomeSeqSrc.obtain("mm10")).fromPsl(psl)
         self._assertFeatures(trans,
                              ('t=chr4:148039043-148056154/+, rna=ENST00000641446:0-2820/+ 2820 <+> CDS: None',
                               (('exon 148039043-148039141 rna=0-106',
@@ -396,9 +441,14 @@ class EvidenceTests(FeatureTestBase):
                                 (('aln 148056150-148056154 rna=2816-2820',),)))))
         self._checkRnaAln(trans)
 
-    def testTransMapDropExonRc(self):
-        psl = PslDbSrc.obtainPsl("hg38-mm10.transMap", "ENST00000641446")
-        trans = EvidencePslFactory(GenomeSeqSrc.obtain("mm10")).fromPsl(psl)
+    def testTransMapDropExonPsl(self):
+        self._checkTransMapDropExon(self._getPslTrans("mm10", "hg38-mm10.transMap", "ENST00000641446"))
+
+    def testTransMapDropExonSam(self):
+        self._checkTransMapDropExon(self._getSamTrans("mm10", "hg38-mm10.transMap", "ENST00000641446"))
+
+
+    def _checkTransMapDropExonRc(self, trans):
         transRc = trans.reverseComplement()
         self._assertFeatures(transRc,
                              ('t=chr4:8451962-8469073/-, rna=ENST00000641446:0-2820/- 2820 <+> CDS: None',
@@ -500,9 +550,15 @@ class EvidenceTests(FeatureTestBase):
                                  ('aln 8469066-8469073 rna=2813-2820',))))))
         self._checkRnaAln(transRc)
 
+    def testTransMapDropExonRcPsl(self):
+        self._checkTransMapDropExonRc(self._getPslTrans("mm10", "hg38-mm10.transMap", "ENST00000641446"))
+
+    def testTransMapDropExonRcSam(self):
+        self._checkTransMapDropExonRc(self._getSamTrans("mm10", "hg38-mm10.transMap", "ENST00000641446"))
+
+
     def testGetAlignmentFeaturesOfType(self):
-        psl = PslDbSrc.obtainPsl("hg38-mm10.transMap", "ENST00000641446")
-        trans = EvidencePslFactory(GenomeSeqSrc.obtain("mm10")).fromPsl(psl)
+        trans = self._getSamTrans("mm10", "hg38-mm10.transMap", "ENST00000641446")
         feats = trans.getFeaturesOfType((RnaInsertFeature, ChromInsertFeature))
         featStrs = tuple([str(f) for f in feats])
         self.assertEqual(featStrs,
@@ -546,8 +602,8 @@ class EvidenceTests(FeatureTestBase):
         self._checkRnaAln(trans)
 
     def testExonRnaOverlap(self):
-        aln1 = self._pslToEvidTranscript(self._getV28Psl("AF010310.1"))
-        aln2 = self._pslToEvidTranscript(self._getV28Psl("AF120278.1"))
+        aln1 = self._getPslTrans("hg38", "V28", "AF010310.1")
+        aln2 = self._getPslTrans("hg38", "V28", "AF120278.1")
         exon1 = aln1.features[0]
         exon2 = aln2.features[0]
         self.assertTrue(exon1.rnaOverlaps(exon2))
@@ -557,8 +613,7 @@ class EvidenceTests(FeatureTestBase):
         self._checkRnaAln(aln2)
 
     def testStructPrevNext(self):
-        psl = PslDbSrc.obtainPsl("hg38-mm10.transMap", "ENST00000641446")
-        trans = EvidencePslFactory(GenomeSeqSrc.obtain("mm10")).fromPsl(psl)
+        trans = self._getSamTrans("mm10", "hg38-mm10.transMap", "ENST00000641446")
         feat = trans.firstFeature(ExonFeature)
         self.assertIs(feat, trans.features[0])
         self.assertIsInstance(feat, ExonFeature)
@@ -584,9 +639,7 @@ class EvidenceTests(FeatureTestBase):
         self.assertEqual(exonCnt, 14)
 
     def testAlignPrevNext(self):
-        psl = PslDbSrc.obtainPsl("hg38-mm10.transMap", "ENST00000641446")
-        trans = EvidencePslFactory(GenomeSeqSrc.obtain("mm10")).fromPsl(psl)
-
+        trans = self._getSamTrans("mm10", "hg38-mm10.transMap", "ENST00000641446")
         feat = trans.firstFeature(RnaInsertFeature)
         self.assertIsInstance(feat, RnaInsertFeature)
         rinsCnt = 1
