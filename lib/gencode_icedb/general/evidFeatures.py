@@ -7,6 +7,7 @@ from gencode_icedb.general.spliceJuncs import spliceJuncsGetSeqs
 from gencode_icedb.tsl import minIntronSize
 from gencode_icedb.general.transFeatures import ExonFeature, IntronFeature, TranscriptFeatures, AlignedFeature, ChromInsertFeature, RnaInsertFeature
 
+
 class _EvidenceFactoryCreator(object):
     """Class to generate TranscriptFeatures from a polymorphic representation
     of the alignment.  This representation uses a duck-typed subset of the
@@ -259,5 +260,4 @@ class EvidenceSamFactory(object):
         """Convert a BAM/SAM/CRAM record to a TranscriptFeatures object.  If
         orientChrom is True, then always ensure chrom strand is positive.
         """
-
         return self.creator.fromAlignment(SamAlign(samfh, alnseg), attrs, orientChrom)

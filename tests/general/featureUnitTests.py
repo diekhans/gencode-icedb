@@ -107,7 +107,8 @@ class SamDbSrc(object):
     "caching SAM/BAM pysam database"
     srcs = {
         "V28": "ucsc-mrnaV28.bam",
-        "hg38-mm10.transMap": "hg38-mm10.transMap.bam"
+        "hg38-mm10.transMap": "hg38-mm10.transMap.bam",
+        "ont-cls": "ont-cls.bam"
     }
     samFhs = {}  # src to open BAM file
     samRecs = {}  # src -> dict of BAM records
@@ -447,7 +448,6 @@ class EvidenceTests(FeatureTestBase):
     def testTransMapDropExonSam(self):
         self._checkTransMapDropExon(self._getSamTrans("mm10", "hg38-mm10.transMap", "ENST00000641446"))
 
-
     def _checkTransMapDropExonRc(self, trans):
         transRc = trans.reverseComplement()
         self._assertFeatures(transRc,
@@ -555,7 +555,6 @@ class EvidenceTests(FeatureTestBase):
 
     def testTransMapDropExonRcSam(self):
         self._checkTransMapDropExonRc(self._getSamTrans("mm10", "hg38-mm10.transMap", "ENST00000641446"))
-
 
     def testGetAlignmentFeaturesOfType(self):
         trans = self._getSamTrans("mm10", "hg38-mm10.transMap", "ENST00000641446")
@@ -751,6 +750,11 @@ class EvidenceTests(FeatureTestBase):
                                 (('aln 45432283-45432416 rna=527-660',),
                                  ('rins None-None rna=660-675',))))))
         self.assertEqual('+', trans.transcriptionStrand)
+        self._checkRnaAln(trans)
+
+    def testOntClkBam(self):
+        # complex BAM from ONT capture longseq, long result, don't check details
+        trans = self._getSamTrans("hg38", "ont-cls", "f33f7cd3-2672-4c7c-b1f9-067548797c78/4a23eebc04f95dec2d958036dac670bc286976f1")
         self._checkRnaAln(trans)
 
 

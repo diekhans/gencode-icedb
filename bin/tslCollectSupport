@@ -5,7 +5,7 @@ from contextlib import ExitStack
 from pycbio.sys import fileOps
 from pycbio.sys import loggingOps
 from gencode_icedb.general.ucscGencodeSource import UcscGencodeReader
-from gencode_icedb.tsl.evidenceDataDb import EvidenceAlignsReader
+from gencode_icedb.tsl.evidenceDataDb import evidenceAlignsReaderFactory
 from gencode_icedb.tsl.supportEval import tightExonPolymorphicSizeLimit, tightExonPolymorphicFactionLimit, EvidenceQualityEval, FullLengthSupportEvaluator
 
 # FIXME: rsl uses csv.writer, make all consistent
@@ -26,8 +26,8 @@ def parseArgs():
                         help="""GENCODE sqlite3 database""")
     parser.add_argument('evidSetUuid',
                         help="""UUID of the evidence set""")
-    parser.add_argument('evidPslTabix',
-                        help="""evidence PSL tabix file""")
+    parser.add_argument('evidAlnFile',
+                        help="""evidence PSL tabix or BAM file""")
     parser.add_argument('supportEvalTsv',
                         help="""output of support information in SupportEvalResult format""")
     parser.add_argument('gencodeIds', nargs='+',
@@ -47,7 +47,7 @@ def classifyGenes(evidenceReader, geneAnnots, supportEvalTsvFh, detailsTsvFh):
 
 def tslCollectSupport(opts):
     gencodeReader = UcscGencodeReader(opts.gencodeDb)
-    evidenceReader = EvidenceAlignsReader(opts.evidSetUuid, opts.evidPslTabix)
+    evidenceReader = evidenceAlignsReaderFactory(opts.evidSetUuid, opts.evidAlnFile)
     if opts.evidIds is not None:
         evidenceReader.setNameSubset(opts.evidIds)
     genesAnnots = gencodeReader.getGenesByGencodeIds(opts.gencodeIds)

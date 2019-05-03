@@ -5,7 +5,7 @@ import pysam
 from pycbio.sys.symEnum import SymEnum, auto
 from pycbio.sys.objDict import ObjDict
 from pycbio.hgdata.psl import Psl
-from gencode_icedb.general.evidFeatures import EvidencePslFactory
+from gencode_icedb.general.evidFeatures import EvidencePslFactory, EvidenceSamFactory
 from gencode_icedb.general.transFeatures import ExonFeature
 import pipettor
 
@@ -29,15 +29,12 @@ def evidenceAlignsIndexPsl(pslFile):
 
 
 class EvidenceAlignsReader(object):
-    """Object for accessing overlapping alignment evidence data from a tabix file.
+    """Object for accessing overlapping alignment evidence data from a data source.  Either PSL file
+    that is bgzip compressed and tabix indexed or a BAM file.
     """
-    def __init__(self, evidSetUuid, evidPslTabix, genomeReader=None, genbankProblems=None):
+    def __init__(self, evidSetUuid):
         self.evidSetUuid = evidSetUuid
-        self.tabix = pysam.TabixFile(evidPslTabix)
-        self.contigs = frozenset(self.tabix.contigs)
         self.nameSubset = None  # used for testing and debugging.
-        self.genbankProblems = genbankProblems
-        self.evidFactory = EvidencePslFactory(genomeReader)
 
     def setNameSubset(self, nameSubset):
         """Set file on query names.  Can be a string, list, or set, or None to
@@ -48,6 +45,16 @@ class EvidenceAlignsReader(object):
             frozenset(nameSubset)
         self.nameSubset = nameSubset
 
+
+class _PslEvidenceAlignsReader(EvidenceAlignsReader):
+    "Reader implementation for PSL tabix"
+    def __init__(self, evidSetUuid, evidPslTabix, genomeReader=None, genbankProblems=None):
+        super(_PslEvidenceAlignsReader, self).__init__(evidSetUuid)
+        self.tabix = pysam.TabixFile(evidPslTabix)
+        self.contigs = frozenset(self.tabix.contigs)
+        self.genbankProblems = genbankProblems
+        self.evidFactory = EvidencePslFactory(genomeReader)
+
     def close(self):
         if self.tabix is not None:
             self.tabix.close()
@@ -55,7 +62,7 @@ class EvidenceAlignsReader(object):
 
     def _makeTrans(self, psl):
         genbankProblem = self.genbankProblems.getProblem(psl.qName) if self.genbankProblems is not None else None
-        attrs = ObjDict(genbankProblem=genbankProblem)
+        attrs = ObjDict(genbankProblem=genbankProblem, evidSetUuid=self.evidSetUuid)
         return self.evidFactory.fromPsl(psl, attrs=attrs, orientChrom=True)
 
     def _usePsl(self, psl, strands):
@@ -89,3 +96,48 @@ class EvidenceAlignsReader(object):
         """
         if coords.name in self.contigs:
             yield from self._genOverlapping(coords, self._getSelectStrands(transcriptionStrand), minExons)
+
+
+class _BamEvidenceAlignsReader(EvidenceAlignsReader):
+    "Reader implementation for a BAM file"
+    def __init__(self, evidSetUuid, evidBam, genomeReader=None):
+        super(_BamEvidenceAlignsReader, self).__init__(evidSetUuid)
+        self.bamfh = pysam.AlignmentFile(evidBam)
+        self.evidFactory = EvidenceSamFactory(genomeReader)
+
+    def close(self):
+        if self.bamfh is not None:
+            self.bamfh.close()
+            self.bamfh = None
+
+    def _makeTrans(self, alnseg):
+        attrs = ObjDict(evidSetUuid=self.evidSetUuid)
+        return self.evidFactory.fromSam(self.samfh, alnseg, attrs=attrs, orientChrom=True)
+
+    def _useAln(self, alnseg, transcriptionStrand):
+        strand = '-' if self.alnseg.is_reverse else '+'
+        return (((self.nameSubset is None) or (alnseg.query_name in self.nameSubset))
+                and ((transcriptionStrand is None) or (strand == transcriptionStrand)))
+
+    def _genOverlapping(self, coords, transcriptionStrand, minExons):
+        for alnseg in self.samfh.fetch(coords.name, coords.start, coords.end):
+            if self._useAln(alnseg, transcriptionStrand):
+                trans = self._makeTrans(alnseg)
+                if len(trans.getFeaturesOfType(ExonFeature)) >= minExons:
+                    yield trans
+
+    def genOverlapping(self, coords, transcriptionStrand=None, minExons=0):
+        """Generator of overlapping alignments as TranscriptFeatures, possibly filtered
+        by nameSubset.
+        """
+        yield from self._genOverlapping(coords, transcriptionStrand, minExons)
+
+
+def evidenceAlignsReaderFactory(evidSetUuid, evidFile, genomeReader=None, genbankProblems=None):
+    """construct read based on file extension"""
+    if evidFile.endswith(".psl.gz"):
+        return _PslEvidenceAlignsReader(evidSetUuid, evidFile, genomeReader, genbankProblems)
+    elif evidFile.endswith(".bam"):
+        return _BamEvidenceAlignsReader(evidSetUuid, evidFile, genomeReader)
+    else:
+        raise Exception("Expected file name ending in .psl.gz or .bam, got {}".format(evidFile))

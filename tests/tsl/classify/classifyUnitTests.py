@@ -11,7 +11,7 @@ from gencode_icedb.general.genome import GenomeReader
 from gencode_icedb.general.ucscGencodeSource import UcscGencodeReader
 from gencode_icedb.general.geneAnnot import geneAnnotGroup
 from gencode_icedb.general.evidFeatures import EvidencePslFactory
-from gencode_icedb.tsl.evidenceDataDb import EvidenceAlignsReader
+from gencode_icedb.tsl.evidenceDataDb import evidenceAlignsReaderFactory
 from gencode_icedb.tsl.supportDefs import EvidenceType, EvidenceSupport, fakeGenbankUuid
 from gencode_icedb.tsl.supportEval import tightExonPolymorphicSizeLimit, tightExonPolymorphicFactionLimit, EvidenceQualityEval, MegSupportEvaluator, FullLengthSupportEvaluator
 from gencode_icedb.tsl.supportEvalDb import SupportEvidEvalResult
@@ -33,7 +33,7 @@ class EvidCompareTest(TestCaseBase):
         cls.evaluators = {}
         for evidType in (EvidenceType.RNA, EvidenceType.EST):
             evidSetUuid = fakeGenbankUuid[evidType]  # FIXME: tmp
-            cls.evidenceReaders[evidType] = EvidenceAlignsReader(evidSetUuid, os.path.join(cls.EVIDENCE_DB_DIR, str(evidType) + ".psl.gz"), cls.genomeReader)
+            cls.evidenceReaders[evidType] = evidenceAlignsReaderFactory(evidSetUuid, os.path.join(cls.EVIDENCE_DB_DIR, str(evidType) + ".psl.gz"), cls.genomeReader)
             for allowExtension in (True, False):
                 cls.evaluators[(evidType, allowExtension)] = MegSupportEvaluator(evidSetUuid, cls.qualEval, allowExtension=allowExtension)
 
