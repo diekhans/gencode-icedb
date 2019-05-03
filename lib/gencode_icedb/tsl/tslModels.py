@@ -73,14 +73,6 @@ class GencodeSupportEval(BaseModel):
     extend3Exons = IntegerField(help_text="""Maximum extending 3' number of exons.""")
 
 
-class GencodeGenbankSupportEval(GencodeSupportEval):
-    """Support for GENCODE transcripts from GENBANK evidence.  This is handled
-    differently due to GENBANK being a combination of UCSC and Ensembl RNA alignments
-    and UCSC dbEST alignments and are not versioned as a set.
-    """
-    pass
-
-
 class GencodeTranscriptSupport(BaseModel):
     """Transcript-level support"""
     id = PrimaryKeyField()

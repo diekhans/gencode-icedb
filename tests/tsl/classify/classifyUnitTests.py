@@ -12,9 +12,15 @@ from gencode_icedb.general.ucscGencodeSource import UcscGencodeReader
 from gencode_icedb.general.geneAnnot import geneAnnotGroup
 from gencode_icedb.general.evidFeatures import EvidencePslFactory
 from gencode_icedb.tsl.evidenceDataDb import evidenceAlignsReaderFactory
-from gencode_icedb.tsl.supportDefs import EvidenceType, EvidenceSupport, fakeGenbankUuid
+from gencode_icedb.tsl.supportDefs import EvidenceType, EvidenceSupport
 from gencode_icedb.tsl.supportEval import tightExonPolymorphicSizeLimit, tightExonPolymorphicFactionLimit, EvidenceQualityEval, MegSupportEvaluator, FullLengthSupportEvaluator
 from gencode_icedb.tsl.supportEvalDb import SupportEvidEvalResult
+
+
+genbankUuids = {
+    EvidenceType.RNA: "02c995e3-372c-4cde-b216-5d3376c51988",
+    EvidenceType.EST: "fcfc5121-7e07-42f6-93a2-331a513eeb2c",
+}
 
 
 class EvidCompareTest(TestCaseBase):
@@ -32,7 +38,7 @@ class EvidCompareTest(TestCaseBase):
         cls.evidenceReaders = {}
         cls.evaluators = {}
         for evidType in (EvidenceType.RNA, EvidenceType.EST):
-            evidSetUuid = fakeGenbankUuid[evidType]  # FIXME: tmp
+            evidSetUuid = genbankUuids[evidType]
             cls.evidenceReaders[evidType] = evidenceAlignsReaderFactory(evidSetUuid, os.path.join(cls.EVIDENCE_DB_DIR, str(evidType) + ".psl.gz"), cls.genomeReader)
             for allowExtension in (True, False):
                 cls.evaluators[(evidType, allowExtension)] = MegSupportEvaluator(evidSetUuid, cls.qualEval, allowExtension=allowExtension)
@@ -116,7 +122,7 @@ class EvidCompareTest(TestCaseBase):
         evidName = "AA227241.1"
         results = tuple(self._evalAnnotTransEvid(self._getAnnot(annotName), EvidenceType.EST,
                                                  evidNames=evidName, allowExtension=True))
-        self.assertEqual((SupportEvidEvalResult('ENST00000489867.2', fakeGenbankUuid[EvidenceType.EST], 'AA227241.1', EvidenceSupport.feat_count_mismatch),),
+        self.assertEqual((SupportEvidEvalResult('ENST00000489867.2', genbankUuids[EvidenceType.EST], 'AA227241.1', EvidenceSupport.feat_count_mismatch),),
                          results)
 
     def _rawPslCmpr(self, annotTrans, evidRawPsl, allowExtension):

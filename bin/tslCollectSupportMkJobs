@@ -7,7 +7,6 @@ from pycbio.sys import loggingOps
 from pycbio.db import sqliteOps
 from pycbio.hgdata.gencodeSqlite import GencodeAttrsSqliteTable
 from gencode_icedb.general.ucscGencodeSource import GENCODE_ATTRS_TABLE
-from gencode_icedb.tsl.supportDefs import EvidenceType, fakeGenbankUuid
 
 
 def parseArgs():
@@ -24,19 +23,17 @@ def parseArgs():
                         help="""file containing subset of ids""")
     parser.add_argument("--genesPerJob", type=int, default=8,
                         help="""number of genes in a job""")
-    parser.add_argument("--evidSetName", default="genbank",
-                        help="""name of evidence, with 'genbank' getting special handling to combine RNAs and ESTs:""")
-    parser.add_argument("--evidSetUuid",
-                        help="""For non-genbank evidence, this is UUID to added to output""")
     parser.add_argument('gencodeDb',
                         help="""GENCODE sqlite3 database""")
-    parser.add_argument('evidDbDir',
-                        help="""evidence database directory""")
-    parser.add_argument('workDir',
-                        help="""directory where jobFile and temporary results are stored""")
+    parser.add_argument("evidSetUuid",
+                        help="""For non-genbank evidence, this is UUID to added to output""")
+    parser.add_argument("evidSetName",
+                        help="""name of evidence set""")
+    parser.add_argument('evidFile',
+                        help="""evidence psl.gz or bam, or directory contain RNA.psl.gz or EST.psl.gz for genbank""")
+    parser.add_argument('tmpDir',
+                        help="""tmp directory for results, a directory with evidSetName will be put in here""")
     opts = parser.parse_args()
-    if (opts.evidSetName == "genbank") and (opts.evidSetUuid is not None):
-        parser.error("can't specify --evidSetUuid if --evidSetName is 'genbank'")
     if opts.allDetails:
         opts.details = True
     loggingOps.setupFromCmd(opts)
@@ -44,20 +41,22 @@ def parseArgs():
 
 
 class JobGenerator(object):
-    def __init__(self, gencodeDb, evidDbDir, genesPerJob, details, allDetails, workDir):
+    def __init__(self, gencodeDb, evidSetUuid, evidSetName, evidFile, genesPerJob, details, allDetails, tmpDir):
         self.gencodeDb = gencodeDb
-        self.evidDbDir = evidDbDir
+        self.evidSetUuid = evidSetUuid
+        self.evidSetName = evidSetName
+        self.evidFile = evidFile
         self.genesPerJob = genesPerJob
         self.details = details
         self.allDetails = allDetails
-        self.workDir = workDir
-        self.resultDir = os.path.join(workDir, "results")
+        self.workDir = os.path.join(tmpDir, evidSetName)
+        self.resultDir = os.path.join(self.workDir, "results")
         self.suppProg = os.path.join(icedbProgSetup.binDir, "tslCollectSupportJob")
 
-    def _generateJob(self, gencodeIds, evidSetUuid, evidSetName, evidPslTabix, batchFh, expectedFh):
-        resultTsv = os.path.join(self.resultDir, evidSetName, "{}.support.tsv".format(gencodeIds[0]))
-        detailsTsv = os.path.join(self.resultDir, evidSetName, "{}.support-details.tsv".format(gencodeIds[0]))
-        cmd = [self.suppProg, self.gencodeDb, evidSetUuid, evidPslTabix]
+    def _generateJob(self, gencodeIds, batchFh, expectedFh):
+        resultTsv = os.path.join(self.resultDir, "{}.support.tsv".format(gencodeIds[0]))
+        detailsTsv = os.path.join(self.resultDir, "{}.support-details.tsv".format(gencodeIds[0]))
+        cmd = [self.suppProg, self.gencodeDb, self.evidSetUuid, self.evidFile]
         if self.details:
             cmd.append("--detailsTsv={}".format(detailsTsv))
         if self.allDetails:
@@ -67,41 +66,46 @@ class JobGenerator(object):
         print(*cmd, file=batchFh)
         print(resultTsv, file=expectedFh)
 
-    def generateJobs(self, gencodeIds, evidSetUuid, evidSetName, batchFh, expectedFh):
-        evidPslTabix = os.path.join(self.evidDbDir, evidSetName + ".psl.gz")
+    def _generateJobs(self, gencodeIds, batchFh, expectedFh):
         iNext = 0
         while iNext < len(gencodeIds):
-            self._generateJob(gencodeIds[iNext: iNext + self.genesPerJob], evidSetUuid, evidSetName, evidPslTabix, batchFh, expectedFh)
+            self._generateJob(gencodeIds[iNext: iNext + self.genesPerJob], batchFh, expectedFh)
             iNext += self.genesPerJob
 
-    def generateGenbankJobs(self, gencodeIds, batchFh, expectedFh):
-        for evidType in (EvidenceType.RNA, EvidenceType.EST):
-            evidSetUuid = fakeGenbankUuid[evidType]  # FIXME: tmp
-            self.generateJobs(gencodeIds, evidSetUuid, str(evidType), batchFh, expectedFh)
+    def generateJobs(self, gencodeIds):
+        batchFile = os.path.join(self.workDir, "batch.jobs")
+        expectedLst = os.path.join(self.workDir, "expected.lst")
+        fileOps.ensureDir(self.workDir)
+        with open(batchFile, "w") as batchFh, open(expectedLst, "w") as expectedFh:
+            self._generateJobs(gencodeIds, batchFh, expectedFh)
+
+
+def getGeneIdsFromDb(gencodeDb):
+    conn = sqliteOps.connect(gencodeDb, readonly=True)
+    attrsDbTable = GencodeAttrsSqliteTable(conn, GENCODE_ATTRS_TABLE)
+    gencodeIds = sorted(attrsDbTable.getGeneIds())
+    conn.close()
+    return gencodeIds
+
+
+def getGencodeIds(gencodeDb, gencodeIdFile, maxGenes):
+    if gencodeIdFile is not None:
+        gencodeIds = sorted(fileOps.readNonCommentLines(gencodeIdFile))
+    else:
+        gencodeIds = getGeneIdsFromDb(gencodeDb)
+    if maxGenes is not None:
+        gencodeIds = gencodeIds[0:maxGenes]
+    return gencodeIds
 
 
 def tslCollectSupportMkJobs(opts):
     "main function"
-    conn = sqliteOps.connect(opts.gencodeDb, readonly=True)
-    attrsDbTable = GencodeAttrsSqliteTable(conn, GENCODE_ATTRS_TABLE)
-    if opts.gencodeIdFile is not None:
-        gencodeIds = sorted(fileOps.readNonCommentLines(opts.gencodeIdFile))
-    else:
-        gencodeIds = sorted(attrsDbTable.getGeneIds())
-    if opts.maxGenes is not None:
-        gencodeIds = gencodeIds[0:opts.maxGenes]
-    jobGen = JobGenerator(opts.gencodeDb, opts.evidDbDir, opts.genesPerJob,
-                          opts.details, opts.allDetails, opts.workDir)
+    gencodeIds = getGencodeIds(opts.gencodeDb, opts.gencodeIdFile, opts.maxGenes)
 
-    fileOps.ensureDir(opts.workDir)
-    batchFile = os.path.join(opts.workDir, "batch.jobs")
-    expectedLst = os.path.join(opts.workDir, "expected.lst")
-    with open(batchFile, "w") as batchFh, open(expectedLst, "w") as expectedFh:
-        if opts.evidSetName == 'genbank':
-            jobGen.generateGenbankJobs(gencodeIds, batchFh, expectedFh)
-        else:
-            jobGen.generateJobs(gencodeIds, opts.evidSetUuid, opts.evidSetName, batchFh, expectedFh)
-    conn.close()
+    jobGen = JobGenerator(opts.gencodeDb, opts.evidSetUuid, opts.evidSetName, opts.evidFile,
+                          opts.genesPerJob, opts.details, opts.allDetails, opts.tmpDir)
+    fileOps.ensureDir(jobGen.workDir)
+    jobGen.generateJobs(gencodeIds)
 
 
 tslCollectSupportMkJobs(parseArgs())

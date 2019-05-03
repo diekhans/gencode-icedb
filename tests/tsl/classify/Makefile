@@ -8,10 +8,20 @@ testCases = input/v28-test-cases.tsv
 allGenes = $(shell tawk 'NR>1 && !seen[$$4]{seen[$$4] = 1; print $$4}' ${testCases})
 
 gencodeDb = output/db/gencode.db
-evidDbDir = output/db/evidDb
+genbankDbDir = output/db/evidDb
+
+rnaName = GenBank-RNA
+rnaUuid = 02c995e3-372c-4cde-b216-5d3376c51988
+rnaPsl =  ${genbankDbDir}/RNA.psl.gz
+
+estName = GenBank-EST
+estUuid = fcfc5121-7e07-42f6-93a2-331a513eeb2c
+estPsl = ${genbankDbDir}/EST.psl.gz
+
 ucscDRnaName = ucsc-drna
 ucscDRnaUuid = f108c86b-8e0b-4dbd-96ae-6e75d8566eac
-ucscDRnaPsl = ${evidDbDir}/${ucscDRnaName}.psl
+ucscDRnaPsl = ${genbankDbDir}/${ucscDRnaName}.psl.gz
+
 createTestData = bin/createTestData
 
 testDbDone = output/db/db.done
@@ -22,36 +32,38 @@ classifyUnitTests: ${testDbDone}
 	${PYTHON} classifyUnitTests.py
 
 supportCollectGenesTest: ${testDbDone} mkdirs
-	${tslCollectSupport} ${gencodeDb} 02c995e3-372c-4cde-b216-5d3376c51988 ${evidDbDir}/RNA.psl.gz --details=output/$@.details.tsv output/$@.support.tsv ENSG00000177663.13
+	${tslCollectSupport} ${gencodeDb} 02c995e3-372c-4cde-b216-5d3376c51988 ${genbankDbDir}/RNA.psl.gz --details=output/$@.details.tsv output/$@.support.tsv ENSG00000177663.13
 	${diff} expected/$@.support.tsv output/$@.support.tsv
 	${diff} expected/$@.details.tsv output/$@.details.tsv
 
 supportCollectMkJobsTest: ${testDbDone} mkdirs
 	rm -rf output/$@.work output/$@.db
-	${tslCollectSupportMkJobs} --genesPerJob=2 --allDetails ${gencodeDb} ${evidDbDir} output/$@.work
-	sed -Ee 's#^.*(/bin/tslCollectSupport)#??\1#' output/$@.work/batch.jobs > output/$@.batch.jobs.cleaned
-	${diff} expected/$@.batch.jobs.cleaned output/$@.batch.jobs.cleaned
-	${jobsToMake} output/$@.work/batch.jobs output/$@.mk
-	${MAKE} -f output/$@.mk
-	(cd output/$@.work/results && find . -type f) | sort > output/$@.results.lst
+	${tslCollectSupportMkJobs} --genesPerJob=2 --allDetails ${gencodeDb} ${rnaUuid} ${rnaName} ${rnaPsl} output/$@.tmp
+	${jobsToMake} output/$@.tmp/${rnaName}/batch.jobs output/$@.RNA.mk
+	${MAKE} -f output/$@.RNA.mk
+	${tslCollectSupportMkJobs} --genesPerJob=2 --allDetails ${gencodeDb} ${estUuid} ${estName} ${estPsl} output/$@.tmp
+	${jobsToMake} output/$@.tmp/${estName}/batch.jobs output/$@.EST.mk
+	${MAKE} -f output/$@.EST.mk
+	(cd output/$@.tmp && find . -type f) | sort > output/$@.results.lst
 	${diff} expected/$@.results.lst output/$@.results.lst
-	${tslCollectSupportFinishJobs} --details=output/$@.support-eval-details.tsv output/$@.work output/$@.db
-	$(call sqldumpdiff,gencode_genbank_support_eval)
+	${tslCollectSupportFinishJobs} --details=output/$@.Gencode-RNA.support-eval-details.tsv ${rnaName} output/$@.tmp output/$@.db
+	${tslCollectSupportFinishJobs} --details=output/$@.${estName}.support-eval-details.tsv ${estName} output/$@.tmp output/$@.db
+	$(call sqldumpdiff,gencode_support_eval)
 
 
 ucscDRnaTest: ${testDbDone} mkdirs
 	rm -rf output/$@.work output/$@.db
-	${tslCollectSupportMkJobs} --genesPerJob=2 --allDetails ${gencodeDb} --evidSetUuid=${ucscDRnaUuid} --evidSetName=${ucscDRnaName} ${evidDbDir} output/$@.work
-	${jobsToMake} output/$@.work/batch.jobs output/$@.mk
+	${tslCollectSupportMkJobs} --genesPerJob=2 --allDetails ${gencodeDb} ${ucscDRnaUuid} ${ucscDRnaName} ${ucscDRnaPsl} output/$@.work
+	${jobsToMake} output/$@.work/${ucscDRnaName}/batch.jobs output/$@.mk
 	${MAKE} -f output/$@.mk
-	${tslCollectSupportFinishJobs} --details=output/$@.support-eval-details.tsv --evidSetName=${ucscDRnaName} output/$@.work output/$@.db
+	${tslCollectSupportFinishJobs} --details=output/$@.support-eval-details.tsv ${ucscDRnaName} output/$@.work output/$@.db
 	$(call sqldumpdiff,gencode_support_eval)
 
 
 ${testDbDone}: ${createTestData} ${testCases}
 	@mkdir -p $(dir $@)
-	${createTestData} ${testCases} ${hsGencodeVer} ${hsUcscGenomeDb} ${hsEnsemblCDnaDb} ${hsGrcRefAssemblyReport} ${gencodeDb} ${evidDbDir}
-	${tslLoadAlignEvid} input/ucsc-drna.psl ${evidDbDir} ${ucscDRnaName}
+	${createTestData} ${testCases} ${hsGencodeVer} ${hsUcscGenomeDb} ${hsEnsemblCDnaDb} ${hsGrcRefAssemblyReport} ${gencodeDb} ${genbankDbDir}
+	${tslLoadAlignEvid} input/ucsc-drna.psl ${genbankDbDir} ${ucscDRnaName}
 	touch $@
 
 

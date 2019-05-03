@@ -7,7 +7,7 @@ from pycbio.tsv import TsvReader
 from pycbio.sys import loggingOps
 from gencode_icedb.general.peeweeOps import peeweeBulkLoadSetup
 from gencode_icedb.tsl.supportEvalDb import SupportEvalResult, SupportEvidEvalResult
-from gencode_icedb.tsl.tslModels import tslConnect, tslClose, GencodeSupportEval, GencodeGenbankSupportEval
+from gencode_icedb.tsl.tslModels import tslConnect, tslClose, GencodeSupportEval
 
 bulk_size = 100   # size of each bulk insert
 
@@ -18,14 +18,12 @@ def parseArgs():
     loggingOps.addCmdOptions(parser)
     parser.add_argument('--detailsTsv',
                         help="""Save the details to this TSV file.""")
-    parser.add_argument("--evidSetName", default="genbank",
-                        help="""name of evidence, with 'genbank' getting special handling to combine RNAs and ESTs:""")
-    parser.add_argument('workDir',
-                        help="""directory contains results directory""")
+    parser.add_argument("evidSetName", default="genbank",
+                        help="""name of evidence""")
+    parser.add_argument('tmpDir',
+                        help="""tmp directory, tmpDir/evidSetName/results/ has results from run""")
     parser.add_argument('resultsDb',
-                        help="""Sqlite database were results are stored."""
-                        """For GenBank results, data is stored in the GencodeGenbankSupportEval table, with existing data dropped."""
-                        """For other sets, all entries with the same evidSetUUID are dropped""")
+                        help="""Sqlite database were results are stored, All entries with the same evidSetUUID are dropped""")
     opts = parser.parse_args()
     loggingOps.setupFromCmd(opts)
     return opts
@@ -59,8 +57,7 @@ def dbInsertResults(conn, tblCls, expectedTsvs):
         if len(resultsRecs) > 0:
             evidSetUuids.add(resultsRecs[0]["evidSetUuid"])
 
-    if tblCls == GencodeSupportEval:
-        dropExistingDataSets(tblCls, evidSetUuids)
+    dropExistingDataSets(tblCls, evidSetUuids)
     bulkInsert(conn, tblCls, recs)
 
 
@@ -82,16 +79,12 @@ def combineDetailsTsv(expectedTsvs, combinedDetailsTsv):
 
 def tslCollectSupportFinishJobs(opts):
     "main function"
-    expectedTsvs = fileOps.readFileLines(os.path.join(opts.workDir, "expected.lst"))
+    workDir = os.path.join(opts.tmpDir, opts.evidSetName)
+    expectedTsvs = fileOps.readFileLines(os.path.join(workDir, "expected.lst"))
     fileOps.ensureFileDir(opts.resultsDb)
-    if opts.evidSetName == "genbank":
-        tblCls = GencodeGenbankSupportEval
-    else:
-        tblCls = GencodeSupportEval
+    tblCls = GencodeSupportEval
 
     conn = tslConnect(opts.resultsDb, create=True, readonly=False)
-    if tblCls == GencodeGenbankSupportEval:
-        GencodeGenbankSupportEval.drop_table(fail_silently=True)
     peeweeBulkLoadSetup(conn)
     dbInsertResults(conn, tblCls, expectedTsvs)
     tslClose(conn)
