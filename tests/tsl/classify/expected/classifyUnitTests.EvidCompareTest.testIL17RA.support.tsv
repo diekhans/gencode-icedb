@@ -1,5 +1,5 @@
 transcriptId	evidSetUuid	support	evidCount	offset5	offset3	extend5Exons	extend3Exons
 ENST00000319363.10	02c995e3-372c-4cde-b216-5d3376c51988	good	9	-56	-5194	0	0
 ENST00000459971.1	02c995e3-372c-4cde-b216-5d3376c51988	good	1	0	0	0	0
-ENST00000459971.1	fcfc5121-7e07-42f6-93a2-331a513eeb2c	good	1	0	-3	0	0
+ENST00000459971.1	fcfc5121-7e07-42f6-93a2-331a513eeb2c	polymorphic	1	0	-3	0	0
 ENST00000477874.1	fcfc5121-7e07-42f6-93a2-331a513eeb2c	good	1	-7	0	0	0

@@ -17,27 +17,27 @@ The current algorithm is:
 """
 from collections import namedtuple, defaultdict
 from pycbio.sys import fileOps
-from gencode_icedb.general.transFeatures import ExonFeature, IntronFeature, ChromInsertFeature, RnaInsertFeature
 from gencode_icedb.tsl.supportDefs import EvidenceSupport, TrascriptionSupportLevel
 from gencode_icedb.tsl.supportDefs import transIsSingleExon, geneIsTslIgnored
-from gencode_icedb.tsl.evidenceDb import EvidenceSource
+from gencode_icedb.tsl.tslModels import GencodeTranscriptSupport
 
 
-class AnnotationEvidenceEval(namedtuple("AnnotationEvidenceEval",
-                                        ("annotId", "evidSrc", "evidId", "support", "suspect"))):
-    """Evaluation of an annotation against an evidence alignment."""
-    slots = ()
-
-
-class AnnotationEvidenceCollector(defaultdict):
-    """Collection of evidence supporting a transcript annotation,
-    indexed by EvidenceSource"""
+class AnnotationSupport(defaultdict):
+    """Collection of evidence supporting a transcript annotation, index by
+    evidence set uuid"""
     def __init__(self, transAnnot):
         self.transAnnot = transAnnot
-        super(AnnotationEvidenceCollector, self).__init__(list)
+        super(AnnotationSupportCollector, self).__init__(list)
 
-    def add(self, evidSrc, evidEval):
-        self[evidSrc].append(evidEval)
+    def add(self, supportEval):
+        self[supportEval.evidSetUuid].append(supportEval)
+
+
+class SupportCollector(defaultdict):
+    """Loads support for"""
+
+
+
 
 
 class FullLengthSupportEvaluator(object):
@@ -51,9 +51,9 @@ class FullLengthSupportEvaluator(object):
         self.evidenceReader = evidenceReader
         self.evaluator = MegSupportEvaluator(qualEval, allowExtension)
 
-    def _countFullSupport(self, evidEvals):
+    def _countFullSupport(self, supportEvals):
         """count support from normal and suspect evidence"""
-        supporting = [ev for ev in evidEvals if ev.support < EvidenceSupport.poor]
+        supporting = [ev for ev in supportEvals if ev.support < EvidenceSupport.poor]
         return (len([ev for ev in supporting if ev.suspect is None]),
                 len([ev for ev in supporting if ev.suspect is not None]))
 
@@ -128,3 +128,12 @@ class FullLengthSupportEvaluator(object):
         evidCache = EvidenceCache(self.evidenceReader, geneAnnot.chrom, geneAnnot.transcriptionStrand)
         for transAnnot in geneAnnot.transcripts:
             self._classifyTrans(transAnnot, evidCache, tslTsvFh, detailsTsvFh)
+
+
+class SupportClassifier(object):
+    """
+    Classify transcripts and/or collect statistics based on evidence from a set
+    of database.
+    """
+    # Process by evidence database for all genes to not reopening evidence databases
+    def

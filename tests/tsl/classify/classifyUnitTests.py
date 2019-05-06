@@ -205,6 +205,13 @@ class EvidCompareTest(TestCaseBase):
         evidSupport = self._rawPslCmpr(annotTrans, evidRawPsl, False)
         self.assertEqual(evidSupport.support, EvidenceSupport.large_indel_size)
 
+    def testPolymophic(self):
+        # test polymorphic with fake psl
+        annotTrans = self._getAnnot("ENST00000400588.5")
+        evidRawPsl = ["2627", "0", "0", "0", "1", "3", "10", "43660", "-", "ENST00000400588.5_poly", "2630", "0", "2630", "chr22", "50818468", "16961935", "17008222", "12", "941,105,97,91,146,119,86,251,208,304,161,118,", "0,941,1046,1143,1234,1383,1502,1588,1839,2047,2351,2512,", "16961935,16963724,16964765,16965177,16966099,16966245,16968297,16969942,16987959,16991872,17007940,17008104,"]
+        evidSupport = self._rawPslCmpr(annotTrans, evidRawPsl, True)
+        self.assertEqual(evidSupport.support, EvidenceSupport.polymorphic)
+
 
 def suite():
     ts = unittest.TestSuite()

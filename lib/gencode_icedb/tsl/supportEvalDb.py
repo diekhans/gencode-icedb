@@ -22,7 +22,7 @@ class SupportEvidEvalResult(namedtuple("SupportEvidEvalEval",
         return super(SupportEvidEvalResult, cls).__new__(cls, transcriptId, inCnv(evidSetUuid, UUID), evidId,
                                                          EvidenceSupport(support),
                                                          int(offset5), int(offset3),
-                                                         int(extend5Exons), int(extend5Exons))
+                                                         int(extend5Exons), int(extend3Exons))
 
     @classmethod
     def tsvHeader(cls):
@@ -64,7 +64,7 @@ class SupportEvalResult(namedtuple("SupportEvalResult",
                                                      EvidenceSupport(support),
                                                      int(evidCount),
                                                      int(offset5), int(offset3),
-                                                     int(extend5Exons), int(extend5Exons))
+                                                     int(extend5Exons), int(extend3Exons))
 
     @classmethod
     def tsvHeader(cls):

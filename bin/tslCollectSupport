@@ -39,7 +39,7 @@ def parseArgs():
 
 def classifyGenes(evidenceReader, geneAnnots, supportEvalTsvFh, detailsTsvFh):
     qualEval = EvidenceQualityEval(tightExonPolymorphicSizeLimit, tightExonPolymorphicFactionLimit)
-    evaluator = FullLengthSupportEvaluator(evidenceReader, qualEval)
+    evaluator = FullLengthSupportEvaluator(evidenceReader, qualEval, allowExtension=True)
     evaluator.writeTsvHeaders(supportEvalTsvFh, detailsTsvFh)
     for geneAnnot in geneAnnots:
         evaluator.evaluateGeneTranscripts(geneAnnot, supportEvalTsvFh, detailsTsvFh)

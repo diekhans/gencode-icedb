@@ -11,7 +11,7 @@ assemblyRep = input/GCF_000001405.38_GRCh38.p12_assembly_report.txt
 
 gencodeV28Db = output/gencodeV28.db
 hg38TwoBit = /hive/data/genomes/hg38/hg38.2bit
-hg38TestBams = output/ucsc-mrnaV28.bam output/hg38-mm10.transMap.bam output/ont-cls.sam
+hg38TestBams = output/ucsc-mrnaV28.bam output/hg38-mm10.transMap.bam output/ont-cls.bam
 
 
 ensemblDb = homo_sapiens_core_92_38

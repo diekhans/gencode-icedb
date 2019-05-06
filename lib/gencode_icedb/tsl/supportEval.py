@@ -29,7 +29,6 @@ looseExonPolymorphicFactionLimit = 1.0
 # Categories we keep
 keepEvidenceSupport = (EvidenceSupport.good, EvidenceSupport.polymorphic, EvidenceSupport.extends_exons)
 
-
 def sameChromBounds(feat1, feat2):
     """is the location on the chromosome identical, regardless of strand"""
     return feat1.chrom.eqAbsLoc(feat2.chrom)
@@ -79,7 +78,7 @@ class EvidenceQualityEval(object):
 
         if totalIndelSize == 0:
             return EvidenceSupport.good
-        elif totalIndelSize > self.exonPolymorphicFactionLimit * len(evidExon.chrom):
+        elif totalIndelSize > self.exonPolymorphicFactionLimit * evidExon.rna.size:
             return EvidenceSupport.large_indel_content
         else:
             return EvidenceSupport.polymorphic
@@ -199,6 +198,7 @@ class MegSupportEvaluator(object):
 
     def _mkSupportEvidEvalResults(self, transAnnot, evidTrans, support,
                                   firstOffset=0, lastOffset=0, firstExtend=0, lastExtend=0):
+        assert((support != EvidenceSupport.extends_exons) or ((firstExtend + lastExtend) > 0))
         if transAnnot.transcriptionStrand == '+':
             offset5, offset3, extend5Exons, extend3Exons = firstOffset, lastOffset, firstExtend, lastExtend
         else:
@@ -206,7 +206,7 @@ class MegSupportEvaluator(object):
         return SupportEvidEvalResult(transAnnot.rna.name, self.evidSetUuid, evidTrans.rna.name, support,
                                      offset5, offset3, extend5Exons, extend3Exons)
 
-    def _compareFeatures(self, transAnnot, evidTrans, firstEvidExon, lastEvidExon):
+    def _compareFeatures(self, transAnnot, evidTrans, qualEvalSupport, firstEvidExon, lastEvidExon):
         # This assumes that the number of evidence exons has been checked to be
         # equal or more in cases of allowExtension.  This is not done in transcription
         # order.  This will never work on single-exon transcripts, which need a different
@@ -216,9 +216,12 @@ class MegSupportEvaluator(object):
         annotLastExon = transAnnot.lastFeature(ExonFeature)
         evidExon = firstEvidExon
 
+        # start with evidence quality, so we don't loose polymorphic status
+        worstSupport = qualEvalSupport
+
         # initial exon
         firstSupport, firstOffset, firstExtend = self._compareFirstExon(annotExon, evidExon)
-        worstSupport = firstSupport
+        worstSupport = max(firstSupport, worstSupport)
         if not keepEvidEval(worstSupport):
             return self._mkSupportEvidEvalResults(transAnnot, evidTrans, worstSupport)
 
@@ -241,8 +244,9 @@ class MegSupportEvaluator(object):
 
     def _compareMegWithEvidenceImpl(self, transAnnot, evidTrans):
         """Compare a multi-exon annotation with a given piece of evidence"""
-        # check full evidence first; > is worse
-        worstSupport = self.qualEval.check(evidTrans)
+        # check evidence quality first, this will be used to adjust good support
+        qualEvalSupport = self.qualEval.check(evidTrans)
+        worstSupport = qualEvalSupport
         if not keepEvidEval(worstSupport):
             return self._mkSupportEvidEvalResults(transAnnot, evidTrans, worstSupport)
 
@@ -256,7 +260,8 @@ class MegSupportEvaluator(object):
         if (firstEvidExon is None) or (lastEvidExon is None):
             return self._mkSupportEvidEvalResults(transAnnot, evidTrans, EvidenceSupport.feat_mismatch)
 
-        return self._compareFeatures(transAnnot, evidTrans, firstEvidExon, lastEvidExon)
+        # returns final SupportEvidEvalResult
+        return self._compareFeatures(transAnnot, evidTrans, qualEvalSupport, firstEvidExon, lastEvidExon)
 
     def compare(self, transAnnot, evidTrans):
         """Compare a multi-exon annotation with a given piece of evidence, return a

@@ -39,16 +39,16 @@ supportCollectGenesTest: ${testDbDone} mkdirs
 
 supportCollectMkJobsTest: ${testDbDone} mkdirs
 	rm -rf output/$@.work output/$@.db
-	${tslCollectSupportMkJobs} --genesPerJob=2 --allDetails ${gencodeDb} ${rnaName} ${rnaUuid} ${rnaPsl} output/$@.tmp
+	${tslCollectSupportMkJobs} --genesPerJob=2 ${gencodeDb} ${rnaName} ${rnaUuid} ${rnaPsl} output/$@.tmp
 	${jobsToMake} output/$@.tmp/${rnaName}/batch.jobs output/$@.RNA.mk
 	${MAKE} -f output/$@.RNA.mk
-	${tslCollectSupportMkJobs} --genesPerJob=2 --allDetails ${gencodeDb} ${estName} ${estUuid} ${estPsl} output/$@.tmp
+	${tslCollectSupportMkJobs} --genesPerJob=2 ${gencodeDb} ${estName} ${estUuid} ${estPsl} output/$@.tmp
 	${jobsToMake} output/$@.tmp/${estName}/batch.jobs output/$@.EST.mk
 	${MAKE} -f output/$@.EST.mk
 	(cd output/$@.tmp && find . -type f) | sort > output/$@.results.lst
 	${diff} expected/$@.results.lst output/$@.results.lst
-	${tslCollectSupportFinishJobs} --details=output/$@.Gencode-RNA.support-eval-details.tsv ${rnaName} output/$@.tmp output/$@.db
-	${tslCollectSupportFinishJobs} --details=output/$@.${estName}.support-eval-details.tsv ${estName} output/$@.tmp output/$@.db
+	${tslCollectSupportFinishJobs} ${rnaName} output/$@.tmp output/$@.db
+	${tslCollectSupportFinishJobs} ${estName} output/$@.tmp output/$@.db
 	$(call sqldumpdiff,gencode_support_eval)
 
 
