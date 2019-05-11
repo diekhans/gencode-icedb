@@ -48,7 +48,12 @@ class EvidenceSupport(SymEnum):
     feat_count_mismatch = 51    # different number of features
     feat_mismatch = 52          # mismatch of features
     not_useful = 90             # support deemed not useful for other reasons
-    no_support = 100
+    no_support = 100            # values >= to this are record so we know gene was analyzed
+    no_eval_single_exon = 101   # not evaluated due to be a single exon gene
+    no_eval_olfactory_receptor = 102     # olfactory receptor gene
+    no_eval_immunoglobin = 103  # immunoglobin gene
+    no_eval_tcell_receptor = 104         # tcell receptor
+    no_eval_hla = 105           # HLA gene
 
 
 class TrascriptionSupportLevel(SymEnum):
@@ -67,28 +72,35 @@ def transIsSingleExon(transAnnot):
     return len(transAnnot.getFeaturesOfType(ExonFeature)) <= 1
 
 
-def isGeneIgnored(annot):
-    "can be gene or transcript annotation"
-    bioType = annot.attrs.geneType
+def geneTypeEvidSupport(annot):
+    """ Should this gene or transcript be evaulated? Returns and
+    EvidenceSupport, with good if it should be analyzed. The annot maybe gene or transcript.
+    A transTypeEvidSupport must be called to check for single exon.
+    """
+    geneBioType = annot.attrs.geneType
     geneName = annot.attrs.geneName
     # FIXME: this was part of ccds gencodeGenes module, we need to make that independent and use it here
     # trans.isPseudo()
-    if (bioType != "polymorphic_pseudogene") and (bioType.find("pseudogene") >= 0) and (bioType.find("transcribed") < 0):
-        return True
+    # FIXME: this was changed to try to detect transcribes pseudogenes not classified as such
+    # if (geneBioType != "polymorphic_pseudogene") and (geneBioType.find("pseudogene") >= 0) and (geneBioType.find("transcribed") < 0):
+    #     return True
     # trans.isOlfactoryReceptor()
     if re.match("^OR[0-9].+", geneName):
-        return True
+        return EvidenceSupport.no_eval_olfactory_receptor
     # trans.isHLA()
     if geneName.find("HLA-") == 0:
-        return True
+        return EvidenceSupport.no_eval_hla
     # trans.isImmunoglobin()
-    if bioType.startswith("IG_"):
-        return True
+    if geneBioType.startswith("IG_"):
+        return EvidenceSupport.no_eval_immunoglobin
     # trans.isTCellReceptor())
-    if bioType.startswith("TR_"):
-        return True
-    return False
+    if geneBioType.startswith("TR_"):
+        return EvidenceSupport.no_eval_tcell_receptor
+    return EvidenceSupport.good
 
 
-def isTransIgnored(transAnnot):
-    return transIsSingleExon(transAnnot) or isGeneIgnored(transAnnot)
+def transTypeEvidSupport(transAnnot):
+    if transIsSingleExon(transAnnot):
+        return EvidenceSupport.no_eval_single_exon
+    else:
+        return geneTypeEvidSupport(transAnnot)

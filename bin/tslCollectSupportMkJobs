@@ -6,7 +6,7 @@ from pycbio.sys import fileOps
 from pycbio.sys import loggingOps
 from pycbio.db import sqliteOps
 from pycbio.hgdata.gencodeSqlite import GencodeAttrsSqliteTable
-from gencode_icedb.general.ucscGencodeSource import GENCODE_ATTRS_TABLE
+from gencode_icedb.general.ucscGencodeSource import GENCODE_ATTRS_TABLE, GENCODE_ANN_TABLE
 
 
 def parseArgs():
@@ -23,6 +23,8 @@ def parseArgs():
                         help="""file containing subset of ids""")
     parser.add_argument("--genesPerJob", type=int, default=8,
                         help="""number of genes in a job""")
+    parser.add_argument("--primaryOnly", action="store_true",
+                        help="""only analyze primary assembly""")
     parser.add_argument('gencodeDb',
                         help="""GENCODE sqlite3 database""")
     parser.add_argument("evidSetName",
@@ -36,6 +38,8 @@ def parseArgs():
     opts = parser.parse_args()
     if opts.allDetails:
         opts.details = True
+    if opts.primaryOnly and (opts.gencodeIdFile is not None):
+        parser.error("can't specify --primaryOnly with --gencodeIdFile")
     loggingOps.setupFromCmd(opts)
     return opts
 
@@ -88,9 +92,23 @@ def getGeneIdsFromDb(gencodeDb):
     return gencodeIds
 
 
-def getGencodeIds(gencodeDb, gencodeIdFile, maxGenes):
+def getGeneIdsFromDbForPrimary(gencodeDb):
+    conn = sqliteOps.connect(gencodeDb, readonly=True)
+    sql = ("SELECT distinct geneId FROM {attrsTbl} WHERE transcriptId IN "
+           "(SELECT name FROM {annTbl} WHERE length(chrom) <= 5)"
+           .format(attrsTbl=GENCODE_ATTRS_TABLE, annTbl=GENCODE_ANN_TABLE))
+    with sqliteOps.SqliteCursor(conn) as cur:
+        cur.execute(sql)
+        gencodeIds = sorted([row[0] for row in cur])
+    conn.close()
+    return gencodeIds
+
+
+def getGencodeIds(gencodeDb, gencodeIdFile, primaryOnly, maxGenes):
     if gencodeIdFile is not None:
         gencodeIds = sorted(fileOps.readNonCommentLines(gencodeIdFile))
+    elif primaryOnly:
+        gencodeIds = getGeneIdsFromDbForPrimary(gencodeDb)
     else:
         gencodeIds = getGeneIdsFromDb(gencodeDb)
     if maxGenes is not None:
@@ -100,7 +118,7 @@ def getGencodeIds(gencodeDb, gencodeIdFile, maxGenes):
 
 def tslCollectSupportMkJobs(opts):
     "main function"
-    gencodeIds = getGencodeIds(opts.gencodeDb, opts.gencodeIdFile, opts.maxGenes)
+    gencodeIds = getGencodeIds(opts.gencodeDb, opts.gencodeIdFile, opts.primaryOnly, opts.maxGenes)
 
     jobGen = JobGenerator(opts.gencodeDb, opts.evidSetUuid, opts.evidSetName, opts.evidFile,
                           opts.genesPerJob, opts.details, opts.allDetails, opts.tmpDir)

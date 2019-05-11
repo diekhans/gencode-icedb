@@ -17,7 +17,7 @@ def mkSelect(ver, gencodeIds):
            "FROM {gpTbl} AS gp "
            "LEFT JOIN {atrTbl} AS atr ON (atr.transcriptId = gp.name) "
            "LEFT JOIN {tslTbl} AS tsl ON (tsl.transcriptId = gp.name) "
-           "WHERE (gp.exonCount > 1) AND ((atr.geneId IN ({idSelect})) or (atr.transcriptId IN ({idSelect})))")
+           "WHERE ((atr.geneId IN ({idSelect})) or (atr.transcriptId IN ({idSelect})))")
     return sql.format(gpTbl="wgEncodeGencodeComp" + ver,
                       atrTbl="wgEncodeGencodeAttrs" + ver,
                       tslTbl="wgEncodeGencodeTranscriptionSupportLevel" + ver,

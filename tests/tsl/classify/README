@@ -1,7 +1,8 @@
 
-- input/v27-test-cases.tsv:
+- input/v28-test-cases.tsv:
   - a manually select subset entries found with:
       bin/getTestCaseInfo id ... >tmp.tsv
-
+  - create BED:
+      tawk 'NR > 1{print $1,$2,$3,$5}' tmp.tsv > tmp.bed
 - input/ucsc-drna.psl
   - FLAIR direct RNA (sensitive mode) from 2019-04-30.  Stats in this PSL are not valid.

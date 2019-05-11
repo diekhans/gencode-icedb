@@ -5,7 +5,7 @@ from pycbio.sys import fileOps
 from collections import defaultdict
 from gencode_icedb.general.transFeatures import ExonFeature, ChromInsertFeature, RnaInsertFeature
 from gencode_icedb.tsl.supportDefs import EvidenceSupport
-from gencode_icedb.tsl.supportDefs import isGeneIgnored, isTransIgnored
+from gencode_icedb.tsl.supportDefs import geneTypeEvidSupport, transTypeEvidSupport
 from gencode_icedb.tsl.supportEvalDb import SupportEvidEvalResult, SupportEvalResult
 
 
@@ -26,8 +26,12 @@ tightExonPolymorphicFactionLimit = 0.1
 looseExonPolymorphicSizeLimit = 5000
 looseExonPolymorphicFactionLimit = 1.0
 
-# Categories we keep
-keepEvidenceSupport = (EvidenceSupport.good, EvidenceSupport.polymorphic, EvidenceSupport.extends_exons)
+def shouldKeepEvidenceSupport(evidSupport):
+    "Filter for categories we output"
+    return ((evidSupport <= EvidenceSupport.polymorphic)
+            or (evidSupport == EvidenceSupport.extends_exons)
+            or (evidSupport >= EvidenceSupport.no_support))
+
 
 def sameChromBounds(feat1, feat2):
     """is the location on the chromosome identical, regardless of strand"""
@@ -36,6 +40,7 @@ def sameChromBounds(feat1, feat2):
 
 def keepEvidEval(support):
     """good or shows extensions"""
+    # no_support ensures at least one record per transcript per evidence
     return ((support < EvidenceSupport.poor)
             or (support == EvidenceSupport.extends_exons))
 
@@ -198,12 +203,14 @@ class MegSupportEvaluator(object):
 
     def _mkSupportEvidEvalResults(self, transAnnot, evidTrans, support,
                                   firstOffset=0, lastOffset=0, firstExtend=0, lastExtend=0):
+        "evidTrans can be None"
         assert((support != EvidenceSupport.extends_exons) or ((firstExtend + lastExtend) > 0))
         if transAnnot.transcriptionStrand == '+':
             offset5, offset3, extend5Exons, extend3Exons = firstOffset, lastOffset, firstExtend, lastExtend
         else:
             offset5, offset3, extend5Exons, extend3Exons = lastOffset, firstOffset, lastExtend, firstExtend
-        return SupportEvidEvalResult(transAnnot.rna.name, self.evidSetUuid, evidTrans.rna.name, support,
+        evidName = evidTrans.rna.name if evidTrans is not None else None
+        return SupportEvidEvalResult(transAnnot.rna.name, self.evidSetUuid, evidName, support,
                                      offset5, offset3, extend5Exons, extend3Exons)
 
     def _compareFeatures(self, transAnnot, evidTrans, qualEvalSupport, firstEvidExon, lastEvidExon):
@@ -316,10 +323,14 @@ class FullLengthSupportEvaluator(object):
         returning an list of SupportEvidEvalResult objects. If there are
         multiple occurrences of the same id, pick the best.  This happens when
         RNAs are combined from two sources."""
+        worstSupport = transTypeEvidSupport(transAnnot)
+        if worstSupport != EvidenceSupport.good:
+            return [SupportEvidEvalResult(transAnnot.rna.name, self.evidenceReader.evidSetUuid, None, worstSupport)]
         evrById = {}
-        if not isTransIgnored(transAnnot):
-            for result in self._collectSupportEvid(transAnnot, evidCache, detailsTsvFh):
-                evrById[result.evidId] = self._betterAlign(result, evrById.get(result.evidId))
+        for result in self._collectSupportEvid(transAnnot, evidCache, detailsTsvFh):
+            evrById[result.evidId] = self._betterAlign(result, evrById.get(result.evidId))
+        if len(evrById) == 0:
+            return [SupportEvidEvalResult(transAnnot.rna.name, self.evidenceReader.evidSetUuid, None, EvidenceSupport.no_support)]
         return list(sorted(evrById.values(), key=lambda r: r.evidId))
 
     @staticmethod
@@ -336,14 +347,13 @@ class FullLengthSupportEvaluator(object):
         """combine SupportEvidEvalResult objects into a SupportEvalResult object."""
         evr = evidEvalResults[0]
         bestSupport, bestOffset5, bestOffset3, bestExtend5Exon, bestExtend3Exon = evr.support.value, evr.offset5, evr.offset3, evr.extend5Exons, evr.extend3Exons
-        cnt = 1
         for evr in evidEvalResults[1:]:
             bestSupport = min(bestSupport, evr.support)
             bestOffset5 = max(bestOffset5, evr.offset5)
             bestOffset3 = max(bestOffset3, evr.offset3)
             bestExtend5Exon = max(bestExtend5Exon, evr.extend5Exons)
             bestExtend3Exon = max(bestExtend3Exon, evr.extend3Exons)
-            cnt += 1
+        cnt = len(evidEvalResults) if bestSupport < EvidenceSupport.no_support else 0
         return SupportEvalResult(evr.transcriptId, self.evidenceReader.evidSetUuid,
                                  EvidenceSupport(bestSupport), cnt,
                                  bestOffset5, bestOffset3,
@@ -361,10 +371,10 @@ class FullLengthSupportEvaluator(object):
         such as extension. """
         evidEvalBySupport = self._splitBySupport(evidEvalResults)
         evalResults = []
-        for evidSupport in keepEvidenceSupport:
-            if evidSupport in evidEvalBySupport:
+        for evidSupport in evidEvalBySupport.keys():
+            if shouldKeepEvidenceSupport(evidSupport):
                 evalResults.append(self._combineSupportEvid(evidEvalBySupport[evidSupport]))
-        # sort for reproducible
+        # sort for testing
         return sorted(evalResults)
 
     def _evaulateTrans(self, transAnnot, evidCache, supportEvalTsvFh, detailsTsvFh):
@@ -377,7 +387,9 @@ class FullLengthSupportEvaluator(object):
     def evaluateGeneTranscripts(self, geneAnnot, supportEvalTsvFh, detailsTsvFh=None):
         """Evaluate a list of transcripts, which must be all on the same chromosome.
         They should be from the same gene locus or overlapping loci for caching efficiency."""
-        if not isGeneIgnored(geneAnnot):
-            evidCache = self.getEvidenceCache(geneAnnot)
-            for transAnnot in geneAnnot.transcripts:
-                self._evaulateTrans(transAnnot, evidCache, supportEvalTsvFh, detailsTsvFh)
+        # Don't load evidence cache if we are going to not actually analyze
+        # any of the transcript because of the gene type.  We still look at each transcript to
+        # record it not being analyzed
+        evidCache = self.getEvidenceCache(geneAnnot) if geneTypeEvidSupport(geneAnnot) is EvidenceSupport.good else None
+        for transAnnot in geneAnnot.transcripts:
+            self._evaulateTrans(transAnnot, evidCache, supportEvalTsvFh, detailsTsvFh)

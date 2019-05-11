@@ -27,7 +27,7 @@ createTestData = bin/createTestData
 
 testDbDone = output/db/db.done
 
-test:: classifyUnitTests supportCollectGenesTest supportCollectMkJobsTest ucscDRnaTest ucscDRnaBamTest
+test:: classifyUnitTests supportCollectGenesTest supportCollectMkJobsTest supportCollectMkJobsPrimaryTest ucscDRnaTest ucscDRnaBamTest
 
 classifyUnitTests: ${testDbDone}
 	${PYTHON} classifyUnitTests.py
@@ -38,7 +38,7 @@ supportCollectGenesTest: ${testDbDone} mkdirs
 	${diff} expected/$@.details.tsv output/$@.details.tsv
 
 supportCollectMkJobsTest: ${testDbDone} mkdirs
-	rm -rf output/$@.work output/$@.db
+	rm -rf output/$@.tmp output/$@.db
 	${tslCollectSupportMkJobs} --genesPerJob=2 ${gencodeDb} ${rnaName} ${rnaUuid} ${rnaPsl} output/$@.tmp
 	${jobsToMake} output/$@.tmp/${rnaName}/batch.jobs output/$@.RNA.mk
 	${MAKE} -f output/$@.RNA.mk
@@ -51,21 +51,25 @@ supportCollectMkJobsTest: ${testDbDone} mkdirs
 	${tslCollectSupportFinishJobs} ${estName} output/$@.tmp output/$@.db
 	$(call sqldumpdiff,gencode_support_eval)
 
+# this doesn't do that much, since we only have primary data in path
+supportCollectMkJobsPrimaryTest: ${testDbDone} mkdirs
+	rm -rf output/$@.tmp output/$@.tmp output/$@.db
+	${tslCollectSupportMkJobs} --primaryOnly --genesPerJob=2 ${gencodeDb} ${rnaName} ${rnaUuid} ${rnaPsl} output/$@.tmp
 
 ucscDRnaTest: ${testDbDone} mkdirs
-	rm -rf output/$@.work output/$@.db
-	${tslCollectSupportMkJobs} --genesPerJob=2 --allDetails ${gencodeDb} ${ucscDRnaName} ${ucscDRnaUuid} ${ucscDRnaPsl} output/$@.work
-	${jobsToMake} output/$@.work/${ucscDRnaName}/batch.jobs output/$@.mk
+	rm -rf output/$@.tmp output/$@.db
+	${tslCollectSupportMkJobs} --genesPerJob=2 --allDetails ${gencodeDb} ${ucscDRnaName} ${ucscDRnaUuid} ${ucscDRnaPsl} output/$@.tmp
+	${jobsToMake} output/$@.tmp/${ucscDRnaName}/batch.jobs output/$@.mk
 	${MAKE} -f output/$@.mk
-	${tslCollectSupportFinishJobs} --details=output/$@.support-eval-details.tsv ${ucscDRnaName} output/$@.work output/$@.db
+	${tslCollectSupportFinishJobs} --details=output/$@.support-eval-details.tsv ${ucscDRnaName} output/$@.tmp output/$@.db
 	$(call sqldumpdiff,gencode_support_eval)
 
 ucscDRnaBamTest: ${testDbDone} ${ucscDRnaBam} mkdirs
-	rm -rf output/$@.work output/$@.db
-	${tslCollectSupportMkJobs} --genesPerJob=2 --allDetails ${gencodeDb} ${ucscDRnaName} ${ucscDRnaUuid} ${ucscDRnaBam} output/$@.work
-	${jobsToMake} output/$@.work/${ucscDRnaName}/batch.jobs output/$@.mk
+	rm -rf output/$@.tmp output/$@.db
+	${tslCollectSupportMkJobs} --genesPerJob=2 --allDetails ${gencodeDb} ${ucscDRnaName} ${ucscDRnaUuid} ${ucscDRnaBam} output/$@.tmp
+	${jobsToMake} output/$@.tmp/${ucscDRnaName}/batch.jobs output/$@.mk
 	${MAKE} -f output/$@.mk
-	${tslCollectSupportFinishJobs} --details=output/$@.support-eval-details.tsv ${ucscDRnaName} output/$@.work output/$@.db
+	${tslCollectSupportFinishJobs} --details=output/$@.support-eval-details.tsv ${ucscDRnaName} output/$@.tmp output/$@.db
 	$(call sqldumpdiff,gencode_support_eval)
 
 

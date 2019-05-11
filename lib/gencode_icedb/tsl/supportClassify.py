@@ -35,9 +35,7 @@ class AnnotationSupport(defaultdict):
 
 class SupportCollector(defaultdict):
     """Loads support for"""
-
-
-
+    pass
 
 
 class FullLengthSupportEvaluator(object):
@@ -136,4 +134,4 @@ class SupportClassifier(object):
     of database.
     """
     # Process by evidence database for all genes to not reopening evidence databases
-    def
+    pass

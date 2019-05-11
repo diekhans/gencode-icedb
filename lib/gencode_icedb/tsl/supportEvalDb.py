@@ -15,7 +15,7 @@ class SupportEvidEvalResult(namedtuple("SupportEvidEvalEval",
                                         "extend5Exons", "extend3Exons"))):
     """Evaluation of an annotation against an item of evidence.
     This is the output of collection jobs that will later be combined
-    and stored in a database."""
+    and stored in a database. The evidId argument maybe None"""
     slots = ()
 
     def __new__(cls, transcriptId, evidSetUuid, evidId, support, offset5=0, offset3=0, extend5Exons=0, extend3Exons=0):
