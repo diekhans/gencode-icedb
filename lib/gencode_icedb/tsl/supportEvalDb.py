@@ -44,7 +44,8 @@ class SupportEvalResult(namedtuple("SupportEvalResult",
     of the specific support
 
     :param transcriptId: GENCODE transcript identifier
-    :param evidSetUuid:' GUID of evidence set providing support
+    :param evidSetUuid: GUID of evidence set providing support.  Maybe None if this is used to
+           indicate no support for because the transcript was not evaluated.
     :param support: EvidenceSupport best support by this evidence set.
     :param count: Number of evidence alignments at this support level.
     :param offset5:  Offset of the start of the first evidence exon to the start of

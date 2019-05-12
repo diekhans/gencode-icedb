@@ -73,6 +73,10 @@ class GencodeSupportEval(BaseModel):
     extend3Exons = IntegerField(help_text="""Maximum extending 3' number of exons.""")
 
 
+    def __str__(self):
+        return "{} {} {} {} {} {} {} {}".format(self.transcriptId, self.evidSetUuid, self.support, self.evidCount,
+                                                self.offset5, self.offset3, self.extend5Exons, self.extend3Exons)
+
 class GencodeTranscriptSupport(BaseModel):
     """Transcript-level support"""
     id = PrimaryKeyField()

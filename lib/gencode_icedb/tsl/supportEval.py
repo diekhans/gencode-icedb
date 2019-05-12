@@ -5,7 +5,7 @@ from pycbio.sys import fileOps
 from collections import defaultdict
 from gencode_icedb.general.transFeatures import ExonFeature, ChromInsertFeature, RnaInsertFeature
 from gencode_icedb.tsl.supportDefs import EvidenceSupport
-from gencode_icedb.tsl.supportDefs import geneTypeEvidSupport, transTypeEvidSupport
+from gencode_icedb.tsl.supportDefs import transTypeEvidSupport, geneTypeIsEvaulated, transTypeIsEvaulated
 from gencode_icedb.tsl.supportEvalDb import SupportEvidEvalResult, SupportEvalResult
 
 
@@ -387,9 +387,8 @@ class FullLengthSupportEvaluator(object):
     def evaluateGeneTranscripts(self, geneAnnot, supportEvalTsvFh, detailsTsvFh=None):
         """Evaluate a list of transcripts, which must be all on the same chromosome.
         They should be from the same gene locus or overlapping loci for caching efficiency."""
-        # Don't load evidence cache if we are going to not actually analyze
-        # any of the transcript because of the gene type.  We still look at each transcript to
-        # record it not being analyzed
-        evidCache = self.getEvidenceCache(geneAnnot) if geneTypeEvidSupport(geneAnnot) is EvidenceSupport.good else None
-        for transAnnot in geneAnnot.transcripts:
-            self._evaulateTrans(transAnnot, evidCache, supportEvalTsvFh, detailsTsvFh)
+        if geneTypeIsEvaulated(geneAnnot):
+            evidCache = self.getEvidenceCache(geneAnnot)
+            for transAnnot in geneAnnot.transcripts:
+                if transTypeIsEvaulated(transAnnot):
+                    self._evaulateTrans(transAnnot, evidCache, supportEvalTsvFh, detailsTsvFh)

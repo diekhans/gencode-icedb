@@ -98,9 +98,21 @@ def geneTypeEvidSupport(annot):
         return EvidenceSupport.no_eval_tcell_receptor
     return EvidenceSupport.good
 
-
 def transTypeEvidSupport(transAnnot):
     if transIsSingleExon(transAnnot):
         return EvidenceSupport.no_eval_single_exon
     else:
         return geneTypeEvidSupport(transAnnot)
+
+
+def geneTypeIsEvaulated(annot):
+    """Should this gene or transcript be evaulated? The annot can be a gene or transcript.
+    This does not detect single-exon
+    """
+    return geneTypeEvidSupport(annot) == EvidenceSupport.good
+
+
+def transTypeIsEvaulated(annot):
+    """Should this transcript be evaluated?
+    """
+    return transTypeEvidSupport(annot) == EvidenceSupport.good
