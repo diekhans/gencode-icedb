@@ -81,9 +81,9 @@ def getEstAligns(ucscDb, chromSpecs, pslFile):
 def tslLoadGenbankEvid(opts):
     fileOps.ensureDir(opts.evidDbDir)
     getRnaAligns(opts.ucscDb, opts.ensemblCDnaDb, opts.assemblyReport, opts.hgFixedDb, opts.chromSpecs,
-                 os.path.join(opts.evidDbDir, "RNA.psl.gz"))
+                 os.path.join(opts.evidDbDir, "GenBank-RNA.psl.gz"))
     getEstAligns(opts.ucscDb, opts.chromSpecs,
-                 os.path.join(opts.evidDbDir, "EST.psl.gz"))
+                 os.path.join(opts.evidDbDir, "GenBank-EST.psl.gz"))
 
 
 tslLoadGenbankEvid(parseArgs())

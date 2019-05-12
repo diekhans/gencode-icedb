@@ -39,7 +39,7 @@ class EvidCompareTest(TestCaseBase):
         cls.evaluators = {}
         for evidType in (EvidenceType.RNA, EvidenceType.EST):
             evidSetUuid = genbankUuids[evidType]
-            cls.evidenceReaders[evidType] = evidenceAlignsReaderFactory(evidSetUuid, os.path.join(cls.EVIDENCE_DB_DIR, str(evidType) + ".psl.gz"), cls.genomeReader)
+            cls.evidenceReaders[evidType] = evidenceAlignsReaderFactory(evidSetUuid, os.path.join(cls.EVIDENCE_DB_DIR, "GenBank-" + str(evidType) + ".psl.gz"), cls.genomeReader)
             for allowExtension in (True, False):
                 cls.evaluators[(evidType, allowExtension)] = MegSupportEvaluator(evidSetUuid, cls.qualEval, allowExtension=allowExtension)
 

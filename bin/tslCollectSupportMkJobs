@@ -32,7 +32,7 @@ def parseArgs():
     parser.add_argument("evidSetUuid",
                         help="""evidence set UUID to added to output""")
     parser.add_argument('evidFile',
-                        help="""evidence psl.gz or bam, or directory contain RNA.psl.gz or EST.psl.gz for genbank""")
+                        help="""evidence psl.gz or bam, or directory contain GenBank-RNA.psl.gz or GenBank-EST.psl.gz for genbank""")
     parser.add_argument('tmpDir',
                         help="""tmp directory for results, a directory with evidSetName will be put in here""")
     opts = parser.parse_args()

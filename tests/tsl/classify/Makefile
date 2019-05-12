@@ -12,11 +12,11 @@ genbankDbDir = output/db/evidDb
 
 rnaName = GenBank-RNA
 rnaUuid = 02c995e3-372c-4cde-b216-5d3376c51988
-rnaPsl =  ${genbankDbDir}/RNA.psl.gz
+rnaPsl =  ${genbankDbDir}/GenBank-RNA.psl.gz
 
 estName = GenBank-EST
 estUuid = fcfc5121-7e07-42f6-93a2-331a513eeb2c
-estPsl = ${genbankDbDir}/EST.psl.gz
+estPsl = ${genbankDbDir}/GenBank-EST.psl.gz
 
 ucscDRnaName = ucsc-drna
 ucscDRnaUuid = f108c86b-8e0b-4dbd-96ae-6e75d8566eac
@@ -33,7 +33,7 @@ classifyUnitTests: ${testDbDone}
 	${PYTHON} classifyUnitTests.py
 
 supportCollectGenesTest: ${testDbDone} mkdirs
-	${tslCollectSupport} ${gencodeDb} 02c995e3-372c-4cde-b216-5d3376c51988 ${genbankDbDir}/RNA.psl.gz --details=output/$@.details.tsv output/$@.support.tsv ENSG00000177663.13
+	${tslCollectSupport} ${gencodeDb} 02c995e3-372c-4cde-b216-5d3376c51988 ${genbankDbDir}/GenBank-RNA.psl.gz --details=output/$@.details.tsv output/$@.support.tsv ENSG00000177663.13
 	${diff} expected/$@.support.tsv output/$@.support.tsv
 	${diff} expected/$@.details.tsv output/$@.details.tsv
 
