@@ -485,20 +485,20 @@ class TranscriptFeatures(Feature):
         file.write(str(self) + '\n')
         self._dumpChildren(file, indent + 2, self.features)
 
-    def toBed(self, itemRgb=""):
+    def toBed(self, *, itemRgb=0, bedCls=Bed):
         """convert transcript and CDS to a Bed object"""
-        # FIXME: shouldn't me method, but I/O object
+        # FIXME: shouldn't be method, but I/O object
         blocks = []
         for feat in self.features:
             if isinstance(feat, ExonFeature):
-                blocks.append(Bed.Block(feat.chrom.start, feat.chrom.end))
+                blocks.append(bedCls.Block(feat.chrom.start, feat.chrom.end))
         if self.cdsChrom is not None:
             cdsStart, cdsEnd = self.cdsChrom.start, self.cdsChrom.end
         else:
             cdsStart = cdsEnd = self.chrom.end
-        return Bed(self.chrom.name, self.chrom.start, self.chrom.end,
-                   self.rna.name, 0, self.rna.strand, cdsStart, cdsEnd,
-                   itemRgb, blocks)
+        return bedCls(self.chrom.name, self.chrom.start, self.chrom.end,
+                      self.rna.name, 0, self.rna.strand, cdsStart, cdsEnd,
+                      itemRgb, blocks)
 
     @property
     def alignedBases(self):

@@ -49,11 +49,12 @@ class EvidenceSupport(SymEnum):
     feat_mismatch = 52          # mismatch of features
     not_useful = 90             # support deemed not useful for other reasons
     no_support = 100            # values >= to this are record so we know gene was analyzed
-    no_eval_single_exon = 101   # not evaluated due to be a single exon gene
-    no_eval_olfactory_receptor = 102     # olfactory receptor gene
-    no_eval_immunoglobin = 103  # immunoglobin gene
-    no_eval_tcell_receptor = 104         # tcell receptor
-    no_eval_hla = 105           # HLA gene
+    no_eval = 200               # generic no_eval, any of the below
+    no_eval_single_exon = 201   # not evaluated due to be a single exon gene
+    no_eval_olfactory_receptor = 202     # olfactory receptor gene
+    no_eval_immunoglobin = 203  # immunoglobin gene
+    no_eval_tcell_receptor = 204         # tcell receptor
+    no_eval_hla = 205           # HLA gene
 
 
 class TrascriptionSupportLevel(SymEnum):
@@ -97,6 +98,7 @@ def geneTypeEvidSupport(annot):
     if geneBioType.startswith("TR_"):
         return EvidenceSupport.no_eval_tcell_receptor
     return EvidenceSupport.good
+
 
 def transTypeEvidSupport(transAnnot):
     if transIsSingleExon(transAnnot):

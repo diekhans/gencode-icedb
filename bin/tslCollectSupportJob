@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Job wrapper to run rslGencodeCollectSupport.  This sets up the
+# Job wrapper to run tslGencodeCollectSupport.  This sets up the
 # environment to pick up the right python (via .bashrc).
 #
 #
