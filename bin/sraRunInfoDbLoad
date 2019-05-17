@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+import icedbProgSetup  # noqa: F401
+import sys
+import argparse
+from gencode_icedb.rsl.rslModels import rslConnect, rslClose, RslEvidenceSource
+from pycbio.sys import loggingOps
+from gencode_icedb.general import ncbi
+
+
+def parseArgs():
+    desc = """Load run metadata from runinfo CSV/TSV files into a database.
+    """
+    parser = argparse.ArgumentParser(description=desc)
+    loggingOps.addCmdOptions(parser)
+    parser.add_argument('db',
+                        help="""database to load data created as needed""")
+    parser.add_argument('runinfoTsv',
+                        help="""SRA runinfo TSV (see sraRunInfoFilter program)""")
+    opts = parser.parse_args()
+    loggingOps.setupFromCmd(opts, sys.argv[0])
+    return opts
+
+
+def orgToOrgCode(org):
+    if org == "Homo sapiens":
+        return "hs"
+    elif org.startswith("Mus musculus"):
+        return "mm"
+    else:
+        raise Exception("unsupported organism: {}".format(org))
+
+
+def tumorCode(srcTumor):
+    return None if srcTumor is None else int(srcTumor)
+
+
+def makeEvidMetaRec(row, now):
+    return RslEvidenceSource.create(rec_update_date=now,
+                                    src_name="SRA",
+                                    acc=row.Run,
+                                    src_time=row.ReleaseDate,
+                                    org_code=orgToOrgCode(row.ScientificName),
+                                    assembly=ncbi.normalizeAssemblyName(row.AssemblyName),
+                                    tissue=row.Body_Site,
+                                    tumor=tumorCode(row.Tumor),
+                                    platform=row.Platform,
+                                    data_format="sra",
+                                    url1=row.download_path)
+
+
+def readRunInfo(runinfoTsv):
+    "load into EvidenceMetadata for bulk load"
+    return [makeEvidMetaRec(row) for row in ncbi.sraRunInfoReader(runinfoTsv)]
+
+
+def dbLoad(conn, recs):
+    with conn.atomic():
+        EvidenceMetadata.insert_many(recs).execute()
+
+
+def sraRunInfoDbLoad(opts):
+    recs = readRunInfo(opts.runinfoTsv)
+    conn = rslConnect(opts.rsldb, create=True, readonly=False)
+    RunMetadata.create_table(fail_silently=True)
+    dbLoad(conn, recs)
+    rslClose(conn)
+
+
+sraRunInfoDbLoad(parseArgs())

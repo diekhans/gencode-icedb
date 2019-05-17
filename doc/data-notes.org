@@ -1,9 +1,9 @@
 
-2015-06-15
+* 2015-06-15
   -  Sanger protemics pipeline presented by James Wright
     http://www.sanger.ac.uk/resources/technologies/proteomicspectrometry
 
-2015-11-09:
+* 2015-11-09:
  GTEx -  	Illumina 	HiSeq 2000  76bp, paired-end run
  BodyMap 2.0    Illumina 	HiSeq 2000  16 human tissue
 
@@ -22,10 +22,10 @@ https://www.illumina.com/informatics/research/sequencing-data-analysis-managemen
     This is human: http://www.ebi.ac.uk/arrayexpress/experiments/E-MTAB-2836/
 
 
-2015-12-08:
+* 2015-12-08:
   Jose's pacbio data
 
-2015-12-19:
+* 2015-12-19:
   Matthias Uhlen data
   http://www.proteinatlas.org/about/download
 
@@ -36,9 +36,21 @@ https://www.illumina.com/informatics/research/sequencing-data-analysis-managemen
         http://www.proteinatlas.org/download/rna_celline.csv.zip
         http://www.ncbi.nlm.nih.gov/bioproject/PRJNA183192
 
-2019-01-29;
-  tabula muris
+* 2018-09-14;
+  tabularis
   https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE109774
   https://trace.ncbi.nlm.nih.gov/Traces/sra/?run=SRR6835871
   /hive/groups/hca/pilot/biohub
+  
+
+* 2019-02-05:
+  CRG see gencode/meetings/2019/2019-02-05.gencode/201902_CLS_GENCODE_call.pdf 
+  Phase I (Hv0 + Mv0)
+  Phase II (Hv1 + Hv2 + Mv1)
+  Phase III (Hv3 + Mv2)
+  - Julien: you should probably prioritize the CLS3/Smarter data; this is where the SIRVs are spiked in, it will make it easy to calculate/compare sensitivity/precision values between pipelines.
+  
+
+* 2019-02-06:
+  Max: from https://db.cngb.org/cnsa/
 

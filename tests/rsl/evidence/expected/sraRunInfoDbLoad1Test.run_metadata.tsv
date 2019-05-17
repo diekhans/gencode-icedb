@@ -1,4 +1,4 @@
-src_symid	run_acc	org_code	tumor	tissue
-SRA	SRR4055854	hs	yes	Gastric
-SRA	SRR3555865	hs	no	Gastric
-SRA	SRR1700176	hs		
+src_symid	acc	org_code	disease	tissue	seq_protocol	data_format	url1	url2
+SRA	SRR4055854	hs	yes	Gastric	short	sra	https://sra-download.ncbi.nlm.nih.gov/srapub/SRR4055854	
+SRA	SRR3555865	hs	no	Gastric	short	sra	https://sra-download.ncbi.nlm.nih.gov/srapub/SRR3555865	
+SRA	SRR1700176	hs			short	sra	https://sra-download.ncbi.nlm.nih.gov/srapub/SRR1700176	

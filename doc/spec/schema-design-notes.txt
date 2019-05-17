@@ -1,3 +1,28 @@
+- mysql + sqlite
+  - database URL stuff https://github.com/kennethreitz/dj-database-url/blob/master/dj_database_url.py
+
+  - mycnf for multiple database
+    https://dba.stackexchange.com/questions/2820/why-dont-my-my-cnf-settings-work/2822#2822
+
+- experiment table:  where data is obtained?
+  source - database source
+  accession
+  organism
+  seq_type short|long
+  data_format fastq|bam|cram
+  assembly
+  tissue
+  url1
+  url2
+  
+- analysis table:
+  - experiment_id
+  - align_method
+  - caller_version
+  - status
+  
+
+
 
 gencode annotation tables:
 

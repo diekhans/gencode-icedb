@@ -12,26 +12,21 @@ test:   dataConvertTests \
 ##
 # conversion of data
 ##
-dataConvertTests: sraRunInfoFilterStdTest \
-		  sraRunInfoFilterFullTest \
+dataConvertTests: sraRunInfoFilterTest \
 		  sraRunInfoFilterSubsetTest \
 		  sraRunInfoFilterMissingTest
 
-sraRunInfoFilterStdTest: mkdirs
-	${rslSraRunInfoFilter} input/runinfo.hs.csv output/$@.tsv
-	${diff} expected/$@.tsv output/$@.tsv
-
-sraRunInfoFilterFullTest: mkdirs
-	${rslSraRunInfoFilter} --full input/runinfo.hs.csv output/$@.tsv
+sraRunInfoFilterTest: mkdirs
+	${sraRunInfoFilter} input/runinfo.hs.csv output/$@.tsv
 	${diff} expected/$@.tsv output/$@.tsv
 
 sraRunInfoFilterSubsetTest: mkdirs
-	${rslSraRunInfoFilter} --selectSubsetTsv=input/runinfo.hs.subset.tsv input/runinfo.hs.csv output/$@.tsv
+	${sraRunInfoFilter} --selectSubsetTsv=input/runinfo.hs.subset.tsv input/runinfo.hs.csv output/$@.tsv
 	${diff} expected/$@.tsv output/$@.tsv
 
 # missing because of filter or just not there
 sraRunInfoFilterMissingTest: mkdirs
-	if ${rslSraRunInfoFilter} --subsetRequired --selectSubsetTsv=input/runinfo.hs.missing.tsv input/runinfo.hs.csv output/$@.tsv 2>output/$@.err ; then echo "expected failure" >&2; exit 1 ; fi
+	if ${sraRunInfoFilter} --subsetRequired --selectSubsetTsv=input/runinfo.hs.missing.tsv input/runinfo.hs.csv output/$@.tsv 2>output/$@.err ; then echo "expected failure" >&2; exit 1 ; fi
 	${diff} expected/$@.err output/$@.err
 
 ##
@@ -43,12 +38,12 @@ dbLoadTests: sraRunInfoDbLoad1Test \
 # test loading run-info from SRA
 sraRunInfoDbLoad1Test: mkdirs
 	rm -f output/$@.db
-	${rslSraRunInfoDbLoad} output/$@.db input/set1.hs.run-info.tsv
+	${sraRunInfoDbLoad} output/$@.db input/set1.hs.run-info.tsv
 	$(call sqldumpdiff,run_metadata)
 
 mappingMetadataDbLoadTest: mkdirs
 	rm -f output/$@.db
-	${rslSraRunInfoDbLoad} output/$@.db input/set1.hs.run-info.tsv
+	${sraRunInfoDbLoad} output/$@.db input/set1.hs.run-info.tsv
 	${rslMappingMetadataDbLoad} output/$@.db input/set1.hs.mapping-params.tsv input/set1.hs.stardir.tsv
 	$(call sqldumpdiff,run_metadata)
 	$(call sqldumpdiff,mapping_parameters)

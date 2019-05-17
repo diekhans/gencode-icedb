@@ -23,4 +23,9 @@ clean::
 	find . -depth -type d -name __pycache__ -exec rmdir {} \;
 
 savebak:
+ifeq ($HOSTNAME, hgwdev)
 	savebak -git gencode-icedb
+else
+	savebak -r hgwdev.gi.ucsc.edu -git gencode-icedb
+endif
+

@@ -4,6 +4,7 @@ PeeWee data models for RNA-Seq metadata and splice junctions.
 import os
 from peewee import Proxy, Model, PrimaryKeyField, ForeignKeyField, CharField, TextField, IntegerField
 from gencode_icedb.general.peeweeOps import peeweeConnect, peeweeClose, peeweeClassToTableName, PeeweeModelMixins
+from gencode_icedb.general.dbModels import EvidenceSource, AnalysisStatusField
 from collections import namedtuple
 import pysam
 
@@ -15,16 +16,15 @@ def setDatabaseConn(dbconn):
     _database_proxy.initialize(dbconn)
 
 
-def rslConnect(sqliteDb, create=False, readonly=True, timeout=None, synchronous=None):
+def rslConnect(dburl, create=False, readonly=True, timeout=None, synchronous=None):
     "connect to sqlite3 database and bind to model"
-    return peeweeConnect(sqliteDb, setDatabaseConn, create=create, readonly=readonly, timeout=timeout, synchronous=synchronous)
+    return peeweeConnect(dbUrl, setDatabaseConn, create=create, readonly=readonly, timeout=timeout, synchronous=synchronous)
 
 
 def rslClose(conn):
     "close database"
-    # FIXME should reset proxy
     peeweeClose(conn)
-
+    _database_proxy = Proxy()
 
 class BaseModel(Model, PeeweeModelMixins):
     "base for peewee models, used to bind proxy"
@@ -34,30 +34,21 @@ class BaseModel(Model, PeeweeModelMixins):
         table_function = peeweeClassToTableName
 
 
-class RunMetadata(BaseModel):
-    """Metadata associated with an RNA-Seq sequencing run.  This
-    is obtained from source database (e.g. SRA)
+class RslEvidenceSource(EvidenceSource, BaseModel):
+    """Sources of evidence associated with RNA-Seq introns."""
+    # derived class creates a unique table
+    pass
+
+
+class RslAnalysis(BaseModel):
+    """Result of running analysis on RslEvidenceSource
     """
     id = PrimaryKeyField()
-    src_symid = CharField(index=True,
-                          help_text="""name of source (e.g. SRA)""")
-    run_acc = CharField(unique=True,
-                        help_text="""sequencing run accession""")
-    org_code = CharField(index=True, max_length=2,
-                         help_text="""two-character organism code: 'hs' or 'mm'""")
-    tumor = CharField(null=True, default=None,
-                      help_text="""yes for tumor, no for normal, null if unknown """)
-    tissue = CharField(null=True, default=None,
-                       help_text="""Tissue or body site, if available.  This is not normalized and maybe hard to interpret.""")
-
-
-class MappingParameters(BaseModel):
-    """Mapping parameters, stored into a separate table due to use of same parameters for many runs"""
-    id = PrimaryKeyField()
-    mapping_param_symid = CharField(unique=True,
-                                    help_text="""symbolic name of the parameter set""")
-    assembly = CharField(help_text="""genome assemble""")
-    gene_set = CharField(help_text="""gene annotations used in mapping""")
+    create_time = DateTimeField(help_text="""Date/time registered in database""")
+    update_time = DateTimeField(help_text="""Date/time of last update in database""")
+    rsl_evidence_source__id = ForeignKeyField(RslEvidenceSource,
+                                              help_text="""Associated evidence source""")
+    assembly = CharField(help_text="""genome assemble used""")
     commands = TextField(help_text="""commands used to do mapping""")
     comments = TextField(help_text="""comments""")
 

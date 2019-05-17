@@ -101,7 +101,7 @@ http://metasra.biostat.wisc.edu/ (uses SRAmetadb) [only human]
 Build STAR splice junction support database from STAR resuts
 \begin{tightitemize}
 \item Obtain SRA runinfo CVS from the SRA browser.
-\item Filter SRA runinfo using \texttt{rslSraRunInfoFilter --full} to obtain
+\item Filter SRA runinfo using \texttt{sraRunInfoFilter --full} to obtain
   run information.  You may need to filter using the \texttt{--selectSubsetTsv}
   option for available runs.
 \item Create a STAR results directory TSV file.  This list STAR sjout files,
@@ -110,7 +110,7 @@ Build STAR splice junction support database from STAR resuts
   columns
 \item Create a mapping parameters TSV file (see \texttt{starResultsDir.py}), that defines
   mapping parameters for STAR results.
-\item Load run info into database using \texttt{rslSraRunInfoDbLoad}.
+\item Load run info into database using \texttt{sraRunInfoDbLoad}.
 \item Load run info into database using \texttt{rslMappingMetadataDbLoad}.
 
 \item Split all STAR splice junction files by chromosome, adding mapping
@@ -125,9 +125,9 @@ Build STAR splice junction support database from STAR resuts
 Summary
 \begin{tightitemize}
 \item create \texttt{etc/czi.hs.star-results.all.tsv} for all available results 
-\item \texttt{rslSraRunInfoFilter --full --selectSubsetTsv=etc/czi.hs.star-results.all.tsv SraRunInfo.human.transcriptomics.cvs.bz2 etc/czi.hs.run-info.tsv}
+\item \texttt{sraRunInfoFilter --full --selectSubsetTsv=etc/czi.hs.star-results.all.tsv SraRunInfo.human.transcriptomics.cvs.bz2 etc/czi.hs.run-info.tsv}
 \item \texttt{selectById -tsv 1 etc/czi.hs.run-info.tsv 1 etc/czi.hs.star-results.all.tsv > etc/czi.hs.star-results.tsv}
-\item \texttt{rslSraRunInfoDbLoad sjdb/czi.hs.db etc/czi.hs.run-info.tsv}
+\item \texttt{sraRunInfoDbLoad sjdb/czi.hs.db etc/czi.hs.run-info.tsv}
 \item \texttt{rslMappingMetadataDbLoad sjdb/czi.hs.db etc/czi.hs.mapping_params.tsv etc/czi.hs.star-results.tsv}
 \item \texttt{rslMkStarSjOutSplits --numprocs=8 etc/czi.hs.star-results.tsv merge.tmp}
 \item \texttt{rslMkStarSjSupMergeJobs merge.tmp}

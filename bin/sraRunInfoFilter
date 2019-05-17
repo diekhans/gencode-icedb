@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import icedbProgSetup  # noqa: F401
-import csv
 import argparse
 from pycbio.sys import fileOps
 from pycbio.tsv import TsvReader
+from gencode_icedb.general import ncbi
 
 
 def parseArgs():
@@ -16,20 +16,16 @@ def parseArgs():
     Format: runinfo
     """
     parser = argparse.ArgumentParser(description=desc)
-    parser.add_argument("--full", action="store_true", default=False,
-                        help="output full TSV, not subset needed for experiments")
-    parser.add_argument("--tsv", action="store_true", default=False,
-                        help="input is a TSV instead of CVS")
     parser.add_argument("--gtex", action="store_true", default=False,
                         help="output GTEx rows, default is only public")
     parser.add_argument("--public", action="store_true", default=False,
                         help="output public rows, specify with --gtex to get both")
     parser.add_argument("--selectSubsetTsv", action="store", default=None,
-                        help="""TSV file with column `run_acc' to specify subset of records to obtain.""")
+                        help="""TSV file with column `acc' to specify subset of records to obtain.""")
     parser.add_argument("--subsetRequired", action="store_true", default=False,
                         help="If specified, an error if not all of the runs in --selectSubsetTsv are in input.")
     parser.add_argument("inCsv",
-                        help="input CSV (or TSV if --tsv is specified), maybe compressed")
+                        help="input CSV or TSV, maybe compressed")
     parser.add_argument("outTsv",
                         help="output TSV, may have compression extensions")
     opts = parser.parse_args()
@@ -37,8 +33,6 @@ def parseArgs():
         opts.public = True
     return opts
 
-
-pipelineHeader = ("ProjectID", "Run", "LibraryLayout")
 
 gtexStudy = "SRP012682"
 sourceFilter = frozenset(["TRANSCRIPTOMIC"])
@@ -49,7 +43,7 @@ minRunLength = 40
 
 
 def loadSelectSubset(selectSubsetTsv):
-    return frozenset([row.run_acc for row in TsvReader(selectSubsetTsv)])
+    return frozenset([row.acc for row in TsvReader(selectSubsetTsv)])
 
 
 class RowFilter(object):
@@ -61,31 +55,30 @@ class RowFilter(object):
     @staticmethod
     def _publicRowFilter(row):
         # avgLength of more than zero will check if for rows with no data
-        return ((int(row["avgLength"]) >= minRunLength)
-                and (row["LibrarySource"] in sourceFilter)
-                and (row["LibraryStrategy"] in strategyFilter)
-                and (row["Consent"] in consentFilter)
-                and (row["Platform"] in platformFilter))
+        return ((row.avgLength >= minRunLength)
+                and (row.LibrarySource in sourceFilter)
+                and (row.LibraryStrategy in strategyFilter)
+                and (row.Consent in consentFilter)
+                and (row.Platform in platformFilter))
 
     @staticmethod
     def _gtexRowFilter(row):
         # avgLength check is for rows with no data
-        return ((int(row["avgLength"]) > 0)
-                and (row["SRAStudy"] == gtexStudy))
+        return ((row.avgLength > 0)
+                and (row.SRAStudy == gtexStudy))
 
     def __call__(self, row):
         return (((self.public and self._publicRowFilter(row))
                  or (self.gtex and self._gtexRowFilter(row)))
-                and ((self.selectSubset is None) or (row["Run"] in self.selectSubset)))
+                and ((self.selectSubset is None) or (row.Run in self.selectSubset)))
 
 
-def filterTsv(rowFilter, csvReader, tsvWriter):
+def filterTsv(rowFilter, csvReader, outFh):
     selectedRuns = set()
-    tsvWriter.writeheader()
     for row in csvReader:
         if rowFilter(row):
-            tsvWriter.writerow(row)
-            selectedRuns.add(row["Run"])
+            row.write(outFh)
+            selectedRuns.add(row.Run)
     return selectedRuns
 
 
@@ -95,18 +88,15 @@ def checkForMissingSubset(selectSubset, selectedRuns):
         exit("Error: {} select runs not found in runinfo file: {}".format(len(missing), " ".join(sorted(missing))))
 
 
-def rslSraRunInfoFilter(opts):
+def sraRunInfoFilter(opts):
+    cvsReader = ncbi.runInfoReader(opts.inCsv)
     rowFilter = RowFilter(opts.public, opts.gtex, opts.selectSubsetTsv)
-    with fileOps.opengz(opts.inCsv) as csvFh:
-        csvReader = csv.DictReader(csvFh, dialect=csv.excel if not opts.tsv else csv.excel_tab)
-        fields = csvReader.fieldnames if opts.full else pipelineHeader
-        with fileOps.opengz(opts.outTsv, "w") as tsvFh:
-            tsvWriter = csv.DictWriter(tsvFh, fields, dialect=csv.excel_tab, quoting=csv.QUOTE_MINIMAL,
-                                       extrasaction="ignore", lineterminator="\n")
-            selectedRuns = filterTsv(rowFilter, csvReader, tsvWriter)
+    with fileOps.opengz(opts.outTsv, "w") as outFh:
+        fileOps.prRow(outFh, cvsReader.columns)
+        selectedRuns = filterTsv(rowFilter, cvsReader, outFh)
 
     if opts.subsetRequired and (rowFilter.selectSubset is not None):
         checkForMissingSubset(rowFilter.selectSubset, selectedRuns)
 
 
-rslSraRunInfoFilter(parseArgs())
+sraRunInfoFilter(parseArgs())

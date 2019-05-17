@@ -77,7 +77,7 @@ ${gencodeTestDb}:
 ${sjTestDb}:
 	@mkdir -p $(dir $@)
 	@rm -f $@.tmp
-	${rslSraRunInfoDbLoad} $@.tmp ${dbinput}/set1.hs.run-info.tsv
+	${sraRunInfoDbLoad} $@.tmp ${dbinput}/set1.hs.run-info.tsv
 	${rslMappingMetadataDbLoad} $@.tmp ${dbinput}/set1.hs.mapping-params.tsv ${dbinput}/set1.hs.stardir.tsv
 	bgzip -c ${dbexpect}/mkStarMergeTest.merged.sjsup > $(basename $@).sjsup.gz
 	tabix -0 -p bed $(basename $@).sjsup.gz

@@ -45,7 +45,7 @@ def dbLoadMappingParameters(conn, starMappingParams):
 
 def createMappingMetadata(starResult, mappingParamsCache):
     mappingParams = mappingParamsCache.fetchBySymId(starResult.mapping_param_symid)
-    runMetadata = RunMetadata.get(run_acc=starResult.run_acc)
+    runMetadata = RunMetadata.get(acc=starResult.run_acc)
     mappingMetadata = MappingMetadata(run_metadata_id=runMetadata.id,
                                       mapping_symid=starResult.mapping_symid,
                                       mapping_parameters_id=mappingParams.id)

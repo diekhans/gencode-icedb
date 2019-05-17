@@ -2,7 +2,10 @@
 faUcscToGencode
 genePredIntrons
 icedbProgSetup.py
-brslEncodeDccQuery
+rslEncodeDccQuery
+
+sraRunInfoDbLoad
+sraRunInfoFilter
 
 rslGencodeCollectNovel
 rslGencodeCollectNovelFinishJobs
@@ -16,8 +19,6 @@ rslMappingMetadataDbLoad
 rslMkStarSjOutSplits
 rslMkStarSjSupMergeJobs
 rslSpliceJunctionCollectEvidence
-rslSraRunInfoDbLoad
-rslSraRunInfoFilter
 rslStarSjOutSplit
 rslStarSjSupMergeJob
 tslGbffGetProblemCases

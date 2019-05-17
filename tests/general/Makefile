@@ -27,13 +27,22 @@ test:   featureUnitTests \
 ##
 # test of features
 ##
-unitTestCases = EvidenceTests GenePredAnnotationTests EnsemblDbAnnotationTests
-featureUnitTests: ${unitTestCases:%=%_run}
+featureTestCases = EvidenceTests GenePredAnnotationTests EnsemblDbAnnotationTests
+featureUnitTests: ${featureTestCases:%=%_feature_run}
 
-%_run: ${hg38TestBams} ${gencodeV28Db}
+%_feature_run:  ${hg38TestBams} ${gencodeV28Db}
 	${PYTHON} featureUnitTests.py $*
 
- 
+##
+# test of database support
+##
+dbTestCases = DbUrlTests
+dbUnitTests: ${dbTestCases:%=%_db_run}
+
+%_db_run:
+	${PYTHON} dbUnitTests.py $*
+
+
 ##
 # tests of loading gencode data into sqlite
 ##
