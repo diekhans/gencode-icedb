@@ -60,7 +60,22 @@ KENTDIR = ${HOME}/kent/src
 KENTINC = -I${KENTDIR}/inc -I${KENTDIR}/hg/inc
 KENTLIBDIR = ${KENTDIR}/lib/${MACHTYPE}
 KENTLIBS = ${KENTLIBDIR}/jkhgap.a ${KENTLIBDIR}/jkweb.a ${KENTDIR}/htslib/libhts.a
-LIBS += ${KENTLIBS} -lssl -lcrypto -lz -lpthread
+LIBS += ${KENTLIBS} -lssl -lcrypto -lz -lpthread -lstdc++
+
+# autodetect UCSC installation of hal:
+ifeq (${HALDIR},)
+    HALDIR = /hive/groups/browser/hal/halRelease
+    ifneq ($(wildcard ${HALDIR}),)
+        ifeq (${USE_HAL},)
+          USE_HAL=1
+        endif
+    endif
+endif
+
+ifeq (${USE_HAL},1)
+    HALLIBS=${HALDIR}/lib/halMaf.a ${HALDIR}/lib/halChain.a ${HALDIR}/lib/halMaf.a ${HALDIR}/lib/halLiftover.a ${HALDIR}/lib/halLod.a ${HALDIR}/lib/halLib.a ${HALDIR}/lib/sonLib.a ${HALDIR}/lib/libhdf5_cpp.a ${HALDIR}/lib/libhdf5.a ${HALDIR}/lib/libhdf5_hl.a -lstdc++
+    LIBS += ${HALLIBS}
+endif
 
 ifeq (${HTSDIR},)
     HTSDIR = /hive/data/outside/htslib/${MACHTYPE}

@@ -1,13 +1,14 @@
 """
 Functions to support common peewee operations.
 """
+import os
 import re
 import apsw
 import configparser
 import urllib.parse as urlparse
 from collections import namedtuple
 from playhouse.apsw_ext import APSWDatabase
-from peewee import MySQLDatabase
+from peewee import MySQLDatabase, DatabaseError
 from pycbio.db import sqliteOps, mysqlOps
 
 # URL code inspired by https://github.com/kennethreitz/dj-database-url
@@ -28,14 +29,15 @@ class DbUrl(namedtuple("DbUrl",
 
         p = urlparse.urlparse(url)
         if p.netloc == '':
+            scheme = p.scheme if p.scheme != '' else 'file'
             return DbUrl(url=url,
-                         scheme=p.scheme,
+                         scheme=scheme,
                          netloc=None,
                          user=None,
                          passspec=None,
                          host=None,
                          port=None,
-                         database=emptyIsNone(p.path[1:]))
+                         database=emptyIsNone(p.path))
         else:
             # parse netloc
             m = re.match("^(((?P<user>[^:@]+)?" "(:(?P<passspec>[^@]+))?" ")@)?"
@@ -79,6 +81,10 @@ def _sqliteConnect(dburl, bindModelFunc, create=False, readonly=True, timeout=No
     bindModelFunc(conn)
     if synchronous is not None:
         sqliteOps.setSynchronous(conn, synchronous)
+    try:
+        conn.connect()  # connect now to get error messages
+    except Exception as ex:
+        raise DatabaseError("can't open database: {}".format(dbFile)) from ex
     return conn
 
 def _loadMyCnf(dburl):
@@ -130,12 +136,12 @@ def peeweeConnect(url, bindModelFunc, create=False, readonly=True, timeout=None,
     configuration.md. The bindModelFunc is called to bind connection to
     peeweemodel """
     dburl = DbUrl.parse(url)
-    if url.scheme == "sqlite":
+    if dburl.scheme in ("sqlite", "file"):
         return _sqliteConnect(dburl, bindModelFunc, create=create, readonly=readonly, timeout=readonly, synchronous=synchronous)
-    elif url.scheme == "mysql":
+    elif dburl.scheme == "mysql":
         return _mysqlConnect(dburl, bindModelFunc)
     else:
-        raise Exception("invalid scheme '{}', expect one of 'sqlite' or 'mysql': {}".format(url))
+        raise Exception("invalid scheme '{}', expect one of 'sqlite' or 'mysql': {}".format(dburl.scheme, url))
 
 
 def peeweeClose(conn):
