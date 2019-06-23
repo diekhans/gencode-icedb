@@ -51,10 +51,11 @@ class EvidenceSupport(SymEnum):
     no_support = 100            # values >= to this are record so we know gene was analyzed
     no_eval = 200               # generic no_eval, any of the below
     no_eval_single_exon = 201   # not evaluated due to be a single exon gene
-    no_eval_olfactory_receptor = 202     # olfactory receptor gene
-    no_eval_immunoglobin = 203  # immunoglobin gene
-    no_eval_tcell_receptor = 204         # tcell receptor
-    no_eval_hla = 205           # HLA gene
+    no_eval_olfactory_receptor = 202  # olfactory receptor gene
+    no_eval_immunoglobin = 203        # immunoglobin gene
+    no_eval_tcell_receptor = 204      # tcell receptor
+    no_eval_hla = 205                 # HLA gene
+    no_eval_pseudogene = 205          # pseudogenes that were not transcribed
 
 
 class TrascriptionSupportLevel(SymEnum):
@@ -82,9 +83,8 @@ def geneTypeEvidSupport(annot):
     geneName = annot.attrs.geneName
     # FIXME: this was part of ccds gencodeGenes module, we need to make that independent and use it here
     # trans.isPseudo()
-    # FIXME: this was changed to try to detect transcribes pseudogenes not classified as such
-    # if (geneBioType != "polymorphic_pseudogene") and (geneBioType.find("pseudogene") >= 0) and (geneBioType.find("transcribed") < 0):
-    #     return True
+    if (geneBioType.find("pseudogene") >= 0) and (geneBioType != "polymorphic_pseudogene") and (geneBioType.find("transcribed") < 0) and (geneBioType.find("translated") < 0):
+        return EvidenceSupport.no_eval_pseudogene
     # trans.isOlfactoryReceptor()
     if re.match("^OR[0-9].+", geneName):
         return EvidenceSupport.no_eval_olfactory_receptor

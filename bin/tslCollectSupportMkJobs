@@ -95,7 +95,7 @@ def getGeneIdsFromDb(gencodeDb):
 def getGeneIdsFromDbForPrimary(gencodeDb):
     conn = sqliteOps.connect(gencodeDb, readonly=True)
     sql = ("SELECT distinct geneId FROM {attrsTbl} WHERE transcriptId IN "
-           "(SELECT name FROM {annTbl} WHERE length(chrom) <= 5)"
+           "(SELECT name FROM {annTbl} WHERE (chrom like 'chr%') and (length(chrom) <= 5))"
            .format(attrsTbl=GENCODE_ATTRS_TABLE, annTbl=GENCODE_ANN_TABLE))
     with sqliteOps.SqliteCursor(conn) as cur:
         cur.execute(sql)
