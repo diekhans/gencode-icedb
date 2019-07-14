@@ -2,9 +2,9 @@
 PeeWee data models for RNA-Seq metadata and splice junctions.
 """
 import os
-from peewee import Proxy, Model, PrimaryKeyField, ForeignKeyField, CharField, TextField, IntegerField
+from peewee import Proxy, Model, PrimaryKeyField, ForeignKeyField, CharField, TextField, IntegerField, DateTimeField
 from gencode_icedb.general.peeweeOps import peeweeConnect, peeweeClose, peeweeClassToTableName, PeeweeModelMixins
-from gencode_icedb.general.dbModels import EvidenceSource, AnalysisStatusField
+from gencode_icedb.general.dbModels import EvidenceSource
 from collections import namedtuple
 import pysam
 
@@ -46,8 +46,8 @@ class RslAnalysis(BaseModel):
     id = PrimaryKeyField()
     create_time = DateTimeField(help_text="""Date/time registered in database""")
     update_time = DateTimeField(help_text="""Date/time of last update in database""")
-    rsl_evidence_source__id = ForeignKeyField(RslEvidenceSource,
-                                              help_text="""Associated evidence source""")
+    rsl_evidence_source_id = ForeignKeyField(RslEvidenceSource,
+                                             help_text="""Associated evidence source""")
     assembly = CharField(help_text="""genome assemble used""")
     commands = TextField(help_text="""commands used to do mapping""")
     comments = TextField(help_text="""comments""")

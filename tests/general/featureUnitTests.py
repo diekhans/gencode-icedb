@@ -1123,7 +1123,7 @@ class GenePredAnnotationTests(FeatureTestBase, AnnotationCheckMixin):
         trans = self._getTransAnnot("ENST00000215794.7")
         self.checkENST00000215794(trans)
         self.assertEqual("chr22\t18149898\t18177397\tENST00000215794.7\t0\t+\t18157663\t18176817\t0,1,2\t11\t324,263,97,146,80,147,96,168,132,50,626,\t0,7659,10273,11891,17356,17991,19945,20854,23251,23894,26873,",
-                         str(trans.toBed("0,1,2")),)
+                         str(trans.toBed(itemRgb="0,1,2")),)
 
     def testENST00000334029(self):
         # coding, - strand
@@ -1241,7 +1241,7 @@ class GenePredAnnotationTests(FeatureTestBase, AnnotationCheckMixin):
         factory = GenePredAnnotationFactory()
         for gp in GenePredReader(self.getInputFile("gencodeCompV28.gp")):
             trans = factory.fromGenePred(gp)
-            bed = trans.toBed("100,0,0")
+            bed = trans.toBed(itemRgb="100,0,0")
             self.assertEqual(len(bed.getRow()), 12)
 
     def testAttrs(self):

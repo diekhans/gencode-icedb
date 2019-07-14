@@ -42,3 +42,9 @@ GenbankProblemCases(self.conn)
 - evidenceAligns
 - supportEval
 
+* database structure
+EvidenceSource
+EvidenceProcess can be chained
+Results  - file
+sort-ed tsv files vs database
+

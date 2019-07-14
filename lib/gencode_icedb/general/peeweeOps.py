@@ -159,6 +159,20 @@ def peeweeClassToTableName(cls):
     return re.sub("([a-z])([A-Z])", "\\1_\\2", cls.__name__).lower()
 
 
+class SymEnumField(CharField):
+    """A field storing an SymEnum derived field as a string in the database."""
+    def __init__(self, symEnumCls, **kwargs):
+        max_length = max([len(str(f)) for f in symEnumCls])
+        self.symEnumCls = symEnumCls
+        super(CharField, self).__init__(max_length, **kwargs)
+
+    def db_value(self, value):
+        return str(value)
+
+    def python_value(self, value):
+        return self.symEnumCls(value)
+
+
 class PeeweeModelMixins(object):
     """Adds some useful functions to a PeeWee model"""
 

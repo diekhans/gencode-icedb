@@ -3,14 +3,14 @@ Common peewee base model classes.  These define the common types from which the 
 table types are derived.
 """
 from peewee import Proxy, Model, AutoField, ForeignKeyField, CharField, TextField, IntegerField, DateTimeField, UUIDField
-from gencode_icedb.general.peeweeOps import peeweeConnect, peeweeClose, peeweeClassToTableName, PeeweeModelMixins
+from gencode_icedb.general.peeweeOps import peeweeConnect, peeweeClose, peeweeClassToTableName, PeeweeModelMixins, SymEnumField
 from pycbio.sys.symEnum import SymEnum
 
 class EvidenceType(SymEnum):
     """Type of evidence"""
     __slots__ = ()
     GENBANK_RNA = 0    # GenBank RNAs
-    GENBANK_EST = 1    # GenBank (dbEST) ESTs
+    GENBANK_EST = 1    # GenBank ESTs
 
 
 class AnalysisStatus(SymEnum):
@@ -20,20 +20,6 @@ class AnalysisStatus(SymEnum):
     ACCESS_FAILED = 1    # failed to obtain input data
     ANALYSIS_FAILED = 2  # analysis process failure
     SUCCESS = 3          # analysis successful
-
-
-class SymEnumField(CharField):
-    """A field storing an SymEnum derived field as a string in the database."""
-    def __init__(self, symEnumCls, **kwargs):
-        max_length = max([len(str(f)) for f in symEnumCls])
-        self.symEnumCls = symEnumCls
-        super(CharField, self).__init__(max_length, **kwargs)
-
-    def db_value(self, value):
-        return str(value)
-
-    def python_value(self, value):
-        return self.symEnumCls(value)
 
 
 class EvidenceSource(Model):

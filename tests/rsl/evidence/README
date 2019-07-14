@@ -1,4 +1,6 @@
 
+
+---- FIXME: OLDER STUFF ---
 Tests with small region GRCh38 chr22:19175560-19178840
 used for alignment tests:
       input/small-chr22.fa
