@@ -6,6 +6,18 @@ from peewee import Proxy, Model, AutoField, ForeignKeyField, CharField, TextFiel
 from gencode_icedb.general.peeweeOps import peeweeConnect, peeweeClose, peeweeClassToTableName, PeeweeModelMixins, SymEnumField
 from pycbio.sys.symEnum import SymEnum
 
+# Notes:
+#  - UUID fields
+#    GUID key fields, implemented as UUIDs are added to make it easy to move data
+#    between local an InnoDb database and Sqlite3 databases for cluster access.
+#    However, some sites indicate using a UUID as a primary or unique key has serious
+#    performance implications:
+#       http://kccoder.com/mysql/uuid-vs-int-insert-performance/
+#    Thus we keep both table-local auto-increment primary keys and UUIDs for each record.
+#    Although perhaps some solutions worth looking at:
+#       http://mysql.rjweb.org/doc.php/uuid
+
+
 class EvidenceType(SymEnum):
     """Type of evidence"""
     __slots__ = ()
@@ -28,7 +40,9 @@ class EvidenceSource(Model):
     in this table means data is available, although may not have been
     processed.
     """
-    id = AutoField()
+    id = AutoField(help_text="""Database table unique id of source""")
+    guid = UUIDField(index=True,
+                     """Global unique id assigned to source, allows moving data between databases""")
     create_time = DateTimeField(help_text="""Date and time row created""")
     update_time = DateTimeField(help_text="""Date and time row was last updated""")
     src_name = CharField(index=True,
@@ -53,7 +67,9 @@ class EvidenceSource(Model):
 
 class IntronEvidence(Model):
     """Collection of intron evidence from a source.  Both short and long reads maybe used."""
-    id = AutoField()
+    id = AutoField(help_text="""Database table unique id of source""")
+    guid = UUIDField(index=True,
+                     """Global unique id assigned to source, allows moving data between databases""")
     create_time = DateTimeField(help_text="""Date and time row created""")
     update_time = DateTimeField(help_text="""Date and time row was last updated""")
     source = ForeignKeyField(EvidenceSource, on_delete="CASCADE",
