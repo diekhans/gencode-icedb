@@ -17,7 +17,9 @@ def parseArgs():
     """
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument("--readsPerRegion", type=int, default=10,
-                        help="""number of reads per region, not including pairs""")
+                        help="""number of reads per region.""")
+    parser.add_argument("--discordantReadsPerRegion", type=int, default=2,
+                        help="""number of discordant reads per region""")
     parser.add_argument('--regionsBed', default=None,
                         help="""TSV file for results""")
     parser.add_argument('--referenceFile', default=None,
@@ -32,25 +34,35 @@ def parseArgs():
     return opts
 
 
-def keepRead(rd):
+def isAccordantRead(rd):
     return (not rd.is_unmapped) and ((not rd.is_paired) or rd.is_proper_pair)
 
+def isDisccordantRead(rd):
+    return (not rd.is_unmapped) and rd.is_paired and (not rd.is_proper_pair)
 
-def loadRegion(bamFh, reg, readsPerRegion, readsMap):
-    cnt = 0
-    for rd in bamFh.fetch(contig=reg.chrom, start=reg.chromStart, stop=reg.chromEnd):
-        if keepRead(rd) and (rd not in readsMap[rd.query_name]):
+
+def loadRegion(bamFh, reg, readsPerRegion, discordantReadsPerRegion, readsMap):
+    def processRead(rd, readsMap):
+        nonlocal readsPerRegion, discordantReadsPerRegion
+        if isAccordantRead(rd) and (readsPerRegion > 0):
             readsMap[rd.query_name].append(rd)
-            cnt += 1
-        if cnt > readsPerRegion:
-            break
+            readsPerRegion -= 1
+        elif isDisccordantRead(rd) and (discordantReadsPerRegion > 0):
+            readsMap[rd.query_name].append(rd)
+            discordantReadsPerRegion -= 1
+
+    for rd in bamFh.fetch(contig=reg.chrom, start=reg.chromStart, stop=reg.chromEnd):
+        if rd not in readsMap[rd.query_name]:
+            processRead(rd, readsMap)
+            if (readsPerRegion + discordantReadsPerRegion) <= 0:
+                break
 
 
-def loadRegions(bamFh, regions, readsPerRegion):
+def loadRegions(bamFh, regions, readsPerRegion, discordantReadsPerRegion):
     # make unique in case regions overlap and group for getting pairs
     readsMap = defaultdict(list)
     for reg in regions:
-        loadRegion(bamFh, reg, readsPerRegion, readsMap)
+        loadRegion(bamFh, reg, readsPerRegion, discordantReadsPerRegion, readsMap)
     return readsMap
 
 
@@ -64,7 +76,8 @@ def getContigsUsed(readsMap):
     for rn in readsMap.keys():
         for rd in readsMap[rn]:
             contigs.add(rd.reference_name)
-            contigs.add(rd.next_reference_name)
+            if rd.next_reference_name is not None:
+                contigs.add(rd.next_reference_name)
     return tuple(sorted(contigs))
 
 
@@ -88,7 +101,7 @@ def getTestSam(opts):
     "entry point"
     regions = [b for b in BedReader(opts.regionsBed)]
     bamFh = pysam.AlignmentFile(opts.inBam, reference_filename=opts.referenceFile)
-    readsMap = loadRegions(bamFh, regions, opts.readsPerRegion)
+    readsMap = loadRegions(bamFh, regions, opts.readsPerRegion, opts.discordantReadsPerRegion)
     contigsUsed = getContigsUsed(readsMap)
     outHeader = buildOutputHeader(bamFh, contigsUsed)
 
