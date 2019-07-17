@@ -1,0 +1,18 @@
+[
+    {
+        "STUDY_ID": "ERP115046",
+        "SAMPLE_IDS": "SAMEA5585726",
+        "BIOREP_ID": "ERR3301312",
+        "RUN_IDS": "ERR3301312",
+        "ORGANISM": "homo_sapiens",
+        "REFERENCE_ORGANISM": "homo_sapiens",
+        "STATUS": "Complete",
+        "ASSEMBLY_USED": "GRCh38",
+        "ENA_LAST_UPDATED": "Tue Apr 30 2019 18:46:16",
+        "LAST_PROCESSED_DATE": "Mon Jun 24 2019 00:45:06",
+        "CRAM_LOCATION": "ftp://ftp.ebi.ac.uk/pub/databases/arrayexpress/data/atlas/rnaseq/ERR330/002/ERR3301312/ERR3301312.cram",
+        "BEDGRAPH_LOCATION": "ftp://ftp.ebi.ac.uk/pub/databases/arrayexpress/data/atlas/rnaseq/ERR330/002/ERR3301312/ERR3301312.bedgraph",
+        "BIGWIG_LOCATION": "ftp://ftp.ebi.ac.uk/pub/databases/arrayexpress/data/atlas/rnaseq/ERR330/002/ERR3301312/ERR3301312.bw",
+        "MAPPING_QUALITY": 93
+    }
+]

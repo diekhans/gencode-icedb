@@ -50,47 +50,6 @@ mappingMetadataDbLoadTest: mkdirs
 	$(call sqldumpdiff,mapping_metadata)
 
 ##
-# build of tabix database
-##
-sjsupBuildTests: sjoutSplitTest \
-		sjoutSplitSomeTest \
-		mkStarSplitsTest \
-		mkStarMergeTest
-
-# md5 is saved to avoid having lots of expected files
-sjoutSplitTest: mkdirs
-	rm -rf output/$@.split
-	${rslStarSjOutSplit} input/set1.hs.stardir.tsv output/$@.split
-	openssl md5 output/$@.split/*/*.sjsup > output/$@.md5
-	${diff} expected/$@.md5 output/$@.md5
-
-sjoutSplitSomeTest: mkdirs
-	rm -rf output/$@.split
-	${rslStarSjOutSplit} -startDirRec=0 -endDirRec=1 input/set1.hs.stardir.tsv output/$@.split
-	openssl md5 output/$@.split/*/*.sjsup > output/$@.md5
-	${diff} expected/$@.md5 output/$@.md5
-
-mkStarSplitsTest: mkdirs
-	rm -rf output/$@.mergework
-	${rslMkStarSjOutSplits} --numprocs=2 input/set1.hs.stardir.tsv output/$@.mergework
-	openssl md5 output/$@.mergework/byChrom/*/*.sjsup > output/$@.md5
-	${diff} expected/$@.md5 output/$@.md5
-
-# path in job file varies, just check for count (and make wc output portable)
-# batches must be run in order, hence muliple jobsToMake
-mkStarMergeTest: mkdirs
-	rm -rf output/$@.mergework
-	${rslMkStarSjOutSplits} --numprocs=2 input/set1.hs.stardir.tsv output/$@.mergework
-	${rslMkStarSjSupMergeJobs} --filesPerJob=5 output/$@.mergework
-	wc -l output/$@.mergework/*.jobs | tawko '{print $$2,$$1}' > output/$@.jobs.cnt
-	${diff} expected/$@.jobs.cnt output/$@.jobs.cnt
-	${diff} expected/$@.run-batches output/$@.mergework/run-batches
-	for j in output/mkStarMergeTest.mergework/*.jobs ; do ${jobsToMake} $$j output/$@.mk && ${MAKE} -f output/$@.mk ; done
-	${diff} expected/$@.merged.sjsup output/$@.mergework/001.merged/000.sjsup
-	bgzip -c output/mkStarMergeTest.mergework/001.merged/000.sjsup >output/$@.sjsup.gz
-	tabix -0 -p bed output/$@.sjsup.gz
-
-##
 # data from encode3 DCC
 ##
 encodeDccTests: encodeDcc10Tests

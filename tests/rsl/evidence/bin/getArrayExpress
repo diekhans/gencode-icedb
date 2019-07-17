@@ -1,0 +1,12 @@
+#!/bin/bash -e
+
+if [ $# != 1 ] ;  then
+    echo "give me an id" >/dev/stderr
+    exit 1
+fi
+
+acc="$1"
+
+wget -nv -O $@.tmp.json "https://www.ebi.ac.uk/fg/rnaseq/api/json/0/getRun/$acc"
+json_reformat < $@.tmp.json > $@.json
+rm -f $@.tmp.json

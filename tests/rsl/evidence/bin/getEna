@@ -1,0 +1,10 @@
+#!/bin/bash -e
+
+if [ $# != 1 ] ;  then
+    echo "give me an id" >/dev/stderr
+    exit 1
+fi
+
+acc="$1"
+
+wget -nv -O $@.xml "http://www.ebi.ac.uk/ena/data/view/${acc}&display=xml"

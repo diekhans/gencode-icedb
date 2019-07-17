@@ -1,36 +1,17 @@
+These data here are small subsets of SAMs files along with metadata to do
+evidence import testing.
+
+- ERR2019438/,  ERR3301312/, SRR3555865/
+  - *.rnaseqer.json - ArrayExpress rnaseqer JSON metadata
+  - *.rnaseqer.sam - small number of SAM records extract from CRAM
+  - *.ena.xml - ENA sample or run XML
 
 
----- FIXME: OLDER STUFF ---
-Tests with small region GRCh38 chr22:19175560-19178840
-used for alignment tests:
-      input/small-chr22.fa
-      input/small-rnaseq.sam
 
-Genome obtains from two bit, then hand-end comment
-  twoBitToFa /hive/data/genomes/hg38/hg38.2bit:chr22:19175560-19178840 input/small-chr22.fa
+The bin directory contains tools for assembling test data.
 
-Extract ENSG00000100075.9 from gencode.v23.annotation.gtf.gz and
-offset by start of region.
-
-Get paired-end RNA reads from ENCODE set by looking
-at corresponding region in GRCh37 chr22:19163073-19166353
-
-wgEncodeCaltechRnaSeqMcf7R2x75Il200AlignsRep2V2.bam
-
- samtools view -h /usr/local/apache/htdocs-hgdownload/goldenPath/hg19/encodeDCC/wgEncodeCaltechRnaSeq/wgEncodeCaltechRnaSeqMcf7R2x75Il200AlignsRep2V2.bam chr22:19163073-19166353  >input/small-rnaseq.sam
-# edit header to remove all but chr22
-
-----
-
-- test files for data reduction:
-      hs.chr22-2k.attrs.tsv
-      hs.chr22-2k.gp
-      hs.chr22-2k.evid.tsv
-  - these are all from hg38 gencode V24 
-  
----
-- set1.hs.*:
-  From CZI human STAR mappings for a select set of ranges
-
-  - pseudogene ENST00000508065.7 was added because it matches a
-    STAR SJ of an unknown motif in SRR1700176
+  - bin/getArrayExpress - Get ArrayExpress rnaseqer JSON metadata for an id.
+  - bin/getEna - Get ENA XML metadata for an id. Get run data id from ArrayExpress
+    metadata and the sample id from the run metadata.
+  - bin/getTestSam - Program to obtain a small subset of reads from a BAM/CRAM
+    to be checked into the tree for testing.xz a

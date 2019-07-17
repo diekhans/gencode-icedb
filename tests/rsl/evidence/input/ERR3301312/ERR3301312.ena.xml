@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ROOT request="ERR3301312&amp;display=xml">
+<RUN accession="ERR3301312" alias="E-MTAB-7925:007_cont_0hrs_S49_R" broker_name="ArrayExpress" center_name="UNIVERSITY OF MANCHESTER" run_center="University of Manchester Genomic Technologies Core Facility">
+     <IDENTIFIERS>
+          <PRIMARY_ID>ERR3301312</PRIMARY_ID>
+          <SUBMITTER_ID namespace="UNIVERSITY OF MANCHESTER">E-MTAB-7925:007_cont_0hrs_S49_R</SUBMITTER_ID>
+     </IDENTIFIERS>
+     <TITLE>Illumina HiSeq 4000 paired end sequencing; RNASeq of human mesenchymal stem cells (6 donors) with and without treatment with 1 hour of cyclic tensile strain (2.6 – 6.2% strain, 5.0 Hz).</TITLE>
+     <EXPERIMENT_REF accession="ERX3327379">
+          <IDENTIFIERS>
+               <PRIMARY_ID>ERX3327379</PRIMARY_ID>
+          </IDENTIFIERS>
+     </EXPERIMENT_REF>
+     <PLATFORM>
+          <ILLUMINA>
+               <INSTRUMENT_MODEL>Illumina HiSeq 4000</INSTRUMENT_MODEL>
+          </ILLUMINA>
+     </PLATFORM>
+     <DATA_BLOCK>
+          <FILES>
+               <FILE ascii_offset="!" checksum="00073a397f7fed5b7106ef661bf2baef" checksum_method="MD5" filename="run/ERR330/ERR3301312/007_cont_0hrs_S49_R1_001.fastq.gz" filetype="fastq" quality_encoding="ascii" quality_scoring_system="phred"/>
+               <FILE ascii_offset="!" checksum="61c6cc53ecd23f17beddc69d490c153a" checksum_method="MD5" filename="run/ERR330/ERR3301312/007_cont_0hrs_S49_R2_001.fastq.gz" filetype="fastq" quality_encoding="ascii" quality_scoring_system="phred"/>
+          </FILES>
+     </DATA_BLOCK>
+     <RUN_LINKS>
+          <RUN_LINK>
+               <XREF_LINK>
+                    <DB>ENA-STUDY</DB>
+                    <ID>ERP115046</ID>
+               </XREF_LINK>
+          </RUN_LINK>
+          <RUN_LINK>
+               <XREF_LINK>
+                    <DB>ENA-SAMPLE</DB>
+                    <ID>ERS3389949</ID>
+               </XREF_LINK>
+          </RUN_LINK>
+          <RUN_LINK>
+               <XREF_LINK>
+                    <DB>ENA-SUBMISSION</DB>
+                    <ID>ERA1880719</ID>
+               </XREF_LINK>
+          </RUN_LINK>
+          <RUN_LINK>
+               <XREF_LINK>
+                    <DB>ENA-FASTQ-FILES</DB>
+                    <ID><![CDATA[http://www.ebi.ac.uk/ena/data/warehouse/filereport?accession=ERR3301312&result=read_run&fields=run_accession,fastq_ftp,fastq_md5,fastq_bytes]]></ID>
+               </XREF_LINK>
+          </RUN_LINK>
+          <RUN_LINK>
+               <XREF_LINK>
+                    <DB>ENA-SUBMITTED-FILES</DB>
+                    <ID><![CDATA[http://www.ebi.ac.uk/ena/data/warehouse/filereport?accession=ERR3301312&result=read_run&fields=run_accession,submitted_ftp,submitted_md5,submitted_bytes,submitted_format]]></ID>
+               </XREF_LINK>
+          </RUN_LINK>
+     </RUN_LINKS>
+     <RUN_ATTRIBUTES>
+          <RUN_ATTRIBUTE>
+               <TAG>ENA-SPOT-COUNT</TAG>
+               <VALUE>37517373</VALUE>
+          </RUN_ATTRIBUTE>
+          <RUN_ATTRIBUTE>
+               <TAG>ENA-BASE-COUNT</TAG>
+               <VALUE>5668290848</VALUE>
+          </RUN_ATTRIBUTE>
+          <RUN_ATTRIBUTE>
+               <TAG>ENA-FIRST-PUBLIC</TAG>
+               <VALUE>2019-06-18</VALUE>
+          </RUN_ATTRIBUTE>
+          <RUN_ATTRIBUTE>
+               <TAG>ENA-LAST-UPDATE</TAG>
+               <VALUE>2019-04-30</VALUE>
+          </RUN_ATTRIBUTE>
+     </RUN_ATTRIBUTES>
+</RUN>
+</ROOT>

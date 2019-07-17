@@ -1,0 +1,18 @@
+[
+    {
+        "STUDY_ID": "SRP075475",
+        "SAMPLE_IDS": "SAMN05150882",
+        "BIOREP_ID": "SRR3555865",
+        "RUN_IDS": "SRR3555865",
+        "ORGANISM": "homo_sapiens",
+        "REFERENCE_ORGANISM": "homo_sapiens",
+        "STATUS": "Complete",
+        "ASSEMBLY_USED": "GRCh38",
+        "ENA_LAST_UPDATED": "Tue Nov 07 2017 03:55:36",
+        "LAST_PROCESSED_DATE": "Thu Jun 27 2019 08:12:21",
+        "CRAM_LOCATION": "ftp://ftp.ebi.ac.uk/pub/databases/arrayexpress/data/atlas/rnaseq/SRR355/005/SRR3555865/SRR3555865.cram",
+        "BEDGRAPH_LOCATION": "ftp://ftp.ebi.ac.uk/pub/databases/arrayexpress/data/atlas/rnaseq/SRR355/005/SRR3555865/SRR3555865.bedgraph",
+        "BIGWIG_LOCATION": "ftp://ftp.ebi.ac.uk/pub/databases/arrayexpress/data/atlas/rnaseq/SRR355/005/SRR3555865/SRR3555865.bw",
+        "MAPPING_QUALITY": 77
+    }
+]

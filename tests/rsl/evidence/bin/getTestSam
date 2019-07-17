@@ -1,0 +1,99 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../../bin"))
+import icedbProgSetup  # noqa: F401
+import argparse
+from collections import defaultdict
+from pycbio.sys import fileOps, setOps
+from pycbio.hgdata.coords import Coords
+from pycbio.hgdata.bed import BedReader
+import pysam
+
+
+def parseArgs():
+    desc = """Create a test SAM file from an existing BAM or CRAM file.
+    """
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument("--readsPerRegion", type=int, default=10,
+                        help="""number of reads per region, not including pairs""")
+    parser.add_argument('--regionsBed', default=None,
+                        help="""TSV file for results""")
+    parser.add_argument('--referenceFile', default=None,
+                        help="""Reference file for CRAMs""")
+    parser.add_argument('inBam',
+                        help="""Input BAM or CRAM file. Maybe a URL or local file and must be indexed.""")
+    parser.add_argument('outSam',
+                        help="""output same file""")
+    opts = parser.parse_args()
+    if opts.regionsBed is None:
+        parser.error("need to specify subset of regions to obtain with --regionsBed")
+    return opts
+
+
+def keepRead(rd):
+    return (not rd.is_unmapped) and ((not rd.is_paired) or rd.is_proper_pair)
+
+
+def loadRegion(bamFh, reg, readsPerRegion, readsMap):
+    cnt = 0
+    for rd in bamFh.fetch(contig=reg.chrom, start=reg.chromStart, stop=reg.chromEnd):
+        if keepRead(rd) and (rd not in readsMap[rd.query_name]):
+            readsMap[rd.query_name].append(rd)
+            cnt += 1
+        if cnt > readsPerRegion:
+            break
+
+
+def loadRegions(bamFh, regions, readsPerRegion):
+    # make unique in case regions overlap and group for getting pairs
+    readsMap = defaultdict(list)
+    for reg in regions:
+        loadRegion(bamFh, reg, readsPerRegion, readsMap)
+    return readsMap
+
+
+def sortedReads(readsMap):
+    return sorted([rd for rn in readsMap for rd in readsMap[rn]],
+                  key=lambda rd: (rd.reference_id, rd.reference_start))
+
+
+def getContigsUsed(readsMap):
+    contigs = set()
+    for rn in readsMap.keys():
+        for rd in readsMap[rn]:
+            contigs.add(rd.reference_name)
+            contigs.add(rd.next_reference_name)
+    return tuple(sorted(contigs))
+
+
+def buildOutputHeader(bamFh, contigsUsed):
+    hdr = bamFh.header.as_dict()
+    sqs = hdr["SQ"]
+    for i in range(len(sqs) - 1, -1, -1):
+        if sqs[i]['SN'] not in contigsUsed:
+            del sqs[i]
+    return hdr
+
+
+def writeSam(outSam, outHeader, readsMap):
+    outFh = pysam.AlignmentFile(outSam, mode="w", header=outHeader)
+    for rd in sortedReads(readsMap):
+        outFh.write(pysam.AlignedSegment.from_dict(rd.to_dict(), outFh.header))
+    outFh.close()
+
+
+def getTestSam(opts):
+    "entry point"
+    regions = [b for b in BedReader(opts.regionsBed)]
+    bamFh = pysam.AlignmentFile(opts.inBam, reference_filename=opts.referenceFile)
+    readsMap = loadRegions(bamFh, regions, opts.readsPerRegion)
+    contigsUsed = getContigsUsed(readsMap)
+    outHeader = buildOutputHeader(bamFh, contigsUsed)
+
+    writeSam(opts.outSam, outHeader, readsMap)
+    bamFh.close()
+
+
+getTestSam(parseArgs())

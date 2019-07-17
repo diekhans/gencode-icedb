@@ -8,7 +8,7 @@ import configparser
 import urllib.parse as urlparse
 from collections import namedtuple
 from playhouse.apsw_ext import APSWDatabase
-from peewee import MySQLDatabase, DatabaseError
+from peewee import MySQLDatabase, DatabaseError, CharField
 from pycbio.db import sqliteOps, mysqlOps
 
 # URL code inspired by https://github.com/kennethreitz/dj-database-url

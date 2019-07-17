@@ -4,7 +4,7 @@ PeeWee data models for RNA-Seq metadata and splice junctions.
 import os
 from peewee import Proxy, Model, PrimaryKeyField, ForeignKeyField, CharField, TextField, IntegerField, DateTimeField
 from gencode_icedb.general.peeweeOps import peeweeConnect, peeweeClose, peeweeClassToTableName, PeeweeModelMixins
-from gencode_icedb.general.dbModels import EvidenceSource
+from gencode_icedb.general.dbModels import EvidenceSource, EvidenceAnalysis
 from collections import namedtuple
 import pysam
 
@@ -40,31 +40,10 @@ class RslEvidenceSource(EvidenceSource, BaseModel):
     pass
 
 
-class RslAnalysis(BaseModel):
+class RslAnalysis(EvidenceAnalysis):
     """Result of running analysis on RslEvidenceSource
     """
-    id = PrimaryKeyField()
-    create_time = DateTimeField(help_text="""Date/time registered in database""")
-    update_time = DateTimeField(help_text="""Date/time of last update in database""")
-    rsl_evidence_source_id = ForeignKeyField(RslEvidenceSource,
-                                             help_text="""Associated evidence source""")
-    assembly = CharField(help_text="""genome assemble used""")
-    commands = TextField(help_text="""commands used to do mapping""")
-    comments = TextField(help_text="""comments""")
-
-
-class MappingMetadata(BaseModel):
-    """Metadata associated with of an RNA-Seq mapping and splice junction STAR run.
-    """
-    id = PrimaryKeyField()
-    run_metadata_id = ForeignKeyField(RunMetadata,
-                                      help_text="""sequencing run metadata""")
-    mapping_symid = CharField(unique=True,
-                              help_text="""symbolic name of the mapping, this is defined locally""")
-    mapping_acc = CharField(unique=True, null=True, default=None,
-                            help_text="""mapping analysis accession, only available if results have been submitted to an archive""")
-    mapping_parameters_id = ForeignKeyField(MappingParameters,
-                                            help_text="""parameters used in mapping""")
+    pass
 
 
 class SjSupport(namedtuple("SjSupport", ("chrom", "chromStart", "chromEnd",

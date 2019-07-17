@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ROOT request="ERR2019438&amp;display=xml">
+<RUN accession="ERR2019438" alias="E-MTAB-5493:M229 Control" broker_name="ArrayExpress" center_name="Division of Chemistry and Chemical Engineering, Caltech" run_center="UCLA CMC core">
+     <IDENTIFIERS>
+          <PRIMARY_ID>ERR2019438</PRIMARY_ID>
+          <SUBMITTER_ID namespace="Division of Chemistry and Chemical Engineering, Caltech">E-MTAB-5493:M229 Control</SUBMITTER_ID>
+     </IDENTIFIERS>
+     <TITLE>Illumina HiSeq 2500 sequencing; Time-series RNA-seq experiment performed on nine melanoma cell lines treated with BRAF inhibitor vemurafenib.</TITLE>
+     <EXPERIMENT_REF accession="ERX2078688">
+          <IDENTIFIERS>
+               <PRIMARY_ID>ERX2078688</PRIMARY_ID>
+          </IDENTIFIERS>
+     </EXPERIMENT_REF>
+     <DATA_BLOCK>
+          <FILES>
+               <FILE ascii_offset="!" checksum="03f00cfe6f50846c4fa43c235901e296" checksum_method="MD5" filename="run/ERR201/ERR2019438/M229-DMSO.merged.fastq.gz" filetype="fastq" quality_encoding="ascii" quality_scoring_system="phred"/>
+          </FILES>
+     </DATA_BLOCK>
+     <RUN_LINKS>
+          <RUN_LINK>
+               <XREF_LINK>
+                    <DB>ENA-STUDY</DB>
+                    <ID>ERP023816</ID>
+               </XREF_LINK>
+          </RUN_LINK>
+          <RUN_LINK>
+               <XREF_LINK>
+                    <DB>ENA-SAMPLE</DB>
+                    <ID>ERS1802284</ID>
+               </XREF_LINK>
+          </RUN_LINK>
+          <RUN_LINK>
+               <XREF_LINK>
+                    <DB>ENA-SUBMISSION</DB>
+                    <ID>ERA965919</ID>
+               </XREF_LINK>
+          </RUN_LINK>
+          <RUN_LINK>
+               <XREF_LINK>
+                    <DB>ENA-FASTQ-FILES</DB>
+                    <ID><![CDATA[http://www.ebi.ac.uk/ena/data/warehouse/filereport?accession=ERR2019438&result=read_run&fields=run_accession,fastq_ftp,fastq_md5,fastq_bytes]]></ID>
+               </XREF_LINK>
+          </RUN_LINK>
+          <RUN_LINK>
+               <XREF_LINK>
+                    <DB>ENA-SUBMITTED-FILES</DB>
+                    <ID><![CDATA[http://www.ebi.ac.uk/ena/data/warehouse/filereport?accession=ERR2019438&result=read_run&fields=run_accession,submitted_ftp,submitted_md5,submitted_bytes,submitted_format]]></ID>
+               </XREF_LINK>
+          </RUN_LINK>
+     </RUN_LINKS>
+     <RUN_ATTRIBUTES>
+          <RUN_ATTRIBUTE>
+               <TAG>ENA-SPOT-COUNT</TAG>
+               <VALUE>22717717</VALUE>
+          </RUN_ATTRIBUTE>
+          <RUN_ATTRIBUTE>
+               <TAG>ENA-BASE-COUNT</TAG>
+               <VALUE>1135885850</VALUE>
+          </RUN_ATTRIBUTE>
+          <RUN_ATTRIBUTE>
+               <TAG>ENA-FIRST-PUBLIC</TAG>
+               <VALUE>2017-12-02</VALUE>
+          </RUN_ATTRIBUTE>
+          <RUN_ATTRIBUTE>
+               <TAG>ENA-LAST-UPDATE</TAG>
+               <VALUE>2018-11-16</VALUE>
+          </RUN_ATTRIBUTE>
+     </RUN_ATTRIBUTES>
+</RUN>
+</ROOT>

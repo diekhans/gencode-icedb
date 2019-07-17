@@ -42,7 +42,7 @@ class EvidenceSource(Model):
     """
     id = AutoField(help_text="""Database table unique id of source""")
     guid = UUIDField(index=True,
-                     """Global unique id assigned to source, allows moving data between databases""")
+                     help_text="""Global unique id assigned to source, allows moving data between databases""")
     create_time = DateTimeField(help_text="""Date and time row created""")
     update_time = DateTimeField(help_text="""Date and time row was last updated""")
     src_name = CharField(index=True,
@@ -65,18 +65,15 @@ class EvidenceSource(Model):
                      help_text="""URL of second file, for pair-end FASTQ""")
     comments = TextField(help_text="""comments""")
 
-class IntronEvidence(Model):
-    """Collection of intron evidence from a source.  Both short and long reads maybe used."""
+class EvidenceAnalysis(Model):
+    """Analysis of an evidence file. """
     id = AutoField(help_text="""Database table unique id of source""")
     guid = UUIDField(index=True,
-                     """Global unique id assigned to source, allows moving data between databases""")
+                     help_text="""Global unique id assigned to source, allows moving data between databases""")
     create_time = DateTimeField(help_text="""Date and time row created""")
     update_time = DateTimeField(help_text="""Date and time row was last updated""")
-    source = ForeignKeyField(EvidenceSource, on_delete="CASCADE",
-                             help_text="""evidence being analyzed""")
-    mapping_algo = CharField(null=True, default=None,
-                             help_text="""mapping technique used (method and parameters), NULL if already aligned.""")
-    calling_algo = CharField(help_text="""intron calling technique (method and parameters)""")
-
+    source_id = ForeignKeyField(EvidenceSource, on_delete="CASCADE",
+                                help_text="""evidence being analyzed""")
+    assembly = CharField(help_text="""genome assemble used""")
     status = SymEnumField(AnalysisStatus,
                           help_text="""status of the analysis""")
