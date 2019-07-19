@@ -14,4 +14,20 @@ The bin directory contains tools for assembling test data.
   - bin/getEna - Get ENA XML metadata for an id. Get run data id from ArrayExpress
     metadata and the sample id from the run metadata.
   - bin/getTestSam - Program to obtain a small subset of reads from a BAM/CRAM
-    to be checked into the tree for testing.xz a
+    to be checked into the tree for testing.
+
+In order to generate test files:
+  - create bed of regions
+  - convert coordinates to Ensembl/GenBank chromosome names
+      wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/405/GCF_000001405.39_GRCh38.p13/GCF_000001405.39_GRCh38.p13_assembly_report.txt
+      ncbiAssemblyReportConvert --fromIdType=ucscStyleName --toIdType=sequenceName lift GCF_000001405.39_GRCh38.p13_assembly_report.txt ucsc-to-genbank.lift
+      liftUp test.genbank.bed ucsc-to-genbank.lift error test.ucsc.bed
+  - Get FASTA for CRAM
+      wget ftp://ftp.ensembl.org/pub/release-97/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna_sm.toplevel.fa.gz
+      gunzip Homo_sapiens.GRCh38.dna_sm.toplevel.fa.gz
+      bgzip Homo_sapiens.GRCh38.dna_sm.toplevel.fa.gz
+      samtools idx Homo_sapiens.GRCh38.dna_sm.toplevel.fa.gz
+   - Test it out
+      samtools view -h -L test.genbank.bed -T Homo_sapiens.GRCh38.dna_sm.toplevel.fa.gz ftp://ftp.ebi.ac.uk/pub/databases/arrayexpress/data/atlas/rnaseq/ERR201/008/ERR2019438/ERR2019438.cram >ERR2019438.sam
+.  - Get subset of reads for region; parameters control number reads included
+    ./bin/getTestSam --regionsBed=test.genbank.bed --referenceFile=Homo_sapiens.GRCh38.dna_sm.toplevel.fa.gz tmp.data/ERR2019438.cram ERR2019438.cram.tmp.samw
