@@ -2,14 +2,13 @@
 PeeWee data models for RNA-Seq metadata and splice junctions.
 """
 import os
-from peewee import Proxy, Model, PrimaryKeyField, ForeignKeyField, CharField, TextField, IntegerField, DateTimeField
+from peewee import Proxy, Model, PrimaryKeyField, CharField, IntegerField
 from gencode_icedb.general.peeweeOps import peeweeConnect, peeweeClose, peeweeClassToTableName, PeeweeModelMixins
 from gencode_icedb.general.dbModels import EvidenceSource, EvidenceAnalysis
 from collections import namedtuple
 import pysam
 
 _database_proxy = Proxy()
-
 
 def setDatabaseConn(dbconn):
     "bind the proxy to a database"
@@ -18,13 +17,15 @@ def setDatabaseConn(dbconn):
 
 def rslConnect(dburl, create=False, readonly=True, timeout=None, synchronous=None):
     "connect to sqlite3 database and bind to model"
-    return peeweeConnect(dbUrl, setDatabaseConn, create=create, readonly=readonly, timeout=timeout, synchronous=synchronous)
+    return peeweeConnect(dburl, setDatabaseConn, create=create, readonly=readonly, timeout=timeout, synchronous=synchronous)
 
 
 def rslClose(conn):
     "close database"
     peeweeClose(conn)
+    global _database_proxy
     _database_proxy = Proxy()
+
 
 class BaseModel(Model, PeeweeModelMixins):
     "base for peewee models, used to bind proxy"
@@ -34,13 +35,13 @@ class BaseModel(Model, PeeweeModelMixins):
         table_function = peeweeClassToTableName
 
 
-class RslEvidenceSource(EvidenceSource, BaseModel):
+class RslEvidenceSource(BaseModel, EvidenceSource):
     """Sources of evidence associated with RNA-Seq introns."""
     # derived class creates a unique table
     pass
 
 
-class RslAnalysis(EvidenceAnalysis):
+class RslAnalysis(BaseModel, EvidenceAnalysis):
     """Result of running analysis on RslEvidenceSource
     """
     pass
@@ -78,6 +79,7 @@ class SjSupport(namedtuple("SjSupport", ("chrom", "chromStart", "chromEnd",
 
 class SjSupportReader(object):
     """reader for SjSupport from a tabix-indexed file"""
+    #FIXME: not needed
     @staticmethod
     def sjTabFromSjDb(sjDbPath):
         "deduce tab file name from sjDbPath"

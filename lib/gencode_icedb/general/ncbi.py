@@ -22,8 +22,9 @@ def datetimeParse(s):
     "parse a string that might be date or date and time"
     try:
         return datetime.strptime(s, '%Y-%m-%d %H:%M:%S')
-    except ValueError as ex:
+    except ValueError:
         return datetime.strptime(s, '%Y-%m-%d')
+
 
 datetimeType = (datetimeParse,
                 lambda d: datetime.strftime(d, '%Y-%m-%d %H:%M:%S'))

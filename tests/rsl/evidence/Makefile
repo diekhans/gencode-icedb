@@ -2,12 +2,28 @@ ROOT = ../../..
 include ${ROOT}/config.mk
 include ${ROOT}/tests/rsl/rslTestDefs.mk
 
+test: arrayExpressTests
 
 
-test:   dataConvertTests \
+test2:   dataConvertTests \
 	dbLoadTests \
 	sjsupBuildTests \
 	encodeDccTests
+
+##
+# data from array express rnaseqer
+##
+arrayExpressTests: arrayExpressSourceTest
+
+arrayExpressSourceTest: mkdirs
+	rm -f output/$@.db
+	${rslArrayExpressSourceLoad} \
+		--analysis=input/ERR2019438/ERR2019438.rnaseqer.json \
+		--analysis=input/ERR3301312/ERR3301312.rnaseqer.json \
+		--analysis=input/SRR3555865/SRR3555865.rnaseqer.json \
+		output/$@.db
+	$(call sqldumpcmd)  'select * from rsl_evidence_source' | tawk 'NR>1{$$2 = $$3 = $$4 = $$9 = "XXX"}{print $$0}' > output/$@.rsl_evidence_source.tsv
+	${diff} expected/$@.rsl_evidence_source.tsv output/$@.rsl_evidence_source.tsv
 
 ##
 # conversion of data

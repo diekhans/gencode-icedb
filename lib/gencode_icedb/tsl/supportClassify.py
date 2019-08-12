@@ -15,7 +15,7 @@ The current algorithm is:
      - tsl4 - the best supporting EST is flagged as suspect
      - tsl5 - no single transcript supports the model structure
 """
-from collections import namedtuple, defaultdict
+from collections import defaultdict
 from pycbio.sys import fileOps
 from gencode_icedb.tsl.supportDefs import EvidenceSupport, TrascriptionSupportLevel
 from gencode_icedb.tsl.supportDefs import transIsSingleExon, geneIsTslIgnored

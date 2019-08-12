@@ -7,4 +7,4 @@ fi
 
 acc="$1"
 
-wget -nv -O $@.xml "http://www.ebi.ac.uk/ena/data/view/${acc}&display=xml"
+wget -nv -O $@.ena.xml "http://www.ebi.ac.uk/ena/data/view/${acc}&display=xml"

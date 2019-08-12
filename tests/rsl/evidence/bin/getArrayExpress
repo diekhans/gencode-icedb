@@ -8,5 +8,5 @@ fi
 acc="$1"
 
 wget -nv -O $@.tmp.json "https://www.ebi.ac.uk/fg/rnaseq/api/json/0/getRun/$acc"
-json_reformat < $@.tmp.json > $@.json
+json_reformat < $@.tmp.json > $@.rnaseqer.json
 rm -f $@.tmp.json

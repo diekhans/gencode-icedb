@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ROOT request="ERX2078688&amp;display=xml">
+<EXPERIMENT accession="ERX2078688" alias="E-MTAB-5493:M229 Control_s" broker_name="ArrayExpress" center_name="Division of Chemistry and Chemical Engineering, Caltech">
+     <IDENTIFIERS>
+          <PRIMARY_ID>ERX2078688</PRIMARY_ID>
+          <SUBMITTER_ID namespace="Division of Chemistry and Chemical Engineering, Caltech">E-MTAB-5493:M229 Control_s</SUBMITTER_ID>
+     </IDENTIFIERS>
+     <TITLE>Illumina HiSeq 2500 sequencing; Time-series RNA-seq experiment performed on nine melanoma cell lines treated with BRAF inhibitor vemurafenib.</TITLE>
+     <STUDY_REF accession="ERP023816">
+          <IDENTIFIERS>
+               <PRIMARY_ID>ERP023816</PRIMARY_ID>
+               <SECONDARY_ID>PRJEB21553</SECONDARY_ID>
+          </IDENTIFIERS>
+     </STUDY_REF>
+     <DESIGN>
+          <DESIGN_DESCRIPTION>Time-series RNA-seq experiment performed on nine melanoma cell lines treated with BRAF inhibitor vemurafenib.</DESIGN_DESCRIPTION>
+          <SAMPLE_DESCRIPTOR accession="ERS1802284">
+               <IDENTIFIERS>
+                    <PRIMARY_ID>ERS1802284</PRIMARY_ID>
+                    <EXTERNAL_ID namespace="BioSample">SAMEA104143266</EXTERNAL_ID>
+               </IDENTIFIERS>
+          </SAMPLE_DESCRIPTOR>
+          <LIBRARY_DESCRIPTOR>
+               <LIBRARY_NAME>M229 Control_s</LIBRARY_NAME>
+               <LIBRARY_STRATEGY>RNA-Seq</LIBRARY_STRATEGY>
+               <LIBRARY_SOURCE>TRANSCRIPTOMIC</LIBRARY_SOURCE>
+               <LIBRARY_SELECTION>RT-PCR</LIBRARY_SELECTION>
+               <LIBRARY_LAYOUT>
+                    <SINGLE/>
+               </LIBRARY_LAYOUT>
+               <LIBRARY_CONSTRUCTION_PROTOCOL>Cells are cultured in RPMI1640 medium. Medium was drug is replenished every 2days. The dose of vemurafenib for each cell line is the 2 times of the IC50 (half growth inhibition) value of each cell line. The dose of TNF is 1000IU/ml. RNA libraries were prepared for sequencing using standard Illumina protocols</LIBRARY_CONSTRUCTION_PROTOCOL>
+          </LIBRARY_DESCRIPTOR>
+     </DESIGN>
+     <PLATFORM>
+          <ILLUMINA>
+               <INSTRUMENT_MODEL>Illumina HiSeq 2500</INSTRUMENT_MODEL>
+          </ILLUMINA>
+     </PLATFORM>
+     <PROCESSING/>
+     <EXPERIMENT_LINKS>
+          <EXPERIMENT_LINK>
+               <XREF_LINK>
+                    <DB>ENA-SAMPLE</DB>
+                    <ID>ERS1802284</ID>
+               </XREF_LINK>
+          </EXPERIMENT_LINK>
+          <EXPERIMENT_LINK>
+               <XREF_LINK>
+                    <DB>ENA-RUN</DB>
+                    <ID>ERR2019438</ID>
+               </XREF_LINK>
+          </EXPERIMENT_LINK>
+          <EXPERIMENT_LINK>
+               <XREF_LINK>
+                    <DB>ENA-SUBMISSION</DB>
+                    <ID>ERA965919</ID>
+               </XREF_LINK>
+          </EXPERIMENT_LINK>
+          <EXPERIMENT_LINK>
+               <XREF_LINK>
+                    <DB>ENA-FASTQ-FILES</DB>
+                    <ID><![CDATA[http://www.ebi.ac.uk/ena/data/warehouse/filereport?accession=ERX2078688&result=read_run&fields=run_accession,fastq_ftp,fastq_md5,fastq_bytes]]></ID>
+               </XREF_LINK>
+          </EXPERIMENT_LINK>
+          <EXPERIMENT_LINK>
+               <XREF_LINK>
+                    <DB>ENA-SUBMITTED-FILES</DB>
+                    <ID><![CDATA[http://www.ebi.ac.uk/ena/data/warehouse/filereport?accession=ERX2078688&result=read_run&fields=run_accession,submitted_ftp,submitted_md5,submitted_bytes,submitted_format]]></ID>
+               </XREF_LINK>
+          </EXPERIMENT_LINK>
+     </EXPERIMENT_LINKS>
+     <EXPERIMENT_ATTRIBUTES>
+          <EXPERIMENT_ATTRIBUTE>
+               <TAG>Experimental Factor: compound</TAG>
+               <VALUE>none</VALUE>
+          </EXPERIMENT_ATTRIBUTE>
+          <EXPERIMENT_ATTRIBUTE>
+               <TAG>Experimental Factor: time</TAG>
+               <VALUE>0</VALUE>
+          </EXPERIMENT_ATTRIBUTE>
+          <EXPERIMENT_ATTRIBUTE>
+               <TAG>Experimental Factor: cell line</TAG>
+               <VALUE>M229</VALUE>
+          </EXPERIMENT_ATTRIBUTE>
+          <EXPERIMENT_ATTRIBUTE>
+               <TAG>ENA-SPOT-COUNT</TAG>
+               <VALUE>22717717</VALUE>
+          </EXPERIMENT_ATTRIBUTE>
+          <EXPERIMENT_ATTRIBUTE>
+               <TAG>ENA-BASE-COUNT</TAG>
+               <VALUE>1135885850</VALUE>
+          </EXPERIMENT_ATTRIBUTE>
+     </EXPERIMENT_ATTRIBUTES>
+</EXPERIMENT>
+</ROOT>

@@ -26,6 +26,7 @@ tightExonPolymorphicFactionLimit = 0.1
 looseExonPolymorphicSizeLimit = 5000
 looseExonPolymorphicFactionLimit = 1.0
 
+
 def shouldKeepEvidenceSupport(evidSupport):
     "Filter for categories we output"
     return ((evidSupport <= EvidenceSupport.polymorphic)

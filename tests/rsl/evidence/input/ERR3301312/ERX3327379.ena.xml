@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ROOT request="ERX3327379&amp;display=xml">
+<EXPERIMENT accession="ERX3327379" alias="E-MTAB-7925:Sample 1_p" broker_name="ArrayExpress" center_name="UNIVERSITY OF MANCHESTER">
+     <IDENTIFIERS>
+          <PRIMARY_ID>ERX3327379</PRIMARY_ID>
+          <SUBMITTER_ID namespace="UNIVERSITY OF MANCHESTER">E-MTAB-7925:Sample 1_p</SUBMITTER_ID>
+     </IDENTIFIERS>
+     <TITLE>Illumina HiSeq 4000 paired end sequencing; RNASeq of human mesenchymal stem cells (6 donors) with and without treatment with 1 hour of cyclic tensile strain (2.6 – 6.2% strain, 5.0 Hz).</TITLE>
+     <STUDY_REF accession="ERP115046">
+          <IDENTIFIERS>
+               <PRIMARY_ID>ERP115046</PRIMARY_ID>
+               <SECONDARY_ID>PRJEB32368</SECONDARY_ID>
+          </IDENTIFIERS>
+     </STUDY_REF>
+     <DESIGN>
+          <DESIGN_DESCRIPTION>RNASeq of human mesenchymal stem cells (6 donors) with and without treatment with 1 hour of cyclic tensile strain (2.6 – 6.2% strain, 5.0 Hz).</DESIGN_DESCRIPTION>
+          <SAMPLE_DESCRIPTOR accession="ERS3389949">
+               <IDENTIFIERS>
+                    <PRIMARY_ID>ERS3389949</PRIMARY_ID>
+                    <EXTERNAL_ID namespace="BioSample">SAMEA5585726</EXTERNAL_ID>
+               </IDENTIFIERS>
+          </SAMPLE_DESCRIPTOR>
+          <LIBRARY_DESCRIPTOR>
+               <LIBRARY_NAME>Sample 1_p</LIBRARY_NAME>
+               <LIBRARY_STRATEGY>RNA-Seq</LIBRARY_STRATEGY>
+               <LIBRARY_SOURCE>TRANSCRIPTOMIC</LIBRARY_SOURCE>
+               <LIBRARY_SELECTION>PolyA</LIBRARY_SELECTION>
+               <LIBRARY_LAYOUT>
+                    <PAIRED NOMINAL_LENGTH="159" NOMINAL_SDEV="5.800000e+01"/>
+               </LIBRARY_LAYOUT>
+               <LIBRARY_CONSTRUCTION_PROTOCOL>Human mesenchymal stem cells were treated with and without cyclic tensile strain (2.6 – 6.2% strain, 5.0 Hz, 1 hour) and incubated at 37°C, 5% CO2 for either 0 or 24 hrs. Following incubation, cells were washed with PBS, dissociated using trypsin EDTA, pelleted and frozen at -80°C for future use.  RNA was extracted from cell pellets using the RNeasy Mini kit (Qiagen) and an on-column DNA digest performed using the RNase-Free DNase kit (Qiagen). The RNA was eluted in water and the quality and quantity assessed using a NanoDrop ND-1000 spectrometer (Thermo Fisher).  TruSeq® Stranded mRNA assay (Illumina, Inc.) according to the manufacturer’s protocol</LIBRARY_CONSTRUCTION_PROTOCOL>
+          </LIBRARY_DESCRIPTOR>
+     </DESIGN>
+     <PLATFORM>
+          <ILLUMINA>
+               <INSTRUMENT_MODEL>Illumina HiSeq 4000</INSTRUMENT_MODEL>
+          </ILLUMINA>
+     </PLATFORM>
+     <PROCESSING/>
+     <EXPERIMENT_LINKS>
+          <EXPERIMENT_LINK>
+               <XREF_LINK>
+                    <DB>ENA-SAMPLE</DB>
+                    <ID>ERS3389949</ID>
+               </XREF_LINK>
+          </EXPERIMENT_LINK>
+          <EXPERIMENT_LINK>
+               <XREF_LINK>
+                    <DB>ENA-RUN</DB>
+                    <ID>ERR3301312</ID>
+               </XREF_LINK>
+          </EXPERIMENT_LINK>
+          <EXPERIMENT_LINK>
+               <XREF_LINK>
+                    <DB>ENA-SUBMISSION</DB>
+                    <ID>ERA1880719</ID>
+               </XREF_LINK>
+          </EXPERIMENT_LINK>
+          <EXPERIMENT_LINK>
+               <XREF_LINK>
+                    <DB>ENA-FASTQ-FILES</DB>
+                    <ID><![CDATA[http://www.ebi.ac.uk/ena/data/warehouse/filereport?accession=ERX3327379&result=read_run&fields=run_accession,fastq_ftp,fastq_md5,fastq_bytes]]></ID>
+               </XREF_LINK>
+          </EXPERIMENT_LINK>
+          <EXPERIMENT_LINK>
+               <XREF_LINK>
+                    <DB>ENA-SUBMITTED-FILES</DB>
+                    <ID><![CDATA[http://www.ebi.ac.uk/ena/data/warehouse/filereport?accession=ERX3327379&result=read_run&fields=run_accession,submitted_ftp,submitted_md5,submitted_bytes,submitted_format]]></ID>
+               </XREF_LINK>
+          </EXPERIMENT_LINK>
+     </EXPERIMENT_LINKS>
+     <EXPERIMENT_ATTRIBUTES>
+          <EXPERIMENT_ATTRIBUTE>
+               <TAG>Experimental Factor: stimulus</TAG>
+               <VALUE>none</VALUE>
+          </EXPERIMENT_ATTRIBUTE>
+          <EXPERIMENT_ATTRIBUTE>
+               <TAG>Experimental Factor: time</TAG>
+               <VALUE>0</VALUE>
+          </EXPERIMENT_ATTRIBUTE>
+          <EXPERIMENT_ATTRIBUTE>
+               <TAG>ENA-SPOT-COUNT</TAG>
+               <VALUE>37517373</VALUE>
+          </EXPERIMENT_ATTRIBUTE>
+          <EXPERIMENT_ATTRIBUTE>
+               <TAG>ENA-BASE-COUNT</TAG>
+               <VALUE>5668290848</VALUE>
+          </EXPERIMENT_ATTRIBUTE>
+     </EXPERIMENT_ATTRIBUTES>
+</EXPERIMENT>
+</ROOT>

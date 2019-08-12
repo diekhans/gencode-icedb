@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ROOT request="SRX1782659&amp;display=xml">
+<EXPERIMENT accession="SRX1782659" alias="GSM2171057" center_name="GEO" broker_name="NCBI">
+     <IDENTIFIERS>
+          <PRIMARY_ID>SRX1782659</PRIMARY_ID>
+          <SUBMITTER_ID namespace="GEO">GSM2171057</SUBMITTER_ID>
+     </IDENTIFIERS>
+     <TITLE>Illumina HiSeq 2500 paired end sequencing; GSM2171057: mh1_H4; Homo sapiens; RNA-Seq</TITLE>
+     <STUDY_REF accession="SRP075475" refname="GSE81252">
+          <IDENTIFIERS>
+               <PRIMARY_ID>SRP075475</PRIMARY_ID>
+          </IDENTIFIERS>
+     </STUDY_REF>
+     <DESIGN>
+          <DESIGN_DESCRIPTION/>
+          <SAMPLE_DESCRIPTOR accession="SRS1453636">
+               <IDENTIFIERS>
+                    <PRIMARY_ID>SRS1453636</PRIMARY_ID>
+                    <EXTERNAL_ID namespace="GEO">GSM2171057</EXTERNAL_ID>
+               </IDENTIFIERS>
+          </SAMPLE_DESCRIPTOR>
+          <LIBRARY_DESCRIPTOR>
+               <LIBRARY_STRATEGY>RNA-Seq</LIBRARY_STRATEGY>
+               <LIBRARY_SOURCE>TRANSCRIPTOMIC</LIBRARY_SOURCE>
+               <LIBRARY_SELECTION>cDNA</LIBRARY_SELECTION>
+               <LIBRARY_LAYOUT>
+                    <PAIRED/>
+               </LIBRARY_LAYOUT>
+               <LIBRARY_CONSTRUCTION_PROTOCOL>Cells were loaded into the Fluidigm C1 microfluidic platform, where single cells were captured. Lysis of single cells, reverse-transcription of mRNA into cDNA as well as preamplification of cDNA occured within the microfluidic device using reagents provided by Fluidigm as well as the SMARTer Ultra Low RNA kit for Illumina (Clontech). External RNA spike-in transcripts (ERCC spike-in Mix, Ambion) were added to all single cell lysis reactions at a dilution of 1:40,000. Libraries were prepared using Illumina Nextera XT kit per illumina's protocols.</LIBRARY_CONSTRUCTION_PROTOCOL>
+          </LIBRARY_DESCRIPTOR>
+     </DESIGN>
+     <PLATFORM>
+          <ILLUMINA>
+               <INSTRUMENT_MODEL>Illumina HiSeq 2500</INSTRUMENT_MODEL>
+          </ILLUMINA>
+     </PLATFORM>
+     <EXPERIMENT_LINKS>
+          <EXPERIMENT_LINK>
+               <XREF_LINK>
+                    <DB>ENA-SAMPLE</DB>
+                    <ID>SRS1453636</ID>
+               </XREF_LINK>
+          </EXPERIMENT_LINK>
+          <EXPERIMENT_LINK>
+               <XREF_LINK>
+                    <DB>ENA-RUN</DB>
+                    <ID>SRR3555865</ID>
+               </XREF_LINK>
+          </EXPERIMENT_LINK>
+          <EXPERIMENT_LINK>
+               <XREF_LINK>
+                    <DB>ENA-SUBMISSION</DB>
+                    <ID>SRA427378</ID>
+               </XREF_LINK>
+          </EXPERIMENT_LINK>
+          <EXPERIMENT_LINK>
+               <XREF_LINK>
+                    <DB>ENA-FASTQ-FILES</DB>
+                    <ID><![CDATA[http://www.ebi.ac.uk/ena/data/warehouse/filereport?accession=SRX1782659&result=read_run&fields=run_accession,fastq_ftp,fastq_md5,fastq_bytes]]></ID>
+               </XREF_LINK>
+          </EXPERIMENT_LINK>
+          <EXPERIMENT_LINK>
+               <XREF_LINK>
+                    <DB>ENA-SUBMITTED-FILES</DB>
+                    <ID><![CDATA[http://www.ebi.ac.uk/ena/data/warehouse/filereport?accession=SRX1782659&result=read_run&fields=run_accession,submitted_ftp,submitted_md5,submitted_bytes,submitted_format]]></ID>
+               </XREF_LINK>
+          </EXPERIMENT_LINK>
+     </EXPERIMENT_LINKS>
+     <EXPERIMENT_ATTRIBUTES>
+          <EXPERIMENT_ATTRIBUTE>
+               <TAG>GEO Accession</TAG>
+               <VALUE>GSM2171057</VALUE>
+          </EXPERIMENT_ATTRIBUTE>
+          <EXPERIMENT_ATTRIBUTE>
+               <TAG>ENA-SPOT-COUNT</TAG>
+               <VALUE>2044252</VALUE>
+          </EXPERIMENT_ATTRIBUTE>
+          <EXPERIMENT_ATTRIBUTE>
+               <TAG>ENA-BASE-COUNT</TAG>
+               <VALUE>408850400</VALUE>
+          </EXPERIMENT_ATTRIBUTE>
+     </EXPERIMENT_ATTRIBUTES>
+</EXPERIMENT>
+</ROOT>

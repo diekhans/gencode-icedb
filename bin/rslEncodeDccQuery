@@ -61,6 +61,7 @@ def search(scientificName, limit):
 
 
 def loadFromJson(fname):
+    # FIXME use a JSON to object reader??
     with open(fname, "r") as fh:
         return json.load(fh)
 

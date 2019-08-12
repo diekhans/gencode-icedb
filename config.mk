@@ -31,6 +31,7 @@ rslMkStarSjSupMergeJobs = ${BINDIR}/rslMkStarSjSupMergeJobs
 sraRunInfoDbLoad = ${BINDIR}/sraRunInfoDbLoad
 sraRunInfoFilter = ${BINDIR}/sraRunInfoFilter
 rslStarSjOutSplit = ${BINDIR}/rslStarSjOutSplit
+rslArrayExpressSourceLoad = ${BINDIR}/rslArrayExpressSourceLoad
 tslGbffGetProblemCases = ${BINDIR}/tslGbffGetProblemCases
 tslGenbankProblemCasesLoad = ${BINDIR}/tslGenbankProblemCasesLoad
 tslCollectSupport = ${BINDIR}/tslCollectSupport

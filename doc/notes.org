@@ -48,3 +48,53 @@ EvidenceProcess can be chained
 Results  - file
 sort-ed tsv files vs database
 
+
+* arrayexpress api
+* https://www.ebi.ac.uk/fg/rnaseq/api/tsv/0/getRun/SRR1700176
+ RNA seqer API
+https://www.ebi.ac.uk/fg/rnaseq/api/
+https://www.ebi.ac.uk/fg/rnaseq/api/doc
+
+A species list is available at:
+  https://www.ebi.ac.uk/fg/rnaseq/api/tsv/getOrganismsCounts
+
+
+** problems:
+*** crashes: https://www.ebi.ac.uk/fg/rnaseq/api/tsv/0/getRunsByOrganism/homo_sapiens
+*** id space
+*** id not in json
+*** dates should be iso
+*** plural field names (SAMPLE_IDS, RUN_IDS) are scalars
+
+* ONT
+We are sharing with you a ~150 million read cDNA dataset for GM12878 poly-A
+RNA. It was generated using three PromethION flow cells. We aligned these
+reads to GRCh38 genome reference (~94 million aligned reads), and  have
+shared the BAM files for that alignment with you as well.
+
+From: Miten Jain <miten@soe.ucsc.edu>
+Cc: Mark Akeson <makeson@soe.ucsc.edu>, Hugh Olsen <heolsen@soe.ucsc.edu>, 
+Miten Jain <miten@soe.ucsc.edu>
+Subject: GM12878 cDNA data
+Date: Tue, 6 Aug 2019 17:17:03 -0700
+
+Links to data:
+
+   1. Directory: http://public.gi.ucsc.edu/~miten/gencode/
+   2. Fastq (~150M reads):
+   http://public.gi.ucsc.edu/~miten/gencode/02_08_07_16_1_2_pION_GM12878_cDNA.fastq
+   3. GRCh38 aligned BAM (index in the same directory):
+   http://public.gi.ucsc.edu/~miten/gencode/02_08_07_16_1_2_pION_GM12878_cDNA.fastq.hg38_splice.sorted.bam
+
+
+Yes the BAM contains everything (unmapped reads, secondary and
+supplementary alignments). The genome fasta we used is from
+ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/GRCh38_reference_genome/
+(GRCh38_full_analysis_set_plus_decoy_hla.fa). The mapping is splice-aware
+minimap2 (version 2.17-r943-dirty).
+
+Command from the BAM:
+
+minimap2 -ax splice -uf -k14 -t 8
+GRCh38_full_analysis_set_plus_decoy_hla.fa
+02_08_07_16_1_2_pION_GM12878_cDNA.fastq

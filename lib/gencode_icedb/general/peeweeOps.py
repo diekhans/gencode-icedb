@@ -8,12 +8,19 @@ import configparser
 import urllib.parse as urlparse
 from collections import namedtuple
 from playhouse.apsw_ext import APSWDatabase
-from peewee import MySQLDatabase, DatabaseError, CharField
+from peewee import SqliteDatabase, MySQLDatabase, DatabaseError, CharField
+from pycbio.sys.symEnum import SymEnum
 from pycbio.db import sqliteOps, mysqlOps
 
 # URL code inspired by https://github.com/kennethreitz/dj-database-url
 urlparse.uses_netloc.append('mysql')
 urlparse.uses_netloc.append('sqlite')
+
+
+class DbType(SymEnum):
+    "type of database"
+    mysql = 1
+    sqlite = 2
 
 
 class DbUrl(namedtuple("DbUrl",
@@ -56,13 +63,12 @@ class DbUrl(namedtuple("DbUrl",
                          database=emptyIsNone(p.path[1:]))
 
 
-
 def _sqliteConnect(dburl, bindModelFunc, create=False, readonly=True, timeout=None, synchronous=None):
     """connect to sqlite3 database and bind to model.  If dburl has no database name,
     or the name is :memory:, an in memory database is created.
     bindModelFunc is called to bind connection to the peewee models."""
     if dburl.netloc is not None:
-            raise Exception("Can't specify network location in sqlite database URL, found '{}': {}", dburl.netloc, dburl.url)
+        raise Exception("Can't specify network location in sqlite database URL, found '{}': {}", dburl.netloc, dburl.url)
     if create:
         readonly = False
     if dburl.database is None:
@@ -86,6 +92,7 @@ def _sqliteConnect(dburl, bindModelFunc, create=False, readonly=True, timeout=No
     except Exception as ex:
         raise DatabaseError("can't open database: {}".format(dbFile)) from ex
     return conn
+
 
 def _loadMyCnf(dburl):
     """load my.cnf based on information in parsed URL, or an empty dict if file or
@@ -114,7 +121,7 @@ def _mysqlConnect(dburl, bindModelFunc):
         in input. Arguments not found are not added to kwargs, as some can't be None."""
         v = dburl.get(name)
         if v is None:
-            v = mycnt.get(name)
+            v = mycnf.get(name)
         if v is not None:
             kwargs[argname if argname is not None else name] = v
 
@@ -126,10 +133,11 @@ def _mysqlConnect(dburl, bindModelFunc):
     addparam("password", kwargs, dburl, mycnf, "passwd")
     addparam("database", kwargs, dburl, mycnf)
     mysqlOps.mySqlSetErrorOnWarn()
-    conn = MySQLDatabase(dbFile, **kwargs)
+    conn = MySQLDatabase(dburl, **kwargs)
     conn.execute_sql("SET default_storage_engine=InnoDb;")
     bindModelFunc(conn)
     return conn
+
 
 def peeweeConnect(url, bindModelFunc, create=False, readonly=True, timeout=None, synchronous=None):
     """connect to database using a bind to model. URL is described in
@@ -144,10 +152,22 @@ def peeweeConnect(url, bindModelFunc, create=False, readonly=True, timeout=None,
         raise Exception("invalid scheme '{}', expect one of 'sqlite' or 'mysql': {}".format(dburl.scheme, url))
 
 
+def peeweeDbType(conn):
+    "return DbType of database"
+    if isinstance(conn, SqliteDatabase):
+        return DbType.sqlite
+    elif isinstance(conn, MySQLDatabase):
+        return DbType.mysql
+    else:
+        raise Exception("unknown peewee database type: {}".format(type(conn)))
+
+
 def peeweeClose(conn):
     "close database"
     # not sure why it might be in closed state even after open, maybe lazy open?
     if not conn.is_closed():
+        if peeweeDbType(conn) == DbType.sqlite:
+            conn.execute_sql("PRAGMA optimize;")
         conn.close()
 
 
@@ -162,9 +182,8 @@ def peeweeClassToTableName(cls):
 class SymEnumField(CharField):
     """A field storing an SymEnum derived field as a string in the database."""
     def __init__(self, symEnumCls, **kwargs):
-        max_length = max([len(str(f)) for f in symEnumCls])
         self.symEnumCls = symEnumCls
-        super(CharField, self).__init__(max_length, **kwargs)
+        super().__init__(**kwargs)
 
     def db_value(self, value):
         return str(value)

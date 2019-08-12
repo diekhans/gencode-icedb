@@ -1,0 +1,4 @@
+id	guid	create_time	update_time	repo	sample_id	run_id	src_id	src_time	organism	assembly	tissue	disease	evidence_type	platform	data_format	url1	url2	comments
+1	XXX	XXX	XXX	ARRAY_EXPRESS	SAMEA104143266	ERR2019438	ERR2019438	XXX	homo_sapiens	GRCh38			SHORT_RNASEQ	Illumina HiSeq 2500	CRAM	ftp://ftp.ebi.ac.uk/pub/databases/arrayexpress/data/atlas/rnaseq/ERR201/008/ERR2019438/ERR2019438.cram		
+2	XXX	XXX	XXX	ARRAY_EXPRESS	SAMEA5585726	ERR3301312	ERR3301312	XXX	homo_sapiens	GRCh38			SHORT_RNASEQ	Illumina HiSeq 4000	CRAM	ftp://ftp.ebi.ac.uk/pub/databases/arrayexpress/data/atlas/rnaseq/ERR330/002/ERR3301312/ERR3301312.cram		
+3	XXX	XXX	XXX	ARRAY_EXPRESS	SAMN05150882	SRR3555865	SRR3555865	XXX	homo_sapiens	GRCh38			SHORT_RNASEQ	Illumina HiSeq 2500	CRAM	ftp://ftp.ebi.ac.uk/pub/databases/arrayexpress/data/atlas/rnaseq/SRR355/005/SRR3555865/SRR3555865.cram		
