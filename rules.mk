@@ -35,7 +35,7 @@ ifneq (${PROG},)
 linkProg: ${BINDIR}/${PROG}
 ${BINDIR}/${PROG}: $(${PROG}_PROG_OBJS) ${ICEDBLIB}
 	@mkdir -p $(dir $@)
-	${CC} ${CFLAGS} -o $@ $^ ${LIBS}
+	${LINK} ${CFLAGS} -o $@ $^ ${LIBS}
 endif
 
 ${OBJDIR}/%.o: %.c

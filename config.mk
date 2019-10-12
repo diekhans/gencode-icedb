@@ -48,6 +48,12 @@ ucscGencodeDbLoad = ${BINDIR}/ucscGencodeDbLoad
 
 CFLAGS =  -Wall -Werror -Wno-sign-compare -std=c99
 CDEBUG = -g -O0
+ifeq (${SYS},Darwin)
+    # browser libray needs to be linked with C++ on mac
+    LINK = c++
+else
+    LINK = ${CC}
+endif
 
 ICEDBINC = -I${ROOT}/src/lib
 ICEDBLIB = ${OBJDIR}/libicedb.a
@@ -61,7 +67,13 @@ KENTDIR = ${HOME}/kent/src
 KENTINC = -I${KENTDIR}/inc -I${KENTDIR}/hg/inc
 KENTLIBDIR = ${KENTDIR}/lib/${MACHTYPE}
 KENTLIBS = ${KENTLIBDIR}/jkhgap.a ${KENTLIBDIR}/jkweb.a ${KENTDIR}/htslib/libhts.a
+ifneq ($(wildcard /opt/local/lib),)
+    LIBS += -L/opt/local/lib
+endif
 LIBS += ${KENTLIBS} -lssl -lcrypto -lz -lpthread -lstdc++
+ifneq ($(wildcard /opt/local/lib),)
+    LIBS +=  -liconv
+endif
 
 # autodetect UCSC installation of hal:
 ifeq (${HALDIR},)
