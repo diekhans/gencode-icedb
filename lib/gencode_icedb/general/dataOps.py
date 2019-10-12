@@ -2,9 +2,11 @@
 import os
 import socket
 import re
-from pycbio.sys import fileOps
+import json
 import pipettor
 import logging
+from pycbio.sys import fileOps
+from pycbio.sys.objDict import ObjDict
 
 
 def ensureList(strOrList):
@@ -114,3 +116,8 @@ def getNewTmpDir(tmpDir):
         if not os.path.exists(path):
             return path
         cnt += 1
+
+def jsonReader(jsonf):
+    with open(jsonf) as fh:
+        for rec in json.load(fh, object_pairs_hook=ObjDict):
+            yield rec
