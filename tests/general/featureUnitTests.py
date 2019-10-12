@@ -1242,7 +1242,7 @@ class GenePredAnnotationTests(FeatureTestBase, AnnotationCheckMixin):
         for gp in GenePredReader(self.getInputFile("gencodeCompV28.gp")):
             trans = factory.fromGenePred(gp)
             bed = trans.toBed(itemRgb="100,0,0")
-            self.assertEqual(len(bed.getRow()), 12)
+            self.assertEqual(len(bed.toRow()), 12)
 
     def testAttrs(self):
         def getUtr3Feature(trans):
