@@ -96,6 +96,7 @@ ${gencodeV28Db}:
 	mv -f $@.tmp $@
 
 output/%.bam: input/%.sam
+	@mkdir -p output
 	samtools sort -O BAM -o $@ $<
 	samtools index -b $@
 
