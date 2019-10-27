@@ -212,6 +212,13 @@ class EvidCompareTest(TestCaseBase):
         evidSupport = self._rawPslCmpr(annotTrans, evidRawPsl, True)
         self.assertEqual(evidSupport.support, EvidenceSupport.polymorphic)
 
+    def testExtendFuzzy(self):
+        """extend EST support, but 5' end of genes is two bases longer"""
+        annotTrans = self._getAnnot("ENST00000455238.1")
+        evidRawPsl = ["303", "0", "0", "1", "0", "0", "2", "3254", "--", "AI865129.1", "305", "0", "304", "chr1", "248956422", "48078786", "48082344", "3", "14,52,238,", "1,15,67,", "200874078,200874228,200877398,"]
+        evidSupport = self._rawPslCmpr(annotTrans, evidRawPsl, True)
+        self.assertEqual(evidSupport.support, EvidenceSupport.feat_mismatch)
+
 
 def suite():
     ts = unittest.TestSuite()

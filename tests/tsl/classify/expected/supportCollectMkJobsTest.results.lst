@@ -6,6 +6,7 @@
 ./GenBank-EST/results/ENSG00000177663.13.support.tsv
 ./GenBank-EST/results/ENSG00000185960.14.support.tsv
 ./GenBank-EST/results/ENSG00000206503.12.support.tsv
+./GenBank-EST/results/ENSG00000231413.1.support.tsv
 ./GenBank-RNA/batch.jobs
 ./GenBank-RNA/expected.lst
 ./GenBank-RNA/results/ENSG00000074800.14.support.tsv
@@ -14,3 +15,4 @@
 ./GenBank-RNA/results/ENSG00000177663.13.support.tsv
 ./GenBank-RNA/results/ENSG00000185960.14.support.tsv
 ./GenBank-RNA/results/ENSG00000206503.12.support.tsv
+./GenBank-RNA/results/ENSG00000231413.1.support.tsv

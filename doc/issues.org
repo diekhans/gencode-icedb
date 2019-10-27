@@ -29,3 +29,4 @@
 * Add TSL override list, for things like 3-base exon
 * change tranAnnot .chrom name to .chromRange or .chromCoords, or chromLoc
 * mixing exon extension into status conflicts with good vs polymorphic.  
+* ENST00000455238.1 - EST AI865129 should extend, however 5' of annotation is two bases longer.  Make extends fuzzy.

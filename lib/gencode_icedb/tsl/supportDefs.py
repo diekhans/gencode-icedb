@@ -56,7 +56,7 @@ class EvidenceSupport(SymEnum):
     no_eval_tcell_receptor = 204      # tcell receptor
     no_eval_hla = 205                 # HLA gene
     no_eval_pseudogene = 205          # pseudogenes that were not transcribed
-
+    worst = 1000                      # worse than anything, for min compares
 
 class TrascriptionSupportLevel(SymEnum):
     """Transcription support levels"""
