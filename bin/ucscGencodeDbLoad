@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 import icedbProgSetup  # noqa: F401
 import argparse
+from collections import defaultdict
 from pycbio.hgdata.genePredSqlite import GenePredSqliteTable
 from pycbio.hgdata.gencodeSqlite import GencodeAttrsSqliteTable, GencodeTranscriptSourceSqliteTable, GencodeTranscriptionSupportLevelSqliteTable, GencodeTagSqliteTable
 from pycbio.hgdata import hgDb
+from pycbio.hgdata.coords import Coords
 from pycbio.sys import fileOps
 from pycbio.db import sqliteOps
-from gencode_icedb.general.ucscGencodeSource import GENCODE_ANN_TABLE, GENCODE_ATTRS_TABLE, GENCODE_TRANSCRIPT_SOURCE_TABLE, GENCODE_TRANSCRIPTION_SUPPORT_LEVEL_TABLE, GENCODE_TAG_TABLE
+from gencode_icedb.general.ucscGencodeSource import GENCODE_ANN_TABLE, GENCODE_ATTRS_TABLE, GENCODE_TRANSCRIPT_SOURCE_TABLE, GENCODE_TRANSCRIPTION_SUPPORT_LEVEL_TABLE, GENCODE_TAG_TABLE, GENCODE_GENE_TABLE
 
 
 def parseArgs():
@@ -49,7 +51,6 @@ def parseArgs():
         if opts.pseudoGenes is None:
             opts.pseudoGenes = "wgEncodeGencodePseudoGene" + opts.version
     return opts
-
 
 def readTransIds(transIdFile):
     transIdSubset = frozenset(fileOps.iterLines(transIdFile))
@@ -123,6 +124,9 @@ def loadTags(conn, hgdbConn, tags, transIdSubset):
         tagsDbTable.loadTsv(tags)
     tagsDbTable.index()
 
+def buildGencodeGene(conn):
+    """select geneId, chrom, txStart, txEnd, geneType from gencode_ann gan, gencode_attrs gat where gan.name = gat.transcriptId group by geneId, chrom"""
+    pass  # FIXME finish
 
 def ucscGencodeDbLoad(opts):
     "main function"

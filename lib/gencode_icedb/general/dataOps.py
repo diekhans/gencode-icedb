@@ -63,7 +63,7 @@ def inCnv(v, t=str):
     if (v is None) or (isinstance(v, str) and (v == '')):
         return None
     elif isinstance(v, t):
-        return t
+        return v
     else:
         return t(v)
 

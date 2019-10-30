@@ -40,8 +40,8 @@ class SupportEvalResult(namedtuple("SupportEvalResult",
     """Results of evaluating a transcript against an evidence data set.  This
     records the best support that was found in the dataset.  Non-supporting
     overlapping evidence is not reported.  This is used to store results
-    from a batch before loading into a database or other analysis.  The details
-    of the specific support
+    from a batch before loading into a database or other analysis.  This is
+    loaded into a GencodeSupportEval peewee model.
 
     :param transcriptId: GENCODE transcript identifier
     :param evidSetUuid: GUID of evidence set providing support.  Maybe None if this is used to
@@ -66,7 +66,6 @@ class SupportEvalResult(namedtuple("SupportEvalResult",
                                                      int(evidCount),
                                                      int(offset5), int(offset3),
                                                      int(extend5Exons), int(extend3Exons))
-
     @classmethod
     def tsvHeader(cls):
         return cls._fields

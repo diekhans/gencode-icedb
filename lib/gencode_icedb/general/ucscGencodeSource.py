@@ -17,6 +17,7 @@ GENCODE_ATTRS_TABLE = "gencode_attrs"
 GENCODE_TRANSCRIPT_SOURCE_TABLE = "gencode_transcript_source"
 GENCODE_TRANSCRIPTION_SUPPORT_LEVEL_TABLE = "gencode_transcription_support_level"
 GENCODE_TAG_TABLE = "gencode_tag"
+GENCODE_GENE_TABLE = "gencode_gene"
 
 
 class UcscGencodeReader(object):
