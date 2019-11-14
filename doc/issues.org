@@ -29,5 +29,16 @@
 * Add TSL override list, for things like 3-base exon
 * change tranAnnot .chrom name to .chromRange or .chromCoords, or chromLoc
 * mixing exon extension into status conflicts with good vs polymorphic.  
-* ENST00000455238.1 - EST AI865129 should extend, however 5' of annotation is two bases longer.  Make extends fuzzy.
-* Make extend_exons no be poor
+Make extends fuzzy.
+* Make extend_exons not be poor
+* Should record no_eval in results table so can be used with different versions of data
+* possible bugs:
+** ENST00000455238.1 - EST AI865129 should extend, however 5' of annotation is two bases longer.  ** ENST00000646142.1/ENSG00000284895.1 (AC119676.1)
+REALLY PART OF
+ENST00000372583.6/ENSG00000127124.16 (HIVEP3) ???  PROBABLY FINE!
+** ENST00000414199.1 - LOOKS LIKE EST BQ011346 SHOULD SUPPORT? WHY NOT?
+** Why Doesn EST AA029807 support ENST00000594546.1
+** ENST00000455238.1 CHR1:48078787-48082196 ENSG00000231413.1
+- should have had extend support: EST AI865129, HOWEVER 5' END IS 2 BASES LONGER
+** ENSG00000228839.5/ENST00000440456.5 - antisense *
+looks like it should be supported by EST BF439736
