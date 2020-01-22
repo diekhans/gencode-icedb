@@ -35,7 +35,9 @@ def dbCurrentTime():
 class EvidenceRepo(SymEnum):
     """Repository source of evidence"""
     __slots__ = ()
-    ARRAY_EXPRESS = 0
+    GENBANK = auto()
+    ARRAY_EXPRESS = auto()
+    SRA = auto()
 
 
 class EvidenceType(SymEnum):
@@ -86,7 +88,7 @@ class EvidenceSource(Model):
     update_time = DateTimeField(help_text="""Date and time row was last updated""")
     repo = SymEnumField(symEnumCls=EvidenceRepo,
                         help_text="""repository source (e.g. SRA)""")
-    sample_id = CharField(index=True,
+    sample_id = CharField(index=True, null=True,
                           help_text="""sample id""")
     run_id = CharField(unique=True, index=True,
                        help_text="""run id""")

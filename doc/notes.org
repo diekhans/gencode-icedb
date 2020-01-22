@@ -42,12 +42,6 @@ GenbankProblemCases(self.conn)
 - evidenceAligns
 - supportEval
 
-* database structure
-EvidenceSource
-EvidenceProcess can be chained
-Results  - file
-sort-ed tsv files vs database
-
 
 * arrayexpress api
 * https://www.ebi.ac.uk/fg/rnaseq/api/tsv/0/getRun/SRR1700176
@@ -98,3 +92,13 @@ Command from the BAM:
 minimap2 -ax splice -uf -k14 -t 8
 GRCh38_full_analysis_set_plus_decoy_hla.fa
 02_08_07_16_1_2_pION_GM12878_cDNA.fastq
+
+* database structure
+** EvidenceSource - Added to database to indicate input data sets.
+- this is pre-download
+** EvidenceProcess - Processing of evidence
+- input is an EvidenceSource or other one or more EvidenceResults.
+- EvidenceResults introns can combined and used for FLAIR
+- Also records failures
+** EvidenceResult [?Product, ?Data]
+- evidence in a form that can be compared against GENCODE results.
