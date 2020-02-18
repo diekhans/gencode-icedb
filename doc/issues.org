@@ -42,3 +42,6 @@ ENST00000372583.6/ENSG00000127124.16 (HIVEP3) ???  PROBABLY FINE!
 - should have had extend support: EST AI865129, HOWEVER 5' END IS 2 BASES LONGER
 ** ENSG00000228839.5/ENST00000440456.5 - antisense *
 looks like it should be supported by EST BF439736
+* doc RNA-Seqer
+RNA-seqer API paper: https://academic.oup.com/bioinformatics/article/33/14/2218/3078600
+Array Atlas paper: https://www.ncbi.nlm.nih.gov/pubmed/31665515.
